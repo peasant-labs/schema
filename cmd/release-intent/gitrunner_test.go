@@ -2,46 +2,118 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/peasant-labs/schema/testcase"
+	"gopkg.in/yaml.v3"
 )
 
-func unexecutableRunner() *execGit {
-	return &execGit{gitPath: filepath.Join("/nonexistent", "definitely-not-git")}
+//go:embed testdata/git-hostile-args.yaml
+var hostileArgsYAML []byte
+
+type hostileArgInput struct {
+	Arg string `yaml:"arg"`
 }
 
+type hostileArgExpected struct {
+	Refusal string `yaml:"refusal"`
+}
+
+type hostileArgFixtures struct {
+	RequiredNames []string                                             `yaml:"required_names"`
+	Cases         testcase.Corpus[hostileArgInput, hostileArgExpected] `yaml:"cases"`
+}
+
+func loadHostileArgFixtures(t *testing.T) hostileArgFixtures {
+	t.Helper()
+	var f hostileArgFixtures
+	if err := yaml.Unmarshal(hostileArgsYAML, &f); err != nil {
+		t.Fatalf("parse hostile args fixture: %v", err)
+	}
+	if err := f.Cases.Validate(); err != nil {
+		t.Fatalf("hostile args fixtures: %v", err)
+	}
+	seen := map[string]struct{}{}
+	for _, c := range f.Cases.Cases {
+		seen[c.Name] = struct{}{}
+	}
+	checkRequiredNames(t, f.RequiredNames, seen, "hostile args fixtures")
+	// Every hostile row must name the dash refusal: the guard it pins.
+	for _, c := range f.Cases.Cases {
+		if c.Expected.Refusal == "" {
+			t.Fatalf("hostile args fixture %q declares no refusal substring", c.Name)
+		}
+	}
+	return f
+}
+
+func realGitRunner(t *testing.T, dir string) GitRunner {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH")
+	}
+	r, err := newExecGitIn(dir)
+	if err != nil {
+		t.Fatalf("newExecGitIn: %v", err)
+	}
+	return r
+}
+
+// The dash guard must fire before exec for every runner method, including
+// git show. A real git path proves the refusal happens first: without the
+// guard the call would reach git and fail as a blob error instead.
 func TestGitRunner_RejectsLeadingDashArgs(t *testing.T) {
 	t.Parallel()
-	g := unexecutableRunner()
-	ctx := context.Background()
-	hostile := []string{"-e", "--upload-pack=touch /tmp/pwned", "--output=x", "-"}
-	for _, arg := range hostile {
-		arg := arg
-		t.Run("IsAncestor/"+arg, func(t *testing.T) {
+	f := loadHostileArgFixtures(t)
+	dir := t.TempDir()
+	for _, c := range f.Cases.Cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
-			_, err := g.IsAncestor(ctx, arg, "HEAD")
-			if err == nil {
-				t.Fatalf("expected refusal for hostile arg %q, got nil", arg)
-			}
-			if !strings.Contains(err.Error(), "begins with '-'") {
-				t.Fatalf("error for %q is not the leading-dash refusal: %q", arg, err.Error())
-			}
-			var exitErr *exec.ExitError
-			if errors.As(err, &exitErr) {
-				t.Fatalf("hostile arg %q reached exec", arg)
-			}
+			g := realGitRunner(t, dir)
+			ctx := context.Background()
+			assertDashRefusal(t, func() error {
+				_, err := g.ReadFile(ctx, c.Input.Arg, "CHANGELOG.md")
+				return err
+			}, c.Input.Arg, c.Expected.Refusal)
+			assertDashRefusal(t, func() error {
+				_, _, err := g.ChangedPaths(ctx, c.Input.Arg, "HEAD")
+				return err
+			}, c.Input.Arg, c.Expected.Refusal)
+			assertDashRefusal(t, func() error {
+				_, err := g.FirstParent(ctx, c.Input.Arg, "CHANGELOG.md")
+				return err
+			}, c.Input.Arg, c.Expected.Refusal)
+			assertDashRefusal(t, func() error {
+				_, err := g.Tags(ctx, c.Input.Arg)
+				return err
+			}, c.Input.Arg, c.Expected.Refusal)
 		})
-		t.Run("ReadFile/"+arg, func(t *testing.T) {
-			t.Parallel()
-			_, err := g.ReadFile(ctx, arg, "CHANGELOG.md")
-			if err == nil {
-				t.Fatalf("expected refusal for hostile rev %q, got nil", arg)
-			}
-		})
+	}
+}
+
+func assertDashRefusal(t *testing.T, call func() error, arg, want string) {
+	t.Helper()
+	err := call()
+	if err == nil {
+		t.Fatalf("expected refusal for hostile arg %q, got nil", arg)
+	}
+	if !strings.Contains(err.Error(), want) {
+		t.Fatalf("error for %q is not the leading-dash refusal naming %q: %q", arg, want, err.Error())
+	}
+	var blob *BlobReadError
+	if errors.As(err, &blob) {
+		t.Fatalf("hostile arg %q reached git and failed as a blob read; the dash guard must refuse first", arg)
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		t.Fatalf("hostile arg %q reached exec (got ExitError); the dash guard must refuse first", arg)
 	}
 }
 
@@ -58,27 +130,82 @@ func TestGitRunner_SubcommandAllowlist(t *testing.T) {
 	}
 }
 
-func TestGitRunner_IsAncestorDistinguishesNegative(t *testing.T) {
+func unexecutableRunner() *execGit {
+	return &execGit{gitPath: filepath.Join("/nonexistent", "definitely-not-git")}
+}
+
+func TestGitRunner_FirstParentListsEmptyCommits(t *testing.T) {
 	t.Parallel()
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not on PATH")
 	}
 	dir := initIntentRepo(t)
-	r, err := newExecGitIn(dir)
+	runGit(t, dir, "commit", "-q", "--allow-empty", "-m", "release[patch]: empty cut (#3)")
+	r, _ := newExecGitIn(dir)
+	commits, err := r.FirstParent(context.Background(), "HEAD", "CHANGELOG.md")
 	if err != nil {
-		t.Fatalf("newExecGitIn: %v", err)
+		t.Fatalf("FirstParent: %v", err)
 	}
+	if len(commits) != 3 {
+		t.Fatalf("FirstParent listed %d commits, want 3 (empty commits are not dropped)", len(commits))
+	}
+	if commits[0].Subject != "release[patch]: empty cut (#3)" {
+		t.Fatalf("newest commit = %q, want the empty release commit", commits[0].Subject)
+	}
+	if commits[0].ChangesChangelog {
+		t.Fatalf("empty commit must not be marked as changing the changelog")
+	}
+}
+
+func TestGitRunner_FirstCommitAddingFollowsFirstParent(t *testing.T) {
+	t.Parallel()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH")
+	}
+	dir := t.TempDir()
+	runGit(t, dir, "init", "-q", "-b", "master")
+	runGit(t, dir, "config", "user.email", "t@t")
+	runGit(t, dir, "config", "user.name", "t@t")
+	writeFile(t, dir, "work.txt", "base\n")
+	runGit(t, dir, "add", "work.txt")
+	runGit(t, dir, "commit", "-q", "-m", "feat(graph)[minor]: base work")
+	runGit(t, dir, "checkout", "-q", "-b", "side")
+	writeFile(t, dir, ".github/release-intent.yaml", "releases: true\n")
+	runGit(t, dir, "add", ".github/release-intent.yaml")
+	runGit(t, dir, "commit", "-q", "-m", "feat(graph)[minor]: adopt config")
+	runGit(t, dir, "checkout", "-q", "master")
+	runGit(t, dir, "merge", "-q", "--no-ff", "-m", "merge adopt config", "side")
+	r, _ := newExecGitIn(dir)
 	ctx := context.Background()
-	yes, err := r.IsAncestor(ctx, "HEAD~1", "HEAD")
-	if err != nil || !yes {
-		t.Fatalf("IsAncestor(HEAD~1, HEAD) = %v, %v; want true, nil", yes, err)
-	}
-	no, err := r.IsAncestor(ctx, "HEAD", "HEAD~1")
+	mergeSHA := gitRev(t, dir, "HEAD")
+	got, err := r.FirstCommitAdding(ctx, "master", ".github/release-intent.yaml")
 	if err != nil {
-		t.Fatalf("IsAncestor(HEAD, HEAD~1) returned error for a definitive negative: %v", err)
+		t.Fatalf("FirstCommitAdding: %v", err)
 	}
-	if no {
-		t.Fatal("IsAncestor(HEAD, HEAD~1) = true, want false")
+	if got != mergeSHA {
+		t.Fatalf("FirstCommitAdding = %q, want the no-ff merge commit %q", got, mergeSHA)
+	}
+}
+
+func TestGitRunner_TagsResolveAnnotatedAndLightweight(t *testing.T) {
+	t.Parallel()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH")
+	}
+	dir := initIntentRepo(t)
+	runGit(t, dir, "tag", "-a", "v0.2.0", "-m", "annotated")
+	r, _ := newExecGitIn(dir)
+	tags, err := r.Tags(context.Background(), "v")
+	if err != nil {
+		t.Fatalf("Tags: %v", err)
+	}
+	if len(tags) != 2 {
+		t.Fatalf("Tags = %v, want exactly v0.1.0 and v0.2.0 in one git call", tags)
+	}
+	for tag, sha := range tags {
+		if len(sha) != 40 {
+			t.Fatalf("tag %q resolved to %q, want a 40-char peeled commit", tag, sha)
+		}
 	}
 }
 
@@ -93,7 +220,7 @@ func TestGitRunner_ChangedPathsSeesRenamedBothNames(t *testing.T) {
 	base := gitRev(t, dir, "HEAD~1")
 	head := gitRev(t, dir, "HEAD")
 	r, _ := newExecGitIn(dir)
-	paths, err := r.ChangedPaths(context.Background(), base, head)
+	_, paths, err := r.ChangedPaths(context.Background(), base, head)
 	if err != nil {
 		t.Fatalf("ChangedPaths: %v", err)
 	}
@@ -117,7 +244,7 @@ func TestGitRunner_ChangedPathsSeesDeleted(t *testing.T) {
 	base := gitRev(t, dir, "HEAD~1")
 	head := gitRev(t, dir, "HEAD")
 	r, _ := newExecGitIn(dir)
-	paths, err := r.ChangedPaths(context.Background(), base, head)
+	_, paths, err := r.ChangedPaths(context.Background(), base, head)
 	if err != nil {
 		t.Fatalf("ChangedPaths: %v", err)
 	}
@@ -132,25 +259,26 @@ func TestGitRunner_ChangedPathsSeesDeleted(t *testing.T) {
 	}
 }
 
-func TestGitRunner_NonAncestorBaseIsDistinct(t *testing.T) {
+func TestGitRunner_ChangedPathsFailsWithoutMergeBase(t *testing.T) {
 	t.Parallel()
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not on PATH")
 	}
 	dir := initIntentRepo(t)
-	runGit(t, dir, "checkout", "-q", "-b", "side", "HEAD~1")
-	runGit(t, dir, "commit", "-q", "--allow-empty", "-m", "side work")
+	runGit(t, dir, "checkout", "-q", "--orphan", "side")
+	writeFile(t, dir, "other.txt", "unrelated\n")
+	runGit(t, dir, "add", "other.txt")
+	runGit(t, dir, "commit", "-q", "-m", "unrelated root")
 	side := gitRev(t, dir, "side")
 	runGit(t, dir, "checkout", "-q", "master")
 	tip := gitRev(t, dir, "HEAD")
 	r, _ := newExecGitIn(dir)
-	_, err := r.ChangedPaths(context.Background(), side, tip)
+	_, _, err := r.ChangedPaths(context.Background(), side, tip)
 	if err == nil {
-		t.Fatal("ChangedPaths with a non-ancestor base = nil, want BaseNotAncestorError")
+		t.Fatal("ChangedPaths with no merge base = nil, want an error naming the missing merge base")
 	}
-	var notAnc *BaseNotAncestorError
-	if !errors.As(err, &notAnc) {
-		t.Fatalf("ChangedPaths(non-ancestor) = %T %v, want *BaseNotAncestorError", err, err)
+	if !strings.Contains(err.Error(), "no merge base") {
+		t.Fatalf("ChangedPaths error %q does not name the missing merge base", err.Error())
 	}
 }
 
@@ -164,7 +292,7 @@ func TestCheckTitle_MissingBaseConfigAdopts(t *testing.T) {
 	dir := t.TempDir()
 	runGit(t, dir, "init", "-q", "-b", "master")
 	runGit(t, dir, "config", "user.email", "t@t")
-	runGit(t, dir, "config", "user.name", "t")
+	runGit(t, dir, "config", "user.name", "t@t")
 	writeFile(t, dir, "work.txt", "base\n")
 	runGit(t, dir, "add", "work.txt")
 	runGit(t, dir, "commit", "-q", "-m", "feat(graph)[minor]: base work")
@@ -201,25 +329,8 @@ func TestCheckTitle_InvalidJSONFailClosed(t *testing.T) {
 	if !ok {
 		t.Fatalf("invalid version JSON must fail closed as a rejection, got %T %v", err, err)
 	}
-	if string(rej.Code) != "protected-path" {
-		t.Fatalf("invalid version JSON code = %q, want protected-path", rej.Code)
-	}
-}
-
-func TestCheckTitle_FailedBlobReadIsInternal(t *testing.T) {
-	t.Parallel()
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git not on PATH")
-	}
-	dir := initIntentRepo(t)
-	r, _ := newExecGitIn(dir)
-	ctx := context.Background()
-	// Read a blob that does not exist at a valid rev: a BlobReadError, which
-	// checkTitle surfaces as an internal error (exit 1), never an accept.
-	_, err := r.ReadFile(ctx, "HEAD", "does-not-exist-xyz.txt")
-	var blob *BlobReadError
-	if !errors.As(err, &blob) {
-		t.Fatalf("ReadFile(missing) = %T %v, want *BlobReadError", err, err)
+	if string(rej.Err.Code) != "protected-path" {
+		t.Fatalf("invalid version JSON code = %q, want protected-path", rej.Err.Code)
 	}
 }
 
@@ -230,7 +341,7 @@ func initIntentRepo(t *testing.T) string {
 	dir := t.TempDir()
 	runGit(t, dir, "init", "-q", "-b", "master")
 	runGit(t, dir, "config", "user.email", "t@t")
-	runGit(t, dir, "config", "user.name", "t")
+	runGit(t, dir, "config", "user.name", "t@t")
 	writeFile(t, dir, ".github/release-intent.yaml", "releases: true\ntag_prefix: v\nautomation_author: peasant-labs-releaser[bot]\nchangelog: CHANGELOG.md\nversion_files:\n  - {path: package.json, field: version}\nprotected_paths: []\nbot_branches:\n  release: automation/release\n")
 	writeFile(t, dir, "CHANGELOG.md", "# changelog\n")
 	writeFile(t, dir, "package.json", "{\"version\": \"0.1.0\"}\n")
@@ -249,6 +360,18 @@ func runGit(t *testing.T, dir string, args ...string) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 	cmd.Env = hermeticGitEnv(t)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+}
+
+func runGitDated(t *testing.T, dir, date string, args ...string) {
+	t.Helper()
+	env := hermeticGitEnv(t)
+	env = append(env, "GIT_AUTHOR_DATE="+date, "GIT_COMMITTER_DATE="+date)
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	cmd.Env = env
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, out)
 	}
@@ -296,4 +419,40 @@ func hermeticGitEnv(t *testing.T) []string {
 		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t",
 		"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t",
 	)
+}
+
+func TestDebugChangedPaths(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH")
+	}
+	dir := initIntentRepo(t)
+	runGit(t, dir, "mv", "protected.txt", "renamed.txt")
+	runGit(t, dir, "commit", "-q", "-m", "rename protected")
+	base := gitRev(t, dir, "HEAD~1")
+	head := gitRev(t, dir, "HEAD")
+	t.Logf("base=%s head=%s", base, head)
+	cmd := exec.Command("git", "log", "--oneline", "-3")
+	cmd.Dir = dir
+	cmd.Env = hermeticGitEnv(t)
+	out, _ := cmd.CombinedOutput()
+	t.Logf("log:\n%s", out)
+	r, _ := newExecGitIn(dir)
+	mb, paths, err := r.ChangedPaths(context.Background(), base, head)
+	t.Logf("mb=%q paths=%v err=%v", mb, paths, err)
+}
+
+func TestDebugDashDirect(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH")
+	}
+	dir := t.TempDir()
+	g, err := newExecGitIn(dir)
+	if err != nil {
+		t.Fatalf("newExecGitIn: %v", err)
+	}
+	out, err := g.(*execGit).runGit(context.Background(), gitShow, []string{"--end-of-options"}, "-e:CHANGELOG.md")
+	t.Logf("out=%q err=%v (%T)", string(out), err, err)
+	if err == nil || !strings.Contains(err.Error(), "begins with") {
+		t.Fatalf("no refusal: out=%q err=%v", string(out), err)
+	}
 }

@@ -9,8 +9,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+
+	"github.com/peasant-labs/schema/internal/release/intent"
 )
 
 func main() {
@@ -63,6 +66,19 @@ func exitWith(err error) {
 		}
 		fmt.Fprintf(os.Stderr, "%s\n", r.humanMessage())
 		os.Exit(2)
+	}
+	var ie *intent.Error
+	if errors.As(err, &ie) {
+		if r, ok := asReject(rejectAs("release-intent", err)); ok {
+			for _, line := range r.machineLines() {
+				fmt.Println(line)
+			}
+			if path := os.Getenv("GITHUB_OUTPUT"); path != "" {
+				_ = appendOutputFile(path, r.machineLines())
+			}
+			fmt.Fprintf(os.Stderr, "%s\n", r.humanMessage())
+			os.Exit(2)
+		}
 	}
 	if u, ok := asUsage(err); ok {
 		fmt.Fprintf(os.Stderr, "release-intent: %s\n", u.Error())

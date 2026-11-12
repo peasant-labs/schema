@@ -8,26 +8,35 @@ import (
 	"github.com/peasant-labs/schema/internal/release/intent"
 )
 
-// RejectError is a rejected input: exit 2 with a machine line and a six-part
-// human message. The code comes from the contract package so the two never
-// drift.
+// RejectError attaches the invoking subcommand to a contract rejection so the
+// human message names the actual command. It wraps *intent.Error instead of
+// copying its fields: the contract package owns the six parts.
 type RejectError struct {
-	Code  intent.ErrorCode
-	What  string
-	Why   string
-	Where string
-	When  string
-	Means string
-	Fix   string
+	Subcommand string
+	Err        *intent.Error
 }
 
-func (e *RejectError) Error() string { return string(e.Code) + ": " + e.What }
+func (e *RejectError) Error() string { return e.Err.Error() }
 
-func (e *RejectError) machineLines() []string { return []string{"error=" + string(e.Code)} }
+func (e *RejectError) Unwrap() error { return e.Err }
+
+func (e *RejectError) machineLines() []string {
+	return []string{"error=" + e.Err.Code.String()}
+}
 
 func (e *RejectError) humanMessage() string {
-	return fmt.Sprintf("title-guard: rejected input %q\n  what:  %s (%s)\n  why:   %s\n  where: %s\n  when:  %s\n  means: %s\n  fix:   %s",
-		e.Code, e.What, e.Code, e.Why, e.Where, e.When, e.Means, e.Fix)
+	return fmt.Sprintf("release-intent %s: rejected %q\n  what:  %s (%s)\n  why:   %s\n  where: %s\n  when:  %s\n  means: %s\n  fix:   %s",
+		e.Subcommand, e.Err.Code, e.Err.What, e.Err.Code, e.Err.Why, e.Err.Where, e.Err.When, e.Err.Means, e.Err.Fix)
+}
+
+// rejectAs wraps a contract rejection with the invoking subcommand for the
+// exit-2 path. Every other error passes through unchanged for exit 1.
+func rejectAs(subcommand string, err error) error {
+	var ie *intent.Error
+	if errors.As(err, &ie) {
+		return &RejectError{Subcommand: subcommand, Err: ie}
+	}
+	return err
 }
 
 // UsageError is a CLI usage failure: exit 1 with an actionable message.
@@ -66,17 +75,4 @@ func requireFlagValue(args []string, i int, flag string) (string, int, error) {
 		return "", i, usageErr("usage: %s requires a value: got flag-like %q (pass a value that does not start with '-')", flag, val)
 	}
 	return val, i + 1, nil
-}
-
-// intentErrorToReject maps a contract error to the command-layer rejection so
-// the machine channel stays error=<code> with exit 2.
-func intentErrorToReject(err error) error {
-	var ie *intent.Error
-	if errors.As(err, &ie) {
-		return &RejectError{
-			Code: ie.Code, What: ie.What, Why: ie.Why,
-			Where: ie.Where, When: ie.When, Means: ie.Means, Fix: ie.Fix,
-		}
-	}
-	return err
 }

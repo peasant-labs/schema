@@ -51,34 +51,34 @@ func runQueueGate(args []string) error {
 	}
 	snapshot, err := intent.DecodeQueueResponse(data)
 	if err != nil {
-		return intentErrorToReject(err)
+		return rejectAs("queue-gate", err)
 	}
-	cfg, err := intent.LoadConfig(DefaultConfigPath)
+	cfgData, err := os.ReadFile(DefaultConfigPath)
 	if err != nil {
-		return fmt.Errorf("queue-gate: cannot read release config %q for the hold rule: %w", DefaultConfigPath, err)
+		return configReadError(DefaultConfigPath, "", err)
 	}
-	current, err := queueCurrent()
+	cfg, err := intent.ParseConfig(cfgData)
+	if err != nil {
+		return rejectAs("queue-gate", configInvalidError(DefaultConfigPath, err))
+	}
+	current, err := queueCurrent(cfg)
 	if err != nil {
 		return err
 	}
-	gate, err := intent.QueueGate(cfg, current, snapshot.Entries, releasePR)
+	gate, err := intent.QueueGate(cfg, current, snapshot, releasePR)
 	if err != nil {
-		return intentErrorToReject(err)
+		return rejectAs("queue-gate", err)
 	}
 	return emitLines([]string{"gate=" + gate.String()})
 }
 
 // queueCurrent reads the current version from git tags for the hold rule. A
 // read failure exits 1 with no gate line: nothing is armed or disarmed.
-func queueCurrent() (intent.SemVer, error) {
+func queueCurrent(cfg intent.Config) (intent.SemVer, error) {
 	ctx := context.Background()
 	runner, err := newExecGit()
 	if err != nil {
 		return "", err
-	}
-	cfg, err := intent.LoadConfig(DefaultConfigPath)
-	if err != nil {
-		return "", fmt.Errorf("queue-gate: cannot read release config %q for the hold rule: %w", DefaultConfigPath, err)
 	}
 	tags, err := runner.Tags(ctx, cfg.TagPrefix)
 	if err != nil {

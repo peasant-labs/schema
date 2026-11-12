@@ -1,0 +1,32 @@
+required_names:
+  - dash-e
+  - dash-dash-upload-pack
+  - dash-dash-output
+  - dash-lone
+
+cases:
+  cases:
+    - name: dash-e
+      input: {arg: "-e"}
+      expected: {refusal: "begins with '-'"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "structured git argv rejects leading-dash refs before exec"}
+      mutation: {description: "A short flag injection attempt is refused with the actionable message."}
+    - name: dash-dash-upload-pack
+      input: {arg: "--upload-pack=touch /tmp/pwned"}
+      expected: {refusal: "begins with '-'"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "structured git argv rejects leading-dash refs before exec"}
+      mutation: {description: "An upload-pack option injection attempt is refused with the actionable message."}
+    - name: dash-dash-output
+      input: {arg: "--output=x"}
+      expected: {refusal: "begins with '-'"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "structured git argv rejects leading-dash refs before exec"}
+      mutation: {description: "A long-option injection attempt is refused with the actionable message."}
+    - name: dash-lone
+      input: {arg: "-"}
+      expected: {refusal: "begins with '-'"}
+      classification: must-pass
+      provenance: {source: boundary, ref: "a lone dash is not a valid ref and is refused the same way"}
+      mutation: {description: "A lone dash is refused with the actionable message."}

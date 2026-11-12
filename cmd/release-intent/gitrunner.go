@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -14,18 +13,23 @@ import (
 type GitRunner interface {
 	// FirstParent returns first-parent commits from ref, newest first.
 	FirstParent(ctx context.Context, ref string, changelog string) ([]Commit, error)
-	// Tags returns tag name to peeled commit for tags with the given prefix.
+	// Tags returns tag name to peeled commit for tags with the given prefix in
+	// one git call.
 	Tags(ctx context.Context, prefix string) (map[string]string, error)
-	// FirstCommitAdding returns the oldest commit that adds path, or "".
-	FirstCommitAdding(ctx context.Context, path string) (string, error)
-	// ChangedPaths returns paths differing between the merge base of base and
-	// head against head, with no rename detection so a renamed protected file
-	// surfaces as both names.
-	ChangedPaths(ctx context.Context, base, head string) ([]string, error)
-	// ReadFile returns the bytes of path at rev.
+	// FirstCommitAdding returns the oldest commit on branch's first-parent
+	// history that adds path, or "" when no commit on that chain adds it.
+	FirstCommitAdding(ctx context.Context, branch, path string) (string, error)
+	// ChangedPaths diffs the merge base of base and head against head, with no
+	// rename detection so a renamed protected file surfaces as both names. It
+	// fails only when the two revisions share no merge base.
+	ChangedPaths(ctx context.Context, base, head string) (mergeBase string, paths []string, err error)
+	// ReadFile returns the bytes of path at rev, or a NotFoundError when the
+	// path is absent at that revision.
 	ReadFile(ctx context.Context, rev, path string) ([]byte, error)
-	// IsAncestor reports whether ancestor is an ancestor of descendant.
-	IsAncestor(ctx context.Context, ancestor, descendant string) (bool, error)
+	// MergeTree reports whether branch tip merges into current cleanly. A nil
+	// error means the merge tree was written; a conflict or a read failure
+	// returns an error.
+	MergeTree(ctx context.Context, tip, current string) error
 }
 
 // Commit is one first-parent commit: its SHA, its subject line, whether it
@@ -43,24 +47,26 @@ type Commit struct {
 type gitSubcommand string
 
 const (
-	gitRevList   gitSubcommand = "rev-list"
-	gitTag       gitSubcommand = "tag"
-	gitMergeBase gitSubcommand = "merge-base"
-	gitLog       gitSubcommand = "log"
-	gitDiff      gitSubcommand = "diff"
-	gitShow      gitSubcommand = "show"
-	gitCatFile   gitSubcommand = "cat-file"
+	gitRevList    gitSubcommand = "rev-list"
+	gitMergeBase  gitSubcommand = "merge-base"
+	gitLog        gitSubcommand = "log"
+	gitDiff       gitSubcommand = "diff"
+	gitShow       gitSubcommand = "show"
+	gitLsTree     gitSubcommand = "ls-tree"
+	gitForEachRef gitSubcommand = "for-each-ref"
+	gitMergeTree  gitSubcommand = "merge-tree"
 )
 
 // allowedGitSubcommands is the allowlist enforced by runGit.
 var allowedGitSubcommands = map[gitSubcommand]bool{
-	gitRevList:   true,
-	gitTag:       true,
-	gitMergeBase: true,
-	gitLog:       true,
-	gitDiff:      true,
-	gitShow:      true,
-	gitCatFile:   true,
+	gitRevList:    true,
+	gitMergeBase:  true,
+	gitLog:        true,
+	gitDiff:       true,
+	gitShow:       true,
+	gitLsTree:     true,
+	gitForEachRef: true,
+	gitMergeTree:  true,
 }
 
 // execGit is the production GitRunner.
@@ -90,82 +96,61 @@ func newExecGitIn(dir string) (GitRunner, error) {
 	return g, nil
 }
 
-// runGit builds and runs `git <sub> <fixedFlags...> [--end-of-options|-- <dynArgs...>]`.
+// dashRefusal is the single refusal for a dynamic git argument that begins
+// with '-'. Both runGit and the read path that probes before reading use it,
+// so a hostile value never executes and never surfaces as a blob error.
+func dashRefusal(arg string, sub gitSubcommand) error {
+	return fmt.Errorf("git runner: refusing to pass %q to `git %s`: a ref/tag/SHA/pattern/path that begins with '-' could be interpreted as a git option instead of a revision. Pass a value that does not start with '-'", arg, sub)
+}
+
+// runGit builds and runs `git <sub> <fixedFlags...> <dynArgs...>` with no
+// shell. Callers place `--end-of-options` in fixedFlags where git supports it
+// (before revisions) and `--` before paths, so a leading-dash dynamic value
+// can never become an option: the dash check below refuses it first anyway.
 func (g *execGit) runGit(ctx context.Context, sub gitSubcommand, fixedFlags []string, dynArgs ...string) ([]byte, error) {
 	if !allowedGitSubcommands[sub] {
 		return nil, fmt.Errorf("git runner: subcommand %q is not in the release-intent allowlist; refusing to run it. This is a programming error in release-intent, not a user input issue", sub)
 	}
 	for _, a := range dynArgs {
-		if strings.HasPrefix(a, "-") {
-			return nil, fmt.Errorf("git runner: refusing to pass %q to `git %s`: a ref/tag/SHA/pattern/path that begins with '-' could be interpreted as a git option instead of a revision. Pass a value that does not start with '-'", a, sub)
+		if a != "--" && strings.HasPrefix(a, "-") {
+			return nil, dashRefusal(a, sub)
 		}
 	}
-	argv := make([]string, 0, len(fixedFlags)+len(dynArgs)+2)
+	argv := make([]string, 0, len(fixedFlags)+len(dynArgs)+1)
 	argv = append(argv, string(sub))
 	argv = append(argv, fixedFlags...)
-	// Revision-safe sentinel for rev-list/merge-base/log; path separator for
-	// diff/show/cat-file paths is added by the caller via "--".
-	if sub == gitDiff || sub == gitShow || sub == gitCatFile || sub == gitLog {
-		argv = append(argv, dynArgs...)
-	} else {
-		argv = append(argv, "--end-of-options")
-		argv = append(argv, dynArgs...)
-	}
+	argv = append(argv, dynArgs...)
 	cmd := exec.CommandContext(ctx, g.gitPath, argv...)
 	cmd.Dir = g.dir
 	return cmd.Output()
 }
 
-func (g *execGit) RevParse(ctx context.Context, ref string) (string, error) {
-	out, err := g.runGit(ctx, gitRevList, []string{"-n", "1"}, ref)
-	if err != nil {
-		return "", fmt.Errorf("git runner: cannot resolve %q via `git rev-list -n 1`: %w. Confirm the ref exists in this checkout", ref, err)
-	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-func (g *execGit) ListTags(ctx context.Context, pattern string) ([]string, error) {
-	out, err := g.runGit(ctx, gitTag, []string{"--list"}, pattern)
-	if err != nil {
-		return nil, fmt.Errorf("git runner: cannot list tags matching %q via `git tag --list`: %w. Confirm the checkout has tags fetched", pattern, err)
-	}
-	var tags []string
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		if t := strings.TrimSpace(line); t != "" {
-			tags = append(tags, t)
-		}
-	}
-	return tags, nil
-}
-
-// IsAncestor distinguishes a definitive negative (exit 1) from a real failure.
-func (g *execGit) IsAncestor(ctx context.Context, ancestor, descendant string) (bool, error) {
-	_, err := g.runGit(ctx, gitMergeBase, []string{"--is-ancestor"}, ancestor, descendant)
-	if err == nil {
-		return true, nil
-	}
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-		return false, nil
-	}
-	return false, fmt.Errorf("git runner: cannot determine whether %q is an ancestor of %q via `git merge-base --is-ancestor`: %w. Treat this as not-an-ancestor and investigate the git error", ancestor, descendant, err)
-}
-
-// FirstParent lists first-parent commits newest first with changelog touch info
-// and commit dates.
+// FirstParent lists every first-parent commit newest first. The changelog set
+// comes from a second call so an empty commit is still listed: history
+// simplification on the first call would drop it.
 func (g *execGit) FirstParent(ctx context.Context, ref string, changelog string) ([]Commit, error) {
-	// Format: SHA, subject, date, then names touched. Use NUL separators that
-	// subjects cannot contain unescaped; the date is %cs (committer date
-	// short YYYY-MM-DD) for dated changelog headings.
-	out, err := g.runGit(ctx, gitLog, []string{"--first-parent", "--format=%H%x00%s%x00%cs", "--name-only", ref, "--", changelog, "."})
+	// Format: SHA, subject, committer date. Use NUL separators that subjects
+	// cannot contain unescaped; the date is %cs (committer date short
+	// YYYY-MM-DD) for dated changelog headings.
+	out, err := g.runGit(ctx, gitLog, []string{"--first-parent", "--format=%H%x00%s%x00%cs", "--end-of-options"}, ref)
 	if err != nil {
-		out2, err2 := g.runGit(ctx, gitLog, []string{"--first-parent", "--format=%H%x00%s%x00%cs", ref, "--"})
-		if err2 != nil {
-			return nil, fmt.Errorf("git runner: cannot list first-parent commits of %q via `git log --first-parent`: %w. Confirm the ref exists", ref, err)
-		}
-		return parseLogCommits(string(out2)), nil
+		return nil, fmt.Errorf("git runner: cannot list first-parent commits of %q via `git log --first-parent`: %w. Confirm the ref exists in this checkout", ref, err)
 	}
-	return parseLogCommitsWithNames(string(out), changelog), nil
+	commits := parseLogCommits(string(out))
+	names, err := g.runGit(ctx, gitLog, []string{"--first-parent", "--format=%H", "--end-of-options"}, ref, "--", changelog)
+	if err != nil {
+		return nil, fmt.Errorf("git runner: cannot list the commits touching %q via `git log --first-parent`: %w. Confirm the ref exists in this checkout", changelog, err)
+	}
+	touched := map[string]bool{}
+	for _, line := range strings.Split(string(names), "\n") {
+		if t := strings.TrimSpace(line); t != "" {
+			touched[t] = true
+		}
+	}
+	for i := range commits {
+		commits[i].ChangesChangelog = touched[commits[i].SHA]
+	}
+	return commits, nil
 }
 
 func parseLogCommits(out string) []Commit {
@@ -187,61 +172,48 @@ func parseLogCommits(out string) []Commit {
 	return commits
 }
 
-func parseLogCommitsWithNames(out, changelog string) []Commit {
-	var commits []Commit
-	var cur *Commit
-	for _, line := range strings.Split(out, "\n") {
-		if strings.Contains(line, "\x00") {
-			parts := strings.SplitN(line, "\x00", 3)
-			sha := ""
-			subj := ""
-			date := ""
-			if len(parts) > 0 {
-				sha = strings.TrimSpace(parts[0])
-			}
-			if len(parts) > 1 {
-				subj = parts[1]
-			}
-			if len(parts) > 2 {
-				date = strings.TrimSpace(parts[2])
-			}
-			commits = append(commits, Commit{SHA: sha, Subject: subj, Date: date})
-			cur = &commits[len(commits)-1]
+// Tags resolves every tag with the given prefix to its peeled commit in one
+// git call. Annotated tags peel to their commit; lightweight tags resolve
+// directly. A prefix that begins with '-' is refused before exec: it would
+// otherwise become a hostile pattern argument.
+func (g *execGit) Tags(ctx context.Context, prefix string) (map[string]string, error) {
+	if strings.HasPrefix(prefix, "-") {
+		return nil, dashRefusal(prefix, gitForEachRef)
+	}
+	out, err := g.runGit(ctx, gitForEachRef, []string{"--format=%(refname:strip=2)%00%(*objectname)%00%(objectname)", "--end-of-options"}, "refs/tags/"+prefix+"*")
+	if err != nil {
+		return nil, fmt.Errorf("git runner: cannot list tags with prefix %q via `git for-each-ref`: %w. Confirm the checkout has tags fetched", prefix, err)
+	}
+	resolved := make(map[string]string)
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		if cur != nil && strings.TrimSpace(line) == changelog {
-			cur.ChangesChangelog = true
+		parts := strings.Split(line, "\x00")
+		if len(parts) != 3 {
+			continue
+		}
+		name, peeled, object := parts[0], strings.TrimSpace(parts[1]), strings.TrimSpace(parts[2])
+		if name == "" || object == "" {
+			continue
+		}
+		if peeled != "" {
+			resolved[name] = peeled
+		} else {
+			resolved[name] = object
 		}
 	}
-	return commits
+	return resolved, nil
 }
 
-// Tags resolves every tag matching prefix to its peeled commit.
-func (g *execGit) Tags(ctx context.Context, prefix string) (map[string]string, error) {
-	tags, err := g.ListTags(ctx, prefix+"*")
+// FirstCommitAdding returns the oldest commit on branch's first-parent history
+// that adds path, or "" when no commit on that chain adds it. With
+// --first-parent, a merge commit that brings the file in counts as the adding
+// commit.
+func (g *execGit) FirstCommitAdding(ctx context.Context, branch, path string) (string, error) {
+	out, err := g.runGit(ctx, gitLog, []string{"--first-parent", "--diff-filter=A", "--format=%H", "--end-of-options"}, branch, "--", path)
 	if err != nil {
-		return nil, err
-	}
-	out := make(map[string]string, len(tags))
-	for _, t := range tags {
-		sha, err := g.RevParse(ctx, t+"^{commit}")
-		if err != nil {
-			// Annotated vs lightweight: fall back to the ref itself.
-			sha, err = g.RevParse(ctx, t)
-			if err != nil {
-				return nil, fmt.Errorf("git runner: cannot peel tag %q to a commit: %w. Confirm the tag exists", t, err)
-			}
-		}
-		out[t] = sha
-	}
-	return out, nil
-}
-
-// FirstCommitAdding returns the oldest commit adding path, or "" when none.
-func (g *execGit) FirstCommitAdding(ctx context.Context, path string) (string, error) {
-	out, err := g.runGit(ctx, gitLog, []string{"--diff-filter=A", "--format=%H", "--"}, path)
-	if err != nil {
-		return "", fmt.Errorf("git runner: cannot find the commit adding %q via `git log --diff-filter=A`: %w", path, err)
+		return "", fmt.Errorf("git runner: cannot find the commit adding %q on %q via `git log --first-parent --diff-filter=A`: %w", path, branch, err)
 	}
 	var last string
 	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
@@ -252,67 +224,84 @@ func (g *execGit) FirstCommitAdding(ctx context.Context, path string) (string, e
 	return last, nil
 }
 
-// ChangedPaths diffs merge-base(base,head) against head with no rename
-// detection. A renamed protected file appears as both names so either side is
-// caught. A base that is not an ancestor of head is a distinct typed failure.
-func (g *execGit) ChangedPaths(ctx context.Context, base, head string) ([]string, error) {
-	isAnc, err := g.IsAncestor(ctx, base, head)
+// ChangedPaths diffs the merge base of base and head against head with no
+// rename detection. A renamed protected file appears as both names so either
+// side is caught. A base that shares no history with head is an error: there
+// is no merge base to diff.
+func (g *execGit) ChangedPaths(ctx context.Context, base, head string) (string, []string, error) {
+	out, err := g.runGit(ctx, gitMergeBase, []string{"--end-of-options"}, base, head)
 	if err != nil {
-		return nil, err
+		return "", nil, fmt.Errorf("git runner: base %q shares no history with head %q (no merge base via `git merge-base`): the PR range needs a merge base. Rebase the PR onto the base branch or pass revisions with shared history: %v", base, head, err)
 	}
-	if !isAnc {
-		// Fall back to a direct merge-base probe: when base and head share no
-		// history, report base-not-on-chain distinctly from a git failure.
-		return nil, &BaseNotAncestorError{Base: base, Head: head}
-	}
-	mb, err := g.mergeBase(ctx, base, head)
+	mb := strings.TrimSpace(string(out))
+	diff, err := g.runGit(ctx, gitDiff, []string{"--name-only", "--no-renames", "--end-of-options", mb, head, "--"})
 	if err != nil {
-		return nil, err
-	}
-	out, err := g.runGit(ctx, gitDiff, []string{"--name-only", "--no-renames", mb, head, "--"})
-	if err != nil {
-		return nil, fmt.Errorf("git runner: cannot diff %q against %q via `git diff --name-only --no-renames`: %w. Confirm both revisions exist", mb, head, err)
+		return "", nil, fmt.Errorf("git runner: cannot diff %q against %q via `git diff --name-only --no-renames`: %w. Confirm both revisions exist", mb, head, err)
 	}
 	var paths []string
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+	for _, line := range strings.Split(strings.TrimSpace(string(diff)), "\n") {
 		if t := strings.TrimSpace(line); t != "" {
 			paths = append(paths, t)
 		}
 	}
-	return paths, nil
+	return mb, paths, nil
 }
 
-func (g *execGit) mergeBase(ctx context.Context, a, b string) (string, error) {
-	out, err := g.runGit(ctx, gitMergeBase, []string{}, a, b)
-	if err != nil {
-		return "", fmt.Errorf("git runner: cannot find merge base of %q and %q via `git merge-base`: %w", a, b, err)
+// MergeTree reports whether tip merges into current without conflict by
+// computing the write tree. A nil error means the merge is clean.
+func (g *execGit) MergeTree(ctx context.Context, tip, current string) error {
+	if _, err := g.runGit(ctx, gitMergeTree, []string{"--write-tree", "--end-of-options"}, tip, current); err != nil {
+		return fmt.Errorf("git runner: tip %q does not merge into %q cleanly (via `git merge-tree --write-tree`): %w. Rebuild the release branch from the tip", tip, current, err)
 	}
-	return strings.TrimSpace(string(out)), nil
+	return nil
 }
 
-// ReadFile returns path at rev via `git show rev:path`.
+// ReadFile returns path at rev. A path absent at rev yields NotFoundError;
+// every other failure yields BlobReadError, so callers fail closed on fetch
+// errors and never treat them as absent. A hostile rev is refused before any
+// git call, never wrapped as a blob error.
 func (g *execGit) ReadFile(ctx context.Context, rev, path string) ([]byte, error) {
 	if strings.Contains(path, ":") || strings.HasPrefix(path, "/") || strings.Contains(path, "..") {
 		return nil, fmt.Errorf("git runner: refusing to read path %q at %q: paths must be repo-relative and must not escape via .. or absolute form", path, rev)
 	}
-	out, err := g.runGit(ctx, gitShow, []string{}, rev+":"+path)
+	if strings.HasPrefix(rev+":"+path, "-") {
+		return nil, dashRefusal(rev+":"+path, gitShow)
+	}
+	out, err := g.runGit(ctx, gitShow, []string{"--end-of-options"}, rev+":"+path)
 	if err != nil {
+		if g.pathAbsent(ctx, rev, path) {
+			return nil, &NotFoundError{Rev: rev, Path: path}
+		}
 		return nil, &BlobReadError{Rev: rev, Path: path, Err: err}
 	}
 	return out, nil
 }
 
-// BaseNotAncestorError means base is not on head's history.
-type BaseNotAncestorError struct {
-	Base string
-	Head string
+// pathAbsent reports whether path is absent at rev. It uses ls-tree so an
+// absent path is structural (empty output, exit 0), never a message match.
+func (g *execGit) pathAbsent(ctx context.Context, rev, path string) bool {
+	out, err := g.runGit(ctx, gitLsTree, []string{"--end-of-options"}, rev, "--", path)
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(out)) == ""
 }
 
-func (e *BaseNotAncestorError) Error() string {
-	return fmt.Sprintf("git runner: base %q is not an ancestor of head %q (checked via `git merge-base --is-ancestor`): the PR range has no merge base. Rebase the PR onto the base branch or pass a base on its history", e.Base, e.Head)
+// NotFoundError means the path is absent at the revision. Callers treat this
+// as "no file here" (for example the adopting PR has no base config); every
+// other read failure is a BlobReadError and must fail closed.
+type NotFoundError struct {
+	Rev  string
+	Path string
 }
 
-// BlobReadError means the blob could not be read (missing file, failed fetch).
+func (e *NotFoundError) Error() string {
+	return fmt.Sprintf("git runner: path %q is absent at %q: the revision has no such blob. A PR that adds the file legitimately reads this way; any other missing-blob read is a checkout problem", e.Path, e.Rev)
+}
+
+// BlobReadError means the blob could not be read (failed on-demand fetch in a
+// blobless clone, unreadable object, or bad revision). It must fail closed,
+// never be treated as absent.
 type BlobReadError struct {
 	Rev  string
 	Path string

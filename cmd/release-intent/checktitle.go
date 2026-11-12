@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -84,21 +84,13 @@ func readTitleStdin() (string, error) {
 		return "", usageErr("usage: release-intent check-title reads the PR title on stdin (got a terminal): pipe the title, e.g. echo 'feat(x)[minor]: ...' | release-intent check-title --base REV --head REV --author LOGIN --head-branch BRANCH")
 	}
 	sc := bufio.NewScanner(os.Stdin)
-	var lines []string
 	for sc.Scan() {
-		lines = append(lines, sc.Text())
+		if t := strings.TrimSpace(sc.Text()); t != "" {
+			return t, nil
+		}
 	}
 	if err := sc.Err(); err != nil {
 		return "", fmt.Errorf("check-title: cannot read the PR title on stdin: %v", err)
-	}
-	for _, l := range lines {
-		if strings.TrimSpace(l) != "" {
-			t := strings.TrimSpace(l)
-			if idx := strings.LastIndex(t, " (#"); idx >= 0 && strings.HasSuffix(t, ")") {
-				t = strings.TrimSpace(t[:idx])
-			}
-			return t, nil
-		}
 	}
 	return "", usageErr("usage: release-intent check-title reads the PR title on stdin (got empty input): pipe the title, e.g. echo 'feat(x)[minor]: ...' | release-intent check-title --base REV --head REV --author LOGIN --head-branch BRANCH")
 }
@@ -107,9 +99,13 @@ func checkTitle(ctx context.Context, runner GitRunner, base, head, author, headB
 	cfgData, err := runner.ReadFile(ctx, base, DefaultConfigPath)
 	adopting := false
 	if err != nil {
+		var nf *NotFoundError
+		if !errors.As(err, &nf) {
+			return fmt.Errorf("check-title: cannot read release config %q at base %q: %v. Confirm the base revision is readable; only a missing file means the adopting PR", DefaultConfigPath, base, err)
+		}
 		headData, herr := runner.ReadFile(ctx, head, DefaultConfigPath)
 		if herr != nil {
-			return fmt.Errorf("check-title: cannot read release config %q at base %q or head %q: base read: %v; head read: %v. Confirm the base branch carries the config, or that this is the adopting PR adding it", DefaultConfigPath, base, head, err, herr)
+			return fmt.Errorf("check-title: cannot read release config %q at base %q or head %q: base has no file; head read: %v. Confirm the head revision carries the config the adopting PR adds", DefaultConfigPath, base, head, herr)
 		}
 		cfgData = headData
 		adopting = true
@@ -128,31 +124,29 @@ func checkTitle(ctx context.Context, runner GitRunner, base, head, author, headB
 		current = version
 	}
 	if _, perr := intent.ParseTitle(cfg, current, title); perr != nil {
-		return intentErrorToReject(perr)
+		return rejectAs("check-title", perr)
 	}
 	if !adopting {
-		paths, err := runner.ChangedPaths(ctx, base, head)
+		mergeBase, paths, err := runner.ChangedPaths(ctx, base, head)
 		if err != nil {
-			if _, ok := err.(*BaseNotAncestorError); ok {
-				return fmt.Errorf("check-title: %v", err)
-			}
 			return fmt.Errorf("check-title: cannot read the PR change between %q and %q: %w", base, head, err)
 		}
-		changes, cerr := buildProtectedChanges(ctx, runner, cfg, base, head, paths)
+		changes, cerr := buildProtectedChanges(ctx, runner, cfg, mergeBase, head, paths)
 		if cerr != nil {
 			return cerr
 		}
 		isReleasePR := intent.ClassifyPR(cfg, author, headBranch) == intent.PRKindRelease
 		if cerr := intent.CheckProtectedPaths(cfg, changes, isReleasePR); cerr != nil {
-			return intentErrorToReject(cerr)
+			return rejectAs("check-title", cerr)
 		}
 	}
 	return emitLines([]string{"error="})
 }
 
-// buildProtectedChanges reads the protected version field at both ends for
-// every touched version file. Unreadable or unparsable JSON fails closed by
-// marking the field changed.
+// buildProtectedChanges reads the protected version field at the merge base
+// and at head for every touched version file. A corrupt file fails closed;
+// any other blob read error exits 1 and never becomes an accept or a stale
+// verdict.
 func buildProtectedChanges(ctx context.Context, runner GitRunner, cfg intent.Config, base, head string, paths []string) ([]intent.ProtectedChange, error) {
 	changed := map[string]bool{}
 	for _, p := range paths {
@@ -166,54 +160,54 @@ func buildProtectedChanges(ctx context.Context, runner GitRunner, cfg intent.Con
 		if !changed[vf.Path] {
 			continue
 		}
-		baseField, berr := readVersionField(ctx, runner, base, vf.Path, vf.Field)
-		headField, herr := readVersionField(ctx, runner, head, vf.Path, vf.Field)
-		fieldChanged := baseField != headField
-		if berr != nil || herr != nil {
-			if isJSONError(berr) || isJSONError(herr) {
-				fieldChanged = true
-			} else if berr != nil && herr != nil {
-				fieldChanged = baseField != headField
-			} else {
-				fieldChanged = true
-			}
+		baseVal, baseCorrupt, berr := readProtectedField(ctx, runner, base, vf.Path, vf.Field)
+		if berr != nil {
+			return nil, berr
+		}
+		headVal, headCorrupt, herr := readProtectedField(ctx, runner, head, vf.Path, vf.Field)
+		if herr != nil {
+			return nil, herr
+		}
+		if baseCorrupt || headCorrupt {
+			return nil, rejectAs("check-title", protectedFieldError(vf.Path))
 		}
 		for i := range out {
 			if out[i].Path == vf.Path {
-				out[i].ProtectedFieldChanged = fieldChanged
+				out[i].ProtectedFieldChanged = baseVal != headVal
 			}
 		}
 	}
 	return out, nil
 }
 
-func readVersionField(ctx context.Context, runner GitRunner, rev, path, field string) (string, error) {
+// readProtectedField returns the protected field value and whether the file
+// is corrupt. Blob read failures (other than absent, which reads as empty)
+// are errors for exit 1.
+func readProtectedField(ctx context.Context, runner GitRunner, rev, path, field string) (string, bool, error) {
 	data, err := runner.ReadFile(ctx, rev, path)
 	if err != nil {
-		return "", err
+		var nf *NotFoundError
+		if errors.As(err, &nf) {
+			return "", false, nil
+		}
+		return "", false, fmt.Errorf("check-title: cannot read version file %q at %q: %v. Confirm the revision is readable; a failed fetch is never an accept", path, rev, err)
 	}
-	var obj map[string]any
-	if err := json.Unmarshal(data, &obj); err != nil {
-		return "", &jsonParseError{Path: path, Rev: rev, Err: err}
-	}
-	v, _ := obj[field].(string)
-	return v, nil
+	val, corrupt := versionFieldValue(data, field)
+	return val, corrupt, nil
 }
 
-type jsonParseError struct {
-	Path string
-	Rev  string
-	Err  error
-}
-
-func (e *jsonParseError) Error() string {
-	return fmt.Sprintf("cannot parse %q at %q as JSON: %v", e.Path, e.Rev, e.Err)
-}
-
-func isJSONError(err error) bool {
-	if err == nil {
-		return false
+func protectedFieldError(path string) error {
+	return &intent.Error{
+		Code:  intent.ErrProtectedPath,
+		What:  "version file " + strconvQuote(path) + " does not parse as JSON",
+		Why:   "the protected field cannot be compared when the file does not parse, so the PR fails closed",
+		Where: "PR change, checked by release-intent check-title",
+		When:  "pull_request opened, edited, synchronize, reopened, or the merge-group build",
+		Means: "the title-guard check is red, so the merge queue will not accept this PR",
+		Fix:   "fix the JSON in " + path + " or drop the edit",
 	}
-	_, ok := err.(*jsonParseError)
-	return ok
+}
+
+func strconvQuote(s string) string {
+	return "\"" + strings.ReplaceAll(s, "\"", "\\\"") + "\""
 }
