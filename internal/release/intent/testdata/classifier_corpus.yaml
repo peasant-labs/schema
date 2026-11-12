@@ -1,0 +1,60 @@
+# PR classifier corpus: rows of intent.ClassifyPR. The branch names ride in
+# each input so the corpus pins the branch-per-kind contract, not one file.
+required_names:
+  - bot-on-release-branch
+  - author-on-release-branch
+  - bot-on-unknown-branch
+  - empty-author
+  - bot-on-vendor-branch
+  - bot-on-cut-branch
+  - author-on-cut-branch
+  - empty-branch
+cases:
+  - name: bot-on-release-branch
+    input: {author: "peasant-labs-releaser[bot]", head_branch: "automation/release", automation_author: "peasant-labs-releaser[bot]", release_branch: "automation/release", vendor_branch: "automation/vendor-hash", cut_branch: "automation/cut-release"}
+    expected: {kind: "release"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "classifier: the automation author on the release branch is the release PR"}
+    mutation: {description: "the standing release PR"}
+  - name: author-on-release-branch
+    input: {author: "alice", head_branch: "automation/release", automation_author: "peasant-labs-releaser[bot]", release_branch: "automation/release", vendor_branch: "automation/vendor-hash", cut_branch: "automation/cut-release"}
+    expected: {kind: "ordinary"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "classifier: the author matters as well as the branch"}
+    mutation: {description: "an author reusing the release branch name"}
+  - name: bot-on-unknown-branch
+    input: {author: "peasant-labs-releaser[bot]", head_branch: "automation/unknown", automation_author: "peasant-labs-releaser[bot]", release_branch: "automation/release", vendor_branch: "automation/vendor-hash", cut_branch: "automation/cut-release"}
+    expected: {kind: "ordinary"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "classifier: an unlisted bot branch is an ordinary PR"}
+    mutation: {description: "a bot PR outside the listed branches"}
+  - name: empty-author
+    input: {author: "", head_branch: "automation/release", automation_author: "peasant-labs-releaser[bot]", release_branch: "automation/release", vendor_branch: "automation/vendor-hash", cut_branch: "automation/cut-release"}
+    expected: {kind: "ordinary"}
+    classification: must-pass
+    provenance: {source: boundary, ref: "classifier: an empty author never matches"}
+    mutation: {description: "cleared the author"}
+  - name: bot-on-vendor-branch
+    input: {author: "peasant-labs-releaser[bot]", head_branch: "automation/vendor-hash", automation_author: "peasant-labs-releaser[bot]", release_branch: "automation/release", vendor_branch: "automation/vendor-hash", cut_branch: "automation/cut-release"}
+    expected: {kind: "vendor-hash"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "classifier: the vendor-hash PR has its own kind"}
+    mutation: {description: "the dependency-hash fix PR"}
+  - name: bot-on-cut-branch
+    input: {author: "peasant-labs-releaser[bot]", head_branch: "automation/cut-release", automation_author: "peasant-labs-releaser[bot]", release_branch: "automation/release", vendor_branch: "automation/vendor-hash", cut_branch: "automation/cut-release"}
+    expected: {kind: "cut-release"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "classifier: the cut-release PR has its own kind"}
+    mutation: {description: "the forced-release PR"}
+  - name: author-on-cut-branch
+    input: {author: "bob", head_branch: "automation/cut-release", automation_author: "peasant-labs-releaser[bot]", release_branch: "automation/release", vendor_branch: "automation/vendor-hash", cut_branch: "automation/cut-release"}
+    expected: {kind: "ordinary"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "classifier: a non-bot author never classifies as a bot PR"}
+    mutation: {description: "an author reusing the cut-release branch name"}
+  - name: empty-branch
+    input: {author: "peasant-labs-releaser[bot]", head_branch: "", automation_author: "peasant-labs-releaser[bot]", release_branch: "automation/release", vendor_branch: "automation/vendor-hash", cut_branch: "automation/cut-release"}
+    expected: {kind: "ordinary"}
+    classification: must-pass
+    provenance: {source: boundary, ref: "classifier: an empty branch never matches"}
+    mutation: {description: "cleared the branch"}

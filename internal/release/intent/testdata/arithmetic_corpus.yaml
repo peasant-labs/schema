@@ -1,0 +1,80 @@
+# Version arithmetic corpus: rows of intent.NextVersion.
+required_names:
+  - patch-below-1
+  - minor-below-1
+  - breaking-below-1-moves-middle
+  - patch-from-1
+  - minor-from-1
+  - breaking-from-1-moves-first
+  - no-release-returns-base
+  - patch-batch-step
+  - minor-batch-step
+  - major-below-1-never-mints-1
+  - bad-base-is-an-error
+cases:
+  - name: patch-below-1
+    input: {base: "0.0.66", level: "patch", breaking: false}
+    expected: {next: "0.0.67"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: a patch advances the last number"}
+    mutation: {description: "a patch batch below 1.0"}
+  - name: minor-below-1
+    input: {base: "0.0.66", level: "minor", breaking: false}
+    expected: {next: "0.1.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: a minor advances the middle number"}
+    mutation: {description: "a minor batch below 1.0"}
+  - name: breaking-below-1-moves-middle
+    input: {base: "0.0.66", level: "minor", breaking: true}
+    expected: {next: "0.1.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: a break below 1.0 moves the middle number"}
+    mutation: {description: "a declared break below 1.0"}
+  - name: patch-from-1
+    input: {base: "1.2.3", level: "patch", breaking: false}
+    expected: {next: "1.2.4"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: a patch advances the last number from 1.0"}
+    mutation: {description: "a patch batch from 1.0"}
+  - name: minor-from-1
+    input: {base: "1.2.3", level: "minor", breaking: false}
+    expected: {next: "1.3.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: a minor advances the middle number from 1.0"}
+    mutation: {description: "a minor batch from 1.0"}
+  - name: breaking-from-1-moves-first
+    input: {base: "1.2.3", level: "major", breaking: true}
+    expected: {next: "2.0.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: a break from 1.0 moves the first number"}
+    mutation: {description: "a declared break from 1.0"}
+  - name: no-release-returns-base
+    input: {base: "0.1.0", level: "none", breaking: false}
+    expected: {next: "0.1.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: no pending level means no release"}
+    mutation: {description: "an empty pending set"}
+  - name: patch-batch-step
+    input: {base: "0.1.0", level: "patch", breaking: false}
+    expected: {next: "0.1.1"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: sequential batches chain through the tag they mint"}
+    mutation: {description: "the first of two sequential batches"}
+  - name: minor-batch-step
+    input: {base: "0.1.1", level: "minor", breaking: false}
+    expected: {next: "0.2.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: sequential batches chain through the tag they mint"}
+    mutation: {description: "the second of two sequential batches"}
+  - name: major-below-1-never-mints-1
+    input: {base: "0.2.0", level: "major", breaking: false}
+    expected: {next: "0.3.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "arithmetic: no title mints 1.0.0"}
+    mutation: {description: "a major level below 1.0, unreachable through the grammar"}
+  - name: bad-base-is-an-error
+    input: {base: "0.1", level: "patch", breaking: false}
+    expected: {next: ""}
+    classification: must-fail
+    provenance: {source: boundary, ref: "arithmetic: the base is a bare X.Y.Z value"}
+    mutation: {description: "shortened the base version"}
