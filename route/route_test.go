@@ -3,6 +3,7 @@ package route_test
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -196,29 +197,32 @@ type routePathParams struct {
 }
 
 type routePathExpected struct {
-	Go         string `yaml:"go"`
-	TypeScript string `yaml:"typescript"`
+	Go            string `yaml:"go"`
+	TypeScript    string `yaml:"typescript"`
+	ErrorContains string `yaml:"error_contains"`
 }
 
 // routePathBuilders calls the generated builder of each member the fixture
 // names. A member without parameters has no builder; its path is its pattern.
-var routePathBuilders = map[string]func(routePathParams) string{
-	"village/GetPullRequestAttachment": func(p routePathParams) string {
+var routePathBuilders = map[string]func(routePathParams) (string, error){
+	"village/GetPullRequestAttachment": func(p routePathParams) (string, error) {
 		return route.VillageGetPullRequestAttachmentPath(p.Owner, p.Name, p.Number)
 	},
-	"village/GetTranscriptSegment": func(p routePathParams) string {
+	"village/GetTranscriptSegment": func(p routePathParams) (string, error) {
 		return route.VillageGetTranscriptSegmentPath(p.ID, p.Index)
 	},
-	"village/GetTranscriptSegments": func(p routePathParams) string {
+	"village/GetTranscriptSegments": func(p routePathParams) (string, error) {
 		return route.VillageGetTranscriptSegmentsPath(p.ID)
 	},
-	"local/GetHealth":     func(routePathParams) string { return route.LocalGetHealth.Pattern() },
-	"local/GetAttachment": func(p routePathParams) string { return route.LocalGetAttachmentPath(p.Ref) },
-	"local/GetSession":    func(p routePathParams) string { return route.LocalGetSessionPath(p.ID) },
+	"local/GetHealth":     func(routePathParams) (string, error) { return route.LocalGetHealth.Pattern(), nil },
+	"local/GetAttachment": func(p routePathParams) (string, error) { return route.LocalGetAttachmentPath(p.Ref) },
+	"local/GetSession":    func(p routePathParams) (string, error) { return route.LocalGetSessionPath(p.ID) },
 }
 
 // TestPathBuildersFixtures builds each fixture path with the generated Go
-// builder. The TypeScript members read the same file.
+// builder, and requires each must-fail value to be refused with a
+// *route.PathSegmentError naming the operation and the parameter. The
+// TypeScript members read the same file.
 func TestPathBuildersFixtures(t *testing.T) {
 	root := filepath.Join("..", "testdata")
 	raw, err := os.ReadFile(filepath.Join(root, "route_paths.yaml"))
@@ -239,17 +243,38 @@ func TestPathBuildersFixtures(t *testing.T) {
 	used := map[string]bool{}
 	for _, c := range corpus.Cases {
 		t.Run(c.Name, func(t *testing.T) {
-			if c.Classification != testcase.MustPass {
-				t.Fatalf("route_paths.yaml holds built paths only; move a refusal to testdata/typescript/route_path_refusals.yaml")
-			}
 			key := c.Input.API + "/" + c.Input.Member
 			build, ok := routePathBuilders[key]
 			if !ok {
 				t.Fatalf("no Go builder is wired for %s; add it to routePathBuilders", key)
 			}
 			used[key] = true
-			if got := build(c.Input.Params); got != c.Expected.Go {
-				t.Fatalf("%s built %q, want %q", key, got, c.Expected.Go)
+			got, err := build(c.Input.Params)
+			switch c.Classification {
+			case testcase.MustPass:
+				if c.Expected.Go == "" || c.Expected.TypeScript == "" || c.Expected.ErrorContains != "" {
+					t.Fatal("a must-pass case gives the go and typescript paths and no error")
+				}
+				if err != nil {
+					t.Fatalf("%s refused a valid value: %v", key, err)
+				}
+				if got != c.Expected.Go {
+					t.Fatalf("%s built %q, want %q", key, got, c.Expected.Go)
+				}
+			case testcase.MustFail:
+				if c.Expected.ErrorContains == "" || c.Expected.Go != "" || c.Expected.TypeScript != "" {
+					t.Fatal("a must-fail case names an error phrase and no path")
+				}
+				var segmentErr *route.PathSegmentError
+				if !errors.As(err, &segmentErr) {
+					t.Fatalf("%s returned (%q, %v), want a *route.PathSegmentError", key, got, err)
+				}
+				if got != "" {
+					t.Fatalf("%s returned path %q with its error", key, got)
+				}
+				if !strings.Contains(err.Error(), c.Expected.ErrorContains) || !strings.Contains(err.Error(), "pass the identifier") {
+					t.Fatalf("%s refusal %q does not contain %q and the fix", key, err, c.Expected.ErrorContains)
+				}
 			}
 		})
 	}

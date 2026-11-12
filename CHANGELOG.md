@@ -15,15 +15,20 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `MuxPattern()`), a value per operation such as
   `route.VillageGetPullRequestAttachment`, a path builder per operation with
   path parameters such as `route.VillageGetPullRequestAttachmentPath(owner,
-  name string, number int)` (string values escaped with `url.PathEscape`), and
-  the ordered sets `AllVillage` (97) and `AllLocal` (54). TypeScript: the
+  name string, number int) (string, error)` (string values escaped with
+  `url.PathEscape`), and the ordered sets `AllVillage` (97) and `AllLocal`
+  (54). A path builder refuses an empty, `.` or `..` string value with a
+  `*route.PathSegmentError` naming the operationId and the parameter: clients
+  resolve such a segment, so the request would reach a different endpoint.
+  TypeScript: the
   `/village-api` and `/local-api` subpaths export `VillageRoute` and
   `LocalRoute` (for example
   `VillageRoute.GetTranscriptSegments.path({ id })`), `ALL_VILLAGE_ROUTES`,
   `ALL_LOCAL_ROUTES`, the `HttpMethod` set with `ALL_HTTP_METHODS` and
   `isHttpMethod`, and the `RouteMember`, `PathArgs` and `PathParams` types; a
-  missing or extra path parameter is a compile error and values are escaped
-  with `encodeURIComponent`. Deprecated operations carry a deprecation notice
+  missing or extra path parameter is a compile error, values are escaped
+  with `encodeURIComponent`, and `path()` throws a `RangeError` with the same
+  message as Go for an empty, `.` or `..` value. Deprecated operations carry a deprecation notice
   in both languages. No document changes: no spec version moves and no retired
   spec is touched. `AttachmentRoutePath` and `AttachmentRouteOperationID` stay
   and are held equal to `route.LocalGetAttachment`.

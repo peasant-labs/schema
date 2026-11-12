@@ -12,11 +12,13 @@
 //     operationId;
 //   - when the pattern has path parameters, a path builder named
 //     <API><OperationID>Path whose parameters follow the document's order and
-//     types;
+//     types. It returns a *PathSegmentError for a string value that is empty,
+//     "." or "..";
 //   - an entry in the ordered set AllVillage or AllLocal.
 package route
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 )
@@ -78,3 +80,40 @@ func pathSegment(value string) string { return url.PathEscape(value) }
 
 // intPathSegment writes one integer path parameter in decimal.
 func intPathSegment(value int) string { return strconv.Itoa(value) }
+
+// PathSegmentError reports a path parameter value that a path builder refuses:
+// an empty value, ".", or "..". Each is a dot or empty path segment, which
+// clients and proxies resolve or drop, so the request would reach a different
+// endpoint than the operation named.
+type PathSegmentError struct {
+	// OperationID is the operationId of the route whose path was being built.
+	OperationID string
+	// Pattern is the route's path template.
+	Pattern string
+	// Parameter is the name of the refused path parameter.
+	Parameter string
+	// Value is the refused value: "", "." or "..".
+	Value string
+}
+
+// Error describes the refused value, why it is refused, where, and the fix.
+// The TypeScript path() builder throws the same text.
+func (e *PathSegmentError) Error() string {
+	got := "empty"
+	if e.Value != "" {
+		got = strconv.Quote(e.Value)
+	}
+	return fmt.Sprintf("route path for %s (%s) could not be built: parameter %q is %s; "+
+		"a path segment that is empty, \".\" or \"..\" is resolved by clients and proxies, so the request would reach a different endpoint; "+
+		"pass the identifier of the resource the parameter names.", e.OperationID, e.Pattern, e.Parameter, got)
+}
+
+// checkPathSegment refuses a string path parameter value that is not one
+// addressable path segment.
+func checkPathSegment(r Route, parameter, value string) error {
+	switch value {
+	case "", ".", "..":
+		return &PathSegmentError{OperationID: r.operationID, Pattern: r.pattern, Parameter: parameter, Value: value}
+	}
+	return nil
+}

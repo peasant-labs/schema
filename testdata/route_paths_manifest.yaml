@@ -9,3 +9,9 @@ requiredNames:
   - query-fragment-and-semicolon-escaped
   - percent-and-non-ascii-escaped
   - segment-legal-characters-differ-by-language
+  - dots-inside-a-value-are-kept
+  - empty-value-refused
+  - dot-value-refused
+  - dot-dot-value-refused
+  - later-parameter-refused
+  - local-dot-dot-refused

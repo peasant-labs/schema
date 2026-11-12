@@ -120,7 +120,7 @@ var (
 	routeTemplatePattern   = regexp.MustCompile(`\{([^{}]*)\}`)
 	// routeReservedParamNames are route package identifiers a generated path
 	// builder calls; a parameter with one of these names would shadow it.
-	routeReservedParamNames = map[string]bool{"pathSegment": true, "intPathSegment": true}
+	routeReservedParamNames = map[string]bool{"pathSegment": true, "intPathSegment": true, "checkPathSegment": true, "err": true}
 )
 
 type routeDocument struct {
@@ -425,9 +425,15 @@ func renderRouteGo(collected [][]routeOperation) ([]byte, error) {
 			if len(op.Params) == 0 {
 				continue
 			}
-			fmt.Fprintf(&b, "\n// %sPath returns the path of %s.\n// Each string parameter is escaped as one path segment with url.PathEscape.\n", name, name)
+			fmt.Fprintf(&b, "\n// %sPath returns the path of %s.\n// Each string parameter is escaped as one path segment with url.PathEscape;\n// an empty, \".\" or \"..\" value is refused with a *PathSegmentError.\n", name, name)
 			writeGoDeprecation(&b, api, op)
-			fmt.Fprintf(&b, "func %sPath(%s) string {\n\treturn %s\n}\n", name, goRouteParams(op.Params), goRouteBody(op.segments))
+			fmt.Fprintf(&b, "func %sPath(%s) (string, error) {\n", name, goRouteParams(op.Params))
+			for _, param := range op.Params {
+				if param.Kind == routeParamString {
+					fmt.Fprintf(&b, "\tif err := checkPathSegment(%s, %s, %s); err != nil {\n\t\treturn \"\", err\n\t}\n", name, strconv.Quote(param.Name), param.Name)
+				}
+			}
+			fmt.Fprintf(&b, "\treturn %s, nil\n}\n", goRouteBody(op.segments))
 		}
 		fmt.Fprintf(&b, "\n// %s is every operation of the %s document, ordered by pattern and then\n// by AllMethods.\nvar %s = []Route{\n", api.goAll, api.label, api.goAll)
 		for _, op := range ops {

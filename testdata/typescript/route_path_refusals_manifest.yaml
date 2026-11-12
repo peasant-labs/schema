@@ -7,3 +7,4 @@ requiredNames:
   - null-parameter
   - boolean-parameter
   - non-finite-number
+  - integer-parameter-given-dot-dot

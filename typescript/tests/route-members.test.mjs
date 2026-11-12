@@ -118,16 +118,27 @@ async function loadRouteCorpus(fixture, manifest, decodeExpected) {
   return corpus;
 }
 
-test("path() builds the shared fixture paths", async (t) => {
+test("path() builds the shared fixture paths and refuses the shared unaddressable values", async (t) => {
   const corpus = await loadRouteCorpus("../../testdata/route_paths.yaml", "../../testdata/route_paths_manifest.yaml", (value, path) => {
-    if (typeof value?.typescript !== "string" || typeof value?.go !== "string") throw new TypeError(`${path}: must give the go and typescript paths`);
-    return value.typescript;
+    if (typeof value?.error_contains === "string" && value.go === undefined && value.typescript === undefined) return { errorContains: value.error_contains };
+    if (typeof value?.typescript === "string" && typeof value?.go === "string" && value.error_contains === undefined) return { path: value.typescript };
+    throw new TypeError(`${path}: must give either the go and typescript paths or error_contains`);
   });
   for (const testCase of corpus.cases) {
     await t.test(testCase.name, () => {
-      assert.equal(testCase.classification, "must-pass");
       const { member: route, params } = testCase.input;
-      assert.equal(params === undefined ? route.path() : route.path(params), testCase.expected);
+      const build = () => (params === undefined ? route.path() : route.path(params));
+      if (testCase.classification === "must-pass") {
+        assert.equal(build(), testCase.expected.path);
+        return;
+      }
+      assert.equal(testCase.expected.path, undefined, "a must-fail case gives no path");
+      assert.throws(build, (error) => {
+        assert.ok(error instanceof RangeError, `${error} is not a RangeError`);
+        assert.ok(error.message.includes(testCase.expected.errorContains), `${error.message} does not contain ${testCase.expected.errorContains}`);
+        assert.ok(error.message.includes("pass the identifier"), `${error.message} does not name the fix`);
+        return true;
+      });
     });
   }
 });
@@ -142,7 +153,7 @@ test("path() refuses a value a JavaScript caller passes outside the type", async
       assert.equal(testCase.classification, "must-fail");
       const { member: route, params } = testCase.input;
       assert.throws(() => (params === undefined ? route.path() : route.path(params)), (error) => {
-        assert.ok(error instanceof TypeError);
+        assert.ok(error instanceof TypeError || error instanceof RangeError, `${error} is neither a TypeError nor a RangeError`);
         assert.ok(error.message.includes(testCase.expected), `${error.message} does not contain ${testCase.expected}`);
         assert.ok(error.message.includes(route.operationId) && error.message.includes("pass "), `${error.message} does not name the operation and the fix`);
         return true;

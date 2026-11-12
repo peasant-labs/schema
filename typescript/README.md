@@ -21,7 +21,9 @@ The same subpaths export one route member per operation, named by its
 `operationId`: `VillageRoute.GetTranscriptSegments.method` is `"GET"`,
 `.pattern` is the document's path template, and `.path({ id })` builds the
 request path with every value escaped by `encodeURIComponent`. A missing or
-extra path parameter is a compile error. `ALL_VILLAGE_ROUTES` and
+extra path parameter is a compile error. A value that is empty, `.` or `..`
+throws a `RangeError`: clients resolve such a segment, so the request would
+reach a different endpoint. `ALL_VILLAGE_ROUTES` and
 `ALL_LOCAL_ROUTES` are the ordered sets.
 
 The Go contract and its generated Types OpenAPI document are authoritative.

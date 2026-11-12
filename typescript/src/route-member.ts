@@ -21,7 +21,11 @@ export interface RouteMember<P extends string, M extends HttpMethod> {
   readonly pattern: P;
   /** The document's operationId, for example "getPullRequestAttachment". */
   readonly operationId: string;
-  /** Builds the request path. Every parameter value is escaped with encodeURIComponent. */
+  /**
+   * Builds the request path. Every parameter value is escaped with
+   * encodeURIComponent. A value that is empty, "." or ".." throws a RangeError:
+   * clients resolve such a segment, so the request would reach another endpoint.
+   */
   path(...args: PathArgs<P>): string;
 }
 
@@ -64,8 +68,18 @@ export function routeMember<P extends string, M extends HttpMethod>(method: M, p
   return Object.freeze({ method, pattern, operationId, path });
 }
 
+const unaddressableSegments: ReadonlySet<string> = new Set(["", ".", ".."]);
+
 function pathValue(operationId: string, pattern: string, parameter: string, value: unknown): string {
-  if (typeof value === "string") return value;
+  if (typeof value === "string") {
+    if (!unaddressableSegments.has(value)) return value;
+    // The Go path builders return the same text in route.PathSegmentError.
+    throw new RangeError(
+      `route path for ${operationId} (${pattern}) could not be built: parameter ${JSON.stringify(parameter)} is ${value === "" ? "empty" : JSON.stringify(value)}; ` +
+        'a path segment that is empty, "." or ".." is resolved by clients and proxies, so the request would reach a different endpoint; ' +
+        "pass the identifier of the resource the parameter names.",
+    );
+  }
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
   const received = value === undefined ? "no value" : typeof value === "number" ? String(value) : `a ${value === null ? "null" : typeof value}`;
   throw new TypeError(

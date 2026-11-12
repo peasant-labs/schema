@@ -19,3 +19,4 @@ requiredNames:
   - parameter-name-not-an-identifier
   - parameter-name-reserved-in-go
   - repeated-template-parameter
+  - parameter-name-reserved-by-the-builder

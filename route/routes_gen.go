@@ -51,9 +51,13 @@ var VillageListVisibleGroups = Route{method: MethodGet, pattern: "/api/v1/collec
 var VillageGetGroup = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}", operationID: "getGroup"}
 
 // VillageGetGroupPath returns the path of VillageGetGroup.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetGroupPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetGroupPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetGroup, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id), nil
 }
 
 // VillageUpdateGroup is PATCH /api/v1/collectives/{id}
@@ -61,9 +65,13 @@ func VillageGetGroupPath(id string) string {
 var VillageUpdateGroup = Route{method: MethodPatch, pattern: "/api/v1/collectives/{id}", operationID: "updateGroup"}
 
 // VillageUpdateGroupPath returns the path of VillageUpdateGroup.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageUpdateGroupPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageUpdateGroupPath(id string) (string, error) {
+	if err := checkPathSegment(VillageUpdateGroup, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id), nil
 }
 
 // VillageDeleteGroup is DELETE /api/v1/collectives/{id}
@@ -71,9 +79,13 @@ func VillageUpdateGroupPath(id string) string {
 var VillageDeleteGroup = Route{method: MethodDelete, pattern: "/api/v1/collectives/{id}", operationID: "deleteGroup"}
 
 // VillageDeleteGroupPath returns the path of VillageDeleteGroup.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageDeleteGroupPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageDeleteGroupPath(id string) (string, error) {
+	if err := checkPathSegment(VillageDeleteGroup, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id), nil
 }
 
 // VillageListContributableTranscripts is GET /api/v1/collectives/{id}/contributable
@@ -81,9 +93,13 @@ func VillageDeleteGroupPath(id string) string {
 var VillageListContributableTranscripts = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}/contributable", operationID: "listContributableTranscripts"}
 
 // VillageListContributableTranscriptsPath returns the path of VillageListContributableTranscripts.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListContributableTranscriptsPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/contributable"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListContributableTranscriptsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListContributableTranscripts, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/contributable", nil
 }
 
 // VillageListGroupInvitations is GET /api/v1/collectives/{id}/invitations
@@ -91,9 +107,13 @@ func VillageListContributableTranscriptsPath(id string) string {
 var VillageListGroupInvitations = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}/invitations", operationID: "listGroupInvitations"}
 
 // VillageListGroupInvitationsPath returns the path of VillageListGroupInvitations.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListGroupInvitationsPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/invitations"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListGroupInvitationsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListGroupInvitations, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/invitations", nil
 }
 
 // VillageCreateGroupInvitation is POST /api/v1/collectives/{id}/invitations
@@ -101,9 +121,13 @@ func VillageListGroupInvitationsPath(id string) string {
 var VillageCreateGroupInvitation = Route{method: MethodPost, pattern: "/api/v1/collectives/{id}/invitations", operationID: "createGroupInvitation"}
 
 // VillageCreateGroupInvitationPath returns the path of VillageCreateGroupInvitation.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageCreateGroupInvitationPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/invitations"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageCreateGroupInvitationPath(id string) (string, error) {
+	if err := checkPathSegment(VillageCreateGroupInvitation, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/invitations", nil
 }
 
 // VillageRevokeGroupInvitation is DELETE /api/v1/collectives/{id}/invitations/{invitationID}
@@ -111,9 +135,16 @@ func VillageCreateGroupInvitationPath(id string) string {
 var VillageRevokeGroupInvitation = Route{method: MethodDelete, pattern: "/api/v1/collectives/{id}/invitations/{invitationID}", operationID: "revokeGroupInvitation"}
 
 // VillageRevokeGroupInvitationPath returns the path of VillageRevokeGroupInvitation.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageRevokeGroupInvitationPath(id, invitationID string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/invitations/" + pathSegment(invitationID)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageRevokeGroupInvitationPath(id, invitationID string) (string, error) {
+	if err := checkPathSegment(VillageRevokeGroupInvitation, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageRevokeGroupInvitation, "invitationID", invitationID); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/invitations/" + pathSegment(invitationID), nil
 }
 
 // VillageJoinGroup is POST /api/v1/collectives/{id}/join
@@ -121,9 +152,13 @@ func VillageRevokeGroupInvitationPath(id, invitationID string) string {
 var VillageJoinGroup = Route{method: MethodPost, pattern: "/api/v1/collectives/{id}/join", operationID: "joinGroup"}
 
 // VillageJoinGroupPath returns the path of VillageJoinGroup.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageJoinGroupPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/join"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageJoinGroupPath(id string) (string, error) {
+	if err := checkPathSegment(VillageJoinGroup, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/join", nil
 }
 
 // VillageRemoveGroupMember is DELETE /api/v1/collectives/{id}/members/{userID}
@@ -131,9 +166,16 @@ func VillageJoinGroupPath(id string) string {
 var VillageRemoveGroupMember = Route{method: MethodDelete, pattern: "/api/v1/collectives/{id}/members/{userID}", operationID: "removeGroupMember"}
 
 // VillageRemoveGroupMemberPath returns the path of VillageRemoveGroupMember.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageRemoveGroupMemberPath(id, userID string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/members/" + pathSegment(userID)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageRemoveGroupMemberPath(id, userID string) (string, error) {
+	if err := checkPathSegment(VillageRemoveGroupMember, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageRemoveGroupMember, "userID", userID); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/members/" + pathSegment(userID), nil
 }
 
 // VillageUpdateGroupMemberRole is PATCH /api/v1/collectives/{id}/members/{userID}/role
@@ -141,9 +183,16 @@ func VillageRemoveGroupMemberPath(id, userID string) string {
 var VillageUpdateGroupMemberRole = Route{method: MethodPatch, pattern: "/api/v1/collectives/{id}/members/{userID}/role", operationID: "updateGroupMemberRole"}
 
 // VillageUpdateGroupMemberRolePath returns the path of VillageUpdateGroupMemberRole.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageUpdateGroupMemberRolePath(id, userID string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/members/" + pathSegment(userID) + "/role"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageUpdateGroupMemberRolePath(id, userID string) (string, error) {
+	if err := checkPathSegment(VillageUpdateGroupMemberRole, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageUpdateGroupMemberRole, "userID", userID); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/members/" + pathSegment(userID) + "/role", nil
 }
 
 // VillageListMyGroupShares is GET /api/v1/collectives/{id}/my-shares
@@ -151,9 +200,13 @@ func VillageUpdateGroupMemberRolePath(id, userID string) string {
 var VillageListMyGroupShares = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}/my-shares", operationID: "listMyGroupShares"}
 
 // VillageListMyGroupSharesPath returns the path of VillageListMyGroupShares.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListMyGroupSharesPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/my-shares"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListMyGroupSharesPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListMyGroupShares, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/my-shares", nil
 }
 
 // VillageListPendingShares is GET /api/v1/collectives/{id}/pending
@@ -161,9 +214,13 @@ func VillageListMyGroupSharesPath(id string) string {
 var VillageListPendingShares = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}/pending", operationID: "listPendingShares"}
 
 // VillageListPendingSharesPath returns the path of VillageListPendingShares.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListPendingSharesPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/pending"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListPendingSharesPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListPendingShares, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/pending", nil
 }
 
 // VillageListGroupRepositories is GET /api/v1/collectives/{id}/repositories
@@ -171,9 +228,13 @@ func VillageListPendingSharesPath(id string) string {
 var VillageListGroupRepositories = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}/repositories", operationID: "listGroupRepositories"}
 
 // VillageListGroupRepositoriesPath returns the path of VillageListGroupRepositories.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListGroupRepositoriesPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/repositories"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListGroupRepositoriesPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListGroupRepositories, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/repositories", nil
 }
 
 // VillageLinkGroupRepository is POST /api/v1/collectives/{id}/repositories
@@ -181,9 +242,13 @@ func VillageListGroupRepositoriesPath(id string) string {
 var VillageLinkGroupRepository = Route{method: MethodPost, pattern: "/api/v1/collectives/{id}/repositories", operationID: "linkGroupRepository"}
 
 // VillageLinkGroupRepositoryPath returns the path of VillageLinkGroupRepository.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageLinkGroupRepositoryPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/repositories"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageLinkGroupRepositoryPath(id string) (string, error) {
+	if err := checkPathSegment(VillageLinkGroupRepository, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/repositories", nil
 }
 
 // VillageListAvailableGroupRepositories is GET /api/v1/collectives/{id}/repositories/available
@@ -191,9 +256,13 @@ func VillageLinkGroupRepositoryPath(id string) string {
 var VillageListAvailableGroupRepositories = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}/repositories/available", operationID: "listAvailableGroupRepositories"}
 
 // VillageListAvailableGroupRepositoriesPath returns the path of VillageListAvailableGroupRepositories.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListAvailableGroupRepositoriesPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/repositories/available"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListAvailableGroupRepositoriesPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListAvailableGroupRepositories, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/repositories/available", nil
 }
 
 // VillageUnlinkGroupRepository is DELETE /api/v1/collectives/{id}/repositories/{owner}/{name}
@@ -201,9 +270,19 @@ func VillageListAvailableGroupRepositoriesPath(id string) string {
 var VillageUnlinkGroupRepository = Route{method: MethodDelete, pattern: "/api/v1/collectives/{id}/repositories/{owner}/{name}", operationID: "unlinkGroupRepository"}
 
 // VillageUnlinkGroupRepositoryPath returns the path of VillageUnlinkGroupRepository.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageUnlinkGroupRepositoryPath(id, owner, name string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/repositories/" + pathSegment(owner) + "/" + pathSegment(name)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageUnlinkGroupRepositoryPath(id, owner, name string) (string, error) {
+	if err := checkPathSegment(VillageUnlinkGroupRepository, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageUnlinkGroupRepository, "owner", owner); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageUnlinkGroupRepository, "name", name); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/repositories/" + pathSegment(owner) + "/" + pathSegment(name), nil
 }
 
 // VillageListGroupRepositoryCommits is GET /api/v1/collectives/{id}/repositories/{owner}/{name}/commits
@@ -211,9 +290,19 @@ func VillageUnlinkGroupRepositoryPath(id, owner, name string) string {
 var VillageListGroupRepositoryCommits = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}/repositories/{owner}/{name}/commits", operationID: "listGroupRepositoryCommits"}
 
 // VillageListGroupRepositoryCommitsPath returns the path of VillageListGroupRepositoryCommits.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListGroupRepositoryCommitsPath(id, owner, name string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/repositories/" + pathSegment(owner) + "/" + pathSegment(name) + "/commits"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListGroupRepositoryCommitsPath(id, owner, name string) (string, error) {
+	if err := checkPathSegment(VillageListGroupRepositoryCommits, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageListGroupRepositoryCommits, "owner", owner); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageListGroupRepositoryCommits, "name", name); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/repositories/" + pathSegment(owner) + "/" + pathSegment(name) + "/commits", nil
 }
 
 // VillageBatchShareProject is POST /api/v1/collectives/{id}/shares
@@ -221,9 +310,13 @@ func VillageListGroupRepositoryCommitsPath(id, owner, name string) string {
 var VillageBatchShareProject = Route{method: MethodPost, pattern: "/api/v1/collectives/{id}/shares", operationID: "batchShareProject"}
 
 // VillageBatchShareProjectPath returns the path of VillageBatchShareProject.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageBatchShareProjectPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/shares"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageBatchShareProjectPath(id string) (string, error) {
+	if err := checkPathSegment(VillageBatchShareProject, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/shares", nil
 }
 
 // VillageBatchReviewShares is PATCH /api/v1/collectives/{id}/shares
@@ -231,9 +324,13 @@ func VillageBatchShareProjectPath(id string) string {
 var VillageBatchReviewShares = Route{method: MethodPatch, pattern: "/api/v1/collectives/{id}/shares", operationID: "batchReviewShares"}
 
 // VillageBatchReviewSharesPath returns the path of VillageBatchReviewShares.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageBatchReviewSharesPath(id string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/shares"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageBatchReviewSharesPath(id string) (string, error) {
+	if err := checkPathSegment(VillageBatchReviewShares, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/shares", nil
 }
 
 // VillageReviewShare is PATCH /api/v1/collectives/{id}/shares/{transcriptID}
@@ -241,9 +338,16 @@ func VillageBatchReviewSharesPath(id string) string {
 var VillageReviewShare = Route{method: MethodPatch, pattern: "/api/v1/collectives/{id}/shares/{transcriptID}", operationID: "reviewShare"}
 
 // VillageReviewSharePath returns the path of VillageReviewShare.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageReviewSharePath(id, transcriptID string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/shares/" + pathSegment(transcriptID)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageReviewSharePath(id, transcriptID string) (string, error) {
+	if err := checkPathSegment(VillageReviewShare, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageReviewShare, "transcriptID", transcriptID); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/shares/" + pathSegment(transcriptID), nil
 }
 
 // VillageRemoveGroupTranscript is DELETE /api/v1/collectives/{id}/transcripts/{transcriptID}
@@ -251,9 +355,16 @@ func VillageReviewSharePath(id, transcriptID string) string {
 var VillageRemoveGroupTranscript = Route{method: MethodDelete, pattern: "/api/v1/collectives/{id}/transcripts/{transcriptID}", operationID: "removeGroupTranscript"}
 
 // VillageRemoveGroupTranscriptPath returns the path of VillageRemoveGroupTranscript.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageRemoveGroupTranscriptPath(id, transcriptID string) string {
-	return "/api/v1/collectives/" + pathSegment(id) + "/transcripts/" + pathSegment(transcriptID)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageRemoveGroupTranscriptPath(id, transcriptID string) (string, error) {
+	if err := checkPathSegment(VillageRemoveGroupTranscript, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageRemoveGroupTranscript, "transcriptID", transcriptID); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/transcripts/" + pathSegment(transcriptID), nil
 }
 
 // VillageUnsubscribeInvitationEmails is POST /api/v1/email/unsubscribe
@@ -297,11 +408,15 @@ var VillageListVisibleGroupsDeprecated = Route{method: MethodGet, pattern: "/api
 var VillageGetGroupDeprecated = Route{method: MethodGet, pattern: "/api/v1/groups/{id}", operationID: "getGroupDeprecated"}
 
 // VillageGetGroupDeprecatedPath returns the path of VillageGetGroupDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks getGroupDeprecated deprecated.
-func VillageGetGroupDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id)
+func VillageGetGroupDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetGroupDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id), nil
 }
 
 // VillageUpdateGroupDeprecated is PATCH /api/v1/groups/{id}
@@ -311,11 +426,15 @@ func VillageGetGroupDeprecatedPath(id string) string {
 var VillageUpdateGroupDeprecated = Route{method: MethodPatch, pattern: "/api/v1/groups/{id}", operationID: "updateGroupDeprecated"}
 
 // VillageUpdateGroupDeprecatedPath returns the path of VillageUpdateGroupDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks updateGroupDeprecated deprecated.
-func VillageUpdateGroupDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id)
+func VillageUpdateGroupDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageUpdateGroupDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id), nil
 }
 
 // VillageDeleteGroupDeprecated is DELETE /api/v1/groups/{id}
@@ -325,11 +444,15 @@ func VillageUpdateGroupDeprecatedPath(id string) string {
 var VillageDeleteGroupDeprecated = Route{method: MethodDelete, pattern: "/api/v1/groups/{id}", operationID: "deleteGroupDeprecated"}
 
 // VillageDeleteGroupDeprecatedPath returns the path of VillageDeleteGroupDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks deleteGroupDeprecated deprecated.
-func VillageDeleteGroupDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id)
+func VillageDeleteGroupDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageDeleteGroupDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id), nil
 }
 
 // VillageListContributableTranscriptsDeprecated is GET /api/v1/groups/{id}/contributable
@@ -339,11 +462,15 @@ func VillageDeleteGroupDeprecatedPath(id string) string {
 var VillageListContributableTranscriptsDeprecated = Route{method: MethodGet, pattern: "/api/v1/groups/{id}/contributable", operationID: "listContributableTranscriptsDeprecated"}
 
 // VillageListContributableTranscriptsDeprecatedPath returns the path of VillageListContributableTranscriptsDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks listContributableTranscriptsDeprecated deprecated.
-func VillageListContributableTranscriptsDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/contributable"
+func VillageListContributableTranscriptsDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListContributableTranscriptsDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/contributable", nil
 }
 
 // VillageListGroupInvitationsDeprecated is GET /api/v1/groups/{id}/invitations
@@ -353,11 +480,15 @@ func VillageListContributableTranscriptsDeprecatedPath(id string) string {
 var VillageListGroupInvitationsDeprecated = Route{method: MethodGet, pattern: "/api/v1/groups/{id}/invitations", operationID: "listGroupInvitationsDeprecated"}
 
 // VillageListGroupInvitationsDeprecatedPath returns the path of VillageListGroupInvitationsDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks listGroupInvitationsDeprecated deprecated.
-func VillageListGroupInvitationsDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/invitations"
+func VillageListGroupInvitationsDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListGroupInvitationsDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/invitations", nil
 }
 
 // VillageCreateGroupInvitationDeprecated is POST /api/v1/groups/{id}/invitations
@@ -367,11 +498,15 @@ func VillageListGroupInvitationsDeprecatedPath(id string) string {
 var VillageCreateGroupInvitationDeprecated = Route{method: MethodPost, pattern: "/api/v1/groups/{id}/invitations", operationID: "createGroupInvitationDeprecated"}
 
 // VillageCreateGroupInvitationDeprecatedPath returns the path of VillageCreateGroupInvitationDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks createGroupInvitationDeprecated deprecated.
-func VillageCreateGroupInvitationDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/invitations"
+func VillageCreateGroupInvitationDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageCreateGroupInvitationDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/invitations", nil
 }
 
 // VillageRevokeGroupInvitationDeprecated is DELETE /api/v1/groups/{id}/invitations/{invitationID}
@@ -381,11 +516,18 @@ func VillageCreateGroupInvitationDeprecatedPath(id string) string {
 var VillageRevokeGroupInvitationDeprecated = Route{method: MethodDelete, pattern: "/api/v1/groups/{id}/invitations/{invitationID}", operationID: "revokeGroupInvitationDeprecated"}
 
 // VillageRevokeGroupInvitationDeprecatedPath returns the path of VillageRevokeGroupInvitationDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks revokeGroupInvitationDeprecated deprecated.
-func VillageRevokeGroupInvitationDeprecatedPath(id, invitationID string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/invitations/" + pathSegment(invitationID)
+func VillageRevokeGroupInvitationDeprecatedPath(id, invitationID string) (string, error) {
+	if err := checkPathSegment(VillageRevokeGroupInvitationDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageRevokeGroupInvitationDeprecated, "invitationID", invitationID); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/invitations/" + pathSegment(invitationID), nil
 }
 
 // VillageJoinGroupDeprecated is POST /api/v1/groups/{id}/join
@@ -395,11 +537,15 @@ func VillageRevokeGroupInvitationDeprecatedPath(id, invitationID string) string 
 var VillageJoinGroupDeprecated = Route{method: MethodPost, pattern: "/api/v1/groups/{id}/join", operationID: "joinGroupDeprecated"}
 
 // VillageJoinGroupDeprecatedPath returns the path of VillageJoinGroupDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks joinGroupDeprecated deprecated.
-func VillageJoinGroupDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/join"
+func VillageJoinGroupDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageJoinGroupDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/join", nil
 }
 
 // VillageRemoveGroupMemberDeprecated is DELETE /api/v1/groups/{id}/members/{userID}
@@ -409,11 +555,18 @@ func VillageJoinGroupDeprecatedPath(id string) string {
 var VillageRemoveGroupMemberDeprecated = Route{method: MethodDelete, pattern: "/api/v1/groups/{id}/members/{userID}", operationID: "removeGroupMemberDeprecated"}
 
 // VillageRemoveGroupMemberDeprecatedPath returns the path of VillageRemoveGroupMemberDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks removeGroupMemberDeprecated deprecated.
-func VillageRemoveGroupMemberDeprecatedPath(id, userID string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/members/" + pathSegment(userID)
+func VillageRemoveGroupMemberDeprecatedPath(id, userID string) (string, error) {
+	if err := checkPathSegment(VillageRemoveGroupMemberDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageRemoveGroupMemberDeprecated, "userID", userID); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/members/" + pathSegment(userID), nil
 }
 
 // VillageUpdateGroupMemberRoleDeprecated is PATCH /api/v1/groups/{id}/members/{userID}/role
@@ -423,11 +576,18 @@ func VillageRemoveGroupMemberDeprecatedPath(id, userID string) string {
 var VillageUpdateGroupMemberRoleDeprecated = Route{method: MethodPatch, pattern: "/api/v1/groups/{id}/members/{userID}/role", operationID: "updateGroupMemberRoleDeprecated"}
 
 // VillageUpdateGroupMemberRoleDeprecatedPath returns the path of VillageUpdateGroupMemberRoleDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks updateGroupMemberRoleDeprecated deprecated.
-func VillageUpdateGroupMemberRoleDeprecatedPath(id, userID string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/members/" + pathSegment(userID) + "/role"
+func VillageUpdateGroupMemberRoleDeprecatedPath(id, userID string) (string, error) {
+	if err := checkPathSegment(VillageUpdateGroupMemberRoleDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageUpdateGroupMemberRoleDeprecated, "userID", userID); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/members/" + pathSegment(userID) + "/role", nil
 }
 
 // VillageListMyGroupSharesDeprecated is GET /api/v1/groups/{id}/my-shares
@@ -437,11 +597,15 @@ func VillageUpdateGroupMemberRoleDeprecatedPath(id, userID string) string {
 var VillageListMyGroupSharesDeprecated = Route{method: MethodGet, pattern: "/api/v1/groups/{id}/my-shares", operationID: "listMyGroupSharesDeprecated"}
 
 // VillageListMyGroupSharesDeprecatedPath returns the path of VillageListMyGroupSharesDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks listMyGroupSharesDeprecated deprecated.
-func VillageListMyGroupSharesDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/my-shares"
+func VillageListMyGroupSharesDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListMyGroupSharesDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/my-shares", nil
 }
 
 // VillageListPendingSharesDeprecated is GET /api/v1/groups/{id}/pending
@@ -451,11 +615,15 @@ func VillageListMyGroupSharesDeprecatedPath(id string) string {
 var VillageListPendingSharesDeprecated = Route{method: MethodGet, pattern: "/api/v1/groups/{id}/pending", operationID: "listPendingSharesDeprecated"}
 
 // VillageListPendingSharesDeprecatedPath returns the path of VillageListPendingSharesDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks listPendingSharesDeprecated deprecated.
-func VillageListPendingSharesDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/pending"
+func VillageListPendingSharesDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListPendingSharesDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/pending", nil
 }
 
 // VillageListGroupRepositoriesDeprecated is GET /api/v1/groups/{id}/repositories
@@ -465,11 +633,15 @@ func VillageListPendingSharesDeprecatedPath(id string) string {
 var VillageListGroupRepositoriesDeprecated = Route{method: MethodGet, pattern: "/api/v1/groups/{id}/repositories", operationID: "listGroupRepositoriesDeprecated"}
 
 // VillageListGroupRepositoriesDeprecatedPath returns the path of VillageListGroupRepositoriesDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks listGroupRepositoriesDeprecated deprecated.
-func VillageListGroupRepositoriesDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/repositories"
+func VillageListGroupRepositoriesDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListGroupRepositoriesDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/repositories", nil
 }
 
 // VillageLinkGroupRepositoryDeprecated is POST /api/v1/groups/{id}/repositories
@@ -479,11 +651,15 @@ func VillageListGroupRepositoriesDeprecatedPath(id string) string {
 var VillageLinkGroupRepositoryDeprecated = Route{method: MethodPost, pattern: "/api/v1/groups/{id}/repositories", operationID: "linkGroupRepositoryDeprecated"}
 
 // VillageLinkGroupRepositoryDeprecatedPath returns the path of VillageLinkGroupRepositoryDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks linkGroupRepositoryDeprecated deprecated.
-func VillageLinkGroupRepositoryDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/repositories"
+func VillageLinkGroupRepositoryDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageLinkGroupRepositoryDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/repositories", nil
 }
 
 // VillageListAvailableGroupRepositoriesDeprecated is GET /api/v1/groups/{id}/repositories/available
@@ -493,11 +669,15 @@ func VillageLinkGroupRepositoryDeprecatedPath(id string) string {
 var VillageListAvailableGroupRepositoriesDeprecated = Route{method: MethodGet, pattern: "/api/v1/groups/{id}/repositories/available", operationID: "listAvailableGroupRepositoriesDeprecated"}
 
 // VillageListAvailableGroupRepositoriesDeprecatedPath returns the path of VillageListAvailableGroupRepositoriesDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks listAvailableGroupRepositoriesDeprecated deprecated.
-func VillageListAvailableGroupRepositoriesDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/repositories/available"
+func VillageListAvailableGroupRepositoriesDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListAvailableGroupRepositoriesDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/repositories/available", nil
 }
 
 // VillageUnlinkGroupRepositoryDeprecated is DELETE /api/v1/groups/{id}/repositories/{owner}/{name}
@@ -507,11 +687,21 @@ func VillageListAvailableGroupRepositoriesDeprecatedPath(id string) string {
 var VillageUnlinkGroupRepositoryDeprecated = Route{method: MethodDelete, pattern: "/api/v1/groups/{id}/repositories/{owner}/{name}", operationID: "unlinkGroupRepositoryDeprecated"}
 
 // VillageUnlinkGroupRepositoryDeprecatedPath returns the path of VillageUnlinkGroupRepositoryDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks unlinkGroupRepositoryDeprecated deprecated.
-func VillageUnlinkGroupRepositoryDeprecatedPath(id, owner, name string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/repositories/" + pathSegment(owner) + "/" + pathSegment(name)
+func VillageUnlinkGroupRepositoryDeprecatedPath(id, owner, name string) (string, error) {
+	if err := checkPathSegment(VillageUnlinkGroupRepositoryDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageUnlinkGroupRepositoryDeprecated, "owner", owner); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageUnlinkGroupRepositoryDeprecated, "name", name); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/repositories/" + pathSegment(owner) + "/" + pathSegment(name), nil
 }
 
 // VillageListGroupRepositoryCommitsDeprecated is GET /api/v1/groups/{id}/repositories/{owner}/{name}/commits
@@ -521,11 +711,21 @@ func VillageUnlinkGroupRepositoryDeprecatedPath(id, owner, name string) string {
 var VillageListGroupRepositoryCommitsDeprecated = Route{method: MethodGet, pattern: "/api/v1/groups/{id}/repositories/{owner}/{name}/commits", operationID: "listGroupRepositoryCommitsDeprecated"}
 
 // VillageListGroupRepositoryCommitsDeprecatedPath returns the path of VillageListGroupRepositoryCommitsDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks listGroupRepositoryCommitsDeprecated deprecated.
-func VillageListGroupRepositoryCommitsDeprecatedPath(id, owner, name string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/repositories/" + pathSegment(owner) + "/" + pathSegment(name) + "/commits"
+func VillageListGroupRepositoryCommitsDeprecatedPath(id, owner, name string) (string, error) {
+	if err := checkPathSegment(VillageListGroupRepositoryCommitsDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageListGroupRepositoryCommitsDeprecated, "owner", owner); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageListGroupRepositoryCommitsDeprecated, "name", name); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/repositories/" + pathSegment(owner) + "/" + pathSegment(name) + "/commits", nil
 }
 
 // VillageBatchShareProjectDeprecated is POST /api/v1/groups/{id}/shares
@@ -535,11 +735,15 @@ func VillageListGroupRepositoryCommitsDeprecatedPath(id, owner, name string) str
 var VillageBatchShareProjectDeprecated = Route{method: MethodPost, pattern: "/api/v1/groups/{id}/shares", operationID: "batchShareProjectDeprecated"}
 
 // VillageBatchShareProjectDeprecatedPath returns the path of VillageBatchShareProjectDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks batchShareProjectDeprecated deprecated.
-func VillageBatchShareProjectDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/shares"
+func VillageBatchShareProjectDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageBatchShareProjectDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/shares", nil
 }
 
 // VillageBatchReviewSharesDeprecated is PATCH /api/v1/groups/{id}/shares
@@ -549,11 +753,15 @@ func VillageBatchShareProjectDeprecatedPath(id string) string {
 var VillageBatchReviewSharesDeprecated = Route{method: MethodPatch, pattern: "/api/v1/groups/{id}/shares", operationID: "batchReviewSharesDeprecated"}
 
 // VillageBatchReviewSharesDeprecatedPath returns the path of VillageBatchReviewSharesDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks batchReviewSharesDeprecated deprecated.
-func VillageBatchReviewSharesDeprecatedPath(id string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/shares"
+func VillageBatchReviewSharesDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageBatchReviewSharesDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/shares", nil
 }
 
 // VillageReviewShareDeprecated is PATCH /api/v1/groups/{id}/shares/{transcriptID}
@@ -563,11 +771,18 @@ func VillageBatchReviewSharesDeprecatedPath(id string) string {
 var VillageReviewShareDeprecated = Route{method: MethodPatch, pattern: "/api/v1/groups/{id}/shares/{transcriptID}", operationID: "reviewShareDeprecated"}
 
 // VillageReviewShareDeprecatedPath returns the path of VillageReviewShareDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks reviewShareDeprecated deprecated.
-func VillageReviewShareDeprecatedPath(id, transcriptID string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/shares/" + pathSegment(transcriptID)
+func VillageReviewShareDeprecatedPath(id, transcriptID string) (string, error) {
+	if err := checkPathSegment(VillageReviewShareDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageReviewShareDeprecated, "transcriptID", transcriptID); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/shares/" + pathSegment(transcriptID), nil
 }
 
 // VillageRemoveGroupTranscriptDeprecated is DELETE /api/v1/groups/{id}/transcripts/{transcriptID}
@@ -577,11 +792,18 @@ func VillageReviewShareDeprecatedPath(id, transcriptID string) string {
 var VillageRemoveGroupTranscriptDeprecated = Route{method: MethodDelete, pattern: "/api/v1/groups/{id}/transcripts/{transcriptID}", operationID: "removeGroupTranscriptDeprecated"}
 
 // VillageRemoveGroupTranscriptDeprecatedPath returns the path of VillageRemoveGroupTranscriptDeprecated.
-// Each string parameter is escaped as one path segment with url.PathEscape.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
 //
 // Deprecated: the Village API document marks removeGroupTranscriptDeprecated deprecated.
-func VillageRemoveGroupTranscriptDeprecatedPath(id, transcriptID string) string {
-	return "/api/v1/groups/" + pathSegment(id) + "/transcripts/" + pathSegment(transcriptID)
+func VillageRemoveGroupTranscriptDeprecatedPath(id, transcriptID string) (string, error) {
+	if err := checkPathSegment(VillageRemoveGroupTranscriptDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageRemoveGroupTranscriptDeprecated, "transcriptID", transcriptID); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/transcripts/" + pathSegment(transcriptID), nil
 }
 
 // VillageReceiveGitHubWebhook is POST /api/v1/integrations/github/webhook
@@ -593,9 +815,13 @@ var VillageReceiveGitHubWebhook = Route{method: MethodPost, pattern: "/api/v1/in
 var VillageGetVillageOrganizationCollectives = Route{method: MethodGet, pattern: "/api/v1/orgs/{login}", operationID: "getVillageOrganizationCollectives"}
 
 // VillageGetVillageOrganizationCollectivesPath returns the path of VillageGetVillageOrganizationCollectives.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetVillageOrganizationCollectivesPath(login string) string {
-	return "/api/v1/orgs/" + pathSegment(login)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetVillageOrganizationCollectivesPath(login string) (string, error) {
+	if err := checkPathSegment(VillageGetVillageOrganizationCollectives, "login", login); err != nil {
+		return "", err
+	}
+	return "/api/v1/orgs/" + pathSegment(login), nil
 }
 
 // VillageListPullableTranscripts is GET /api/v1/pull/transcripts
@@ -611,9 +837,13 @@ var VillagePullSkipGate = Route{method: MethodPost, pattern: "/api/v1/pull/trans
 var VillageGetPullTranscript = Route{method: MethodGet, pattern: "/api/v1/pull/transcripts/{id}", operationID: "getPullTranscript"}
 
 // VillageGetPullTranscriptPath returns the path of VillageGetPullTranscript.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetPullTranscriptPath(id string) string {
-	return "/api/v1/pull/transcripts/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetPullTranscriptPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetPullTranscript, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/pull/transcripts/" + pathSegment(id), nil
 }
 
 // VillageGetPullTranscriptAnnotations is GET /api/v1/pull/transcripts/{id}/annotations
@@ -621,9 +851,13 @@ func VillageGetPullTranscriptPath(id string) string {
 var VillageGetPullTranscriptAnnotations = Route{method: MethodGet, pattern: "/api/v1/pull/transcripts/{id}/annotations", operationID: "getPullTranscriptAnnotations"}
 
 // VillageGetPullTranscriptAnnotationsPath returns the path of VillageGetPullTranscriptAnnotations.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetPullTranscriptAnnotationsPath(id string) string {
-	return "/api/v1/pull/transcripts/" + pathSegment(id) + "/annotations"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetPullTranscriptAnnotationsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetPullTranscriptAnnotations, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/pull/transcripts/" + pathSegment(id) + "/annotations", nil
 }
 
 // VillageGetPullTranscriptContent is GET /api/v1/pull/transcripts/{id}/content
@@ -631,9 +865,13 @@ func VillageGetPullTranscriptAnnotationsPath(id string) string {
 var VillageGetPullTranscriptContent = Route{method: MethodGet, pattern: "/api/v1/pull/transcripts/{id}/content", operationID: "getPullTranscriptContent"}
 
 // VillageGetPullTranscriptContentPath returns the path of VillageGetPullTranscriptContent.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetPullTranscriptContentPath(id string) string {
-	return "/api/v1/pull/transcripts/" + pathSegment(id) + "/content"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetPullTranscriptContentPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetPullTranscriptContent, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/pull/transcripts/" + pathSegment(id) + "/content", nil
 }
 
 // VillageGetPullTranscriptPublishMetadata is GET /api/v1/pull/transcripts/{id}/publish-metadata
@@ -641,9 +879,13 @@ func VillageGetPullTranscriptContentPath(id string) string {
 var VillageGetPullTranscriptPublishMetadata = Route{method: MethodGet, pattern: "/api/v1/pull/transcripts/{id}/publish-metadata", operationID: "getPullTranscriptPublishMetadata"}
 
 // VillageGetPullTranscriptPublishMetadataPath returns the path of VillageGetPullTranscriptPublishMetadata.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetPullTranscriptPublishMetadataPath(id string) string {
-	return "/api/v1/pull/transcripts/" + pathSegment(id) + "/publish-metadata"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetPullTranscriptPublishMetadataPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetPullTranscriptPublishMetadata, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/pull/transcripts/" + pathSegment(id) + "/publish-metadata", nil
 }
 
 // VillageGetPullRequestAttachment is GET /api/v1/pulls/{owner}/{name}/{number}
@@ -651,9 +893,16 @@ func VillageGetPullTranscriptPublishMetadataPath(id string) string {
 var VillageGetPullRequestAttachment = Route{method: MethodGet, pattern: "/api/v1/pulls/{owner}/{name}/{number}", operationID: "getPullRequestAttachment"}
 
 // VillageGetPullRequestAttachmentPath returns the path of VillageGetPullRequestAttachment.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetPullRequestAttachmentPath(owner, name string, number int) string {
-	return "/api/v1/pulls/" + pathSegment(owner) + "/" + pathSegment(name) + "/" + intPathSegment(number)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetPullRequestAttachmentPath(owner, name string, number int) (string, error) {
+	if err := checkPathSegment(VillageGetPullRequestAttachment, "owner", owner); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageGetPullRequestAttachment, "name", name); err != nil {
+		return "", err
+	}
+	return "/api/v1/pulls/" + pathSegment(owner) + "/" + pathSegment(name) + "/" + intPathSegment(number), nil
 }
 
 // VillageDetachPullRequestAttachment is DELETE /api/v1/pulls/{owner}/{name}/{number}
@@ -661,9 +910,16 @@ func VillageGetPullRequestAttachmentPath(owner, name string, number int) string 
 var VillageDetachPullRequestAttachment = Route{method: MethodDelete, pattern: "/api/v1/pulls/{owner}/{name}/{number}", operationID: "detachPullRequestAttachment"}
 
 // VillageDetachPullRequestAttachmentPath returns the path of VillageDetachPullRequestAttachment.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageDetachPullRequestAttachmentPath(owner, name string, number int) string {
-	return "/api/v1/pulls/" + pathSegment(owner) + "/" + pathSegment(name) + "/" + intPathSegment(number)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageDetachPullRequestAttachmentPath(owner, name string, number int) (string, error) {
+	if err := checkPathSegment(VillageDetachPullRequestAttachment, "owner", owner); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageDetachPullRequestAttachment, "name", name); err != nil {
+		return "", err
+	}
+	return "/api/v1/pulls/" + pathSegment(owner) + "/" + pathSegment(name) + "/" + intPathSegment(number), nil
 }
 
 // VillageConfirmPullRequestAttachment is POST /api/v1/pulls/{owner}/{name}/{number}/confirm
@@ -671,9 +927,16 @@ func VillageDetachPullRequestAttachmentPath(owner, name string, number int) stri
 var VillageConfirmPullRequestAttachment = Route{method: MethodPost, pattern: "/api/v1/pulls/{owner}/{name}/{number}/confirm", operationID: "confirmPullRequestAttachment"}
 
 // VillageConfirmPullRequestAttachmentPath returns the path of VillageConfirmPullRequestAttachment.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageConfirmPullRequestAttachmentPath(owner, name string, number int) string {
-	return "/api/v1/pulls/" + pathSegment(owner) + "/" + pathSegment(name) + "/" + intPathSegment(number) + "/confirm"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageConfirmPullRequestAttachmentPath(owner, name string, number int) (string, error) {
+	if err := checkPathSegment(VillageConfirmPullRequestAttachment, "owner", owner); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageConfirmPullRequestAttachment, "name", name); err != nil {
+		return "", err
+	}
+	return "/api/v1/pulls/" + pathSegment(owner) + "/" + pathSegment(name) + "/" + intPathSegment(number) + "/confirm", nil
 }
 
 // VillageGetSchemaVersion is GET /api/v1/schema/version
@@ -685,9 +948,13 @@ var VillageGetSchemaVersion = Route{method: MethodGet, pattern: "/api/v1/schema/
 var VillageListTranscriptGroupMembers = Route{method: MethodGet, pattern: "/api/v1/transcript-groups/{groupId}/members", operationID: "listTranscriptGroupMembers"}
 
 // VillageListTranscriptGroupMembersPath returns the path of VillageListTranscriptGroupMembers.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListTranscriptGroupMembersPath(groupId string) string {
-	return "/api/v1/transcript-groups/" + pathSegment(groupId) + "/members"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListTranscriptGroupMembersPath(groupId string) (string, error) {
+	if err := checkPathSegment(VillageListTranscriptGroupMembers, "groupId", groupId); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcript-groups/" + pathSegment(groupId) + "/members", nil
 }
 
 // VillageListTranscripts is GET /api/v1/transcripts
@@ -703,9 +970,13 @@ var VillagePublishTranscript = Route{method: MethodPost, pattern: "/api/v1/trans
 var VillageGetTranscriptMetadata = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}", operationID: "getTranscriptMetadata"}
 
 // VillageGetTranscriptMetadataPath returns the path of VillageGetTranscriptMetadata.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetTranscriptMetadataPath(id string) string {
-	return "/api/v1/transcripts/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetTranscriptMetadataPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetTranscriptMetadata, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id), nil
 }
 
 // VillageUpdateTranscript is PATCH /api/v1/transcripts/{id}
@@ -713,9 +984,13 @@ func VillageGetTranscriptMetadataPath(id string) string {
 var VillageUpdateTranscript = Route{method: MethodPatch, pattern: "/api/v1/transcripts/{id}", operationID: "updateTranscript"}
 
 // VillageUpdateTranscriptPath returns the path of VillageUpdateTranscript.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageUpdateTranscriptPath(id string) string {
-	return "/api/v1/transcripts/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageUpdateTranscriptPath(id string) (string, error) {
+	if err := checkPathSegment(VillageUpdateTranscript, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id), nil
 }
 
 // VillageListTranscriptCollectives is GET /api/v1/transcripts/{id}/collectives
@@ -723,9 +998,13 @@ func VillageUpdateTranscriptPath(id string) string {
 var VillageListTranscriptCollectives = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/collectives", operationID: "listTranscriptCollectives"}
 
 // VillageListTranscriptCollectivesPath returns the path of VillageListTranscriptCollectives.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListTranscriptCollectivesPath(id string) string {
-	return "/api/v1/transcripts/" + pathSegment(id) + "/collectives"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListTranscriptCollectivesPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListTranscriptCollectives, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/collectives", nil
 }
 
 // VillageGetTranscriptContent is GET /api/v1/transcripts/{id}/content
@@ -733,9 +1012,13 @@ func VillageListTranscriptCollectivesPath(id string) string {
 var VillageGetTranscriptContent = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/content", operationID: "getTranscriptContent"}
 
 // VillageGetTranscriptContentPath returns the path of VillageGetTranscriptContent.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetTranscriptContentPath(id string) string {
-	return "/api/v1/transcripts/" + pathSegment(id) + "/content"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetTranscriptContentPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetTranscriptContent, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/content", nil
 }
 
 // VillageListTranscriptPullRequests is GET /api/v1/transcripts/{id}/pulls
@@ -743,9 +1026,13 @@ func VillageGetTranscriptContentPath(id string) string {
 var VillageListTranscriptPullRequests = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/pulls", operationID: "listTranscriptPullRequests"}
 
 // VillageListTranscriptPullRequestsPath returns the path of VillageListTranscriptPullRequests.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListTranscriptPullRequestsPath(id string) string {
-	return "/api/v1/transcripts/" + pathSegment(id) + "/pulls"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListTranscriptPullRequestsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListTranscriptPullRequests, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/pulls", nil
 }
 
 // VillageGetTranscriptSegments is GET /api/v1/transcripts/{id}/segments
@@ -753,9 +1040,13 @@ func VillageListTranscriptPullRequestsPath(id string) string {
 var VillageGetTranscriptSegments = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/segments", operationID: "getTranscriptSegments"}
 
 // VillageGetTranscriptSegmentsPath returns the path of VillageGetTranscriptSegments.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetTranscriptSegmentsPath(id string) string {
-	return "/api/v1/transcripts/" + pathSegment(id) + "/segments"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetTranscriptSegmentsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetTranscriptSegments, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/segments", nil
 }
 
 // VillageGetTranscriptSegment is GET /api/v1/transcripts/{id}/segments/{index}
@@ -763,9 +1054,13 @@ func VillageGetTranscriptSegmentsPath(id string) string {
 var VillageGetTranscriptSegment = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/segments/{index}", operationID: "getTranscriptSegment"}
 
 // VillageGetTranscriptSegmentPath returns the path of VillageGetTranscriptSegment.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetTranscriptSegmentPath(id string, index int) string {
-	return "/api/v1/transcripts/" + pathSegment(id) + "/segments/" + intPathSegment(index)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetTranscriptSegmentPath(id string, index int) (string, error) {
+	if err := checkPathSegment(VillageGetTranscriptSegment, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/segments/" + intPathSegment(index), nil
 }
 
 // VillageShareTranscriptWithGroups is POST /api/v1/transcripts/{id}/share
@@ -773,9 +1068,13 @@ func VillageGetTranscriptSegmentPath(id string, index int) string {
 var VillageShareTranscriptWithGroups = Route{method: MethodPost, pattern: "/api/v1/transcripts/{id}/share", operationID: "shareTranscriptWithGroups"}
 
 // VillageShareTranscriptWithGroupsPath returns the path of VillageShareTranscriptWithGroups.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageShareTranscriptWithGroupsPath(id string) string {
-	return "/api/v1/transcripts/" + pathSegment(id) + "/share"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageShareTranscriptWithGroupsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageShareTranscriptWithGroups, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/share", nil
 }
 
 // VillageUnshareTranscriptFromGroup is DELETE /api/v1/transcripts/{id}/share/{groupID}
@@ -783,9 +1082,16 @@ func VillageShareTranscriptWithGroupsPath(id string) string {
 var VillageUnshareTranscriptFromGroup = Route{method: MethodDelete, pattern: "/api/v1/transcripts/{id}/share/{groupID}", operationID: "unshareTranscriptFromGroup"}
 
 // VillageUnshareTranscriptFromGroupPath returns the path of VillageUnshareTranscriptFromGroup.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageUnshareTranscriptFromGroupPath(id, groupID string) string {
-	return "/api/v1/transcripts/" + pathSegment(id) + "/share/" + pathSegment(groupID)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageUnshareTranscriptFromGroupPath(id, groupID string) (string, error) {
+	if err := checkPathSegment(VillageUnshareTranscriptFromGroup, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageUnshareTranscriptFromGroup, "groupID", groupID); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/share/" + pathSegment(groupID), nil
 }
 
 // VillageGetTranscriptWindow is GET /api/v1/transcripts/{id}/window
@@ -793,9 +1099,13 @@ func VillageUnshareTranscriptFromGroupPath(id, groupID string) string {
 var VillageGetTranscriptWindow = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/window", operationID: "getTranscriptWindow"}
 
 // VillageGetTranscriptWindowPath returns the path of VillageGetTranscriptWindow.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageGetTranscriptWindowPath(id string) string {
-	return "/api/v1/transcripts/" + pathSegment(id) + "/window"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetTranscriptWindowPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetTranscriptWindow, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/window", nil
 }
 
 // VillageListMyCollectiveContributions is GET /api/v1/users/me/collectives/contributions
@@ -807,9 +1117,13 @@ var VillageListMyCollectiveContributions = Route{method: MethodGet, pattern: "/a
 var VillageListMyCollectiveSubmissions = Route{method: MethodGet, pattern: "/api/v1/users/me/collectives/{groupId}/submissions", operationID: "listMyCollectiveSubmissions"}
 
 // VillageListMyCollectiveSubmissionsPath returns the path of VillageListMyCollectiveSubmissions.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListMyCollectiveSubmissionsPath(groupId string) string {
-	return "/api/v1/users/me/collectives/" + pathSegment(groupId) + "/submissions"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListMyCollectiveSubmissionsPath(groupId string) (string, error) {
+	if err := checkPathSegment(VillageListMyCollectiveSubmissions, "groupId", groupId); err != nil {
+		return "", err
+	}
+	return "/api/v1/users/me/collectives/" + pathSegment(groupId) + "/submissions", nil
 }
 
 // VillageListShareEventHistory is GET /api/v1/users/me/collectives/{groupId}/transcripts/{transcriptId}/events
@@ -817,9 +1131,16 @@ func VillageListMyCollectiveSubmissionsPath(groupId string) string {
 var VillageListShareEventHistory = Route{method: MethodGet, pattern: "/api/v1/users/me/collectives/{groupId}/transcripts/{transcriptId}/events", operationID: "listShareEventHistory"}
 
 // VillageListShareEventHistoryPath returns the path of VillageListShareEventHistory.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageListShareEventHistoryPath(groupId, transcriptId string) string {
-	return "/api/v1/users/me/collectives/" + pathSegment(groupId) + "/transcripts/" + pathSegment(transcriptId) + "/events"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListShareEventHistoryPath(groupId, transcriptId string) (string, error) {
+	if err := checkPathSegment(VillageListShareEventHistory, "groupId", groupId); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageListShareEventHistory, "transcriptId", transcriptId); err != nil {
+		return "", err
+	}
+	return "/api/v1/users/me/collectives/" + pathSegment(groupId) + "/transcripts/" + pathSegment(transcriptId) + "/events", nil
 }
 
 // VillageSetMyNotificationEmail is PUT /api/v1/users/me/email
@@ -843,9 +1164,13 @@ var VillageListMyInvitations = Route{method: MethodGet, pattern: "/api/v1/users/
 var VillageAcceptMyInvitation = Route{method: MethodPost, pattern: "/api/v1/users/me/invitations/{invitationID}/accept", operationID: "acceptMyInvitation"}
 
 // VillageAcceptMyInvitationPath returns the path of VillageAcceptMyInvitation.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageAcceptMyInvitationPath(invitationID string) string {
-	return "/api/v1/users/me/invitations/" + pathSegment(invitationID) + "/accept"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageAcceptMyInvitationPath(invitationID string) (string, error) {
+	if err := checkPathSegment(VillageAcceptMyInvitation, "invitationID", invitationID); err != nil {
+		return "", err
+	}
+	return "/api/v1/users/me/invitations/" + pathSegment(invitationID) + "/accept", nil
 }
 
 // VillageDeclineMyInvitation is POST /api/v1/users/me/invitations/{invitationID}/decline
@@ -853,9 +1178,13 @@ func VillageAcceptMyInvitationPath(invitationID string) string {
 var VillageDeclineMyInvitation = Route{method: MethodPost, pattern: "/api/v1/users/me/invitations/{invitationID}/decline", operationID: "declineMyInvitation"}
 
 // VillageDeclineMyInvitationPath returns the path of VillageDeclineMyInvitation.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func VillageDeclineMyInvitationPath(invitationID string) string {
-	return "/api/v1/users/me/invitations/" + pathSegment(invitationID) + "/decline"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageDeclineMyInvitationPath(invitationID string) (string, error) {
+	if err := checkPathSegment(VillageDeclineMyInvitation, "invitationID", invitationID); err != nil {
+		return "", err
+	}
+	return "/api/v1/users/me/invitations/" + pathSegment(invitationID) + "/decline", nil
 }
 
 // VillageListMyPromptRequests is GET /api/v1/users/me/prompt-requests
@@ -993,9 +1322,13 @@ var LocalCreateAnnotation = Route{method: MethodPost, pattern: "/api/v1/annotati
 var LocalGetAttachment = Route{method: MethodGet, pattern: "/api/v1/attachments/{ref}", operationID: "getAttachment"}
 
 // LocalGetAttachmentPath returns the path of LocalGetAttachment.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetAttachmentPath(ref string) string {
-	return "/api/v1/attachments/" + pathSegment(ref)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetAttachmentPath(ref string) (string, error) {
+	if err := checkPathSegment(LocalGetAttachment, "ref", ref); err != nil {
+		return "", err
+	}
+	return "/api/v1/attachments/" + pathSegment(ref), nil
 }
 
 // LocalGetUICapabilities is GET /api/v1/config/capabilities
@@ -1019,9 +1352,13 @@ var LocalOpenKickstartSession = Route{method: MethodPost, pattern: "/api/v1/kick
 var LocalGetKickstartSession = Route{method: MethodGet, pattern: "/api/v1/kickstart/sessions/{id}", operationID: "getKickstartSession"}
 
 // LocalGetKickstartSessionPath returns the path of LocalGetKickstartSession.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetKickstartSessionPath(id string) string {
-	return "/api/v1/kickstart/sessions/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetKickstartSessionPath(id string) (string, error) {
+	if err := checkPathSegment(LocalGetKickstartSession, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/kickstart/sessions/" + pathSegment(id), nil
 }
 
 // LocalPatchKickstartSession is PATCH /api/v1/kickstart/sessions/{id}
@@ -1029,9 +1366,13 @@ func LocalGetKickstartSessionPath(id string) string {
 var LocalPatchKickstartSession = Route{method: MethodPatch, pattern: "/api/v1/kickstart/sessions/{id}", operationID: "patchKickstartSession"}
 
 // LocalPatchKickstartSessionPath returns the path of LocalPatchKickstartSession.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalPatchKickstartSessionPath(id string) string {
-	return "/api/v1/kickstart/sessions/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalPatchKickstartSessionPath(id string) (string, error) {
+	if err := checkPathSegment(LocalPatchKickstartSession, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/kickstart/sessions/" + pathSegment(id), nil
 }
 
 // LocalCommitKickstartSession is POST /api/v1/kickstart/sessions/{id}/commit
@@ -1039,9 +1380,13 @@ func LocalPatchKickstartSessionPath(id string) string {
 var LocalCommitKickstartSession = Route{method: MethodPost, pattern: "/api/v1/kickstart/sessions/{id}/commit", operationID: "commitKickstartSession"}
 
 // LocalCommitKickstartSessionPath returns the path of LocalCommitKickstartSession.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalCommitKickstartSessionPath(id string) string {
-	return "/api/v1/kickstart/sessions/" + pathSegment(id) + "/commit"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalCommitKickstartSessionPath(id string) (string, error) {
+	if err := checkPathSegment(LocalCommitKickstartSession, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/kickstart/sessions/" + pathSegment(id) + "/commit", nil
 }
 
 // LocalScanKickstartSession is POST /api/v1/kickstart/sessions/{id}/scan
@@ -1049,9 +1394,13 @@ func LocalCommitKickstartSessionPath(id string) string {
 var LocalScanKickstartSession = Route{method: MethodPost, pattern: "/api/v1/kickstart/sessions/{id}/scan", operationID: "scanKickstartSession"}
 
 // LocalScanKickstartSessionPath returns the path of LocalScanKickstartSession.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalScanKickstartSessionPath(id string) string {
-	return "/api/v1/kickstart/sessions/" + pathSegment(id) + "/scan"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalScanKickstartSessionPath(id string) (string, error) {
+	if err := checkPathSegment(LocalScanKickstartSession, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/kickstart/sessions/" + pathSegment(id) + "/scan", nil
 }
 
 // LocalGetKickstartTree is GET /api/v1/kickstart/sessions/{id}/tree
@@ -1059,9 +1408,13 @@ func LocalScanKickstartSessionPath(id string) string {
 var LocalGetKickstartTree = Route{method: MethodGet, pattern: "/api/v1/kickstart/sessions/{id}/tree", operationID: "getKickstartTree"}
 
 // LocalGetKickstartTreePath returns the path of LocalGetKickstartTree.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetKickstartTreePath(id string) string {
-	return "/api/v1/kickstart/sessions/" + pathSegment(id) + "/tree"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetKickstartTreePath(id string) (string, error) {
+	if err := checkPathSegment(LocalGetKickstartTree, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/kickstart/sessions/" + pathSegment(id) + "/tree", nil
 }
 
 // LocalGetKickstartPreview is GET /api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview
@@ -1069,9 +1422,16 @@ func LocalGetKickstartTreePath(id string) string {
 var LocalGetKickstartPreview = Route{method: MethodGet, pattern: "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview", operationID: "getKickstartPreview"}
 
 // LocalGetKickstartPreviewPath returns the path of LocalGetKickstartPreview.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetKickstartPreviewPath(id, nodeId string) string {
-	return "/api/v1/kickstart/sessions/" + pathSegment(id) + "/tree/" + pathSegment(nodeId) + "/preview"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetKickstartPreviewPath(id, nodeId string) (string, error) {
+	if err := checkPathSegment(LocalGetKickstartPreview, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(LocalGetKickstartPreview, "nodeId", nodeId); err != nil {
+		return "", err
+	}
+	return "/api/v1/kickstart/sessions/" + pathSegment(id) + "/tree/" + pathSegment(nodeId) + "/preview", nil
 }
 
 // LocalGetKickstartStatus is GET /api/v1/kickstart/status
@@ -1083,9 +1443,13 @@ var LocalGetKickstartStatus = Route{method: MethodGet, pattern: "/api/v1/kicksta
 var LocalGetMapGraph = Route{method: MethodGet, pattern: "/api/v1/map/{projectHash}", operationID: "getMapGraph"}
 
 // LocalGetMapGraphPath returns the path of LocalGetMapGraph.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetMapGraphPath(projectHash string) string {
-	return "/api/v1/map/" + pathSegment(projectHash)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetMapGraphPath(projectHash string) (string, error) {
+	if err := checkPathSegment(LocalGetMapGraph, "projectHash", projectHash); err != nil {
+		return "", err
+	}
+	return "/api/v1/map/" + pathSegment(projectHash), nil
 }
 
 // LocalGetMapNodeDetail is GET /api/v1/map/{projectHash}/node
@@ -1093,9 +1457,13 @@ func LocalGetMapGraphPath(projectHash string) string {
 var LocalGetMapNodeDetail = Route{method: MethodGet, pattern: "/api/v1/map/{projectHash}/node", operationID: "getMapNodeDetail"}
 
 // LocalGetMapNodeDetailPath returns the path of LocalGetMapNodeDetail.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetMapNodeDetailPath(projectHash string) string {
-	return "/api/v1/map/" + pathSegment(projectHash) + "/node"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetMapNodeDetailPath(projectHash string) (string, error) {
+	if err := checkPathSegment(LocalGetMapNodeDetail, "projectHash", projectHash); err != nil {
+		return "", err
+	}
+	return "/api/v1/map/" + pathSegment(projectHash) + "/node", nil
 }
 
 // LocalListProjectTasks is GET /api/v1/map/{projectHash}/tasks
@@ -1103,9 +1471,13 @@ func LocalGetMapNodeDetailPath(projectHash string) string {
 var LocalListProjectTasks = Route{method: MethodGet, pattern: "/api/v1/map/{projectHash}/tasks", operationID: "listProjectTasks"}
 
 // LocalListProjectTasksPath returns the path of LocalListProjectTasks.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalListProjectTasksPath(projectHash string) string {
-	return "/api/v1/map/" + pathSegment(projectHash) + "/tasks"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalListProjectTasksPath(projectHash string) (string, error) {
+	if err := checkPathSegment(LocalListProjectTasks, "projectHash", projectHash); err != nil {
+		return "", err
+	}
+	return "/api/v1/map/" + pathSegment(projectHash) + "/tasks", nil
 }
 
 // LocalResolveProject is GET /api/v1/projects/resolve
@@ -1129,9 +1501,13 @@ var LocalGetQualityPage = Route{method: MethodGet, pattern: "/api/v1/quality", o
 var LocalListReviewChanges = Route{method: MethodGet, pattern: "/api/v1/review/{projectHash}", operationID: "listReviewChanges"}
 
 // LocalListReviewChangesPath returns the path of LocalListReviewChanges.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalListReviewChangesPath(projectHash string) string {
-	return "/api/v1/review/" + pathSegment(projectHash)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalListReviewChangesPath(projectHash string) (string, error) {
+	if err := checkPathSegment(LocalListReviewChanges, "projectHash", projectHash); err != nil {
+		return "", err
+	}
+	return "/api/v1/review/" + pathSegment(projectHash), nil
 }
 
 // LocalGetChangeDetail is GET /api/v1/review/{projectHash}/change
@@ -1139,9 +1515,13 @@ func LocalListReviewChangesPath(projectHash string) string {
 var LocalGetChangeDetail = Route{method: MethodGet, pattern: "/api/v1/review/{projectHash}/change", operationID: "getChangeDetail"}
 
 // LocalGetChangeDetailPath returns the path of LocalGetChangeDetail.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetChangeDetailPath(projectHash string) string {
-	return "/api/v1/review/" + pathSegment(projectHash) + "/change"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetChangeDetailPath(projectHash string) (string, error) {
+	if err := checkPathSegment(LocalGetChangeDetail, "projectHash", projectHash); err != nil {
+		return "", err
+	}
+	return "/api/v1/review/" + pathSegment(projectHash) + "/change", nil
 }
 
 // LocalGetChangeDiff is GET /api/v1/review/{projectHash}/diff
@@ -1149,9 +1529,13 @@ func LocalGetChangeDetailPath(projectHash string) string {
 var LocalGetChangeDiff = Route{method: MethodGet, pattern: "/api/v1/review/{projectHash}/diff", operationID: "getChangeDiff"}
 
 // LocalGetChangeDiffPath returns the path of LocalGetChangeDiff.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetChangeDiffPath(projectHash string) string {
-	return "/api/v1/review/" + pathSegment(projectHash) + "/diff"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetChangeDiffPath(projectHash string) (string, error) {
+	if err := checkPathSegment(LocalGetChangeDiff, "projectHash", projectHash); err != nil {
+		return "", err
+	}
+	return "/api/v1/review/" + pathSegment(projectHash) + "/diff", nil
 }
 
 // LocalSearchMessages is GET /api/v1/search
@@ -1163,9 +1547,13 @@ var LocalSearchMessages = Route{method: MethodGet, pattern: "/api/v1/search", op
 var LocalListLocalHelperGroupMembers = Route{method: MethodGet, pattern: "/api/v1/session-groups/{groupId}/members", operationID: "listLocalHelperGroupMembers"}
 
 // LocalListLocalHelperGroupMembersPath returns the path of LocalListLocalHelperGroupMembers.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalListLocalHelperGroupMembersPath(groupId string) string {
-	return "/api/v1/session-groups/" + pathSegment(groupId) + "/members"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalListLocalHelperGroupMembersPath(groupId string) (string, error) {
+	if err := checkPathSegment(LocalListLocalHelperGroupMembers, "groupId", groupId); err != nil {
+		return "", err
+	}
+	return "/api/v1/session-groups/" + pathSegment(groupId) + "/members", nil
 }
 
 // LocalGetSessionSummariesByID is GET /api/v1/session-summaries
@@ -1181,9 +1569,13 @@ var LocalListSessions = Route{method: MethodGet, pattern: "/api/v1/sessions", op
 var LocalGetSession = Route{method: MethodGet, pattern: "/api/v1/sessions/{id}", operationID: "getSession"}
 
 // LocalGetSessionPath returns the path of LocalGetSession.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetSessionPath(id string) string {
-	return "/api/v1/sessions/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetSessionPath(id string) (string, error) {
+	if err := checkPathSegment(LocalGetSession, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/sessions/" + pathSegment(id), nil
 }
 
 // LocalGetSessionCommits is GET /api/v1/sessions/{id}/commits
@@ -1191,9 +1583,13 @@ func LocalGetSessionPath(id string) string {
 var LocalGetSessionCommits = Route{method: MethodGet, pattern: "/api/v1/sessions/{id}/commits", operationID: "getSessionCommits"}
 
 // LocalGetSessionCommitsPath returns the path of LocalGetSessionCommits.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetSessionCommitsPath(id string) string {
-	return "/api/v1/sessions/" + pathSegment(id) + "/commits"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetSessionCommitsPath(id string) (string, error) {
+	if err := checkPathSegment(LocalGetSessionCommits, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/sessions/" + pathSegment(id) + "/commits", nil
 }
 
 // LocalGetSessionPullRequests is GET /api/v1/sessions/{id}/pull-requests
@@ -1201,9 +1597,13 @@ func LocalGetSessionCommitsPath(id string) string {
 var LocalGetSessionPullRequests = Route{method: MethodGet, pattern: "/api/v1/sessions/{id}/pull-requests", operationID: "getSessionPullRequests"}
 
 // LocalGetSessionPullRequestsPath returns the path of LocalGetSessionPullRequests.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetSessionPullRequestsPath(id string) string {
-	return "/api/v1/sessions/" + pathSegment(id) + "/pull-requests"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetSessionPullRequestsPath(id string) (string, error) {
+	if err := checkPathSegment(LocalGetSessionPullRequests, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/sessions/" + pathSegment(id) + "/pull-requests", nil
 }
 
 // LocalGetSessionTranscript is GET /api/v1/sessions/{id}/transcript
@@ -1211,9 +1611,13 @@ func LocalGetSessionPullRequestsPath(id string) string {
 var LocalGetSessionTranscript = Route{method: MethodGet, pattern: "/api/v1/sessions/{id}/transcript", operationID: "getSessionTranscript"}
 
 // LocalGetSessionTranscriptPath returns the path of LocalGetSessionTranscript.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetSessionTranscriptPath(id string) string {
-	return "/api/v1/sessions/" + pathSegment(id) + "/transcript"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetSessionTranscriptPath(id string) (string, error) {
+	if err := checkPathSegment(LocalGetSessionTranscript, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/sessions/" + pathSegment(id) + "/transcript", nil
 }
 
 // LocalGetSessionTranscriptSegments is GET /api/v1/sessions/{id}/transcript/segments
@@ -1221,9 +1625,13 @@ func LocalGetSessionTranscriptPath(id string) string {
 var LocalGetSessionTranscriptSegments = Route{method: MethodGet, pattern: "/api/v1/sessions/{id}/transcript/segments", operationID: "getSessionTranscriptSegments"}
 
 // LocalGetSessionTranscriptSegmentsPath returns the path of LocalGetSessionTranscriptSegments.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetSessionTranscriptSegmentsPath(id string) string {
-	return "/api/v1/sessions/" + pathSegment(id) + "/transcript/segments"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetSessionTranscriptSegmentsPath(id string) (string, error) {
+	if err := checkPathSegment(LocalGetSessionTranscriptSegments, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/sessions/" + pathSegment(id) + "/transcript/segments", nil
 }
 
 // LocalGetSessionTranscriptSegment is GET /api/v1/sessions/{id}/transcript/segments/{index}
@@ -1231,9 +1639,13 @@ func LocalGetSessionTranscriptSegmentsPath(id string) string {
 var LocalGetSessionTranscriptSegment = Route{method: MethodGet, pattern: "/api/v1/sessions/{id}/transcript/segments/{index}", operationID: "getSessionTranscriptSegment"}
 
 // LocalGetSessionTranscriptSegmentPath returns the path of LocalGetSessionTranscriptSegment.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetSessionTranscriptSegmentPath(id string, index int) string {
-	return "/api/v1/sessions/" + pathSegment(id) + "/transcript/segments/" + intPathSegment(index)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetSessionTranscriptSegmentPath(id string, index int) (string, error) {
+	if err := checkPathSegment(LocalGetSessionTranscriptSegment, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/sessions/" + pathSegment(id) + "/transcript/segments/" + intPathSegment(index), nil
 }
 
 // LocalGetSessionTranscriptWindow is GET /api/v1/sessions/{id}/transcript/window
@@ -1241,9 +1653,13 @@ func LocalGetSessionTranscriptSegmentPath(id string, index int) string {
 var LocalGetSessionTranscriptWindow = Route{method: MethodGet, pattern: "/api/v1/sessions/{id}/transcript/window", operationID: "getSessionTranscriptWindow"}
 
 // LocalGetSessionTranscriptWindowPath returns the path of LocalGetSessionTranscriptWindow.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalGetSessionTranscriptWindowPath(id string) string {
-	return "/api/v1/sessions/" + pathSegment(id) + "/transcript/window"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalGetSessionTranscriptWindowPath(id string) (string, error) {
+	if err := checkPathSegment(LocalGetSessionTranscriptWindow, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/sessions/" + pathSegment(id) + "/transcript/window", nil
 }
 
 // LocalGetSettings is GET /api/v1/settings
@@ -1259,9 +1675,13 @@ var LocalUpdateSetting = Route{method: MethodPatch, pattern: "/api/v1/settings",
 var LocalSaveAutoPublishRule = Route{method: MethodPut, pattern: "/api/v1/settings/auto-publish/{id}", operationID: "saveAutoPublishRule"}
 
 // LocalSaveAutoPublishRulePath returns the path of LocalSaveAutoPublishRule.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalSaveAutoPublishRulePath(id string) string {
-	return "/api/v1/settings/auto-publish/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalSaveAutoPublishRulePath(id string) (string, error) {
+	if err := checkPathSegment(LocalSaveAutoPublishRule, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/settings/auto-publish/" + pathSegment(id), nil
 }
 
 // LocalDeleteAutoPublishRule is DELETE /api/v1/settings/auto-publish/{id}
@@ -1269,9 +1689,13 @@ func LocalSaveAutoPublishRulePath(id string) string {
 var LocalDeleteAutoPublishRule = Route{method: MethodDelete, pattern: "/api/v1/settings/auto-publish/{id}", operationID: "deleteAutoPublishRule"}
 
 // LocalDeleteAutoPublishRulePath returns the path of LocalDeleteAutoPublishRule.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalDeleteAutoPublishRulePath(id string) string {
-	return "/api/v1/settings/auto-publish/" + pathSegment(id)
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalDeleteAutoPublishRulePath(id string) (string, error) {
+	if err := checkPathSegment(LocalDeleteAutoPublishRule, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/settings/auto-publish/" + pathSegment(id), nil
 }
 
 // LocalInstallAutoPublishHooks is POST /api/v1/settings/auto-publish/{id}/install
@@ -1279,9 +1703,13 @@ func LocalDeleteAutoPublishRulePath(id string) string {
 var LocalInstallAutoPublishHooks = Route{method: MethodPost, pattern: "/api/v1/settings/auto-publish/{id}/install", operationID: "installAutoPublishHooks"}
 
 // LocalInstallAutoPublishHooksPath returns the path of LocalInstallAutoPublishHooks.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalInstallAutoPublishHooksPath(id string) string {
-	return "/api/v1/settings/auto-publish/" + pathSegment(id) + "/install"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalInstallAutoPublishHooksPath(id string) (string, error) {
+	if err := checkPathSegment(LocalInstallAutoPublishHooks, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/settings/auto-publish/" + pathSegment(id) + "/install", nil
 }
 
 // LocalPostShutdown is POST /api/v1/shutdown
@@ -1325,9 +1753,13 @@ var LocalFetchCollectiveObservations = Route{method: MethodPost, pattern: "/api/
 var LocalTrackCollectiveObservation = Route{method: MethodPut, pattern: "/api/v1/village/collective-observations/{collectiveId}/tracking", operationID: "trackCollectiveObservation"}
 
 // LocalTrackCollectiveObservationPath returns the path of LocalTrackCollectiveObservation.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalTrackCollectiveObservationPath(collectiveId string) string {
-	return "/api/v1/village/collective-observations/" + pathSegment(collectiveId) + "/tracking"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalTrackCollectiveObservationPath(collectiveId string) (string, error) {
+	if err := checkPathSegment(LocalTrackCollectiveObservation, "collectiveId", collectiveId); err != nil {
+		return "", err
+	}
+	return "/api/v1/village/collective-observations/" + pathSegment(collectiveId) + "/tracking", nil
 }
 
 // LocalUntrackCollectiveObservation is DELETE /api/v1/village/collective-observations/{collectiveId}/tracking
@@ -1335,9 +1767,13 @@ func LocalTrackCollectiveObservationPath(collectiveId string) string {
 var LocalUntrackCollectiveObservation = Route{method: MethodDelete, pattern: "/api/v1/village/collective-observations/{collectiveId}/tracking", operationID: "untrackCollectiveObservation"}
 
 // LocalUntrackCollectiveObservationPath returns the path of LocalUntrackCollectiveObservation.
-// Each string parameter is escaped as one path segment with url.PathEscape.
-func LocalUntrackCollectiveObservationPath(collectiveId string) string {
-	return "/api/v1/village/collective-observations/" + pathSegment(collectiveId) + "/tracking"
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func LocalUntrackCollectiveObservationPath(collectiveId string) (string, error) {
+	if err := checkPathSegment(LocalUntrackCollectiveObservation, "collectiveId", collectiveId); err != nil {
+		return "", err
+	}
+	return "/api/v1/village/collective-observations/" + pathSegment(collectiveId) + "/tracking", nil
 }
 
 // LocalListVillageCollectives is GET /api/v1/village/collectives

@@ -268,3 +268,17 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "a path builder parameter name is unique"}
     mutation: {description: "the template names one parameter twice"}
+  - name: parameter-name-reserved-by-the-builder
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{err}:
+            get:
+              operationId: getThing
+              parameters:
+                - {in: path, name: err, required: true, schema: {type: string}}
+    expected: {error_contains: "has path parameter \"err\", which is reserved in the generated Go path builder"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the generated path builder declares err for the segment check"}
+    mutation: {description: "the parameter is named err"}
