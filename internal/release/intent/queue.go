@@ -52,56 +52,58 @@ func queueFailure(what, why string) error {
 }
 
 // DecodeQueueResponse decodes a raw GraphQL merge-queue response body into
-// its entries and the total the service reported.
-func DecodeQueueResponse(data []byte) (QueueSnapshot, error) {
+// its entries in listed order. The service total must equal the node count:
+// the decoder enforces the equality and drops the total, so a cut page can
+// never arm the gate.
+func DecodeQueueResponse(data []byte) ([]QueueEntry, error) {
 	var raw queueResponse
 	decoder := json.NewDecoder(strings.NewReader(string(data)))
 	if err := decoder.Decode(&raw); err != nil {
-		return QueueSnapshot{}, queueFailure(
+		return nil, queueFailure(
 			"the queue response is not valid JSON: "+err.Error(),
 			"the gate judges the queue file the workflow wrote, and a malformed file judges nothing",
 		)
 	}
 	if len(raw.Errors) > 0 {
-		return QueueSnapshot{}, queueFailure(
+		return nil, queueFailure(
 			"the queue response carries "+strconv.Itoa(len(raw.Errors))+" service error(s)",
 			"a response with errors answers nothing about the queue",
 		)
 	}
 	if raw.Data == nil || raw.Data.Repository == nil || raw.Data.Repository.MergeQueue == nil {
-		return QueueSnapshot{}, queueFailure(
+		return nil, queueFailure(
 			"the queue response has no merge queue",
 			"a null queue is a failed read, not an empty queue",
 		)
 	}
 	entries := raw.Data.Repository.MergeQueue.Entries
 	if entries == nil || entries.TotalCount == nil {
-		return QueueSnapshot{}, queueFailure(
+		return nil, queueFailure(
 			"the queue response has no entry total",
 			"without the total the gate cannot tell a complete page from a cut one",
 		)
 	}
 	if entries.Nodes == nil {
-		return QueueSnapshot{}, queueFailure(
+		return nil, queueFailure(
 			"the queue response has no entry list",
 			"without the nodes the gate cannot judge what is ahead",
 		)
 	}
 	if *entries.TotalCount != len(entries.Nodes) {
-		return QueueSnapshot{}, queueFailure(
+		return nil, queueFailure(
 			"the queue response lists "+strconv.Itoa(len(entries.Nodes))+" entries for a total of "+strconv.Itoa(*entries.TotalCount),
 			"a count the nodes do not match is a cut page, and arming on a cut page can skip a releasing PR",
 		)
 	}
-	out := QueueSnapshot{Entries: make([]QueueEntry, 0, len(entries.Nodes)), TotalCount: *entries.TotalCount}
+	out := make([]QueueEntry, 0, len(entries.Nodes))
 	for i, node := range entries.Nodes {
 		if node.Position == nil || node.PullRequest == nil || node.PullRequest.Number == nil || node.PullRequest.Title == nil {
-			return QueueSnapshot{}, queueFailure(
+			return nil, queueFailure(
 				"queue entry "+strconv.Itoa(i)+" is missing its position, number, or title",
 				"every entry needs all three before the gate can place the release PR",
 			)
 		}
-		out.Entries = append(out.Entries, QueueEntry{
+		out = append(out, QueueEntry{
 			Position: *node.Position,
 			Number:   *node.PullRequest.Number,
 			Title:    *node.PullRequest.Title,

@@ -1,6 +1,7 @@
 package intent
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -112,7 +113,7 @@ func Plan(cfg Config, facts Facts) (Decision, error) {
 		}
 		if floorIdx < 0 {
 			return Decision{}, planError(ErrFloorNotOnChain,
-				"the recovery floor "+quote(facts.Floor)+" is not on the branch chain",
+				"the recovery floor "+strconv.Quote(facts.Floor)+" is not on the branch chain",
 				"the floor drops a bad subject and everything before it, so it must name a chain commit",
 				"no release action can be planned while the floor points nowhere",
 				"set the floor to the bad commit itself, or clear it once a newer final tag exists")
@@ -137,7 +138,7 @@ func Plan(cfg Config, facts Facts) (Decision, error) {
 	}
 	if epochIdx < 0 {
 		return Decision{}, planError(ErrEpochMissing,
-			"the grammar epoch "+quote(facts.Epoch)+" is not on the branch chain",
+			"the grammar epoch "+strconv.Quote(facts.Epoch)+" is not on the branch chain",
 			"subjects before the config landed are not parsed, so the epoch must name a chain commit",
 			"no release action can be planned without the range bound",
 			"record the commit that added the release config as the epoch and plan again")
@@ -148,12 +149,14 @@ func Plan(cfg Config, facts Facts) (Decision, error) {
 	rng := facts.Commits[:end]
 
 	candidate := ""
+	candidateIdx := -1
 	freshness := FreshnessUnknown
-	for _, commit := range rng {
+	for i, commit := range rng {
 		if commit.SHA == facts.Epoch || !commit.ChangesChangelog {
 			continue
 		}
 		candidate = commit.SHA
+		candidateIdx = i
 		if fresh, ok := facts.Fresh[commit.SHA]; ok {
 			if fresh {
 				freshness = FreshnessFresh
@@ -164,35 +167,73 @@ func Plan(cfg Config, facts Facts) (Decision, error) {
 		break
 	}
 
-	pending := []Title{}
-	level := LevelNone
-	breaking := false
+	// Every subject in the range parses; one bad subject fails the whole
+	// plan with a recovery that names the floor, since the commit has
+	// already landed and no retitle can fix it.
+	type parsedCommit struct {
+		commit Commit
+		title  Title
+	}
+	parsed := make([]parsedCommit, 0, len(rng))
 	for _, commit := range rng {
 		title, err := ParseTitle(cfg, versionBase, commit.Subject)
 		if err != nil {
-			return Decision{}, err
+			return Decision{}, landedError(commit, facts.Branch, err)
 		}
-		if commit.ChangesChangelog || title.Level == LevelNone {
-			continue
-		}
-		pending = append(pending, title)
-		if title.Level > level {
-			level = title.Level
-		}
-		if title.Breaking {
-			breaking = true
-		}
+		parsed = append(parsed, parsedCommit{commit: commit, title: title})
 	}
 
-	version := SemVer("")
-	tag := ""
-	if len(pending) > 0 {
+	// accumulate reduces parsed commits to a pending set, its high level,
+	// whether it breaks, and the committer date of its newest commit.
+	accumulate := func(list []parsedCommit) (pending []Title, level Level, breaking bool, date string) {
+		pending = []Title{}
+		for _, p := range list {
+			if p.commit.ChangesChangelog || p.title.Level == LevelNone {
+				continue
+			}
+			if date == "" {
+				date = p.commit.Date
+			}
+			pending = append(pending, p.title)
+			if p.title.Level > level {
+				level = p.title.Level
+			}
+			if p.title.Breaking {
+				breaking = true
+			}
+		}
+		return pending, level, breaking, date
+	}
+
+	versionOf := func(level Level, breaking bool, some bool) (SemVer, string, error) {
+		if !some {
+			return "", "", nil
+		}
 		next, err := NextVersion(versionBase, level, breaking)
 		if err != nil {
-			return Decision{}, err
+			return "", "", err
 		}
-		version = next
-		tag = cfg.TagPrefix + string(next)
+		return next, cfg.TagPrefix + string(next), nil
+	}
+
+	fullPending, fullLevel, fullBreaking, fullDate := accumulate(parsed)
+
+	// The sub-range the candidate covers: the range commits older than the
+	// candidate, without changelog-changing commits. verify and tag judge
+	// this set, never the subjects that landed after the candidate.
+	beforeList := []parsedCommit(nil)
+	if candidateIdx >= 0 {
+		beforeList = parsed[candidateIdx+1:]
+	}
+	beforePending, beforeLevel, beforeBreaking, beforeDate := accumulate(beforeList)
+	beforeVersion, beforeTag, err := versionOf(beforeLevel, beforeBreaking, len(beforePending) > 0)
+	if err != nil {
+		return Decision{}, err
+	}
+
+	fullVersion, fullTag, err := versionOf(fullLevel, fullBreaking, len(fullPending) > 0)
+	if err != nil {
+		return Decision{}, err
 	}
 
 	rangeBase := ""
@@ -206,11 +247,15 @@ func Plan(cfg Config, facts Facts) (Decision, error) {
 		}
 	}
 
+	// The published set follows the action: verify and tag speak for the
+	// candidate's own set; every other action speaks for the full range.
+	pending, level, breaking, version, tag, date := fullPending, fullLevel, fullBreaking, fullVersion, fullTag, fullDate
 	action := ActionClosePR
 	if len(pending) > 0 {
 		action = ActionOpenPR
 	}
 	if facts.Mode == ModeTag && candidate != "" && freshness == FreshnessFresh {
+		pending, level, breaking, version, tag, date = beforePending, beforeLevel, beforeBreaking, beforeVersion, beforeTag, beforeDate
 		switch facts.Verdict {
 		case VerdictTaggable:
 			action = ActionTag
@@ -235,9 +280,31 @@ func Plan(cfg Config, facts Facts) (Decision, error) {
 		Breaking:       breaking,
 		Version:        version,
 		Tag:            tag,
+		Before:         BeforeCandidate{Pending: beforePending, Version: beforeVersion, Tag: beforeTag, Date: beforeDate},
+		Date:           date,
 	}, nil
 }
 
-func quote(s string) string {
-	return "\"" + strings.ReplaceAll(s, "\"", "\\\"") + "\""
+// landedError wraps a title rejection for a subject that has already landed:
+// the PR-time message names a retitle that can never happen, so the recovery
+// names the floor instead.
+func landedError(commit Commit, branch string, err error) error {
+	rej, ok := err.(*Error)
+	if !ok {
+		return err
+	}
+	where := "landed subject " + strconv.Quote(commit.SHA)
+	if branch != "" {
+		where += " on " + strconv.Quote(branch)
+	}
+	where += ", read by intent.Plan"
+	return &Error{
+		Code:  rej.Code,
+		What:  rej.What,
+		Why:   rej.Why,
+		Where: where,
+		When:  "planning the release action",
+		Means: "no release PR and no tag until the subject leaves the range",
+		Fix:   "set the repository variable RELEASE_BATCH_FLOOR to " + strconv.Quote(commit.SHA) + " and leave it set",
+	}
 }

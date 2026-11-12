@@ -43,7 +43,7 @@ func splitSemVer(s SemVer) (major, minor, patch int, err error) {
 	return numbers[0], numbers[1], numbers[2], nil
 }
 
-// parts renders three numbers as a bare X.Y.Z value.
+// semVerOf renders three numbers as a bare X.Y.Z value.
 func semVerOf(major, minor, patch int) SemVer {
 	return SemVer(strconv.Itoa(major) + "." + strconv.Itoa(minor) + "." + strconv.Itoa(patch))
 }

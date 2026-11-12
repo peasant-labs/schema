@@ -31,10 +31,10 @@ func TestClassifyPR(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			cfg := intent.Config{
 				AutomationAuthor: c.Input.AutomationAuthor,
-				BotBranches: map[string]string{
-					"release":     c.Input.ReleaseBranch,
-					"vendor-hash": c.Input.VendorBranch,
-					"cut-release": c.Input.CutBranch,
+				BotBranches: map[intent.PRKind]string{
+					intent.PRKindRelease:    c.Input.ReleaseBranch,
+					intent.PRKindVendorHash: c.Input.VendorBranch,
+					intent.PRKindCutRelease: c.Input.CutBranch,
 				},
 			}
 			got := intent.ClassifyPR(cfg, c.Input.Author, c.Input.HeadBranch)

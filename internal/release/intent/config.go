@@ -10,12 +10,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// configBotKinds are the only keys a bot_branches map may carry.
-var configBotKinds = map[string]bool{
-	string(PRKindRelease):    true,
-	string(PRKindVendorHash): true,
-	string(PRKindCutRelease): true,
-}
+// configBotKinds is the closed set of keys a bot_branches map may carry: the
+// bot PR kinds, derived once from AllPRKinds so the closed set has one home.
+var configBotKinds = func() map[PRKind]bool {
+	out := map[PRKind]bool{}
+	for _, kind := range botKinds {
+		out[kind] = true
+	}
+	return out
+}()
 
 // LoadConfig reads and validates one repo's release-intent file. Unknown
 // keys fail closed so a typo'd key disables nothing silently. A repo that
@@ -124,12 +127,12 @@ func checkConfig(cfg Config, where string) error {
 	}
 	for kind, branch := range cfg.BotBranches {
 		if !configBotKinds[kind] {
-			return fail("bot_branches names unknown kind "+strconv.Quote(kind),
+			return fail("bot_branches names unknown kind "+strconv.Quote(string(kind)),
 				"the bot PR kinds are closed so every workflow compares against the same names",
 				"use one of release, vendor-hash or cut-release as the key")
 		}
 		if branch == "" {
-			return fail("bot_branches entry "+strconv.Quote(kind)+" names an empty branch",
+			return fail("bot_branches entry "+strconv.Quote(string(kind))+" names an empty branch",
 				"each bot PR kind needs the one head branch its PR uses",
 				"set the branch, for example \"automation/release\" for the release kind")
 		}

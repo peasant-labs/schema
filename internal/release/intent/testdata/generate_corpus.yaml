@@ -8,6 +8,9 @@ required_names:
   - breaking-marked
   - single-empty-release-line
   - no-pr-number
+  - redact-bare-prefixed
+  - peasant-bracket-version-dated
+  - bracket-undated-ignores-date
   - dated-style-missing-date
   - no-section-base
   - empty-pending-is-error
@@ -270,6 +273,105 @@ cases:
     classification: must-pass
     provenance: {source: boundary, ref: "generator: a subject with no PR number renders with no suffix"}
     mutation: {description: "a pending title with no PR number"}
+  - name: redact-bare-prefixed
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "two", pr: 10}
+      base_changelog: |
+        # Changelog
+
+        ## v0.1.6
+
+        - fix(x)[patch]: one (#9)
+      version: "0.1.7"
+      tag: "v0.1.7"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        ## v0.1.7
+
+        - two (#10)
+
+        ## v0.1.6
+
+        - fix(x)[patch]: one (#9)
+      section: |
+        ## v0.1.7
+
+        - two (#10)
+      versions: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: "generator: a bare prefixed heading keeps the tag"}
+    mutation: {description: "a pending patch over a redact-shaped base"}
+  - name: peasant-bracket-version-dated
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "two", pr: 10}
+      base_changelog: |
+        # Changelog
+
+        ## [0.14.0] - 2026-11-04
+
+        - feat(x)[minor]: one (#9)
+      version: "0.15.0"
+      tag: "v0.15.0"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        ## [0.15.0] - 2026-11-12
+
+        - two (#10)
+
+        ## [0.14.0] - 2026-11-04
+
+        - feat(x)[minor]: one (#9)
+      section: |
+        ## [0.15.0] - 2026-11-12
+
+        - two (#10)
+      versions: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: "generator: a bracket heading without the prefix keeps the bare version"}
+    mutation: {description: "a pending minor over a peasant-shaped base"}
+  - name: bracket-undated-ignores-date
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "two", pr: 10}
+      base_changelog: |
+        # Changelog
+
+        ## [v0.1.0]
+
+        - feat(x)[minor]: one (#9)
+      version: "0.2.0"
+      tag: "v0.2.0"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        ## [v0.2.0]
+
+        - two (#10)
+
+        ## [v0.1.0]
+
+        - feat(x)[minor]: one (#9)
+      section: |
+        ## [v0.2.0]
+
+        - two (#10)
+      versions: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: "generator: a date is written only when the base heading style has one"}
+    mutation: {description: "a date passed under an undated heading style"}
   - name: dated-style-missing-date
     input:
       config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}

@@ -5,6 +5,7 @@ package intent_test
 import (
 	_ "embed"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
@@ -19,17 +20,20 @@ type planInput struct {
 }
 
 type planExpected struct {
-	Action         string         `yaml:"action"`
-	RangeBase      string         `yaml:"range_base"`
-	VersionBase    string         `yaml:"version_base"`
-	Candidate      string         `yaml:"candidate"`
-	CandidateFresh string         `yaml:"candidate_fresh"`
-	Pending        []intent.Title `yaml:"pending"`
-	Level          intent.Level   `yaml:"level"`
-	Breaking       bool           `yaml:"breaking"`
-	Version        string         `yaml:"version"`
-	Tag            string         `yaml:"tag"`
-	Code           string         `yaml:"code"`
+	Action         string                 `yaml:"action"`
+	RangeBase      string                 `yaml:"range_base"`
+	VersionBase    string                 `yaml:"version_base"`
+	Candidate      string                 `yaml:"candidate"`
+	CandidateFresh string                 `yaml:"candidate_fresh"`
+	Pending        []intent.Title         `yaml:"pending"`
+	Level          intent.Level           `yaml:"level"`
+	Breaking       bool                   `yaml:"breaking"`
+	Version        string                 `yaml:"version"`
+	Tag            string                 `yaml:"tag"`
+	Before         intent.BeforeCandidate `yaml:"before"`
+	Date           string                 `yaml:"date"`
+	Code           string                 `yaml:"code"`
+	FixContains    string                 `yaml:"fix_contains"`
 }
 
 func TestPlan(t *testing.T) {
@@ -42,6 +46,9 @@ func TestPlan(t *testing.T) {
 					t.Fatalf("Plan: expected an error, got %+v", got)
 				}
 				requireSixParts(t, err, c.Expected.Code)
+				if c.Expected.FixContains != "" && !strings.Contains(err.Error(), c.Expected.FixContains) {
+					t.Errorf("error message is missing %q: %v", c.Expected.FixContains, err)
+				}
 				return
 			}
 			if err != nil {
@@ -83,6 +90,31 @@ func TestPlan(t *testing.T) {
 			if got.Tag != c.Expected.Tag {
 				t.Errorf("Tag = %q, want %q", got.Tag, c.Expected.Tag)
 			}
+			if string(got.Date) != c.Expected.Date {
+				t.Errorf("Date = %q, want %q", got.Date, c.Expected.Date)
+			}
+			compareBefore(t, got.Before, c.Expected.Before)
 		})
+	}
+}
+
+func compareBefore(t *testing.T, got, want intent.BeforeCandidate) {
+	t.Helper()
+	if len(got.Pending) != len(want.Pending) {
+		t.Fatalf("Before.Pending has %d titles, want %d", len(got.Pending), len(want.Pending))
+	}
+	for i := range got.Pending {
+		if !reflect.DeepEqual(got.Pending[i], want.Pending[i]) {
+			t.Errorf("Before.Pending[%d] = %+v, want %+v", i, got.Pending[i], want.Pending[i])
+		}
+	}
+	if string(got.Version) != string(want.Version) {
+		t.Errorf("Before.Version = %q, want %q", got.Version, want.Version)
+	}
+	if got.Tag != want.Tag {
+		t.Errorf("Before.Tag = %q, want %q", got.Tag, want.Tag)
+	}
+	if string(got.Date) != string(want.Date) {
+		t.Errorf("Before.Date = %q, want %q", got.Date, want.Date)
 	}
 }

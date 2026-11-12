@@ -8,6 +8,8 @@ required_names:
   - refactor-with-patch
   - release-patch
   - duplicate-scopes-allowed
+  - village-surface-scope
+  - vendor-scope
   - deps-scope-accepted
   - breaking-below-1-minor
   - breaking-from-1-major
@@ -68,6 +70,18 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "title grammar: duplicate scopes pass"}
     mutation: {description: "repeated a scope"}
+  - name: village-surface-scope
+    input: {title: "release(village-api)[minor]: freeze the village surface", current: "0.0.66", releases: true}
+    expected: {type: "release", scopes: ["village-api"], breaking: false, level: "minor", subject: "freeze the village surface", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: a release scope may start with v"}
+    mutation: {description: "a scope starting with v under the release type"}
+  - name: vendor-scope
+    input: {title: "release(vendor)[patch]: update the hash", current: "0.0.66", releases: true}
+    expected: {type: "release", scopes: ["vendor"], breaking: false, level: "patch", subject: "update the hash", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: a release scope may start with v"}
+    mutation: {description: "a short scope starting with v under the release type"}
   - name: deps-scope-accepted
     input: {title: "feat(deps)[patch]: bump the lockfile", current: "0.0.66", releases: true}
     expected: {type: "feat", scopes: ["deps"], breaking: false, level: "patch", subject: "bump the lockfile", pr: 0, code: ""}
