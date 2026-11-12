@@ -26,7 +26,7 @@ type conversationTurnKindExpected struct {
 }
 
 type conversationTurnKindFixtures struct {
-	RequiredNames []string                                              `yaml:"required_names"`
+	RequiredNames []string                                                                 `yaml:"required_names"`
 	Kinds         testcase.Corpus[conversationTurnKindInput, conversationTurnKindExpected] `yaml:"kinds"`
 }
 

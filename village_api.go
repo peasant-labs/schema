@@ -512,29 +512,29 @@ type VillageCollectiveDetailResponse struct {
 // that carries a transcript carries its owner beside it as a
 // VillagePublicOwner, resolved for the viewer.
 type VillageTranscript struct {
-	ID              TranscriptID                `json:"id"`
-	LocalID         SessionID                   `json:"local_id"`
-	Title           *string                     `json:"title"`
-	Description     *string                     `json:"description"`
-	Visibility      VillageTranscriptVisibility `json:"visibility"`
-	ModelProvider   string                      `json:"model_provider"`
-	ModelName       *string                     `json:"model_name"`
-	HarnessVersion  *string                     `json:"harness_version"`
-	SessionStart    *time.Time                  `json:"session_start"`
-	SessionEnd      *time.Time                  `json:"session_end"`
-	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
+	ID             TranscriptID                `json:"id"`
+	LocalID        SessionID                   `json:"local_id"`
+	Title          *string                     `json:"title"`
+	Description    *string                     `json:"description"`
+	Visibility     VillageTranscriptVisibility `json:"visibility"`
+	ModelProvider  string                      `json:"model_provider"`
+	ModelName      *string                     `json:"model_name"`
+	HarnessVersion *string                     `json:"harness_version"`
+	SessionStart   *time.Time                  `json:"session_start"`
+	SessionEnd     *time.Time                  `json:"session_end"`
+	TurnCount      *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
 	// ConversationTurnCount is the number of conversation turns as published;
 	// null means unmeasured.
 	ConversationTurnCount *int64 `json:"conversation_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	// DisplayedTurnCount is the count a reader is shown: conversation_turn_count
 	// when measured, else turn_count; resolved by the server.
-	DisplayedTurnCount *int64 `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	TokenCount      *int32                      `json:"token_count"`
-	BlobSizeBytes   *int64                      `json:"blob_size_bytes"`
-	SchemaVersion   string                      `json:"schema_version"`
-	PublishedAt     time.Time                   `json:"published_at"`
-	UpdatedAt       time.Time                   `json:"updated_at"`
-	ParentSessionID *SessionID                  `json:"parent_session_id"`
+	DisplayedTurnCount *int64     `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	TokenCount         *int32     `json:"token_count"`
+	BlobSizeBytes      *int64     `json:"blob_size_bytes"`
+	SchemaVersion      string     `json:"schema_version"`
+	PublishedAt        time.Time  `json:"published_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	ParentSessionID    *SessionID `json:"parent_session_id"`
 	// ParentTranscriptID is the transcript published from the session named by
 	// ParentSessionID, resolved by the server at read time within the same
 	// owner, because a session id is unique only per owner and the owner's id
@@ -785,29 +785,29 @@ func (r VillageTranscriptMetadataResponse) Validate() error {
 // JSON wire, and this shape preserves required fields in OpenAPI and TypeScript
 // generation. Owner is the transcript's owner as this viewer may see them.
 type VillageCollectiveTranscript struct {
-	ID              TranscriptID                `json:"id"`
-	LocalID         SessionID                   `json:"local_id"`
-	Title           *string                     `json:"title"`
-	Description     *string                     `json:"description"`
-	Visibility      VillageTranscriptVisibility `json:"visibility"`
-	ModelProvider   string                      `json:"model_provider"`
-	ModelName       *string                     `json:"model_name"`
-	HarnessVersion  *string                     `json:"harness_version"`
-	SessionStart    *time.Time                  `json:"session_start"`
-	SessionEnd      *time.Time                  `json:"session_end"`
-	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
+	ID             TranscriptID                `json:"id"`
+	LocalID        SessionID                   `json:"local_id"`
+	Title          *string                     `json:"title"`
+	Description    *string                     `json:"description"`
+	Visibility     VillageTranscriptVisibility `json:"visibility"`
+	ModelProvider  string                      `json:"model_provider"`
+	ModelName      *string                     `json:"model_name"`
+	HarnessVersion *string                     `json:"harness_version"`
+	SessionStart   *time.Time                  `json:"session_start"`
+	SessionEnd     *time.Time                  `json:"session_end"`
+	TurnCount      *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
 	// ConversationTurnCount is the number of conversation turns as published;
 	// null means unmeasured.
 	ConversationTurnCount *int64 `json:"conversation_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	// DisplayedTurnCount is the count a reader is shown: conversation_turn_count
 	// when measured, else turn_count; resolved by the server.
-	DisplayedTurnCount *int64 `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	TokenCount      *int32                      `json:"token_count"`
-	BlobSizeBytes   *int64                      `json:"blob_size_bytes"`
-	SchemaVersion   string                      `json:"schema_version"`
-	PublishedAt     time.Time                   `json:"published_at"`
-	UpdatedAt       time.Time                   `json:"updated_at"`
-	ParentSessionID *SessionID                  `json:"parent_session_id"`
+	DisplayedTurnCount *int64     `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	TokenCount         *int32     `json:"token_count"`
+	BlobSizeBytes      *int64     `json:"blob_size_bytes"`
+	SchemaVersion      string     `json:"schema_version"`
+	PublishedAt        time.Time  `json:"published_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	ParentSessionID    *SessionID `json:"parent_session_id"`
 	// ParentTranscriptID is the transcript published from the session named by
 	// ParentSessionID, resolved by the server at read time within the same
 	// owner, because a session id is unique only per owner and the owner's id
@@ -966,24 +966,24 @@ type VillagePendingShare struct {
 // VillageUserCollectiveShare is one of the caller's own live submissions.
 // Owner is the caller's own profile.
 type VillageUserCollectiveShare struct {
-	ID              TranscriptID                `json:"id"`
-	Title           *string                     `json:"title"`
-	ModelProvider   string                      `json:"model_provider"`
-	ModelName       *string                     `json:"model_name"`
-	Visibility      VillageTranscriptVisibility `json:"visibility"`
-	PublishedAt     time.Time                   `json:"published_at"`
-	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
+	ID            TranscriptID                `json:"id"`
+	Title         *string                     `json:"title"`
+	ModelProvider string                      `json:"model_provider"`
+	ModelName     *string                     `json:"model_name"`
+	Visibility    VillageTranscriptVisibility `json:"visibility"`
+	PublishedAt   time.Time                   `json:"published_at"`
+	TurnCount     *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
 	// ConversationTurnCount is the number of conversation turns as published;
 	// null means unmeasured.
 	ConversationTurnCount *int64 `json:"conversation_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	// DisplayedTurnCount is the count a reader is shown: conversation_turn_count
 	// when measured, else turn_count; resolved by the server.
-	DisplayedTurnCount *int64 `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	TokensIn        *int64                      `json:"tokens_in"`
-	TokensOut       *int64                      `json:"tokens_out"`
-	Owner           VillagePublicOwner          `json:"owner"`
-	LocalID         SessionID                   `json:"local_id"`
-	ParentSessionID *SessionID                  `json:"parent_session_id"`
+	DisplayedTurnCount *int64             `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	TokensIn           *int64             `json:"tokens_in"`
+	TokensOut          *int64             `json:"tokens_out"`
+	Owner              VillagePublicOwner `json:"owner"`
+	LocalID            SessionID          `json:"local_id"`
+	ParentSessionID    *SessionID         `json:"parent_session_id"`
 	// ParentTranscriptID follows VillageTranscript.ParentTranscriptID.
 	ParentTranscriptID *TranscriptID `json:"parent_transcript_id"`
 	// Status uses the shared lifecycle enum. Current my-shares responses emit the

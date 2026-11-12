@@ -175,11 +175,11 @@ type SessionStats struct {
 	// means unmeasured: a producer or publication older than this field. It
 	// equals the segment directory's totalConversationTurns at the same revision.
 	ConversationTurnCount *int64 `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	ToolCallCount        int    `json:"toolCallCount"`
-	SubagentCount        int    `json:"subagentCount"`
-	DurationMs           int64  `json:"durationMs"`
-	TokensIn             int    `json:"tokensIn"`
-	TokensOut            int    `json:"tokensOut"`
+	ToolCallCount         int    `json:"toolCallCount"`
+	SubagentCount         int    `json:"subagentCount"`
+	DurationMs            int64  `json:"durationMs"`
+	TokensIn              int    `json:"tokensIn"`
+	TokensOut             int    `json:"tokensOut"`
 	// ACP-aligned token breakdown (optional — not all providers report these).
 	ThoughtTokens     *int `json:"thoughtTokens,omitempty"`     // Reasoning/thinking tokens
 	CachedReadTokens  *int `json:"cachedReadTokens,omitempty"`  // Prompt cache hits

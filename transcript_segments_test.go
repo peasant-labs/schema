@@ -123,10 +123,10 @@ type transcriptDirectoryCap struct {
 }
 
 type transcriptSegmentsFixtures struct {
-	RequiredNames []string                                                `yaml:"required_names"`
+	RequiredNames []string                                                       `yaml:"required_names"`
 	ShapeCases    testcase.Corpus[transcriptShapeInput, transcriptShapeExpected] `yaml:"shape_cases"`
-	CutCases      []transcriptCutCase                                     `yaml:"cut_cases"`
-	DirectoryCap  transcriptDirectoryCap                                  `yaml:"directory_cap"`
+	CutCases      []transcriptCutCase                                            `yaml:"cut_cases"`
+	DirectoryCap  transcriptDirectoryCap                                         `yaml:"directory_cap"`
 }
 
 func loadTranscriptSegmentsFixtures(t *testing.T) transcriptSegmentsFixtures {
