@@ -21,17 +21,17 @@ type freshInput struct {
 }
 
 type freshExpected struct {
-	Exit     int      `yaml:"exit"`
-	Action   string   `yaml:"action"`
-	Fresh    string   `yaml:"fresh"`
-	Error    string   `yaml:"error"`
-	Lines    []string `yaml:"lines"`
+	Exit   int      `yaml:"exit"`
+	Action string   `yaml:"action"`
+	Fresh  string   `yaml:"fresh"`
+	Error  string   `yaml:"error"`
+	Lines  []string `yaml:"lines"`
 	// CheckLines is the exact stdout of the release-pr --check that follows
 	// the write, for scenarios that run both.
 	CheckLines []string `yaml:"check_lines"`
-	Absent   []string `yaml:"absent"`
-	Sections int      `yaml:"sections"`
-	Version  string   `yaml:"version"`
+	Absent     []string `yaml:"absent"`
+	Sections   int      `yaml:"sections"`
+	Version    string   `yaml:"version"`
 }
 
 type freshFixtures struct {

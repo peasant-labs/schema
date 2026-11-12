@@ -32,6 +32,7 @@ required_names:
   - plan-missing-mode
   - plan-unreadable-branch
   - plan-accept-open-pr
+  - plan-empty-floor-and-mode
   - plan-bad-subject
   - plan-empty-release-plans
   - release-pr-write-accept
@@ -261,6 +262,12 @@ cases:
       classification: must-pass
       provenance: {source: requirement, ref: "a pending batch plans open-pr with the full key set"}
       mutation: {description: "Plans the basic temp repo in tag mode."}
+    - name: plan-empty-floor-and-mode
+      input: {argv: ["plan", "--branch", "HEAD", "--floor", "", "--mode", ""], stdin: "", setup: "git-basic"}
+      expected: {exit: 0, stdout: ["action=none", "range_base=v0.1.0", "version_base=v0.1.0", "candidate=", "candidate_fresh=", "level=minor", "breaking=false", "version=0.2.0", "tag=v0.2.0", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "unset floor and mode variables arrive as empty quoted words: no floor, tag mode off"}
+      mutation: {description: "Passes an empty floor and an empty mode as separate argument words."}
     - name: plan-bad-subject
       input: {argv: ["plan", "--branch", "HEAD", "--mode", "tag"], stdin: "", setup: "git-bad-subject"}
       expected: {exit: 2, stdout: ["error=unknown-type"]}
