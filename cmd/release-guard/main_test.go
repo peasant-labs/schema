@@ -418,3 +418,18 @@ func TestRunCheckWorkflow_FlagParse(t *testing.T) {
 		}
 	})
 }
+
+// --- check-workflow against the repo's own files (legacy compatibility) -----
+
+func TestRunCheckWorkflow_RepoFilesKeepWorking(t *testing.T) {
+	t.Parallel()
+
+	// The repo's own jobs-only policy and release workflow must keep passing
+	// the unchanged check-workflow path: no queue section, no new flags.
+	if err := runCheckWorkflow([]string{
+		"--policy", "../../.github/release-guard.policy.yml",
+		"--release", "../../.github/workflows/release.yml",
+	}); err != nil {
+		t.Fatalf("runCheckWorkflow(repo files) = %v, want nil for the unchanged jobs-only policy", err)
+	}
+}
