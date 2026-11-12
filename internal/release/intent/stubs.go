@@ -19,33 +19,6 @@ func unimplemented(name string) error {
 	}
 }
 
-// ParseTitle parses one intent title against the release config and the
-// repo's current version.
-func ParseTitle(cfg Config, current SemVer, raw string) (Title, error) {
-	return Title{}, unimplemented("ParseTitle")
-}
-
-// ParseSemVer validates a bare X.Y.Z value.
-func ParseSemVer(raw string) (SemVer, error) {
-	return "", unimplemented("ParseSemVer")
-}
-
-// NextVersion computes the next version from a base, the highest pending
-// level, and whether any pending subject is breaking.
-func NextVersion(base SemVer, level Level, breaking bool) (SemVer, error) {
-	return "", unimplemented("NextVersion")
-}
-
-// LoadConfig reads and validates one repo's release-intent file.
-func LoadConfig(path string) (Config, error) {
-	return Config{}, unimplemented("LoadConfig")
-}
-
-// ClassifyPR reports which bot PR, if any, a head branch belongs to.
-func ClassifyPR(cfg Config, author, headBranch string) PRKind {
-	return PRKindOrdinary
-}
-
 // Plan reduces branch facts to the one release action and its values.
 func Plan(cfg Config, facts Facts) (Decision, error) {
 	return Decision{}, unimplemented("Plan")

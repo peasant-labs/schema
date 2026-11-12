@@ -1,5 +1,7 @@
 package intent
 
+import "fmt"
+
 // This file defines every closed set the package trades in. Closed sets are
 // typed, with no bare strings crossing the package boundary: callers compare
 // against named constants, and membership is asserted exactly in fixtures.
@@ -96,6 +98,27 @@ func (l Level) String() string {
 	default:
 		return "none"
 	}
+}
+
+// UnmarshalYAML accepts the level names the fixtures use.
+func (l *Level) UnmarshalYAML(unmarshal func(any) error) error {
+	var word string
+	if err := unmarshal(&word); err != nil {
+		return err
+	}
+	switch word {
+	case "patch":
+		*l = LevelPatch
+	case "minor":
+		*l = LevelMinor
+	case "major":
+		*l = LevelMajor
+	case "none", "":
+		*l = LevelNone
+	default:
+		return fmt.Errorf("unknown level %q: want one of none, patch, minor, major", word)
+	}
+	return nil
 }
 
 // Mode selects whether the release job may write. Anything but "tag" plans.
@@ -216,22 +239,19 @@ func (k PRKind) String() string { return string(k) }
 type ErrorCode string
 
 const (
-	ErrMalformed             ErrorCode = "malformed"
-	ErrUnknownType           ErrorCode = "unknown-type"
-	ErrMissingBump           ErrorCode = "missing-bump"
-	ErrBumpOnNonReleasing    ErrorCode = "bump-on-non-releasing"
-	ErrBangBumpMismatch      ErrorCode = "bang-bump-mismatch"
-	ErrOldReleaseTitle       ErrorCode = "old-release-title"
-	ErrReleasesDisabled      ErrorCode = "releases-disabled"
-	ErrProtectedPath         ErrorCode = "protected-path"
-	ErrUnderDeclaredBreaking ErrorCode = "under-declared-breaking"
-	ErrSpecChangeNeedsBump   ErrorCode = "spec-change-needs-bump"
-	ErrSurfaceMismatch       ErrorCode = "surface-mismatch"
-	ErrNoFinalTag            ErrorCode = "no-final-tag"
-	ErrEpochMissing          ErrorCode = "epoch-missing"
-	ErrFloorNotOnChain       ErrorCode = "floor-not-on-chain"
-	ErrReleaseContentStale   ErrorCode = "release-content-stale"
-	ErrSurfaceUndeclared     ErrorCode = "surface-undeclared"
+	ErrMalformed           ErrorCode = "malformed"
+	ErrUnknownType         ErrorCode = "unknown-type"
+	ErrMissingBump         ErrorCode = "missing-bump"
+	ErrBumpOnNonReleasing  ErrorCode = "bump-on-non-releasing"
+	ErrBangBumpMismatch    ErrorCode = "bang-bump-mismatch"
+	ErrOldReleaseTitle     ErrorCode = "old-release-title"
+	ErrReleasesDisabled    ErrorCode = "releases-disabled"
+	ErrProtectedPath       ErrorCode = "protected-path"
+	ErrNoFinalTag          ErrorCode = "no-final-tag"
+	ErrEpochMissing        ErrorCode = "epoch-missing"
+	ErrFloorNotOnChain     ErrorCode = "floor-not-on-chain"
+	ErrReleaseContentStale ErrorCode = "release-content-stale"
+	ErrSurfaceUndeclared   ErrorCode = "surface-undeclared"
 )
 
 // AllErrorCodes is the canonical closed set of typed error codes.
@@ -244,14 +264,10 @@ var AllErrorCodes = []ErrorCode{
 	ErrOldReleaseTitle,
 	ErrReleasesDisabled,
 	ErrProtectedPath,
-	ErrUnderDeclaredBreaking,
-	ErrSpecChangeNeedsBump,
-	ErrSurfaceMismatch,
 	ErrNoFinalTag,
 	ErrEpochMissing,
 	ErrFloorNotOnChain,
 	ErrReleaseContentStale,
-	ErrSurfaceUndeclared,
 }
 
 func (c ErrorCode) String() string { return string(c) }
@@ -266,12 +282,12 @@ func (s SemVer) String() string { return string(s) }
 // PR number attached. PR is 0 when the text is a PR title, not a landed
 // subject.
 type Title struct {
-	Type     Type
-	Scopes   []string
-	Breaking bool
-	Level    Level
-	Subject  string
-	PR       int
+	Type     Type     `yaml:"type"`
+	Scopes   []string `yaml:"scopes"`
+	Breaking bool     `yaml:"breaking"`
+	Level    Level    `yaml:"level"`
+	Subject  string   `yaml:"subject"`
+	PR       int      `yaml:"pr"`
 }
 
 // VersionFile names one version file and the single top-level field the
@@ -316,9 +332,9 @@ func (e *Error) Error() string {
 // Commit is one first-parent commit on the release branch: its SHA, its
 // subject, and whether it touches the changelog file.
 type Commit struct {
-	SHA              string
-	Subject          string
-	ChangesChangelog bool
+	SHA              string `yaml:"sha"`
+	Subject          string `yaml:"subject"`
+	ChangesChangelog bool   `yaml:"changes_changelog"`
 }
 
 // Facts is everything Plan reads: the branch tip's first-parent history,
@@ -327,59 +343,59 @@ type Commit struct {
 // commits in range. The command layer fills Fresh through the GitRunner; Plan
 // only reads the entry for the commit it picks.
 type Facts struct {
-	Commits []Commit
-	Tags    map[string]string
-	Epoch   string
-	Floor   string
-	Mode    Mode
-	Verdict Verdict
-	Fresh   map[string]bool
+	Commits []Commit          `yaml:"commits"`
+	Tags    map[string]string `yaml:"tags"`
+	Epoch   string            `yaml:"epoch"`
+	Floor   string            `yaml:"floor"`
+	Mode    Mode              `yaml:"mode"`
+	Verdict Verdict           `yaml:"verdict"`
+	Fresh   map[string]bool   `yaml:"fresh"`
 }
 
 // Decision is the whole plan: the one action plus every value the workflow
 // needs to carry it out.
 type Decision struct {
-	Action         Action
-	RangeBase      string
-	VersionBase    string
-	Candidate      string
-	CandidateFresh Freshness
-	Pending        []Title
-	Level          Level
-	Breaking       bool
-	Version        SemVer
-	Tag            string
+	Action         Action    `yaml:"action"`
+	RangeBase      string    `yaml:"range_base"`
+	VersionBase    string    `yaml:"version_base"`
+	Candidate      string    `yaml:"candidate"`
+	CandidateFresh Freshness `yaml:"candidate_fresh"`
+	Pending        []Title   `yaml:"pending"`
+	Level          Level     `yaml:"level"`
+	Breaking       bool      `yaml:"breaking"`
+	Version        SemVer    `yaml:"version"`
+	Tag            string    `yaml:"tag"`
 }
 
 // ContentInput is what the release-content generator renders.
 type ContentInput struct {
-	Pending       []Title
-	BaseChangelog string
-	Version       SemVer
-	Tag           string
-	Date          string
+	Pending       []Title `yaml:"pending"`
+	BaseChangelog string  `yaml:"base_changelog"`
+	Version       SemVer  `yaml:"version"`
+	Tag           string  `yaml:"tag"`
+	Date          string  `yaml:"date"`
 }
 
 // Content is the generated release content: the full new changelog text, the
 // new section on its own, and one value per version file path.
 type Content struct {
-	Changelog string
-	Section   string
-	Versions  map[string]string
+	Changelog string            `yaml:"changelog"`
+	Section   string            `yaml:"section"`
+	Versions  map[string]string `yaml:"versions"`
 }
 
 // QueueEntry is one merge-queue entry the gate judges.
 type QueueEntry struct {
-	Position int
-	Number   int
-	Title    string
+	Position int    `yaml:"position"`
+	Number   int    `yaml:"number"`
+	Title    string `yaml:"title"`
 }
 
 // QueueSnapshot is a decoded queue read: the listed entries and the total
 // the service reported.
 type QueueSnapshot struct {
-	Entries    []QueueEntry
-	TotalCount int
+	Entries    []QueueEntry `yaml:"entries"`
+	TotalCount int          `yaml:"total_count"`
 }
 
 // GitRunner is the one impure seam: reading commits, tags and files from git.

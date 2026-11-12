@@ -1,0 +1,171 @@
+# Protected-path corpus: rows of intent.CheckProtectedPaths. The release
+# config rides in each input so the corpus pins the judgement, not one file.
+required_names:
+  - changelog-by-author
+  - version-field-moved
+  - version-other-fields
+  - unrelated-file
+  - glob-protected
+  - release-pr-may-change
+  - protected-found-among-many
+  - empty-change
+cases:
+  - name: changelog-by-author
+    input:
+      config:
+        releases: true
+        tag_prefix: fairtrade-v
+        automation_author: peasant-labs-releaser[bot]
+        changelog: CHANGELOG.md
+        version_files:
+          - { path: package.json, field: version }
+        protected_paths: []
+        surfaces: {}
+        bot_branches: {}
+      is_release_pr: false
+      changes:
+        - { path: "CHANGELOG.md", protected_field_changed: false }
+    expected: {code: "protected-path"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "protected paths: the changelog is written only by the release PR"}
+    mutation: {description: "an author edit to the changelog"}
+  - name: version-field-moved
+    input:
+      config:
+        releases: true
+        tag_prefix: fairtrade-v
+        automation_author: peasant-labs-releaser[bot]
+        changelog: CHANGELOG.md
+        version_files:
+          - { path: package.json, field: version }
+        protected_paths: []
+        surfaces: {}
+        bot_branches: {}
+      is_release_pr: false
+      changes:
+        - { path: "package.json", protected_field_changed: true }
+    expected: {code: "protected-path"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "protected paths: the protected field is written only by the release PR"}
+    mutation: {description: "an author edit to the version field"}
+  - name: version-other-fields
+    input:
+      config:
+        releases: true
+        tag_prefix: fairtrade-v
+        automation_author: peasant-labs-releaser[bot]
+        changelog: CHANGELOG.md
+        version_files:
+          - { path: package.json, field: version }
+        protected_paths: []
+        surfaces: {}
+        bot_branches: {}
+      is_release_pr: false
+      changes:
+        - { path: "package.json", protected_field_changed: false }
+    expected: {code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "protected paths: a version file is protected by field, not by file"}
+    mutation: {description: "an author edit to the same file outside the protected field"}
+  - name: unrelated-file
+    input:
+      config:
+        releases: true
+        tag_prefix: fairtrade-v
+        automation_author: peasant-labs-releaser[bot]
+        changelog: CHANGELOG.md
+        version_files:
+          - { path: package.json, field: version }
+        protected_paths: []
+        surfaces: {}
+        bot_branches: {}
+      is_release_pr: false
+      changes:
+        - { path: "src/graph.ts", protected_field_changed: false }
+    expected: {code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "protected paths: ordinary content is never protected"}
+    mutation: {description: "an author edit to ordinary content"}
+  - name: glob-protected
+    input:
+      config:
+        releases: true
+        tag_prefix: v
+        automation_author: peasant-labs-releaser[bot]
+        changelog: CHANGELOG.md
+        version_files: []
+        protected_paths:
+          - generated/*
+        surfaces: {}
+        bot_branches: {}
+      is_release_pr: false
+      changes:
+        - { path: "generated/types-0.1.0.json", protected_field_changed: false }
+    expected: {code: "protected-path"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "protected paths: a glob entry covers its matches"}
+    mutation: {description: "an author edit to a glob-protected path"}
+  - name: release-pr-may-change
+    input:
+      config:
+        releases: true
+        tag_prefix: fairtrade-v
+        automation_author: peasant-labs-releaser[bot]
+        changelog: CHANGELOG.md
+        version_files:
+          - { path: package.json, field: version }
+        protected_paths: []
+        surfaces: {}
+        bot_branches: {}
+      is_release_pr: true
+      changes:
+        - { path: "CHANGELOG.md", protected_field_changed: false }
+        - { path: "package.json", protected_field_changed: true }
+    expected: {code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "protected paths: the release PR is exempt"}
+    mutation: {description: "the release PR writing its own content"}
+  - name: protected-found-among-many
+    input:
+      config:
+        releases: true
+        tag_prefix: v
+        automation_author: peasant-labs-releaser[bot]
+        changelog: CHANGELOG.md
+        version_files: []
+        protected_paths: []
+        surfaces: {}
+        bot_branches: {}
+      is_release_pr: false
+      changes:
+        - { path: "a.go", protected_field_changed: false }
+        - { path: "b.go", protected_field_changed: false }
+        - { path: "c.go", protected_field_changed: false }
+        - { path: "d.go", protected_field_changed: false }
+        - { path: "e.go", protected_field_changed: false }
+        - { path: "f.go", protected_field_changed: false }
+        - { path: "g.go", protected_field_changed: false }
+        - { path: "h.go", protected_field_changed: false }
+        - { path: "i.go", protected_field_changed: false }
+        - { path: "CHANGELOG.md", protected_field_changed: false }
+    expected: {code: "protected-path"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "protected paths: one protected path among many changes is seen"}
+    mutation: {description: "buried the protected edit last in a long change list"}
+  - name: empty-change
+    input:
+      config:
+        releases: true
+        tag_prefix: v
+        automation_author: peasant-labs-releaser[bot]
+        changelog: CHANGELOG.md
+        version_files: []
+        protected_paths: []
+        surfaces: {}
+        bot_branches: {}
+      is_release_pr: false
+      changes: []
+    expected: {code: ""}
+    classification: must-pass
+    provenance: {source: boundary, ref: "protected paths: an empty change touches nothing protected"}
+    mutation: {description: "an empty change list"}
