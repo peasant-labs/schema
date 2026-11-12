@@ -1,5 +1,0 @@
-on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened, closed]
-concurrency:
-  group: release-pr-${{ github.event.pull_request.number }}

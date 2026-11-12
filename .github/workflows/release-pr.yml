@@ -26,13 +26,20 @@ on:
     branches: [develop]
 
 concurrency:
-  # A body edit must queue behind the running push run instead of cancelling
-  # it: an edit on an open release PR otherwise cancels the in-progress tests
-  # while the edited run skips them (tests only run on
-  # opened/reopened/synchronize), and an edit after merge can cancel the tag
-  # job in the same group.
-  group: release-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: ${{ github.event.action != 'edited' }}
+  # The merge path (closed) runs in its own group and is never cancelled, so
+  # a body edit can never replace the pending tag run. A body edit otherwise
+  # queues behind the running push gates instead of cancelling them (an
+  # edit-triggered run skips tests, which only run on
+  # opened/reopened/synchronize), and a push still supersedes stale runs.
+  #
+  # Remaining window, stated honestly: if a body edit lands in the few seconds
+  # while a push's run is pending behind a cancellation, the edit run replaces
+  # it and skips tests for that head; push again (or re-run the workflow) to
+  # recover. Edits deliberately share the gates group instead of getting their
+  # own: an older push run's title check could otherwise finish after the
+  # edit's and report a stale title.
+  group: release-pr-${{ github.event.pull_request.number }}-${{ github.event.action == 'closed' && 'merge' || 'gates' }}
+  cancel-in-progress: ${{ github.event.action != 'closed' && github.event.action != 'edited' }}
 
 permissions:
   contents: read
@@ -44,6 +51,7 @@ jobs:
     name: validate release PR
     if: >-
       github.event.action != 'closed' &&
+      github.event.pull_request.state == 'open' &&
       startsWith(github.event.pull_request.title, 'release(')
     runs-on: ubuntu-latest
     timeout-minutes: 10
