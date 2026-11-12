@@ -27,8 +27,8 @@ const canonicalGroupID: string = canonicalGroupedContribution.group_id;
 deprecatedGroupedContribution.group_id;
 // @ts-expect-error The canonical route retains only the corrected key spelling.
 canonicalGroupedContribution.groupId;
-import { PeasantLocalAPIVersion, type operations as LocalOperations } from "@peasant-labs/schema/local-api";
-import { VillageAPIVersion, type operations as VillageOperations } from "@peasant-labs/schema/village-api";
+import { LocalRoute, PeasantLocalAPIVersion, type operations as LocalOperations } from "@peasant-labs/schema/local-api";
+import { VillageAPIVersion, VillageRoute, type RouteMember, type operations as VillageOperations } from "@peasant-labs/schema/village-api";
 import type { UnifiedMetadata } from "@peasant-labs/schema/types";
 import { Classification, type Corpus } from "@peasant-labs/schema/testcase";
 import { loadQualityFixtures } from "@peasant-labs/schema/fixtures";
@@ -55,3 +55,10 @@ const timelineFixtures: TimelineFixtureCorpus = loadTimelineFixtures();
 const firstTimelineFixture: TimelineFixtureCase | undefined = timelineFixtures.cases[0];
 
 void [MetadataSchemaVersion, TypesVersion, PeasantLocalAPIVersion, VillageAPIVersion, isRole(role), isFileChangeStatus(FileChangeStatus.Modified), isDiffLineKind(DiffLineKind.Add), projectHash, detail, dashboard, publish, localOperations, villageOperations, metadata, versionResponse, pushContractVersion, corpus, Classification.MustPass, qualitySessions(fixtures), timelineFixtures, firstTimelineFixture];
+
+const packedAttachmentRoute: RouteMember<"/api/v1/pulls/{owner}/{name}/{number}", "GET"> = VillageRoute.GetPullRequestAttachment;
+const packedAttachmentPath: string = packedAttachmentRoute.path({ owner: "acme", name: "tool", number: 12 });
+// @ts-expect-error number is a parameter of the pull request attachment route.
+VillageRoute.GetPullRequestAttachment.path({ owner: "acme", name: "tool" });
+const packedHealthPath: string = LocalRoute.GetHealth.path();
+void [packedAttachmentPath, packedHealthPath];

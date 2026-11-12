@@ -1,0 +1,96 @@
+# Request paths built by the generated route members. The Go path builders
+# (route/routes_gen.go) and the TypeScript path() methods (the /village-api and
+# /local-api subpaths) read the same cases. Go escapes a string parameter with
+# url.PathEscape and TypeScript with encodeURIComponent; the two differ only on
+# characters that are legal unescaped in a path segment, and a server decodes
+# both to the same value, so a case states each language's bytes. The names
+# are pinned in route_paths_manifest.yaml.
+cases:
+  - name: pull-request-attachment
+    input:
+      api: village
+      member: GetPullRequestAttachment
+      params: {owner: acme, name: tool, number: 12}
+    expected:
+      go: /api/v1/pulls/acme/tool/12
+      typescript: /api/v1/pulls/acme/tool/12
+    classification: must-pass
+    provenance: {source: requirement, ref: "route members: a path builder fills every template parameter in order"}
+    mutation: {description: "three parameters, the last one an integer"}
+  - name: integer-parameter-zero
+    input:
+      api: village
+      member: GetTranscriptSegment
+      params: {id: transcript-1, index: 0}
+    expected:
+      go: /api/v1/transcripts/transcript-1/segments/0
+      typescript: /api/v1/transcripts/transcript-1/segments/0
+    classification: must-pass
+    provenance: {source: boundary, ref: "the first segment ordinal is 0, which a truthiness check would drop"}
+    mutation: {description: "an integer parameter of zero"}
+  - name: no-parameters
+    input:
+      api: local
+      member: GetHealth
+      params: {}
+    expected:
+      go: /api/v1/health
+      typescript: /api/v1/health
+    classification: must-pass
+    provenance: {source: requirement, ref: "a route without parameters builds its pattern"}
+    mutation: {description: "the pattern has no parameter"}
+  - name: local-attachment-ref
+    input:
+      api: local
+      member: GetAttachment
+      params: {ref: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+    expected:
+      go: /api/v1/attachments/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      typescript: /api/v1/attachments/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+    classification: must-pass
+    provenance: {source: requirement, ref: "AttachmentRoutePath equals the generated Local member"}
+    mutation: {description: "a content address needs no escaping"}
+  - name: slash-and-space-escaped
+    input:
+      api: village
+      member: GetTranscriptSegments
+      params: {id: a/b c}
+    expected:
+      go: /api/v1/transcripts/a%2Fb%20c/segments
+      typescript: /api/v1/transcripts/a%2Fb%20c/segments
+    classification: must-pass
+    provenance: {source: requirement, ref: "a parameter value stays one path segment"}
+    mutation: {description: "the value contains a slash, which would otherwise add a segment"}
+  - name: query-fragment-and-semicolon-escaped
+    input:
+      api: village
+      member: GetTranscriptSegments
+      params: {id: "x?y#z;w"}
+    expected:
+      go: /api/v1/transcripts/x%3Fy%23z%3Bw/segments
+      typescript: /api/v1/transcripts/x%3Fy%23z%3Bw/segments
+    classification: must-pass
+    provenance: {source: requirement, ref: "a parameter value cannot start a query or a fragment"}
+    mutation: {description: "the value contains ?, # and ;"}
+  - name: percent-and-non-ascii-escaped
+    input:
+      api: local
+      member: GetSession
+      params: {id: "100% é"}
+    expected:
+      go: /api/v1/sessions/100%25%20%C3%A9
+      typescript: /api/v1/sessions/100%25%20%C3%A9
+    classification: must-pass
+    provenance: {source: boundary, ref: "a literal percent sign is escaped once, and UTF-8 bytes are percent-encoded"}
+    mutation: {description: "the value contains % and a non-ASCII letter"}
+  - name: segment-legal-characters-differ-by-language
+    input:
+      api: village
+      member: GetTranscriptSegments
+      params: {id: "a:b@c+d!"}
+    expected:
+      go: /api/v1/transcripts/a:b@c+d%21/segments
+      typescript: /api/v1/transcripts/a%3Ab%40c%2Bd!/segments
+    classification: must-pass
+    provenance: {source: manual, ref: "url.PathEscape and encodeURIComponent escape different segment-legal characters; both decode to the same value"}
+    mutation: {description: "the value contains characters the two escapers treat differently"}

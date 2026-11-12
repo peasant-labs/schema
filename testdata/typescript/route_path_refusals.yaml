@@ -1,0 +1,50 @@
+# Values a TypeScript route member's path() refuses at run time. The type of
+# path() already rejects each of them; these cases cover a JavaScript caller,
+# which the compiler does not check. Go has no counterpart: its path builders
+# take typed parameters. The names are pinned in
+# route_path_refusals_manifest.yaml.
+cases:
+  - name: missing-parameter
+    input:
+      api: village
+      member: GetTranscriptSegments
+      params: {}
+    expected: {error_contains: "parameter \"id\" received no value"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a missing parameter would address the wrong resource"}
+    mutation: {description: "omits the only parameter"}
+  - name: missing-parameter-object
+    input:
+      api: village
+      member: GetPullRequestAttachment
+    expected: {error_contains: "parameter \"owner\" received no value"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a route with parameters needs its parameter object"}
+    mutation: {description: "calls path() with no argument"}
+  - name: null-parameter
+    input:
+      api: local
+      member: GetSession
+      params: {id: null}
+    expected: {error_contains: "parameter \"id\" received a null"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "null would be written as the text null"}
+    mutation: {description: "the value is null"}
+  - name: boolean-parameter
+    input:
+      api: local
+      member: GetSession
+      params: {id: true}
+    expected: {error_contains: "parameter \"id\" received a boolean"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a path parameter is a string or a number"}
+    mutation: {description: "the value is a boolean"}
+  - name: non-finite-number
+    input:
+      api: village
+      member: GetTranscriptSegment
+      params: {id: transcript-1, index: .nan}
+    expected: {error_contains: "parameter \"index\" received NaN"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "NaN would be written as the text NaN"}
+    mutation: {description: "the integer parameter is NaN"}

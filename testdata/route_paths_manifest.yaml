@@ -1,0 +1,11 @@
+# The case names testdata/route_paths.yaml must hold. A case that is removed or added
+# without its entry here fails the test.
+requiredNames:
+  - pull-request-attachment
+  - integer-parameter-zero
+  - no-parameters
+  - local-attachment-ref
+  - slash-and-space-escaped
+  - query-fragment-and-semicolon-escaped
+  - percent-and-non-ascii-escaped
+  - segment-legal-characters-differ-by-language
