@@ -8,6 +8,11 @@
 # valid UTF-8). argumentsBytes and resultBytes build one tool call per pair,
 # each of that many "x" bytes; toolCalls states literal arguments and results.
 # entryType is text when omitted. JSON size of plain ASCII is its bytes + 2.
+#
+# contractBudgetBytes is the budget every server cuts with; the test holds
+# schema.TranscriptSegmentBudgetBytes equal to it. It is a contract value:
+# changing it moves the segment boundaries of every transcript on every server.
+contractBudgetBytes: 1048576
 cases:
   # The next turn would push the segment past the budget, so it is deferred to
   # the next segment instead of being appended. JSON size is content bytes + 2.

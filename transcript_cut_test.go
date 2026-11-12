@@ -170,7 +170,10 @@ type cutCase struct {
 }
 
 type cutFixture struct {
-	Cases []cutCase `yaml:"cases"`
+	// ContractBudgetBytes is the budget every server cuts with. It is stated
+	// here once and schema.TranscriptSegmentBudgetBytes must equal it.
+	ContractBudgetBytes int       `yaml:"contractBudgetBytes"`
+	Cases               []cutCase `yaml:"cases"`
 }
 
 type requiredNamesManifest struct {
@@ -335,6 +338,19 @@ func TestCutTranscriptSegments(t *testing.T) {
 	}
 }
 
+// TestTranscriptSegmentBudgetIsTheContractValue holds the budget constant equal
+// to the value the cut fixture states, so the budget cannot change without a
+// fixture edit that names it.
+func TestTranscriptSegmentBudgetIsTheContractValue(t *testing.T) {
+	fixture := loadCutFixture(t)
+	if fixture.ContractBudgetBytes <= 0 {
+		t.Fatal("the transcript cut fixture states no contractBudgetBytes")
+	}
+	if schema.TranscriptSegmentBudgetBytes != fixture.ContractBudgetBytes {
+		t.Fatalf("schema.TranscriptSegmentBudgetBytes = %d, the cut fixture states the contract budget %d; changing the budget moves every segment boundary on every server, so change both only as a deliberate contract change", schema.TranscriptSegmentBudgetBytes, fixture.ContractBudgetBytes)
+	}
+}
+
 // TestTranscriptJSONStringByteLength holds the exported string measure equal to
 // the encoder it stands for and to the turn measure built from it.
 func TestTranscriptJSONStringByteLength(t *testing.T) {
@@ -372,6 +388,10 @@ type windowExpectation struct {
 	LastTurn   int  `yaml:"lastTurn"`
 	HasOlder   bool `yaml:"hasOlder"`
 	HasNewer   bool `yaml:"hasNewer"`
+	// Segments is the run of segment ordinals that covers the window under the
+	// contract budget. Every resolved case states it, so a moved boundary fails
+	// the row by name.
+	Segments []int `yaml:"segments,omitempty"`
 	// Error names the refusal a case expects: no-user-turn or span-out-of-range.
 	Error string `yaml:"error,omitempty"`
 }
@@ -497,8 +517,11 @@ func TestResolveTranscriptWindow(t *testing.T) {
 			if err != nil {
 				t.Fatalf("resolve window: %v", err)
 			}
-			got := windowExpectation{AnchorTurn: window.AnchorTurn, FirstTurn: window.FirstTurn, LastTurn: window.LastTurn, HasOlder: window.HasOlder, HasNewer: window.HasNewer}
-			if got != c.Expected {
+			if len(c.Expected.Segments) == 0 {
+				t.Fatal("the window case states no expected segments run; record the run the contract budget gives")
+			}
+			got := windowExpectation{AnchorTurn: window.AnchorTurn, FirstTurn: window.FirstTurn, LastTurn: window.LastTurn, HasOlder: window.HasOlder, HasNewer: window.HasNewer, Segments: window.Segments}
+			if !reflect.DeepEqual(got, c.Expected) {
 				t.Fatalf("window = %+v, want %+v", got, c.Expected)
 			}
 			if window.RequestedAnchor != c.Anchor || window.Span != c.Span || window.SessionID != sessionID || window.Revision != sparse.Revision {
