@@ -6,6 +6,7 @@ required_names:
   - stale-new-releasing
   - older-fresh-newer-stale
   - rejected-later-minor-writes-full
+  - fresh-candidate-later-subject-checks-full
   - check-stale
   - read-error
   - stale-rebuild-single-section
@@ -54,6 +55,15 @@ cases:
       classification: must-pass
       provenance: {source: requirement, ref: "a rejected candidate plus a later minor writes the full set"}
       mutation: {description: "Lands a minor after a fresh release without touching the changelog."}
+    - name: fresh-candidate-later-subject-checks-full
+      input: {style: "bare", scenario: "fresh-candidate-later-subject-checks-full"}
+      expected:
+        exit: 0
+        lines: ["fresh=true", "push=true", "version=0.2.0", "error="]
+        check_lines: ["fresh=true", "push=false", "version=0.2.0", "error="]
+      classification: must-pass
+      provenance: {source: requirement, ref: "a fresh candidate followed by a later subject still writes and checks the full set"}
+      mutation: {description: "Lands a minor after a fresh release, writes, then checks the written tree."}
     - name: check-stale
       input: {style: "bare", scenario: "check-stale-tree"}
       expected: {exit: 2, lines: ["fresh=false", "error=release-content-stale"]}

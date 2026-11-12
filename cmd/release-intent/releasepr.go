@@ -59,11 +59,11 @@ func runReleasePR(args []string) error {
 	if err != nil {
 		return err
 	}
-	// The write path rebuilds after a rejection or staleness, so it plans
-	// with the rejected verdict: the full pending set renders, never the
-	// before-candidate set a verify would speak for. There is no --verdict
-	// flag; --write only runs when the plan said open-pr.
-	facts, cfg, err := Gather(ctx, runner, branch, DefaultConfigPath, floor, intent.ModeTag, intent.Verdict("rejected"))
+	// Release content is always the full pending set, never the
+	// before-candidate set a verify would speak for. No pre-tag report is
+	// involved, so the facts carry no verdict and the content renders from
+	// Decision.Full.
+	facts, cfg, err := Gather(ctx, runner, branch, DefaultConfigPath, floor, intent.ModeTag, intent.VerdictNone)
 	if err != nil {
 		return rejectAs("release-pr", err)
 	}
@@ -83,7 +83,7 @@ func runReleasePR(args []string) error {
 			}
 			return rejectAs("release-pr --check", cerr)
 		}
-		return emitLines([]string{"fresh=true", "push=false", "version=" + decision.Version.String(), "error="})
+		return emitLines([]string{"fresh=true", "push=false", "version=" + decision.Full.Version.String(), "error="})
 	}
 	push := "true"
 	if current != "" {
@@ -101,15 +101,17 @@ func runReleasePR(args []string) error {
 	if err := writeReleaseContent(cfg, content); err != nil {
 		return err
 	}
-	return emitLines([]string{"fresh=true", "push=" + push, "version=" + decision.Version.String(), "error="})
+	return emitLines([]string{"fresh=true", "push=" + push, "version=" + decision.Full.Version.String(), "error="})
 }
 
-// releaseContent renders the generator output for the plan decision. The base
+// releaseContent renders the generator output for the decision's full pending
+// set, whatever action the plan chose for the candidate. The base
 // changelog is read at the range-base tag, or at the epoch when that is
 // newer; the date is the planner's newest-pending date, so write, check and
 // freshness render the same bytes on any day.
 func releaseContent(ctx context.Context, runner GitRunner, cfg intent.Config, facts intent.Facts, decision intent.Decision) (intent.Content, error) {
-	if len(decision.Pending) == 0 || decision.Version == "" || decision.Tag == "" {
+	full := decision.Full
+	if len(full.Pending) == 0 || full.Version == "" || full.Tag == "" {
 		return intent.Content{}, fmt.Errorf("release-pr: nothing to write: no pending releasing subjects (version is empty). Open a releasing PR first")
 	}
 	shas := make([]string, 0, len(facts.Commits))
@@ -126,7 +128,7 @@ func releaseContent(ctx context.Context, runner GitRunner, cfg intent.Config, fa
 			return intent.Content{}, fmt.Errorf("release-pr: cannot read changelog %q at base %q: %w. Confirm the revision is readable; a failed fetch is never written over", cfg.Changelog, baseRev, err)
 		}
 	}
-	return intent.Generate(cfg, intent.ContentInput{Pending: decision.Pending, BaseChangelog: string(base), Version: decision.Version, Tag: decision.Tag, Date: decision.Date})
+	return intent.Generate(cfg, intent.ContentInput{Pending: full.Pending, BaseChangelog: string(base), Version: full.Version, Tag: full.Tag, Date: full.Date})
 }
 
 // checkWorkingTree compares the working tree with generator output. A nil
