@@ -1,226 +1,13 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"os"
-	"regexp"
+	"sort"
 	"strings"
-)
 
-// queueFile is the raw GraphQL merge-queue response the workflow writes to a
-// file. The tool reads the file and nothing else, so it keeps no network
-// access.
-type queueFile struct {
-	Data struct {
-		Repository struct {
-			MergeQueue *struct {
-				Entries struct {
-					TotalCount int `json:"totalCount"`
-					PageInfo   *struct {
-						HasNextPage bool `json:"hasNextPage"`
-					} `json:"pageInfo"`
-					Nodes []queueNode `json:"nodes"`
-				} `json:"entries"`
-			} `json:"mergeQueue"`
-		} `json:"repository"`
-	} `json:"data"`
-	Errors []any `json:"errors"`
-	// Alternate flat shape some writers emit: {"entries": {...}, "errors": ...}.
-	Entries *queueEntries `json:"entries"`
-}
-
-type queueEntries struct {
-	TotalCount int         `json:"totalCount"`
-	HasMore    *bool       `json:"hasMore"`
-	PageInfo   *pageInfo   `json:"pageInfo"`
-	Nodes      []queueNode `json:"nodes"`
-}
-
-type pageInfo struct {
-	HasNextPage bool `json:"hasNextPage"`
-}
-
-type queueNode struct {
-	Position    int `json:"position"`
-	PullRequest *struct {
-		Number int    `json:"number"`
-		Title  string `json:"title"`
-	} `json:"pullRequest"`
-	// Flat alternate: {"number": N, "title": "..."}.
-	Number int    `json:"number"`
-	Title  string `json:"title"`
-}
-
-func (n queueNode) prNumber() int {
-	if n.PullRequest != nil && n.PullRequest.Number != 0 {
-		return n.PullRequest.Number
-	}
-	return n.Number
-}
-
-func (n queueNode) prTitle() string {
-	if n.PullRequest != nil && n.PullRequest.Title != "" {
-		return n.PullRequest.Title
-	}
-	return n.Title
-}
-
-// decodeQueueFile parses the raw GraphQL body. It returns an error (exit 1,
-// no gate line) for unreadable or malformed JSON, a non-empty errors array, a
-// null merge queue, or a missing totalCount. A complete page whose count does
-// not match its nodes is also malformed.
-func decodeQueueFile(data []byte) (nodes []queueNode, total int, hasMore bool, err error) {
-	var q queueFile
-	if err := json.Unmarshal(data, &q); err != nil {
-		return nil, 0, false, fmt.Errorf("queue-gate: cannot parse %d bytes as JSON: %v. The workflow must write the raw GraphQL mergeQueue response body to the file", len(data), err)
-	}
-	if len(q.Errors) > 0 {
-		return nil, 0, false, fmt.Errorf("queue-gate: the GraphQL response carries %d error(s): the queue read failed. Fix the query or permissions and retry; never treat this as an empty queue", len(q.Errors))
-	}
-	// Flat shape takes precedence when present.
-	if q.Entries != nil {
-		if q.Entries.Nodes == nil {
-			return nil, 0, false, fmt.Errorf("queue-gate: the queue file has entries but no nodes list: missing entries.nodes. The workflow must write the raw GraphQL response with entries { totalCount nodes }")
-		}
-		more := false
-		if q.Entries.HasMore != nil {
-			more = *q.Entries.HasMore
-		}
-		if q.Entries.PageInfo != nil {
-			more = q.Entries.PageInfo.HasNextPage
-		}
-		if !more && q.Entries.TotalCount != len(q.Entries.Nodes) {
-			return nil, 0, false, fmt.Errorf("queue-gate: entries.totalCount is %d but %d node(s) are listed on a complete page: the queue snapshot is inconsistent. Re-read the queue and retry", q.Entries.TotalCount, len(q.Entries.Nodes))
-		}
-		return q.Entries.Nodes, q.Entries.TotalCount, more, nil
-	}
-	mq := q.Data.Repository.MergeQueue
-	if mq == nil {
-		return nil, 0, false, fmt.Errorf("queue-gate: mergeQueue is null in the GraphQL response: the queue read failed (wrong branch, missing permission, or API error). Never treat this as an empty queue")
-	}
-	more := false
-	if mq.Entries.PageInfo != nil {
-		more = mq.Entries.PageInfo.HasNextPage
-	}
-	// Missing totalCount decodes as 0 with nodes present: distinguish by raw
-	// presence check.
-	if !hasTotalCount(data) {
-		return nil, 0, false, fmt.Errorf("queue-gate: entries.totalCount is missing in the GraphQL response: the queue read is incomplete. Re-read the queue with totalCount and retry")
-	}
-	if !more && mq.Entries.TotalCount != len(mq.Entries.Nodes) {
-		return nil, 0, false, fmt.Errorf("queue-gate: entries.totalCount is %d but %d node(s) are listed on a complete page: the queue snapshot is inconsistent. Re-read the queue and retry", mq.Entries.TotalCount, len(mq.Entries.Nodes))
-	}
-	return mq.Entries.Nodes, mq.Entries.TotalCount, more, nil
-}
-
-func hasTotalCount(data []byte) bool {
-	return strings.Contains(string(data), "totalCount")
-}
-
-// gateDecision applies the hold rule: hold when an entry ahead of release PR N
-// has a releasing title or a title that does not parse, or when the file says
-// the queue holds more entries than it lists.
-func gateDecision(nodes []queueNode, total int, hasMore bool, releasePR int) string {
-	if hasMore || total > len(nodes) {
-		return "hold"
-	}
-	releasePos := -1
-	for _, n := range nodes {
-		if n.prNumber() == releasePR {
-			releasePos = n.Position
-			break
-		}
-	}
-	// When the release PR carries no position, fall back to list order: every
-	// entry ahead in the file is ahead in the queue.
-	for idx, n := range nodes {
-		pos := n.Position
-		if releasePos == -1 {
-			if n.prNumber() == releasePR {
-				continue
-			}
-			// Entries before the release PR in file order are ahead when
-			// positions are absent (position 0 for all).
-			isAhead := idx < releaseIndex(nodes, releasePR)
-			if releaseIndex(nodes, releasePR) == -1 {
-				isAhead = true
-			}
-			if !isAhead {
-				_ = pos
-				continue
-			}
-		} else {
-			if n.prNumber() == releasePR {
-				continue
-			}
-			if pos == 0 && n.Position == 0 {
-				// No positions: use file order.
-				if idx >= releaseIndex(nodes, releasePR) && releaseIndex(nodes, releasePR) != -1 {
-					continue
-				}
-			} else if pos >= releasePos {
-				continue
-			}
-		}
-		releasing, parsable := parseTitleKind(n.prTitle())
-		if !parsable || releasing {
-			return "hold"
-		}
-	}
-	return "arm"
-}
-
-func releaseIndex(nodes []queueNode, releasePR int) int {
-	for i, n := range nodes {
-		if n.prNumber() == releasePR {
-			return i
-		}
-	}
-	return -1
-}
-
-// parseTitleKind is the command-layer adapter for the hold rule until the
-// contract package owns queue decoding. It reports releasing when the title
-// carries a bump bracket on a releasing type, and parsable false when the
-// title fails the grammar. The release decision itself stays in the intent
-// package; this helper only keeps the gate fail-closed on titles the tool
-// cannot parse.
-func parseTitleKind(raw string) (releasing bool, parsable bool) {
-	if oldReleaseRe.MatchString(raw) {
-		return false, false
-	}
-	if strings.HasPrefix(raw, "Revert \"") {
-		return false, false
-	}
-	m := titleKindRe.FindStringSubmatch(raw)
-	if m == nil {
-		return false, false
-	}
-	typ := m[1]
-	bump := m[5]
-	hasBang := m[3] == "!"
-	switch typ {
-	case "feat", "fix", "release":
-		if bump == "" {
-			return false, false
-		}
-		return true, true
-	case "refactor", "perf", "build", "revert":
-		return bump != "", true
-	case "docs", "test", "ci", "chore", "style":
-		if bump != "" || hasBang {
-			return false, false
-		}
-		return false, true
-	default:
-		return false, false
-	}
-}
-
-var (
-	titleKindRe  = regexp.MustCompile(`^([a-z]+)(\([^)]*\))?(!)?(\[(major|minor|patch)\])?: (\S.*)$`)
-	oldReleaseRe = regexp.MustCompile(`^release\(v[^)]*\):\s*\S`)
+	"github.com/peasant-labs/schema/internal/release/intent"
 )
 
 // runQueueGate implements: release-intent queue-gate --queue FILE --release-pr N.
@@ -255,19 +42,97 @@ func runQueueGate(args []string) error {
 		}
 	}
 	if !haveQueue {
-		return usageErr("usage: release-intent queue-gate --queue FILE --release-pr N (missing required --queue): pass the file holding the raw GraphQL mergeQueue response")
+		return usageErr("usage: release-intent queue-gate --queue FILE --release-pr N (missing required --queue): pass the file holding the raw queue response")
 	}
 	if !havePR {
 		return usageErr("usage: release-intent queue-gate --queue FILE --release-pr N (missing required --release-pr): pass the release PR number")
 	}
 	data, err := os.ReadFile(queuePath)
 	if err != nil {
-		return fmt.Errorf("queue-gate: cannot read queue file %q: %v. The workflow must write the raw GraphQL response to this path before calling queue-gate", queuePath, err)
+		return fmt.Errorf("queue-gate: cannot read queue file %q: %v. The workflow must write the raw queue response to this path before calling queue-gate", queuePath, err)
 	}
-	nodes, total, hasMore, err := decodeQueueFile(data)
+	snapshot, err := intent.DecodeQueueResponse(data)
 	if err != nil {
-		// Exit 1 with no gate line: nothing is armed and nothing is disarmed.
+		return intentErrorToReject(err)
+	}
+	cfg, err := intent.LoadConfig(DefaultConfigPath)
+	if err != nil {
+		return fmt.Errorf("queue-gate: cannot read release config %q for the hold rule: %w", DefaultConfigPath, err)
+	}
+	current, err := queueCurrent()
+	if err != nil {
 		return err
 	}
-	return emitLines([]string{"gate=" + gateDecision(nodes, total, hasMore, releasePR)})
+	gate, err := intent.QueueGate(cfg, current, snapshot.Entries, releasePR)
+	if err != nil {
+		return intentErrorToReject(err)
+	}
+	return emitLines([]string{"gate=" + gate.String()})
+}
+
+// queueCurrent reads the current version from git tags for the hold rule. A
+// read failure exits 1 with no gate line: nothing is armed or disarmed.
+func queueCurrent() (intent.SemVer, error) {
+	ctx := context.Background()
+	runner, err := newExecGit()
+	if err != nil {
+		return "", err
+	}
+	cfg, err := intent.LoadConfig(DefaultConfigPath)
+	if err != nil {
+		return "", fmt.Errorf("queue-gate: cannot read release config %q for the hold rule: %w", DefaultConfigPath, err)
+	}
+	tags, err := runner.Tags(ctx, cfg.TagPrefix)
+	if err != nil {
+		return "", fmt.Errorf("queue-gate: cannot list tags with prefix %q: %w", cfg.TagPrefix, err)
+	}
+	_, ver := highestFinalTag(tags, cfg.TagPrefix)
+	if ver == "" {
+		return "", fmt.Errorf("queue-gate: no final release tag found for the hold rule")
+	}
+	sv, err := intent.ParseSemVer(ver)
+	if err != nil {
+		return "", fmt.Errorf("queue-gate: highest tag version %q does not parse: %w", ver, err)
+	}
+	return sv, nil
+}
+
+// highestFinalTag returns the highest final (no -rcN) tag and its version.
+func highestFinalTag(tags map[string]string, prefix string) (tag, version string) {
+	type tv struct {
+		tag         string
+		version     string
+		maj, mi, pa int
+	}
+	var finals []tv
+	for t := range tags {
+		v, ok := strings.CutPrefix(t, prefix)
+		if !ok {
+			continue
+		}
+		if strings.Contains(v, "-rc") {
+			continue
+		}
+		var maj, mi, pa int
+		if _, err := fmt.Sscanf(v, "%d.%d.%d", &maj, &mi, &pa); err != nil {
+			continue
+		}
+		if _, err := intent.ParseSemVer(v); err != nil {
+			continue
+		}
+		finals = append(finals, tv{t, v, maj, mi, pa})
+	}
+	if len(finals) == 0 {
+		return "", ""
+	}
+	sort.Slice(finals, func(i, j int) bool {
+		if finals[i].maj != finals[j].maj {
+			return finals[i].maj > finals[j].maj
+		}
+		if finals[i].mi != finals[j].mi {
+			return finals[i].mi > finals[j].mi
+		}
+		return finals[i].pa > finals[j].pa
+	})
+	return finals[0].tag, finals[0].version
 }

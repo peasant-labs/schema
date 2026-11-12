@@ -201,7 +201,7 @@ func TestCheckTitle_InvalidJSONFailClosed(t *testing.T) {
 	if !ok {
 		t.Fatalf("invalid version JSON must fail closed as a rejection, got %T %v", err, err)
 	}
-	if rej.Code != CodeProtectedPath {
+	if string(rej.Code) != "protected-path" {
 		t.Fatalf("invalid version JSON code = %q, want protected-path", rej.Code)
 	}
 }

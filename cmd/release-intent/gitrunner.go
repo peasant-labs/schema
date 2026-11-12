@@ -28,12 +28,14 @@ type GitRunner interface {
 	IsAncestor(ctx context.Context, ancestor, descendant string) (bool, error)
 }
 
-// Commit is one first-parent commit: its SHA, its subject line, and whether it
-// changes the changelog file.
+// Commit is one first-parent commit: its SHA, its subject line, whether it
+// changes the changelog file, and its commit date as YYYY-MM-DD for dated
+// changelog headings.
 type Commit struct {
 	SHA              string
 	Subject          string
 	ChangesChangelog bool
+	Date             string
 }
 
 // gitSubcommand is the typed closed allowlist of git subcommands the runner
@@ -149,32 +151,38 @@ func (g *execGit) IsAncestor(ctx context.Context, ancestor, descendant string) (
 	return false, fmt.Errorf("git runner: cannot determine whether %q is an ancestor of %q via `git merge-base --is-ancestor`: %w. Treat this as not-an-ancestor and investigate the git error", ancestor, descendant, err)
 }
 
-// FirstParent lists first-parent commits newest first with changelog touch info.
+// FirstParent lists first-parent commits newest first with changelog touch info
+// and commit dates.
 func (g *execGit) FirstParent(ctx context.Context, ref string, changelog string) ([]Commit, error) {
-	// Format: SHA, subject, then names touched. Use NUL and newline separators
-	// that subjects cannot contain unescaped.
-	out, err := g.runGit(ctx, gitLog, []string{"--first-parent", "--format=%H%x00%s", "--name-only", ref, "--", changelog, "."})
+	// Format: SHA, subject, date, then names touched. Use NUL separators that
+	// subjects cannot contain unescaped; the date is %cs (committer date
+	// short YYYY-MM-DD) for dated changelog headings.
+	out, err := g.runGit(ctx, gitLog, []string{"--first-parent", "--format=%H%x00%s%x00%cs", "--name-only", ref, "--", changelog, "."})
 	if err != nil {
-		// Fall back to a plain log when the path-filtered form fails (e.g. the
-		// changelog path does not exist at some revisions); the caller still
-		// needs the commit list.
-		out2, err2 := g.runGit(ctx, gitLog, []string{"--first-parent", "--format=%H%x00%s", ref, "--"})
+		out2, err2 := g.runGit(ctx, gitLog, []string{"--first-parent", "--format=%H%x00%s%x00%cs", ref, "--"})
 		if err2 != nil {
 			return nil, fmt.Errorf("git runner: cannot list first-parent commits of %q via `git log --first-parent`: %w. Confirm the ref exists", ref, err)
 		}
-		return parseLogCommits(string(out2), changelog, nil), nil
+		return parseLogCommits(string(out2)), nil
 	}
 	return parseLogCommitsWithNames(string(out), changelog), nil
 }
 
-func parseLogCommits(out, _ string, _ []string) []Commit {
+func parseLogCommits(out string) []Commit {
 	var commits []Commit
 	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		sha, subj, _ := strings.Cut(line, "\x00")
-		commits = append(commits, Commit{SHA: strings.TrimSpace(sha), Subject: subj})
+		parts := strings.SplitN(line, "\x00", 3)
+		if len(parts) < 2 {
+			continue
+		}
+		c := Commit{SHA: strings.TrimSpace(parts[0]), Subject: parts[1]}
+		if len(parts) == 3 {
+			c.Date = strings.TrimSpace(parts[2])
+		}
+		commits = append(commits, c)
 	}
 	return commits
 }
@@ -184,8 +192,20 @@ func parseLogCommitsWithNames(out, changelog string) []Commit {
 	var cur *Commit
 	for _, line := range strings.Split(out, "\n") {
 		if strings.Contains(line, "\x00") {
-			sha, subj, _ := strings.Cut(line, "\x00")
-			commits = append(commits, Commit{SHA: strings.TrimSpace(sha), Subject: subj})
+			parts := strings.SplitN(line, "\x00", 3)
+			sha := ""
+			subj := ""
+			date := ""
+			if len(parts) > 0 {
+				sha = strings.TrimSpace(parts[0])
+			}
+			if len(parts) > 1 {
+				subj = parts[1]
+			}
+			if len(parts) > 2 {
+				date = strings.TrimSpace(parts[2])
+			}
+			commits = append(commits, Commit{SHA: sha, Subject: subj, Date: date})
 			cur = &commits[len(commits)-1]
 			continue
 		}

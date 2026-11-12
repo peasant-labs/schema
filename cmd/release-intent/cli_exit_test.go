@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -88,14 +89,14 @@ func setupProcessCase(t *testing.T, setup string) (string, map[string]string) {
 		replace["SETUP"] = dir
 		return dir, replace
 	case "queue-empty":
-		dir := t.TempDir()
+		repo := initIntentRepo(t)
 		data, err := queueJSONFS.ReadFile("testdata/queue/empty.json")
 		if err != nil {
 			t.Fatalf("read embedded empty queue: %v", err)
 		}
-		writeSetupFile(t, dir, "queue.json", string(data))
-		replace["SETUP"] = dir
-		return dir, replace
+		writeSetupFile(t, repo, "queue.json", string(data))
+		replace["SETUP"] = repo
+		return repo, replace
 	case "queue-malformed":
 		dir := t.TempDir()
 		data, err := queueJSONFS.ReadFile("testdata/queue/malformed.json")
@@ -136,16 +137,21 @@ func TestCLIExitCodes(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			dir, replace := setupProcessCase(t, c.Input.Setup)
+			ordered := make([]string, 0, len(replace))
+			for k := range replace {
+				ordered = append(ordered, k)
+			}
+			sort.Slice(ordered, func(i, j int) bool { return len(ordered[i]) > len(ordered[j]) })
 			argv := make([]string, len(c.Input.Argv))
 			for i, a := range c.Input.Argv {
-				for k, v := range replace {
-					a = strings.ReplaceAll(a, k, v)
+				for _, k := range ordered {
+					a = strings.ReplaceAll(a, k, replace[k])
 				}
 				argv[i] = a
 			}
-			exit, stdout, _ := runBinary(t, dir, argv, c.Input.Stdin, nil)
+			exit, stdout, stderr := runBinary(t, dir, argv, c.Input.Stdin, nil)
 			if exit != c.Expected.Exit {
-				t.Fatalf("%s: exit = %d, want %d\nstdout: %q", c.Name, exit, c.Expected.Exit, stdout)
+				t.Fatalf("%s: exit = %d, want %d\nstdout: %q\nstderr: %q", c.Name, exit, c.Expected.Exit, stdout, stderr)
 			}
 			for _, want := range c.Expected.Stdout {
 				if !strings.Contains(stdout, want) {

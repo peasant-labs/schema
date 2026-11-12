@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed testdata/group-pr.yaml testdata/classify.yaml testdata/queue-gate.yaml testdata/title.yaml testdata/cli-exit.yaml
+//go:embed testdata/group-pr.yaml testdata/cli-exit.yaml
 var cliFixtureYAML embed.FS
 
 //go:embed testdata/queue/*.json
@@ -26,51 +26,6 @@ type GroupPRExpected struct {
 type GroupPRFixtures struct {
 	RequiredNames []string                                       `yaml:"required_names"`
 	Cases         testcase.Corpus[GroupPRInput, GroupPRExpected] `yaml:"cases"`
-}
-
-type ClassifyInput struct {
-	Author      string            `yaml:"author"`
-	HeadBranch  string            `yaml:"headBranch"`
-	BotBranches map[string]string `yaml:"botBranches"`
-}
-
-type ClassifyExpected struct {
-	Kind string `yaml:"kind"`
-}
-
-type ClassifyFixtures struct {
-	RequiredNames []string                                         `yaml:"required_names"`
-	Cases         testcase.Corpus[ClassifyInput, ClassifyExpected] `yaml:"cases"`
-}
-
-type QueueGateInput struct {
-	File      string `yaml:"file"`
-	ReleasePR int    `yaml:"releasePR"`
-}
-
-type QueueGateExpected struct {
-	Gate string `yaml:"gate"`
-	Exit int    `yaml:"exit"`
-}
-
-type QueueGateFixtures struct {
-	RequiredNames []string                                           `yaml:"required_names"`
-	Cases         testcase.Corpus[QueueGateInput, QueueGateExpected] `yaml:"cases"`
-}
-
-type TitleInput struct {
-	Title    string `yaml:"title"`
-	Releases bool   `yaml:"releases"`
-	BelowOne bool   `yaml:"belowOne"`
-}
-
-type TitleExpected struct {
-	Code string `yaml:"code"`
-}
-
-type TitleFixtures struct {
-	RequiredNames []string                                   `yaml:"required_names"`
-	Cases         testcase.Corpus[TitleInput, TitleExpected] `yaml:"cases"`
 }
 
 type CLIInput struct {
@@ -132,48 +87,6 @@ func loadGroupPRFixtures(t *testing.T) GroupPRFixtures {
 	return f
 }
 
-func loadClassifyFixtures(t *testing.T) ClassifyFixtures {
-	t.Helper()
-	f := loadFixtures[ClassifyFixtures](t, "classify.yaml")
-	if err := f.Cases.Validate(); err != nil {
-		t.Fatalf("classify fixtures: %v", err)
-	}
-	seen := map[string]struct{}{}
-	for _, c := range f.Cases.Cases {
-		seen[c.Name] = struct{}{}
-	}
-	checkRequiredNames(t, f.RequiredNames, seen, "classify fixtures")
-	return f
-}
-
-func loadQueueGateFixtures(t *testing.T) QueueGateFixtures {
-	t.Helper()
-	f := loadFixtures[QueueGateFixtures](t, "queue-gate.yaml")
-	if err := f.Cases.Validate(); err != nil {
-		t.Fatalf("queue-gate fixtures: %v", err)
-	}
-	seen := map[string]struct{}{}
-	for _, c := range f.Cases.Cases {
-		seen[c.Name] = struct{}{}
-	}
-	checkRequiredNames(t, f.RequiredNames, seen, "queue-gate fixtures")
-	return f
-}
-
-func loadTitleFixtures(t *testing.T) TitleFixtures {
-	t.Helper()
-	f := loadFixtures[TitleFixtures](t, "title.yaml")
-	if err := f.Cases.Validate(); err != nil {
-		t.Fatalf("title fixtures: %v", err)
-	}
-	seen := map[string]struct{}{}
-	for _, c := range f.Cases.Cases {
-		seen[c.Name] = struct{}{}
-	}
-	checkRequiredNames(t, f.RequiredNames, seen, "title fixtures")
-	return f
-}
-
 func loadCLIFixtures(t *testing.T) CLIFixtures {
 	t.Helper()
 	f := loadFixtures[CLIFixtures](t, "cli-exit.yaml")
@@ -190,22 +103,12 @@ func loadCLIFixtures(t *testing.T) CLIFixtures {
 
 func TestClosedSetsAreExact(t *testing.T) {
 	t.Parallel()
-	wantActions := map[Action]bool{"none": true, "verify": true, "tag": true, "open-pr": true, "close-pr": true}
-	if len(AllActions) != len(wantActions) {
-		t.Fatalf("AllActions has %d members, want %d", len(AllActions), len(wantActions))
-	}
-	for _, a := range AllActions {
-		if !wantActions[a] {
-			t.Fatalf("AllActions carries unexpected member %q", a)
-		}
-	}
-	// The command-layer action set must match the contract package so the two
-	// never drift: same members, same spelling.
-	if len(intent.AllActions) != len(AllActions) {
-		t.Fatalf("intent.AllActions has %d members, command AllActions has %d: the two action sets drifted", len(intent.AllActions), len(AllActions))
+	wantActions := map[intent.Action]bool{"none": true, "verify": true, "tag": true, "open-pr": true, "close-pr": true}
+	if len(intent.AllActions) != len(wantActions) {
+		t.Fatalf("intent.AllActions has %d members, want %d", len(intent.AllActions), len(wantActions))
 	}
 	for _, a := range intent.AllActions {
-		if !wantActions[Action(a)] {
+		if !wantActions[a] {
 			t.Fatalf("intent.AllActions carries unexpected member %q", a)
 		}
 	}
@@ -218,25 +121,35 @@ func TestClosedSetsAreExact(t *testing.T) {
 			t.Fatalf("intent.AllPRKinds carries unexpected member %q", k)
 		}
 	}
-	wantCodes := map[ErrorCode]bool{
+	wantCodes := map[intent.ErrorCode]bool{
 		"malformed": true, "unknown-type": true, "missing-bump": true, "bump-on-non-releasing": true,
 		"bang-bump-mismatch": true, "old-release-title": true, "releases-disabled": true, "protected-path": true,
 		"no-final-tag": true, "epoch-missing": true, "floor-not-on-chain": true, "release-content-stale": true,
 	}
-	if len(AllErrorCodes) != len(wantCodes) {
-		t.Fatalf("AllErrorCodes has %d members, want %d", len(AllErrorCodes), len(wantCodes))
-	}
-	for _, c := range AllErrorCodes {
-		if !wantCodes[c] {
-			t.Fatalf("AllErrorCodes carries unexpected member %q", c)
-		}
-	}
-	if len(intent.AllErrorCodes) != len(AllErrorCodes) {
-		t.Fatalf("intent.AllErrorCodes has %d members, command AllErrorCodes has %d: the two code sets drifted", len(intent.AllErrorCodes), len(AllErrorCodes))
+	if len(intent.AllErrorCodes) != len(wantCodes) {
+		t.Fatalf("intent.AllErrorCodes has %d members, want %d", len(intent.AllErrorCodes), len(wantCodes))
 	}
 	for _, c := range intent.AllErrorCodes {
-		if !wantCodes[ErrorCode(c)] {
+		if !wantCodes[c] {
 			t.Fatalf("intent.AllErrorCodes carries unexpected member %q", c)
+		}
+	}
+	wantGates := map[intent.Gate]bool{"arm": true, "hold": true}
+	if len(intent.AllGates) != len(wantGates) {
+		t.Fatalf("intent.AllGates has %d members, want %d", len(intent.AllGates), len(wantGates))
+	}
+	for _, g := range intent.AllGates {
+		if !wantGates[g] {
+			t.Fatalf("intent.AllGates carries unexpected member %q", g)
+		}
+	}
+	wantFresh := map[intent.Freshness]bool{"unknown": true, "fresh": true, "stale": true}
+	if len(intent.AllFreshness) != len(wantFresh) {
+		t.Fatalf("intent.AllFreshness has %d members, want %d", len(intent.AllFreshness), len(wantFresh))
+	}
+	for _, f := range intent.AllFreshness {
+		if !wantFresh[f] {
+			t.Fatalf("intent.AllFreshness carries unexpected member %q", f)
 		}
 	}
 }

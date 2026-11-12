@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -151,19 +150,6 @@ func checkTitle(ctx context.Context, runner GitRunner, base, head, author, headB
 		}
 	}
 	return emitLines([]string{"error="})
-}
-
-// intentErrorToReject maps a contract error to the command-layer rejection so
-// the machine channel stays error=<code> with exit 2.
-func intentErrorToReject(err error) error {
-	var ie *intent.Error
-	if errors.As(err, &ie) {
-		return &RejectError{
-			Code: ErrorCode(ie.Code), What: ie.What, Why: ie.Why,
-			Where: ie.Where, When: ie.When, Means: ie.Means, Fix: ie.Fix,
-		}
-	}
-	return err
 }
 
 // buildProtectedChanges reads the protected version field at both ends for

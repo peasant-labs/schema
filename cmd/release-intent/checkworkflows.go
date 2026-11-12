@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/peasant-labs/schema/internal/release"
 )
@@ -63,15 +62,7 @@ func runCheckWorkflows(args []string) error {
 		if msg == "" {
 			msg = fmt.Sprintf("workflow policy violation in %s", diagnostics[0].Workflow)
 		}
-		// Check-workflows rejections exit 2 with a machine line so the
-		// required check is red. The human channel is the diagnostic.
-		fmt.Fprintf(os.Stderr, "release-intent: check-workflows rejected %q: %s\n  fix: align the workflow with the policy file\n", policyPath, msg)
-		return &RejectError{
-			Code: CodeMalformed, What: "workflow policy violation",
-			Why: msg, Where: "workflows in " + dir + ", checked against " + policyPath,
-			When: "title-guard workflow check", Means: "the check-workflows gate is red",
-			Fix: "align the workflow with the policy file",
-		}
+		return fmt.Errorf("check-workflows: policy violations in %q: %s. Fix: align the workflows with the policy file", policyPath, msg)
 	}
 	return emitLines([]string{"ok=true"})
 }

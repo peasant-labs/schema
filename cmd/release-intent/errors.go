@@ -4,48 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/peasant-labs/schema/internal/release/intent"
 )
-
-// ErrorCode is the closed wave-1 set of machine-readable rejection codes.
-// Contract codes for later milestones enter this set in their milestone with
-// their reject case.
-type ErrorCode string
-
-const (
-	CodeMalformed           ErrorCode = "malformed"
-	CodeUnknownType         ErrorCode = "unknown-type"
-	CodeMissingBump         ErrorCode = "missing-bump"
-	CodeBumpOnNonReleasing  ErrorCode = "bump-on-non-releasing"
-	CodeBangBumpMismatch    ErrorCode = "bang-bump-mismatch"
-	CodeOldReleaseTitle     ErrorCode = "old-release-title"
-	CodeReleasesDisabled    ErrorCode = "releases-disabled"
-	CodeProtectedPath       ErrorCode = "protected-path"
-	CodeNoFinalTag          ErrorCode = "no-final-tag"
-	CodeEpochMissing        ErrorCode = "epoch-missing"
-	CodeFloorNotOnChain     ErrorCode = "floor-not-on-chain"
-	CodeReleaseContentStale ErrorCode = "release-content-stale"
-)
-
-// AllErrorCodes is the canonical closed set. Tests assert exact membership.
-var AllErrorCodes = []ErrorCode{
-	CodeMalformed,
-	CodeUnknownType,
-	CodeMissingBump,
-	CodeBumpOnNonReleasing,
-	CodeBangBumpMismatch,
-	CodeOldReleaseTitle,
-	CodeReleasesDisabled,
-	CodeProtectedPath,
-	CodeNoFinalTag,
-	CodeEpochMissing,
-	CodeFloorNotOnChain,
-	CodeReleaseContentStale,
-}
 
 // RejectError is a rejected input: exit 2 with a machine line and a six-part
-// human message.
+// human message. The code comes from the contract package so the two never
+// drift.
 type RejectError struct {
-	Code  ErrorCode
+	Code  intent.ErrorCode
 	What  string
 	Why   string
 	Where string
@@ -99,4 +66,17 @@ func requireFlagValue(args []string, i int, flag string) (string, int, error) {
 		return "", i, usageErr("usage: %s requires a value: got flag-like %q (pass a value that does not start with '-')", flag, val)
 	}
 	return val, i + 1, nil
+}
+
+// intentErrorToReject maps a contract error to the command-layer rejection so
+// the machine channel stays error=<code> with exit 2.
+func intentErrorToReject(err error) error {
+	var ie *intent.Error
+	if errors.As(err, &ie) {
+		return &RejectError{
+			Code: ie.Code, What: ie.What, Why: ie.Why,
+			Where: ie.Where, When: ie.When, Means: ie.Means, Fix: ie.Fix,
+		}
+	}
+	return err
 }
