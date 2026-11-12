@@ -84,9 +84,9 @@ func TestClosedSets(t *testing.T) {
 // reject fixture with six non-empty parts. Each corpus suite already asserts
 // the six parts at its reject sites through requireSixParts; this test
 // re-reads every corpus and proves each code appears in at least one
-// must-fail row, independent of test execution order. ReleaseContentStale is
-// judged at the command level, where the release PR's content is compared;
-// the CLI fixtures own its reject case.
+// must-fail row, independent of test execution order. Every member is proven
+// here, including the content comparison and the config and policy codes:
+// no code is delegated to a command-level fixture.
 func TestErrorCodeCoverage(t *testing.T) {
 	seen := map[string]bool{}
 	for _, data := range [][]byte{
