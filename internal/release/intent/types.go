@@ -273,6 +273,8 @@ const (
 	ErrEpochMissing        ErrorCode = "epoch-missing"
 	ErrFloorNotOnChain     ErrorCode = "floor-not-on-chain"
 	ErrReleaseContentStale ErrorCode = "release-content-stale"
+	ErrConfigInvalid       ErrorCode = "config-invalid"
+	ErrPolicyViolation     ErrorCode = "policy-violation"
 )
 
 // AllErrorCodes is the canonical closed set of typed error codes.
@@ -289,6 +291,8 @@ var AllErrorCodes = []ErrorCode{
 	ErrEpochMissing,
 	ErrFloorNotOnChain,
 	ErrReleaseContentStale,
+	ErrConfigInvalid,
+	ErrPolicyViolation,
 }
 
 func (c ErrorCode) String() string { return string(c) }
