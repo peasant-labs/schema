@@ -11,15 +11,15 @@ import (
 // compare against these constants rather than bare strings and diagnostics
 // carry the member that fired.
 //
-// Each member maps to the plan or review note that owns it: the 7.6 table
-// names merge-group-on-required-workflows, required-workflows-concurrency-per-ref,
-// release-actions-gated, title-guard-no-early-success, range-readers-take-the-floor,
-// required-workflows-unfiltered, merge-gate-always-reports, titles-never-interpolated,
-// no-default-branch-push-from-workflows, cut-release-is-dispatch-only and
-// tool-pin-is-a-sha; required-contexts is the 7.7 required-checks half (entries
-// must resolve, the operator compares the printed list with the ruleset);
-// token-mint-ref-check and bot-branch-via-classify are handoff R2/R6 (one
-// classifier, no branch literals, the ref checked before the App key exists).
+// Each member names the workflow shape it pins: which workflows trigger on
+// the merge queue and report unfiltered, how the release job gates every
+// write on the planner's action, how the title guard stays honest, how range
+// readers take the floor, how each bot branch keeps exactly one writer, and
+// how the tool pin, the cut button, and the title checks stay exact.
+// Required-contexts entries must resolve, and the operator compares the
+// printed list with the ruleset. The token rule and the classify rule keep
+// one classifier, no branch literals, and the ref checked before the App key
+// exists.
 type QueueRule string
 
 const (
