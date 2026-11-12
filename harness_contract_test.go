@@ -165,8 +165,10 @@ func TestHarnessLifecycleDocumentation(t *testing.T) {
 		}
 	}
 	var names []string
+	caseSymbols := make(map[string]bool)
 	for _, row := range fixture.Cases {
 		names = append(names, row.Name)
+		caseSymbols[row.Input.Symbol] = true
 		t.Run(row.Name, func(t *testing.T) {
 			if row.Classification != testcase.MustPass || row.Input.Symbol == "" || len(row.Expected.Contains) == 0 {
 				t.Fatal("lifecycle case must name a symbol and required documentation")
@@ -191,4 +193,35 @@ func TestHarnessLifecycleDocumentation(t *testing.T) {
 	assertUniqueFixtureNames(t, "lifecycle required names", fixture.RequiredNames)
 	assertSameStringSet(t, "lifecycle cases", names, fixture.RequiredNames)
 	assertSameStringSet(t, "required lifecycle cases", fixture.RequiredNames, strings.Fields("gemini-cli-retained-for-history antigravity-removal-planned declared-harnesses-not-deprecated"))
+
+	for symbol, doc := range docs {
+		if (!strings.HasPrefix(symbol, "Harness") && symbol != "AllHarnesses") || caseSymbols[symbol] {
+			continue
+		}
+		for _, line := range strings.Split(doc, "\n") {
+			if strings.HasPrefix(strings.TrimSpace(line), "Deprecated:") {
+				t.Errorf("%s must not have a Deprecated line", symbol)
+			}
+		}
+	}
+
+	markers, paragraphs := 0, 0
+	paragraphStart := true
+	for _, line := range strings.Split(docs["HarnessAntigravity"], "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			paragraphStart = true
+			continue
+		}
+		if strings.HasPrefix(line, "Deprecated:") {
+			markers++
+			if paragraphStart {
+				paragraphs++
+			}
+		}
+		paragraphStart = false
+	}
+	if markers != 1 || paragraphs != 1 {
+		t.Errorf("HarnessAntigravity must have exactly one Deprecated paragraph; got %d lines in %d paragraphs", markers, paragraphs)
+	}
 }
