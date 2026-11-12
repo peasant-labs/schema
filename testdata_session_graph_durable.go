@@ -24,31 +24,47 @@ type durableCountExpected struct {
 type durableErrorExpected struct {
 	ErrorContains string `yaml:"error_contains"`
 }
+
+// DurableMirrorInput describes two copies of one session's facts. Surface
+// selects the pair under test: empty is the publication projection (session
+// detail beside metadata); local_row, village_collective and village_my_share
+// are grouped rows, where "detail" is the session copy and "metadata" is the
+// route copy.
 type DurableMirrorInput struct {
-	DetailCount        *int64 `yaml:"detail_count"`
-	MetadataCount      *int64 `yaml:"metadata_count"`
-	Parent             string `yaml:"parent"`
-	GraphParent        string `yaml:"graph_parent"`
-	DetailRoot         string `yaml:"detail_root"`
-	MetadataRoot       string `yaml:"metadata_root"`
-	ProjectedMainCount bool   `yaml:"projected_main_count"`
-	DetailTurnCount    int    `yaml:"detail_turn_count"`
-	MetadataTurnCount  int    `yaml:"metadata_turn_count"`
+	Surface                   string `yaml:"surface"`
+	DetailCount               *int64 `yaml:"detail_count"`
+	MetadataCount             *int64 `yaml:"metadata_count"`
+	DetailConversationCount   *int64 `yaml:"detail_conversation_count"`
+	MetadataConversationCount *int64 `yaml:"metadata_conversation_count"`
+	DetailDisplayedCount      *int64 `yaml:"detail_displayed_count"`
+	MetadataDisplayedCount    *int64 `yaml:"metadata_displayed_count"`
+	Parent                    string `yaml:"parent"`
+	GraphParent               string `yaml:"graph_parent"`
+	DetailRoot                string `yaml:"detail_root"`
+	MetadataRoot              string `yaml:"metadata_root"`
+	ProjectedMainCount        bool   `yaml:"projected_main_count"`
+	DetailTurnCount           int    `yaml:"detail_turn_count"`
+	MetadataTurnCount         int    `yaml:"metadata_turn_count"`
 }
 type durableMirrorExpected struct {
 	Accept        bool   `yaml:"accept"`
 	ErrorContains string `yaml:"error_contains"`
 }
 type durableDigestInput struct {
-	LeftPresent  bool   `yaml:"left_present"`
-	LeftValue    int64  `yaml:"left_value"`
-	RightPresent bool   `yaml:"right_present"`
-	RightValue   int64  `yaml:"right_value"`
-	LeftVariant  string `yaml:"left_variant"`
-	RightVariant string `yaml:"right_variant"`
+	LeftPresent       bool   `yaml:"left_present"`
+	LeftValue         int64  `yaml:"left_value"`
+	RightPresent      bool   `yaml:"right_present"`
+	RightValue        int64  `yaml:"right_value"`
+	LeftConversation  *int64 `yaml:"left_conversation"`
+	RightConversation *int64 `yaml:"right_conversation"`
+	LeftVariant       string `yaml:"left_variant"`
+	RightVariant      string `yaml:"right_variant"`
 }
 type durableDigestExpected struct {
 	Different bool `yaml:"different"`
+	// RightDigest, when set, is the literal fingerprint of the right request.
+	// It pins the frame encoding, which is frozen once a release carries it.
+	RightDigest string `yaml:"right_digest"`
 }
 
 type DurableGraphFixtures struct {

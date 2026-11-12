@@ -581,7 +581,7 @@ shape_cases:
           segments:
             - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10, conversationTurns: {before: -1, count: 2}}
             - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10, conversationTurns: {before: 1, count: 2}}
-      expected: {valid: false, errorContains: "cannot be negative"}
+      expected: {valid: false, errorContains: "segment 0 declares conversationTurns {before: -1, count: 2}"}
     - name: directory-positions-negative-count
       classification: must-fail
       provenance: {source: boundary, ref: "span counts cannot be negative"}
@@ -597,7 +597,7 @@ shape_cases:
           segments:
             - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10, conversationTurns: {before: 0, count: -1}}
             - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10, conversationTurns: {before: 0, count: 2}}
-      expected: {valid: false, errorContains: "cannot be negative"}
+      expected: {valid: false, errorContains: "segment 0 declares conversationTurns {before: 0, count: -1}"}
     - name: directory-total-conversation-turns-negative
       classification: must-fail
       provenance: {source: boundary, ref: "the total cannot be negative"}
@@ -613,7 +613,7 @@ shape_cases:
           segments:
             - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10}
             - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10}
-      expected: {valid: false, errorContains: "negative total"}
+      expected: {valid: false, errorContains: "totalConversationTurns is -1"}
     - name: directory-positions-exceed-total
       classification: must-fail
       provenance: {source: boundary, ref: "a span ends at or before the total"}
@@ -629,7 +629,7 @@ shape_cases:
           segments:
             - {index: 0, firstTurn: 0, lastTurn: 10, byteLength: 10, conversationTurns: {before: 0, count: 11}}
             - {index: 1, firstTurn: 11, lastTurn: 12, byteLength: 10, conversationTurns: {before: 11, count: 0}}
-      expected: {valid: false, errorContains: "past totalConversationTurns"}
+      expected: {valid: false, errorContains: "segment 0 ends at conversation turn 11, past totalConversationTurns 10"}
     - name: directory-positions-not-continuous
       classification: must-fail
       provenance: {source: boundary, ref: "neighbouring spans are continuous"}
@@ -645,7 +645,7 @@ shape_cases:
           segments:
             - {index: 0, firstTurn: 0, lastTurn: 5, byteLength: 10, conversationTurns: {before: 0, count: 5}}
             - {index: 1, firstTurn: 6, lastTurn: 12, byteLength: 10, conversationTurns: {before: 6, count: 4}}
-      expected: {valid: false, errorContains: "twice or skipped"}
+      expected: {valid: false, errorContains: "segment 1 declares 6 conversation turns before it, but segment 0 ends at 5"}
 cut_cases:
   - name: cut-defers-crossing-entry
     budgetBytes: 1048576

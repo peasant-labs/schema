@@ -158,6 +158,11 @@ func loadTranscriptSegmentsFixtures(t *testing.T) transcriptSegmentsFixtures {
 		}
 		seen[c.Name] = true
 	}
+	for _, c := range fixtures.ShapeCases.Cases {
+		if !c.Expected.Valid && c.Expected.ErrorContains == "" && carriesDirectoryPositions(c.Input) {
+			t.Fatalf("transcript segments case %q rejects a directory that carries position fields but states no errorContains; without it the message check and the stripped-payload check are both skipped; add the message fragment the validator must report", c.Name)
+		}
+	}
 	for _, name := range fixtures.RequiredNames {
 		if !seen[name] {
 			t.Fatalf("required transcript segment case %q is missing", name)
@@ -230,7 +235,7 @@ func TestTranscriptShapeValidation(t *testing.T) {
 					t.Fatalf("round trip changed values: %v", err)
 				}
 			}
-			if !valid && c.Expected.ErrorContains != "" && c.Input.Schema == "TranscriptSegmentDirectory" {
+			if !valid && carriesDirectoryPositions(c.Input) {
 				stripped, err := stripDirectoryPositions(c.Input.Payload)
 				if err != nil {
 					t.Fatal(err)
@@ -241,6 +246,26 @@ func TestTranscriptShapeValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+// carriesDirectoryPositions reports whether a directory payload states a
+// conversation turn total or a span on any ref.
+func carriesDirectoryPositions(input transcriptShapeInput) bool {
+	if input.Schema != "TranscriptSegmentDirectory" {
+		return false
+	}
+	if _, ok := input.Payload["totalConversationTurns"]; ok {
+		return true
+	}
+	segments, _ := input.Payload["segments"].([]any)
+	for _, segment := range segments {
+		if ref, ok := segment.(map[string]any); ok {
+			if _, ok := ref["conversationTurns"]; ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func stripDirectoryPositions(payload map[string]any) (map[string]any, error) {

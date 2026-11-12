@@ -42,9 +42,10 @@ test("generated durable graph schema consumes the canonical count and recursive 
     try { result = parseSessionDetailPayloadText(raw); }
     catch (error) { assert.equal(row.classification, "must-fail", String(error)); return; }
     assert.equal(row.classification, "must-pass");
-    if (Object.hasOwn(JSON.parse(raw), "inputSubmissionCount")) {
-      assert.equal(Object.hasOwn(result, "inputSubmissionCount"), true);
-      assert.equal(result.inputSubmissionCount, JSON.parse(raw).inputSubmissionCount);
+    for (const field of ["inputSubmissionCount", "conversationTurnCount"]) {
+      const sent = JSON.parse(raw);
+      assert.equal(Object.hasOwn(result, field), Object.hasOwn(sent, field), `${field} presence`);
+      if (Object.hasOwn(sent, field)) assert.equal(result[field], sent[field], `${field} value`);
     }
   });
 });
