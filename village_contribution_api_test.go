@@ -55,13 +55,13 @@ func loadContributionFixtures(t *testing.T) contributionFixtures {
 	if err := yaml.Unmarshal(villageContributionYAML, &f); err != nil {
 		t.Fatalf("load contribution fixtures: %v", err)
 	}
-	assertcase.RequireMin(t, f.Views, 1)
+	assertcase.RequireMin(t, f.Views, 8)
 	assertcase.RequireValid(t, f.Views)
-	assertcase.RequireMin(t, f.ErrorCodes, 1)
+	assertcase.RequireMin(t, f.ErrorCodes, 14)
 	assertcase.RequireValid(t, f.ErrorCodes)
-	assertcase.RequireMin(t, f.Bounds, 1)
+	assertcase.RequireMin(t, f.Bounds, 3)
 	assertcase.RequireValid(t, f.Bounds)
-	assertcase.RequireMin(t, f.Shapes, 1)
+	assertcase.RequireMin(t, f.Shapes, 15)
 	assertcase.RequireValid(t, f.Shapes)
 	requireNames(t, "contributable view", f.RequiredNames.Views, namesOf(f.Views))
 	requireNames(t, "contribution error code", f.RequiredNames.ErrorCodes, namesOf(f.ErrorCodes))

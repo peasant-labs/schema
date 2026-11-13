@@ -21,6 +21,35 @@ type villageCollectivesOperationFixtures struct {
 	RemovedOperations []villageRemovedOperationFixture     `yaml:"removed_operations"`
 	RequestBodyNames  []string                             `yaml:"request_body_names"`
 	RequestBodies     []villageRequestBodyFixture          `yaml:"request_bodies"`
+
+	RetiredNames           []villageRetiredNameFixture `yaml:"retired_names"`
+	ResponseArmSampleNames []string                    `yaml:"response_arm_sample_names"`
+	ResponseArmSamples     []villageResponseArmFixture `yaml:"response_arm_samples"`
+}
+
+// villageRetiredNameFixture is a name the contract declared during
+// development and no longer declares, as a parameter, a property or an enum
+// value anywhere in the Village spec.
+type villageRetiredNameFixture struct {
+	Name   string `yaml:"name"`
+	Kind   string `yaml:"kind"`
+	Reason string `yaml:"reason"`
+}
+
+// villageResponseArmFixture is one operation whose success response is a
+// oneOf, with one sample body per arm.
+type villageResponseArmFixture struct {
+	Path    string                     `yaml:"path"`
+	Method  string                     `yaml:"method"`
+	Status  string                     `yaml:"status"`
+	Arms    []string                   `yaml:"arms"`
+	Samples []villageResponseArmSample `yaml:"samples"`
+}
+
+type villageResponseArmSample struct {
+	Name string         `yaml:"name"`
+	Arm  string         `yaml:"arm"`
+	Body map[string]any `yaml:"body"`
 }
 
 // villageRequestBodyFixture is one request body sent to an operation. Village
@@ -70,6 +99,8 @@ type villageComponentPropertyFixture struct {
 	Nullable  *bool  `yaml:"nullable"`
 	ItemsRef  string `yaml:"items_ref"`
 	ItemsType string `yaml:"items_type"`
+	Minimum   *int64 `yaml:"minimum"`
+	Maximum   *int64 `yaml:"maximum"`
 }
 
 func TestBuildVillageAPISpec_CollectivesOperations(t *testing.T) {
@@ -215,6 +246,16 @@ func TestBuildVillageAPISpec_CollectivesPropertyContracts(t *testing.T) {
 			got := schemaAllowsNull(property)
 			if got != *fixture.Nullable {
 				t.Errorf("component %s property %s nullable = %v, want %v", fixture.Component, fixture.Property, got, *fixture.Nullable)
+			}
+		}
+		if fixture.Minimum != nil {
+			if got, ok := property["minimum"].(float64); !ok || int64(got) != *fixture.Minimum {
+				t.Errorf("component %s property %s minimum = %v, want %d", fixture.Component, fixture.Property, property["minimum"], *fixture.Minimum)
+			}
+		}
+		if fixture.Maximum != nil {
+			if got, ok := property["maximum"].(float64); !ok || int64(got) != *fixture.Maximum {
+				t.Errorf("component %s property %s maximum = %v, want %d", fixture.Component, fixture.Property, property["maximum"], *fixture.Maximum)
 			}
 		}
 		if fixture.ItemsRef != "" {
