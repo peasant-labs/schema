@@ -28,9 +28,16 @@ func (VillageUUID) JSONSchema() (jsonschema.Schema, error) {
 }
 
 // VillageErrorResponse is the common JSON refusal envelope emitted by Village
-// handlers through writeError.
+// handlers through writeError. Error is always present and is the only field
+// older clients read. Code and Details are additive: they appear on contribution
+// refusals and carry the machine-readable reason.
 type VillageErrorResponse struct {
 	Error string `json:"error"`
+	// Code is the primary reason for the refusal.
+	Code *VillageContributionErrorCode `json:"code,omitempty" nullable:"false"`
+	// Details carries the per-transcript reasons. A request-level reason such
+	// as policy has a detail without transcript_id.
+	Details []VillageContributionErrorDetail `json:"details,omitempty" nullable:"false"`
 }
 
 // VillageGroupAcceptanceMode is the closed acceptance policy menu for a
@@ -1052,6 +1059,15 @@ type VillageContributableTranscript struct {
 	RootSessionID        *SessionID                  `json:"root_session_id,omitempty"`
 	Purpose              SessionPurpose              `json:"purpose,omitempty"`
 	Relationships        []SessionRelationship       `json:"relationships,omitempty"`
+	// SessionStart is when the session began. It is absent when unknown.
+	SessionStart *time.Time `json:"session_start,omitempty" nullable:"false"`
+	// ParentTranscriptID is the published transcript of the parent session. It
+	// is absent for a root, and for a helper whose parent is not published.
+	ParentTranscriptID *TranscriptID `json:"parent_transcript_id,omitempty" nullable:"false"`
+	// LatestStatus is the status of the latest contribution attempt in this
+	// collective; absence means no attempt. already_shared stays and is true
+	// only for pending and approved.
+	LatestStatus *VillageShareStatus `json:"latest_status,omitempty" nullable:"false"`
 }
 
 type VillageContributableResponse struct {

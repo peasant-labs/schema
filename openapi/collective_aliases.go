@@ -51,5 +51,5 @@ func addVillageCollectiveAliases(spec *openapi31.Spec) error {
 		}
 		paths[name] = item
 	}
-	return setVillageGroupedResponse(spec, "/api/v1/groups/{id}/contributable", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageContributableResponse"}, "SchemaVillageDeprecatedGroupedContributableResponse")
+	return setVillageGroupedResponse(spec, "/api/v1/groups/{id}/contributable", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageContributableResponse"}, "SchemaVillageDeprecatedGroupedContributableResponse", villageContributableExtraResponses...)
 }

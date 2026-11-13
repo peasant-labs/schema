@@ -514,6 +514,20 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	groupedViewQuery := new(struct {
 		View villageGroupedView `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the legacy response."`
 	})
+	contributableQuery := new(struct {
+		View        schema.VillageContributableView `query:"view" description:"grouped selects the helper-group list, paged selects one page of root sessions each with its helper family, snapshot selects the compact records of one project. Omission preserves the flat response. Any other value is refused with 400 and the accepted values are named."`
+		Query       string                          `query:"q" description:"Paged and snapshot views only. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule."`
+		ProjectHash schema.ProjectHash              `query:"project_hash" description:"Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded."`
+		Provider    string                          `query:"provider" description:"Paged and snapshot views only. Keep only the families that hold a session of this model provider."`
+		Cursor      string                          `query:"cursor" description:"Paged view only. The opaque next_cursor of the previous page; omitted reads the first page."`
+		Limit       int                             `query:"limit" minimum:"1" maximum:"500" default:"500" description:"Paged view only. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit."`
+	})
+	contributionProjectsQuery := new(struct {
+		Query    string `query:"q" description:"One search text matched against project display names, root and helper titles, and exact transcript ids. Counts cover the matching families."`
+		Provider string `query:"provider" description:"Keep only the families that hold a session of this model provider."`
+		Cursor   string `query:"cursor" description:"The opaque next_cursor of the previous page; omitted reads the first page."`
+		Limit    int    `query:"limit" minimum:"1" maximum:"500" default:"500" description:"Page size in PROJECTS, 1 to 500, omitted reads 500."`
+	})
 	memberQuery := new(struct {
 		GroupID string `path:"groupId" description:"Stable helper group identifier"`
 		Scope   string `query:"scope" required:"true" description:"Opaque scope returned by the originating grouped list"`
@@ -751,15 +765,31 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			path:                 "/api/v1/groups/{id}/contributable",
 			id:                   "listContributableTranscripts",
 			tag:                  "contributions",
-			description:          "List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit.",
-			requests:             []interface{}{groupPath, groupedViewQuery},
+			description:          "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The project picker is the count authority. A 503 carries snapshot_busy or snapshot_timeout in code.",
+			requests:             []interface{}{groupPath, contributableQuery},
 			response:             new(schema.VillageContributableResponse),
-			responseAlternatives: []interface{}{new(schema.VillageContributableResponse), new(schema.VillageGroupedContributableResponse), new(schema.VillageDeprecatedGroupedContributableResponse)},
+			responseAlternatives: []interface{}{new(schema.VillageContributableResponse), new(schema.VillageGroupedContributableResponse), new(schema.VillageDeprecatedGroupedContributableResponse), new(schema.VillageContributionPageResponse), new(schema.VillageContributionSnapshotResponse)},
 			errorStatuses: []int{
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
 				http.StatusForbidden,
 				http.StatusRequestEntityTooLarge,
+				http.StatusInternalServerError,
+				http.StatusServiceUnavailable,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/{id}/contributable/projects",
+			id:          "listContributionProjects",
+			tag:         "contributions",
+			description: "List the caller's projects for the contribution picker, with the counts that decide what a selection can hold. A family belongs to its root's project. Every count is in sessions, meaning every transcript in the matching families, while limit counts projects. The picker is the count authority for the paged view.",
+			requests:    []interface{}{groupPath, contributionProjectsQuery},
+			response:    new(schema.VillageContributionProjectPage),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
 				http.StatusInternalServerError,
 			},
 		},
@@ -770,6 +800,24 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			tag:         "contributions",
 			description: "Offer selected transcripts from one owned project to one collective in one transaction. Omitted or empty transcript_ids means every owned transcript in the project. visibility_confirmed must be true when any selected private transcript would become visible to the collective.",
 			requests:    []interface{}{groupPath, new(schema.VillageBatchShareRequest)},
+			response:    new(schema.VillageBatchShareResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusConflict,
+				http.StatusUnprocessableEntity,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodPost,
+			path:        "/api/v1/groups/{id}/shares/selection",
+			id:          "batchShareSelection",
+			tag:         "contributions",
+			description: "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.",
+			requests:    []interface{}{groupPath, new(schema.VillageBatchShareSelectionRequest)},
 			response:    new(schema.VillageBatchShareResponse),
 			errorStatuses: []int{
 				http.StatusBadRequest,
@@ -1034,14 +1082,15 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		path    string
 		legacy  map[string]interface{}
 		grouped string
+		extra   []string
 	}{
-		{"/api/v1/transcripts", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageTranscriptListResponse"}, "SchemaVillageSessionListPayload"},
-		{"/api/v1/groups/{id}", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageCollectiveDetailResponse"}, "SchemaVillageGroupedCollectiveDetailResponse"},
-		{"/api/v1/groups/{id}/contributable", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageContributableResponse"}, "SchemaVillageGroupedContributableResponse"},
-		{"/api/v1/groups/{id}/pending", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillagePendingShare"}}, "SchemaVillageSessionListPayload"},
-		{"/api/v1/groups/{id}/my-shares", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageUserCollectiveShare"}}, "SchemaVillageSessionListPayload"},
+		{"/api/v1/transcripts", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageTranscriptListResponse"}, "SchemaVillageSessionListPayload", nil},
+		{"/api/v1/groups/{id}", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageCollectiveDetailResponse"}, "SchemaVillageGroupedCollectiveDetailResponse", nil},
+		{"/api/v1/groups/{id}/contributable", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageContributableResponse"}, "SchemaVillageGroupedContributableResponse", villageContributableExtraResponses},
+		{"/api/v1/groups/{id}/pending", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillagePendingShare"}}, "SchemaVillageSessionListPayload", nil},
+		{"/api/v1/groups/{id}/my-shares", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageUserCollectiveShare"}}, "SchemaVillageSessionListPayload", nil},
 	} {
-		if err := setVillageGroupedResponse(r.Spec, variant.path, variant.legacy, variant.grouped); err != nil {
+		if err := setVillageGroupedResponse(r.Spec, variant.path, variant.legacy, variant.grouped, variant.extra...); err != nil {
 			return err
 		}
 	}
@@ -1054,6 +1103,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		{http.MethodPatch, "/api/v1/groups/{id}"},
 		{http.MethodPatch, "/api/v1/groups/{id}/members/{userID}/role"},
 		{http.MethodPost, "/api/v1/groups/{id}/shares"},
+		{http.MethodPost, "/api/v1/groups/{id}/shares/selection"},
 		{http.MethodPatch, "/api/v1/groups/{id}/shares"},
 		{http.MethodPatch, "/api/v1/groups/{id}/shares/{transcriptID}"},
 		{http.MethodPost, "/api/v1/transcripts/{id}/share"},
@@ -1067,7 +1117,14 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	return nil
 }
 
-func setVillageGroupedResponse(spec *openapi31.Spec, path string, legacy map[string]interface{}, grouped string) error {
+// villageContributableExtraResponses are the components, after the flat and the
+// grouped arm, that the contributable 200 response may also be. They are shared
+// by the canonical and the deprecated route so the two unions cannot drift.
+var villageContributableExtraResponses = []string{"SchemaVillageContributionPageResponse", "SchemaVillageContributionSnapshotResponse"}
+
+// setVillageGroupedResponse replaces the 200 schema of one GET with a union of
+// the legacy shape, the grouped shape and any further response components.
+func setVillageGroupedResponse(spec *openapi31.Spec, path string, legacy map[string]interface{}, grouped string, extra ...string) error {
 	item, ok := spec.Paths.MapOfPathItemValues[path]
 	if !ok || item.Get == nil || item.Get.Responses == nil {
 		return fmt.Errorf("configure grouped response for GET %s: operation is missing; clients could not distinguish grouped and omitted-view outputs; register the route before its response variants", path)
@@ -1080,7 +1137,11 @@ func setVillageGroupedResponse(spec *openapi31.Spec, path string, legacy map[str
 	if !ok {
 		return fmt.Errorf("configure grouped response for GET %s: JSON media type is missing; clients cannot decode the selected view; register an application/json response", path)
 	}
-	media.Schema = map[string]interface{}{"oneOf": []interface{}{legacy, map[string]interface{}{"$ref": "#/components/schemas/" + grouped}}}
+	arms := []interface{}{legacy, map[string]interface{}{"$ref": "#/components/schemas/" + grouped}}
+	for _, name := range extra {
+		arms = append(arms, map[string]interface{}{"$ref": "#/components/schemas/" + name})
+	}
+	media.Schema = map[string]interface{}{"oneOf": arms}
 	response.Response.Content["application/json"] = media
 	item.Get.Responses.MapOfResponseOrReferenceValues["200"] = response
 	spec.Paths.MapOfPathItemValues[path] = item

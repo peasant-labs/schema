@@ -7,6 +7,35 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Village API 0.41.0 and Types 0.51.0 (Local API stays 0.38.0) declare
+  contribution at library scale. `village-api-0.40.0` with its publish-request
+  and annotation-push-request schemas, and `types-0.50.0`, are frozen. The
+  contributable read gains the closed `VillageContributableView` menu
+  (`grouped`, `paged`, `snapshot`); omitting `view` keeps the flat response and
+  `view=grouped` keeps its envelope, on both the canonical route and the
+  deprecated `/api/v1/groups/...` alias. `view=paged` returns one page of
+  families: `limit` counts ROOT sessions (1 to 500, default 500), where a root
+  is a session with no `parent_session_id` or whose parent is not among the
+  owner's published transcripts, and each item carries its root and its helper
+  family, so a page can hold more transcripts than `limit`. A family belongs to
+  its root's project; a helper may be in another project and carries its own
+  `project_hash`. `view=snapshot` returns the compact record of every session in
+  the matching families of one project (id, visibility, latest contribution
+  status, project, parent link) with no record cap and no byte cap; it may
+  refuse with the 503 codes `snapshot_timeout` and `snapshot_busy`. One search
+  parameter `q` matches project display names, root and helper titles and exact
+  transcript ids; a family appears when its root or any helper matches, and each
+  family member carries the optional `matched` flag. New
+  `GET .../contributable/projects` is the project picker, with counts in
+  sessions and a page size in projects. New `POST .../shares/selection` writes
+  one exact selection of sessions; the server never expands a root into its
+  helpers, and live helpers stay locked. Refusals carry the closed
+  `VillageContributionErrorCode` in `code` and per-transcript `details` beside
+  the existing `error` text. Contributable rows gain optional `session_start`,
+  `parent_transcript_id` and `latest_status`. Field descriptions state the unit
+  of every count: only a page size counts roots, every other count is in
+  sessions.
+
 - Types 0.50.0, Village API 0.40.0 and Local API 0.38.0 recognize the separate
   `antigravity-cli` and `antigravity-ide` harness identities, with corresponding
   Go constants and display names. The previous

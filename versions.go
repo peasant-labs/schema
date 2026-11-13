@@ -140,7 +140,13 @@ const (
 	// and getTranscriptWindow with the existing transcript types.
 	// Bumped to 0.40.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	VillageAPIVersion = "0.40.0"
+	// Bumped to 0.41.0 on 2026-11-13 when the contributable route gained the
+	// closed paged and snapshot views, the families of root sessions with their
+	// helpers, the project picker and the exact selection write, the optional
+	// machine-readable refusal code and details, and the optional session_start,
+	// parent_transcript_id and latest_status on the contributable row
+	// (additive = minor bump).
+	VillageAPIVersion = "0.41.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -380,5 +386,10 @@ const (
 	// re-documented folded-turn turnCount fields (additive = minor bump).
 	// Bumped to 0.50.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	TypesVersion = "0.50.0"
+	// Bumped to 0.51.0 on 2026-11-13 when the catalog gained the contributable
+	// view, the contribution page, family, snapshot and project-picker types,
+	// the selection request, and the contribution error code and detail, and
+	// VillageErrorResponse gained the optional code and details (additive =
+	// minor bump).
+	TypesVersion = "0.51.0"
 )
