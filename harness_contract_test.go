@@ -15,6 +15,7 @@ import (
 	"github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/openapi"
 	"github.com/peasant-labs/schema/testcase"
+	caseassert "github.com/peasant-labs/schema/testcase/assert"
 	"gopkg.in/yaml.v3"
 )
 
@@ -191,8 +192,7 @@ func TestHarnessLifecycleDocumentation(t *testing.T) {
 			}
 		})
 	}
-	assertUniqueFixtureNames(t, "lifecycle cases", names)
-	requireManifestNames(t, "harness lifecycle", harnessLifecycleManifestYAML, names)
+	caseassert.RequireManifestNames(t, "harness lifecycle", harnessLifecycleManifestYAML, names)
 
 	for symbol, doc := range docs {
 		if (!strings.HasPrefix(symbol, "Harness") && symbol != "AllHarnesses") || caseSymbols[symbol] {

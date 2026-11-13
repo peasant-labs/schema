@@ -564,8 +564,7 @@ func TestHarness_EveryKnownHarnessHasDisplayName(t *testing.T) {
 			t.Errorf("%s: got %q, want %q", h, got, tc.Display)
 		}
 	}
-	assertUniqueFixtureNames(t, "display cases", names)
-	requireManifestNames(t, "harness display names", harnessDisplayNamesManifestYAML, names)
+	caseassert.RequireManifestNames(t, "harness display names", harnessDisplayNamesManifestYAML, names)
 	for _, h := range schema.Harnesses() {
 		if schema.HarnessDisplayName(h) == string(h) {
 			t.Errorf("%s has no explicit display name", h)

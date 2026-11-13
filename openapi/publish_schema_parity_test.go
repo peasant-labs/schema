@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
-	"io"
 	"os"
 	"testing"
 
@@ -13,6 +12,7 @@ import (
 
 	"github.com/peasant-labs/schema"
 	specpkg "github.com/peasant-labs/schema/openapi"
+	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
 
 // legacyPublishSchema is a FROZEN copy of the now-retired BuildJSONSchema output
@@ -165,17 +165,6 @@ func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 	if err := decoder.Decode(&fixture); err != nil {
 		t.Fatal(err)
 	}
-	var manifest struct {
-		RequiredNames []string `yaml:"requiredNames"`
-	}
-	decoder = yaml.NewDecoder(bytes.NewReader(currentHarnessVerdictsManifest))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&manifest); err != nil {
-		t.Fatalf("decode current harness verdicts manifest: %v", err)
-	}
-	if err := decoder.Decode(new(any)); err != io.EOF {
-		t.Fatalf("current harness verdicts manifest must contain exactly one YAML document: %v", err)
-	}
 	raw, err := specpkg.BuildPublishRequestSchema(specpkg.VillageAPIVersion)
 	if err != nil {
 		t.Fatal(err)
@@ -205,7 +194,5 @@ func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 			}
 		})
 	}
-	collectUniqueNames(t, "current publish verdicts", "cases", names)
-	collectUniqueNames(t, "current publish verdicts", "manifest", manifest.RequiredNames)
-	assertSameStringSet(t, "current publish verdicts cases and manifest", names, manifest.RequiredNames)
+	caseassert.RequireManifestNames(t, "current publish verdicts", currentHarnessVerdictsManifest, names)
 }
