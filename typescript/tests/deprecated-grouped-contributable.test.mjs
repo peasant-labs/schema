@@ -34,7 +34,7 @@ test("each route retains its own grouped union and the common omitted-view arm",
     const arms = operation.responses[200].content["application/json"].schema.oneOf;
     const names = arms.map(arm => arm.$ref.replace("#/components/schemas/Schema", ""));
     const grouped = row.path.includes("/groups/") ? "VillageDeprecatedGroupedContributableResponse" : "VillageGroupedContributableResponse";
-    assert.deepEqual(names, ["VillageContributableResponse", grouped]);
+    assert.deepEqual(names, ["VillageContributableResponse", grouped, ...fixture.view_arms]);
     const payload = row.view === "grouped" ? cases.find(value => value.expected.valid && value.input.schema === row.selected).input.payload : fixture.ungrouped;
     assert.equal(api[`z${row.selected}`].safeParse(payload).success, true, row.name);
     assert.equal(names.some(name => api[`z${name}`].safeParse(payload).success), true, row.name);

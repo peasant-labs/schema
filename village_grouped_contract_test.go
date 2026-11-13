@@ -43,6 +43,12 @@ type villageRouteInput struct {
 	LegacyItem  string   `yaml:"legacy_item"`
 	Grouped     string   `yaml:"grouped"`
 	Parameters  []string `yaml:"parameters"`
+	// ViewValues is the exact view menu of the route; absent means the single
+	// grouped value every grouped-view route accepts.
+	ViewValues []string `yaml:"view_values"`
+	// ResponseArms is the number of 200 union arms; absent means the two arms of
+	// a legacy-or-grouped route.
+	ResponseArms int `yaml:"response_arms"`
 }
 type villageExpected struct {
 	Valid bool `yaml:"valid"`
@@ -394,8 +400,18 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 				}
 				resolved := resolveParameterSchema(t, view, components)
 				enum := resolved["enum"].([]any)
-				if len(enum) != 1 || enum[0] != "grouped" {
-					t.Errorf("view enum=%v, want [grouped]", enum)
+				wantView := c.Input.ViewValues
+				if len(wantView) == 0 {
+					wantView = []string{"grouped"}
+				}
+				if len(enum) != len(wantView) {
+					t.Errorf("view enum=%v, want %v", enum, wantView)
+				} else {
+					for i, member := range enum {
+						if member != wantView[i] {
+							t.Errorf("view enum[%d]=%v, want %v", i, member, wantView[i])
+						}
+					}
 				}
 			}
 			if c.Input.View && params["view"] == nil {
@@ -420,8 +436,12 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 			}
 			responseSchema := op["responses"].(map[string]any)["200"].(map[string]any)["content"].(map[string]any)["application/json"].(map[string]any)["schema"].(map[string]any)
 			refs := responseRefs(responseSchema)
-			if _, union := responseSchema["oneOf"]; union && len(responseSchema["oneOf"].([]any)) != 2 {
-				t.Errorf("response union has %d arms, want exactly 2", len(responseSchema["oneOf"].([]any)))
+			wantArms := c.Input.ResponseArms
+			if wantArms == 0 {
+				wantArms = 2
+			}
+			if _, union := responseSchema["oneOf"]; union && len(responseSchema["oneOf"].([]any)) != wantArms {
+				t.Errorf("response union has %d arms, want exactly %d", len(responseSchema["oneOf"].([]any)), wantArms)
 			}
 			if c.Input.Legacy != "" && !refs[c.Input.Legacy] {
 				t.Errorf("missing legacy response arm %s in %v", c.Input.Legacy, refs)

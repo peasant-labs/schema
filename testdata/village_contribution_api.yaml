@@ -1,0 +1,329 @@
+required_names:
+  views: [view-grouped, view-paged, view-snapshot, view-empty-is-not-a-token, view-flat-is-not-a-token, view-capitalised, view-padded, view-unknown]
+  error_codes: [code-moved, code-missing, code-live, code-private-unapproved, code-conflict, code-policy, code-membership, code-stale-selection, code-snapshot-timeout, code-snapshot-busy, code-snapshot-too-large-retired, code-empty, code-capitalised, code-unknown]
+  bounds: [page-limit-default, page-limit-minimum, page-limit-maximum]
+  shapes: [page-response-family, page-response-empty-helpers, page-response-matched-absent, page-response-retired-snapshot-limit, snapshot-response-compact, snapshot-record-no-parent, snapshot-record-retired-title, snapshot-response-retired-truncated, project-page-counts, project-page-retired-project-q, error-response-moved, error-response-policy-without-transcript, error-response-legacy-text-only, selection-request, selection-request-retired-expand-helpers]
+views:
+  cases:
+    - name: view-grouped
+      input: {raw: grouped}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: &views {source: requirement, ref: contributable-view-menu}
+      mutation: {description: the existing grouped view stays a member of the contributable menu}
+    - name: view-paged
+      input: {raw: paged}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *views
+      mutation: {description: the paged view is a member of the menu}
+    - name: view-snapshot
+      input: {raw: snapshot}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *views
+      mutation: {description: the snapshot view is a member of the menu}
+    - name: view-empty-is-not-a-token
+      input: {raw: ""}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *views
+      mutation: {description: omission keeps the flat response, so the empty string is not a view token}
+    - name: view-flat-is-not-a-token
+      input: {raw: flat}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *views
+      mutation: {description: the flat response has no token}
+    - name: view-capitalised
+      input: {raw: Paged}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *views
+      mutation: {description: the menu is case sensitive}
+    - name: view-padded
+      input: {raw: "paged "}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *views
+      mutation: {description: a trailing space makes a member invalid}
+    - name: view-unknown
+      input: {raw: everything}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *views
+      mutation: {description: an undeclared view is refused}
+error_codes:
+  cases:
+    - name: code-moved
+      input: {raw: moved}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: &codes {source: requirement, ref: contribution-error-code-menu}
+      mutation: {description: a root that changed project is a member}
+    - name: code-missing
+      input: {raw: missing}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *codes
+      mutation: {description: a transcript outside the library is a member}
+    - name: code-live
+      input: {raw: live}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *codes
+      mutation: {description: an already live transcript is a member}
+    - name: code-private-unapproved
+      input: {raw: private_unapproved}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *codes
+      mutation: {description: a private transcript without approval is a member}
+    - name: code-conflict
+      input: {raw: conflict}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *codes
+      mutation: {description: a conflicting change is a member}
+    - name: code-policy
+      input: {raw: policy}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *codes
+      mutation: {description: a request-level policy refusal is a member}
+    - name: code-membership
+      input: {raw: membership}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *codes
+      mutation: {description: a caller who may not contribute is a member}
+    - name: code-stale-selection
+      input: {raw: stale_selection}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *codes
+      mutation: {description: a selection that no longer matches the library is a member}
+    - name: code-snapshot-timeout
+      input: {raw: snapshot_timeout}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *codes
+      mutation: {description: a snapshot that ran out of time is a member}
+    - name: code-snapshot-busy
+      input: {raw: snapshot_busy}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *codes
+      mutation: {description: a server already building the most snapshots it will is a member}
+    - name: code-snapshot-too-large-retired
+      input: {raw: snapshot_too_large}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: snapshot-has-no-cap}
+      mutation: {description: the snapshot has no record or byte cap, so no code reports one}
+    - name: code-empty
+      input: {raw: ""}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *codes
+      mutation: {description: an empty code is not a member}
+    - name: code-capitalised
+      input: {raw: Moved}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *codes
+      mutation: {description: the menu is case sensitive}
+    - name: code-unknown
+      input: {raw: teapot}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *codes
+      mutation: {description: an undeclared code is refused}
+bounds:
+  cases:
+    - name: page-limit-default
+      input: {constant: default}
+      expected: {value: 500}
+      classification: must-pass
+      provenance: &bounds {source: requirement, ref: page-limit-counts-roots}
+      mutation: {description: omitting limit reads a page of 500 root sessions}
+    - name: page-limit-minimum
+      input: {constant: minimum}
+      expected: {value: 1}
+      classification: must-pass
+      provenance: *bounds
+      mutation: {description: a page holds at least one root session}
+    - name: page-limit-maximum
+      input: {constant: maximum}
+      expected: {value: 500}
+      classification: must-pass
+      provenance: *bounds
+      mutation: {description: a page holds at most 500 root sessions}
+shapes:
+  cases:
+    - name: page-response-family
+      input:
+        target: page
+        json:
+          group_id: 11111111-1111-4111-8111-111111111111
+          items:
+            - root: {transcript: {id: root-a}, matched: false}
+              helpers:
+                - {transcript: {id: helper-a}, matched: true}
+          next_cursor: opaque
+          has_more: true
+      expected: {valid: true, present: [group_id, items, next_cursor, has_more]}
+      classification: must-pass
+      provenance: &shapes {source: requirement, ref: contribution-wire-shapes}
+      mutation: {description: a family is one root with its helpers and each member says whether it matched}
+    - name: page-response-empty-helpers
+      input:
+        target: page
+        json:
+          group_id: 11111111-1111-4111-8111-111111111111
+          items:
+            - {root: {transcript: {id: root-a}}, helpers: []}
+          has_more: false
+      expected: {valid: true, present: [items, has_more], absent: [next_cursor], nested_present: [items.0.helpers]}
+      classification: must-pass
+      provenance: *shapes
+      mutation: {description: a root with no helpers still carries an empty helpers array, never null}
+    - name: page-response-matched-absent
+      input:
+        target: page
+        json:
+          group_id: 11111111-1111-4111-8111-111111111111
+          items:
+            - {root: {transcript: {id: root-a}}, helpers: []}
+          has_more: false
+      expected: {valid: true, nested_absent: [items.0.root.matched]}
+      classification: must-pass
+      provenance: *shapes
+      mutation: {description: a request without q carries no matched flag}
+    - name: page-response-retired-snapshot-limit
+      input:
+        target: page
+        json:
+          group_id: 11111111-1111-4111-8111-111111111111
+          items: []
+          has_more: false
+          snapshot_limit: 5000
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: snapshot-has-no-cap}
+      mutation: {description: no response declares a snapshot limit}
+    - name: snapshot-response-compact
+      input:
+        target: snapshot
+        json:
+          group_id: 11111111-1111-4111-8111-111111111111
+          project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          records:
+            - {id: root-a, visibility: private, latest_status: pending, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+            - {id: helper-a, visibility: shared, project_hash: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, parent_transcript_id: root-a}
+          count: 2
+      expected: {valid: true, present: [group_id, project_hash, records, count], nested_absent: [records.0.parent_transcript_id, records.1.latest_status], nested_present: [records.1.parent_transcript_id, records.0.latest_status]}
+      classification: must-pass
+      provenance: *shapes
+      mutation: {description: a helper keeps its own project and parent link while a root omits the parent link}
+    - name: snapshot-record-no-parent
+      input:
+        target: snapshot-record
+        json: {id: root-a, visibility: public, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      expected: {valid: true, present: [id, visibility, project_hash], absent: [latest_status, parent_transcript_id]}
+      classification: must-pass
+      provenance: *shapes
+      mutation: {description: a root without a contribution attempt omits both optional fields}
+    - name: snapshot-record-retired-title
+      input:
+        target: snapshot-record
+        json: {id: root-a, visibility: public, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, title: heavy}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: snapshot-record-is-compact}
+      mutation: {description: the snapshot record carries no display fields}
+    - name: snapshot-response-retired-truncated
+      input:
+        target: snapshot
+        json:
+          group_id: 11111111-1111-4111-8111-111111111111
+          project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          records: []
+          count: 0
+          truncated: true
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: snapshot-has-no-cap}
+      mutation: {description: a snapshot is never truncated, so it has no truncation flag}
+    - name: project-page-counts
+      input:
+        target: project-page
+        json:
+          projects:
+            - {project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, project_display_name: peasant, project_name_source: remote, matching_count: 9, selectable_count: 7}
+          has_more: false
+          matching_total: 9
+          selectable_total: 7
+          providers: [{provider: claude, count: 9}]
+      expected: {valid: true, present: [projects, has_more, matching_total, selectable_total, providers], absent: [next_cursor]}
+      classification: must-pass
+      provenance: *shapes
+      mutation: {description: picker counts are sessions and the page size is projects}
+    - name: project-page-retired-project-q
+      input:
+        target: project-page
+        json: {projects: [], has_more: false, matching_total: 0, selectable_total: 0, providers: [], project_q: peasant}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: one-search-parameter}
+      mutation: {description: one q replaces the project search text}
+    - name: error-response-moved
+      input:
+        target: error
+        json:
+          error: a root moved
+          code: moved
+          details: [{transcript_id: root-a, code: moved, current_project_hash: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb}]
+      expected: {valid: true, present: [error, code, details], nested_present: [details.0.current_project_hash, details.0.transcript_id]}
+      classification: must-pass
+      provenance: *shapes
+      mutation: {description: a moved root names the project it now belongs to}
+    - name: error-response-policy-without-transcript
+      input:
+        target: error
+        json: {error: policy refuses, code: policy, details: [{code: policy}]}
+      expected: {valid: true, nested_absent: [details.0.transcript_id, details.0.current_project_hash]}
+      classification: must-pass
+      provenance: *shapes
+      mutation: {description: a request-level reason omits transcript_id}
+    - name: error-response-legacy-text-only
+      input:
+        target: error
+        json: {error: not found}
+      expected: {valid: true, present: [error], absent: [code, details]}
+      classification: must-pass
+      provenance: {source: requirement, ref: existing-error-body-keeps-working}
+      mutation: {description: a refusal with no machine reason keeps the legacy body}
+    - name: selection-request
+      input:
+        target: selection
+        json:
+          project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          transcript_ids: [root-a, helper-a]
+          private_approvals: []
+      expected: {valid: true, present: [project_hash, transcript_ids, private_approvals]}
+      classification: must-pass
+      provenance: *shapes
+      mutation: {description: the selection lists every session, roots and helpers alike}
+    - name: selection-request-retired-expand-helpers
+      input:
+        target: selection
+        json:
+          project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          transcript_ids: [root-a]
+          private_approvals: []
+          expand_helpers: true
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: server-never-expands-a-selection}
+      mutation: {description: the server never expands a root into its helpers}

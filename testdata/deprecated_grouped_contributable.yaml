@@ -1,6 +1,9 @@
 required_names: [canonical-grouped, deprecated-grouped, canonical-wrong-key, deprecated-wrong-key, canonical-missing-id, deprecated-missing-id, canonical-null-list, deprecated-null-list, canonical-missing-list, deprecated-missing-list, canonical-empty-id, deprecated-empty-id, canonical-invalid-page, deprecated-invalid-page]
 list: &list {items: [], page: 1, limit: 2, totalItems: 0, ordinarySessionTotal: 0, helperThreadTotal: 0}
 required_routes: [canonical-grouped-view, deprecated-grouped-view, canonical-omitted-view, deprecated-omitted-view]
+# Arms every contributable route carries after the grouped arm, in order: the
+# paged page and the project snapshot, both closed behind their own view token.
+view_arms: [VillageContributionPageResponse, VillageContributionSnapshotResponse]
 routes:
   - {name: canonical-grouped-view, path: "/api/v1/collectives/{id}/contributable", operation_id: listContributableTranscripts, view: grouped, selected: VillageGroupedContributableResponse, rejected: VillageDeprecatedGroupedContributableResponse, deprecated: false}
   - {name: deprecated-grouped-view, path: "/api/v1/groups/{id}/contributable", operation_id: listContributableTranscriptsDeprecated, view: grouped, selected: VillageDeprecatedGroupedContributableResponse, rejected: VillageGroupedContributableResponse, deprecated: true}

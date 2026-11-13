@@ -680,6 +680,54 @@ types:
     disposition: catalog
     component: VillageBatchShareResponse
     reason: schema-owned Village collectives wire contract
+  - go_name: VillageBatchShareSelectionRequest
+    disposition: catalog
+    component: VillageBatchShareSelectionRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributableView
+    disposition: catalog
+    component: VillageContributableView
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionErrorCode
+    disposition: catalog
+    component: VillageContributionErrorCode
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionErrorDetail
+    disposition: catalog
+    component: VillageContributionErrorDetail
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionFamilyMember
+    disposition: catalog
+    component: VillageContributionFamilyMember
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionPageItem
+    disposition: catalog
+    component: VillageContributionPageItem
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionPageResponse
+    disposition: catalog
+    component: VillageContributionPageResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionProjectPage
+    disposition: catalog
+    component: VillageContributionProjectPage
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionProjectSummary
+    disposition: catalog
+    component: VillageContributionProjectSummary
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionProviderFacet
+    disposition: catalog
+    component: VillageContributionProviderFacet
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionSnapshotRecord
+    disposition: catalog
+    component: VillageContributionSnapshotRecord
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionSnapshotResponse
+    disposition: catalog
+    component: VillageContributionSnapshotResponse
+    reason: schema-owned Village collectives wire contract
   - go_name: VillageCollectiveSearchResponse
     disposition: catalog
     component: VillageCollectiveSearchResponse

@@ -150,9 +150,23 @@ operations:
     method: get
     operation_id: listContributableTranscripts
     request_components: []
-    response_components: [VillageContributableResponse]
-    statuses: ["200", "400", "401", "403", "413", "500"]
-    description_anchors: [already live, unpaginated]
+    response_components: [VillageContributableResponse, VillageContributionPageResponse, VillageContributionSnapshotResponse]
+    statuses: ["200", "400", "401", "403", "413", "500", "503"]
+    description_anchors: [already live, unpaginated, root sessions, no record or byte cap, snapshot_busy]
+  - path: /api/v1/collectives/{id}/contributable/projects
+    method: get
+    operation_id: listContributionProjects
+    request_components: []
+    response_components: [VillageContributionProjectPage]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [root's project, Every count is in sessions, limit counts projects]
+  - path: /api/v1/collectives/{id}/shares/selection
+    method: post
+    operation_id: batchShareSelection
+    request_components: [VillageBatchShareSelectionRequest]
+    response_components: [VillageBatchShareResponse]
+    statuses: ["200", "400", "401", "403", "404", "409", "422", "500"]
+    description_anchors: [one exact selection, closed code, already_shared]
   - path: /api/v1/collectives/{id}/shares
     method: post
     operation_id: batchShareProject
@@ -343,6 +357,10 @@ component_enums:
     values: ["", owner, member, contributor, pending]
   - component: VillageProjectNameSource
     values: [override, consented, remote, path, privacy]
+  - component: VillageContributableView
+    values: [grouped, paged, snapshot]
+  - component: VillageContributionErrorCode
+    values: [moved, missing, live, private_unapproved, conflict, policy, membership, stale_selection, snapshot_timeout, snapshot_busy]
   - component: VillageTranscriptVisibility
     values: [private, shared, public]
   - component: VillageContributionStatus
@@ -569,6 +587,9 @@ removed_operations:
   - {path: '/api/v1/groups/{id}/members', method: post, reason: an owner can no longer make a person a member without their consent; createGroupInvitation replaces it}
   - {path: '/api/v1/collectives/{id}/members', method: post, reason: the canonical alias of the removed add-member operation}
 request_body_names:
+  - selection-valid
+  - selection-empty-transcripts-rejected
+  - selection-missing-approvals-rejected
   - invite-username-valid
   - invite-empty-username-rejected
   - invite-missing-username-rejected
@@ -653,4 +674,19 @@ request_bodies:
     path: /api/v1/users/me/email/verify
     method: post
     body: {token: ""}
+    valid: false
+  - name: selection-valid
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", transcript_ids: ["00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002"], private_approvals: []}
+    valid: true
+  - name: selection-empty-transcripts-rejected
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", transcript_ids: [], private_approvals: []}
+    valid: false
+  - name: selection-missing-approvals-rejected
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", transcript_ids: ["00000000-0000-4000-8000-000000000001"]}
     valid: false
