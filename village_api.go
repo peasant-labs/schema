@@ -34,10 +34,10 @@ func (VillageUUID) JSONSchema() (jsonschema.Schema, error) {
 type VillageErrorResponse struct {
 	Error string `json:"error"`
 	// Code is the primary reason for the refusal.
-	Code *VillageContributionErrorCode `json:"code,omitempty" nullable:"false"`
+	Code *VillageContributionErrorCode `json:"code,omitempty" nullable:"false" description:"The primary machine-readable reason for the refusal. Accompanies contribution refusals; the error text is always present."`
 	// Details carries the per-transcript reasons. A request-level reason such
 	// as policy has a detail without transcript_id.
-	Details []VillageContributionErrorDetail `json:"details,omitempty" nullable:"false"`
+	Details []VillageContributionErrorDetail `json:"details,omitempty" nullable:"false" description:"The per-transcript reasons for the refusal. Accompanies contribution refusals; the error text is always present."`
 }
 
 // VillageGroupAcceptanceMode is the closed acceptance policy menu for a
@@ -1060,14 +1060,14 @@ type VillageContributableTranscript struct {
 	Purpose              SessionPurpose              `json:"purpose,omitempty"`
 	Relationships        []SessionRelationship       `json:"relationships,omitempty"`
 	// SessionStart is when the session began. It is absent when unknown.
-	SessionStart *time.Time `json:"session_start,omitempty" nullable:"false"`
+	SessionStart *time.Time `json:"session_start,omitempty" nullable:"false" description:"When the session began. Absent when unknown."`
 	// ParentTranscriptID is the published transcript of the parent session. It
 	// is absent for a root, and for a helper whose parent is not published.
-	ParentTranscriptID *TranscriptID `json:"parent_transcript_id,omitempty" nullable:"false"`
+	ParentTranscriptID *TranscriptID `json:"parent_transcript_id,omitempty" nullable:"false" description:"The published transcript of the parent session. Absent for a root, and for a helper whose parent is not published."`
 	// LatestStatus is the status of the latest contribution attempt in this
 	// collective; absence means no attempt. already_shared stays and is true
 	// only for pending and approved.
-	LatestStatus *VillageShareStatus `json:"latest_status,omitempty" nullable:"false"`
+	LatestStatus *VillageShareStatus `json:"latest_status,omitempty" nullable:"false" description:"The status of the latest contribution attempt in this collective. Absent means no attempt. already_shared stays and is true only for pending and approved."`
 }
 
 type VillageContributableResponse struct {

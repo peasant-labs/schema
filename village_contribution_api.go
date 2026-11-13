@@ -119,10 +119,10 @@ func (VillageContributionErrorCode) JSONSchema() (jsonschema.Schema, error) {
 // VillageContributionErrorDetail is one per-transcript reason inside a refusal.
 // A request-level reason such as policy omits transcript_id.
 type VillageContributionErrorDetail struct {
-	TranscriptID *TranscriptID                `json:"transcript_id,omitempty"`
-	Code         VillageContributionErrorCode `json:"code"`
+	TranscriptID *TranscriptID                `json:"transcript_id,omitempty" nullable:"false" description:"The transcript this reason is about. Absent for a request-level reason such as policy."`
+	Code         VillageContributionErrorCode `json:"code" description:"The machine-readable reason for this transcript."`
 	// CurrentProjectHash names the project a moved transcript now belongs to.
-	CurrentProjectHash *ProjectHash `json:"current_project_hash,omitempty"`
+	CurrentProjectHash *ProjectHash `json:"current_project_hash,omitempty" nullable:"false" description:"The project a moved transcript now belongs to."`
 }
 
 // VillageContributionFamilyMember is one session of a contribution family: the
@@ -137,15 +137,15 @@ type VillageContributionFamilyMember struct {
 	Transcript VillageContributableTranscript `json:"transcript"`
 	// Matched is true when this member itself matched q. It is absent when the
 	// request carried no q.
-	Matched *bool `json:"matched,omitempty"`
+	Matched *bool `json:"matched,omitempty" nullable:"false" description:"True when this member itself matched q. Absent when the request carried no q."`
 }
 
 // VillageContributionPageItem is one family: a root session and every helper
 // that descends from it. The family belongs to its root's project, whatever
 // project each helper is in. Selecting the root selects its helpers by default.
 type VillageContributionPageItem struct {
-	Root    VillageContributionFamilyMember   `json:"root"`
-	Helpers []VillageContributionFamilyMember `json:"helpers" nullable:"false"`
+	Root    VillageContributionFamilyMember   `json:"root" description:"The root session of the family. The family belongs to the project of the root."`
+	Helpers []VillageContributionFamilyMember `json:"helpers" nullable:"false" description:"Every helper session that descends from the root. Each helper keeps its own project, which may differ from the project of the root."`
 }
 
 // VillageContributionPageResponse is one page of families. Its size is counted
@@ -156,7 +156,7 @@ type VillageContributionPageResponse struct {
 	Items   []VillageContributionPageItem `json:"items" nullable:"false"`
 	// NextCursor is the opaque cursor of the following page. It is absent on
 	// the last page.
-	NextCursor *string `json:"next_cursor,omitempty"`
+	NextCursor *string `json:"next_cursor,omitempty" nullable:"false" description:"The opaque cursor of the following page. Absent on the last page."`
 	HasMore    bool    `json:"has_more"`
 }
 
@@ -168,11 +168,11 @@ type VillageContributionSnapshotRecord struct {
 	Visibility VillageTranscriptVisibility `json:"visibility"`
 	// LatestStatus is the status of the latest contribution attempt; absence
 	// means no attempt.
-	LatestStatus *VillageShareStatus `json:"latest_status,omitempty"`
+	LatestStatus *VillageShareStatus `json:"latest_status,omitempty" nullable:"false" description:"The status of the latest contribution attempt. Absent means no attempt."`
 	// ProjectHash is the session's own project, which may differ from the
 	// project of the root of its family.
-	ProjectHash        ProjectHash   `json:"project_hash"`
-	ParentTranscriptID *TranscriptID `json:"parent_transcript_id,omitempty"`
+	ProjectHash        ProjectHash   `json:"project_hash" description:"The session's own project, which may differ from the project of the root of its family."`
+	ParentTranscriptID *TranscriptID `json:"parent_transcript_id,omitempty" nullable:"false" description:"The published transcript of the parent session. Absent for a root, and for a helper whose parent is not published."`
 }
 
 // VillageContributionSnapshotResponse is the exact selection set of one
@@ -182,9 +182,9 @@ type VillageContributionSnapshotRecord struct {
 // sessions, not roots.
 type VillageContributionSnapshotResponse struct {
 	GroupID     VillageUUID                         `json:"group_id"`
-	ProjectHash ProjectHash                         `json:"project_hash"`
+	ProjectHash ProjectHash                         `json:"project_hash" description:"The project of the family roots. Helpers in the records may belong to other projects."`
 	Records     []VillageContributionSnapshotRecord `json:"records" nullable:"false"`
-	Count       int                                 `json:"count"`
+	Count       int                                 `json:"count" minimum:"0" maximum:"9007199254740991" description:"The number of records, counted in sessions, not roots. Equals the length of records."`
 }
 
 // VillageContributionProjectSummary is one project in the picker. Its counts
@@ -194,18 +194,18 @@ type VillageContributionProjectSummary struct {
 	ProjectHash        ProjectHash              `json:"project_hash"`
 	ProjectDisplayName string                   `json:"project_display_name"`
 	ProjectNameSource  VillageProjectNameSource `json:"project_name_source"`
-	RepositoryState    *string                  `json:"repository_state,omitempty"`
+	RepositoryState    *string                  `json:"repository_state,omitempty" nullable:"false"`
 	// MatchingCount is the sessions in the project's matching families.
-	MatchingCount int `json:"matching_count"`
+	MatchingCount int `json:"matching_count" minimum:"0" maximum:"9007199254740991" description:"The number of sessions in the project's matching families, counted in sessions, not roots."`
 	// SelectableCount is the sessions among them that are not already live.
-	SelectableCount int `json:"selectable_count"`
+	SelectableCount int `json:"selectable_count" minimum:"0" maximum:"9007199254740991" description:"The number of sessions among the matching ones that are not already live, counted in sessions, not roots."`
 }
 
 // VillageContributionProviderFacet counts the matching sessions of one model
 // provider.
 type VillageContributionProviderFacet struct {
 	Provider string `json:"provider"`
-	Count    int    `json:"count"`
+	Count    int    `json:"count" minimum:"0" maximum:"9007199254740991" description:"The number of matching sessions of this provider, counted in sessions, not roots."`
 }
 
 // VillageContributionProjectPage is one page of the project picker. Its page
@@ -213,12 +213,12 @@ type VillageContributionProviderFacet struct {
 // counts are in sessions across every page.
 type VillageContributionProjectPage struct {
 	Projects   []VillageContributionProjectSummary `json:"projects" nullable:"false"`
-	NextCursor *string                             `json:"next_cursor,omitempty"`
+	NextCursor *string                             `json:"next_cursor,omitempty" nullable:"false" description:"The opaque cursor of the following page. Absent on the last page."`
 	HasMore    bool                                `json:"has_more"`
 	// MatchingTotal is the sessions in all matching families.
-	MatchingTotal int `json:"matching_total"`
+	MatchingTotal int `json:"matching_total" minimum:"0" maximum:"9007199254740991" description:"The number of sessions in all matching families across every page, counted in sessions, not roots."`
 	// SelectableTotal is the sessions among them that are not already live.
-	SelectableTotal int                                `json:"selectable_total"`
+	SelectableTotal int                                `json:"selectable_total" minimum:"0" maximum:"9007199254740991" description:"The number of sessions among the matching ones that are not already live, across every page, counted in sessions, not roots."`
 	Providers       []VillageContributionProviderFacet `json:"providers" nullable:"false"`
 }
 
@@ -227,7 +227,7 @@ type VillageContributionProjectPage struct {
 // expand a root into its helpers. PrivateApprovals lists the private
 // transcripts among them whose owner approved their visibility.
 type VillageBatchShareSelectionRequest struct {
-	ProjectHash      ProjectHash    `json:"project_hash"`
-	TranscriptIDs    []TranscriptID `json:"transcript_ids" nullable:"false" minItems:"1"`
+	ProjectHash      ProjectHash    `json:"project_hash" description:"The project of the selected roots. Helpers may belong to other projects and are not checked against it."`
+	TranscriptIDs    []TranscriptID `json:"transcript_ids" nullable:"false" minItems:"1" description:"Exactly the sessions to offer, roots and helpers alike. The server never expands a root into its helpers."`
 	PrivateApprovals []TranscriptID `json:"private_approvals" nullable:"false"`
 }

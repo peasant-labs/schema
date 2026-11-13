@@ -33,8 +33,17 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `VillageContributionErrorCode` in `code` and per-transcript `details` beside
   the existing `error` text. Contributable rows gain optional `session_start`,
   `parent_transcript_id` and `latest_status`. Field descriptions state the unit
-  of every count: only a page size counts roots, every other count is in
-  sessions.
+  of every count: only a page size counts anything but sessions (roots in the
+  paged view, projects in the picker), every other count is in sessions, and
+  every count is an integer from 0 to 9007199254740991. The
+  parameters `q`, `project_hash`, `provider`, `cursor` and `limit` apply only to
+  `view=paged` and `view=snapshot`; they are ignored without `view` and with
+  `view=grouped`, whose responses are unchanged. `view=snapshot` without
+  `project_hash` is a 400, and the 413 applies only when `view` is omitted. The
+  selection write offers exactly the listed `transcript_ids`; `project_hash` is
+  the project of the selected roots and helpers are not checked against it. The
+  optional fields these views add are absent when they have no value and are
+  never null.
 
 - Types 0.50.0, Village API 0.40.0 and Local API 0.38.0 recognize the separate
   `antigravity-cli` and `antigravity-ide` harness identities, with corresponding
