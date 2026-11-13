@@ -67,6 +67,8 @@ import { zVillageCollectiveAcceptanceMode, type VillageCollectiveAcceptanceMode 
 import { zVillageCollectiveDataAccess, type VillageCollectiveDataAccess as VillageCollectiveDataAccessContract } from "./contract/zod.gen.js";
 import { zVillageCollectiveRole, type VillageCollectiveRole as VillageCollectiveRoleContract } from "./contract/zod.gen.js";
 import { zVillageCollectiveViewerRole, type VillageCollectiveViewerRole as VillageCollectiveViewerRoleContract } from "./contract/zod.gen.js";
+import { zVillageContributableView, type VillageContributableView as VillageContributableViewContract } from "./contract/zod.gen.js";
+import { zVillageContributionErrorCode, type VillageContributionErrorCode as VillageContributionErrorCodeContract } from "./contract/zod.gen.js";
 import { zVillageProjectNameSource, type VillageProjectNameSource as VillageProjectNameSourceContract } from "./contract/zod.gen.js";
 import { zVillageReviewDecision, type VillageReviewDecision as VillageReviewDecisionContract } from "./contract/zod.gen.js";
 import { zVillageShareEventActor, type VillageShareEventActor as VillageShareEventActorContract } from "./contract/zod.gen.js";
@@ -960,6 +962,35 @@ export const VillageCollectiveViewerRole = Object.freeze({
 export const AllVillageCollectiveViewerRoles = Object.freeze([VillageCollectiveViewerRole.None, VillageCollectiveViewerRole.Owner, VillageCollectiveViewerRole.Member, VillageCollectiveViewerRole.Contributor, VillageCollectiveViewerRole.Pending]) as readonly VillageCollectiveViewerRole[];
 export function isVillageCollectiveViewerRole(value: unknown): value is VillageCollectiveViewerRole {
   return zVillageCollectiveViewerRole.safeParse(value).success;
+}
+
+export type VillageContributableView = VillageContributableViewContract;
+export const VillageContributableView = Object.freeze({
+  Grouped: zVillageContributableView.parse("grouped"),
+  Paged: zVillageContributableView.parse("paged"),
+  Snapshot: zVillageContributableView.parse("snapshot"),
+} as const);
+export const AllVillageContributableViews = Object.freeze([VillageContributableView.Grouped, VillageContributableView.Paged, VillageContributableView.Snapshot]) as readonly VillageContributableView[];
+export function isVillageContributableView(value: unknown): value is VillageContributableView {
+  return zVillageContributableView.safeParse(value).success;
+}
+
+export type VillageContributionErrorCode = VillageContributionErrorCodeContract;
+export const VillageContributionErrorCode = Object.freeze({
+  Moved: zVillageContributionErrorCode.parse("moved"),
+  Missing: zVillageContributionErrorCode.parse("missing"),
+  Live: zVillageContributionErrorCode.parse("live"),
+  PrivateUnapproved: zVillageContributionErrorCode.parse("private_unapproved"),
+  Conflict: zVillageContributionErrorCode.parse("conflict"),
+  Policy: zVillageContributionErrorCode.parse("policy"),
+  Membership: zVillageContributionErrorCode.parse("membership"),
+  StaleSelection: zVillageContributionErrorCode.parse("stale_selection"),
+  SnapshotTimeout: zVillageContributionErrorCode.parse("snapshot_timeout"),
+  SnapshotBusy: zVillageContributionErrorCode.parse("snapshot_busy"),
+} as const);
+export const AllVillageContributionErrorCodes = Object.freeze([VillageContributionErrorCode.Moved, VillageContributionErrorCode.Missing, VillageContributionErrorCode.Live, VillageContributionErrorCode.PrivateUnapproved, VillageContributionErrorCode.Conflict, VillageContributionErrorCode.Policy, VillageContributionErrorCode.Membership, VillageContributionErrorCode.StaleSelection, VillageContributionErrorCode.SnapshotTimeout, VillageContributionErrorCode.SnapshotBusy]) as readonly VillageContributionErrorCode[];
+export function isVillageContributionErrorCode(value: unknown): value is VillageContributionErrorCode {
+  return zVillageContributionErrorCode.safeParse(value).success;
 }
 
 export type VillageProjectNameSource = VillageProjectNameSourceContract;

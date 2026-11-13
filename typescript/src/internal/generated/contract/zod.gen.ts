@@ -4681,6 +4681,14 @@ export const zVillageBatchShareRequest = z.object({
 
 export type VillageBatchShareRequest = z.infer<typeof zVillageBatchShareRequest>;
 
+export const zVillageBatchShareSelectionRequest = z.object({
+    private_approvals: z.array(zTranscriptID),
+    project_hash: zProjectHash,
+    transcript_ids: z.array(zTranscriptID).min(1)
+});
+
+export type VillageBatchShareSelectionRequest = z.infer<typeof zVillageBatchShareSelectionRequest>;
+
 /**
  * Village Group Acceptance Mode
  *
@@ -4780,6 +4788,54 @@ export const zVillageCollectiveViewerRole = z.enum([
 export type VillageCollectiveViewerRole = z.infer<typeof zVillageCollectiveViewerRole>;
 
 /**
+ * Village Contributable View
+ *
+ * The view of the contributable operation. Omission keeps the flat response; grouped, paged and snapshot select the other envelopes. Any other value is refused with a 400 that names the accepted values.
+ */
+export const zVillageContributableView = z.enum([
+    'grouped',
+    'paged',
+    'snapshot'
+]);
+
+export type VillageContributableView = z.infer<typeof zVillageContributableView>;
+
+/**
+ * Village Contribution Error Code
+ *
+ * Machine-readable reason a contribution request was refused
+ */
+export const zVillageContributionErrorCode = z.enum([
+    'moved',
+    'missing',
+    'live',
+    'private_unapproved',
+    'conflict',
+    'policy',
+    'membership',
+    'stale_selection',
+    'snapshot_timeout',
+    'snapshot_busy'
+]);
+
+export type VillageContributionErrorCode = z.infer<typeof zVillageContributionErrorCode>;
+
+export const zVillageContributionErrorDetail = z.object({
+    code: zVillageContributionErrorCode,
+    current_project_hash: zProjectHash.nullish(),
+    transcript_id: zTranscriptID.nullish()
+});
+
+export type VillageContributionErrorDetail = z.infer<typeof zVillageContributionErrorDetail>;
+
+export const zVillageContributionProviderFacet = z.object({
+    count: z.int(),
+    provider: z.string()
+});
+
+export type VillageContributionProviderFacet = z.infer<typeof zVillageContributionProviderFacet>;
+
+/**
  * Village Contribution Status
  *
  * Status assigned when a new collective contribution is opened
@@ -4814,6 +4870,8 @@ export const zVillageCreateCollectiveRequest = z.object({
 export type VillageCreateCollectiveRequest = z.infer<typeof zVillageCreateCollectiveRequest>;
 
 export const zVillageErrorResponse = z.object({
+    code: zVillageContributionErrorCode.optional(),
+    details: z.array(zVillageContributionErrorDetail).optional(),
     error: z.string()
 });
 
@@ -4883,6 +4941,28 @@ export const zVillageProjectNameSource = z.enum([
 ]);
 
 export type VillageProjectNameSource = z.infer<typeof zVillageProjectNameSource>;
+
+export const zVillageContributionProjectSummary = z.object({
+    matching_count: z.int(),
+    project_display_name: z.string(),
+    project_hash: zProjectHash,
+    project_name_source: zVillageProjectNameSource,
+    repository_state: z.string().nullish(),
+    selectable_count: z.int()
+});
+
+export type VillageContributionProjectSummary = z.infer<typeof zVillageContributionProjectSummary>;
+
+export const zVillageContributionProjectPage = z.object({
+    has_more: z.boolean(),
+    matching_total: z.int(),
+    next_cursor: z.string().nullish(),
+    projects: z.array(zVillageContributionProjectSummary),
+    providers: z.array(zVillageContributionProviderFacet),
+    selectable_total: z.int()
+});
+
+export type VillageContributionProjectPage = z.infer<typeof zVillageContributionProjectPage>;
 
 /**
  * Village Prompts Check Mode
@@ -5293,9 +5373,11 @@ export const zVillageContributableTranscript = z.object({
     git_branch: z.string().nullable(),
     id: zTranscriptID,
     input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
+    latest_status: zVillageShareStatus.optional(),
     local_id: zSessionID,
     model_provider: z.string(),
     parent_session_id: zSessionID.nullable(),
+    parent_transcript_id: zTranscriptID.optional(),
     project_display_name: z.string(),
     project_hash: zProjectHash,
     project_name_source: zVillageProjectNameSource,
@@ -5304,11 +5386,36 @@ export const zVillageContributableTranscript = z.object({
     relationships: z.array(zSessionRelationship).optional(),
     root_session_id: zSessionID.nullish(),
     session_origin: zSessionOrigin,
+    session_start: z.iso.datetime().optional(),
     title: z.string().nullable(),
     visibility: zVillageTranscriptVisibility
 });
 
 export type VillageContributableTranscript = z.infer<typeof zVillageContributableTranscript>;
+
+export const zVillageContributionFamilyMember = z.object({
+    matched: z.boolean().nullish(),
+    transcript: zVillageContributableTranscript
+});
+
+export type VillageContributionFamilyMember = z.infer<typeof zVillageContributionFamilyMember>;
+
+export const zVillageContributionPageItem = z.object({
+    helpers: z.array(zVillageContributionFamilyMember),
+    root: zVillageContributionFamilyMember
+});
+
+export type VillageContributionPageItem = z.infer<typeof zVillageContributionPageItem>;
+
+export const zVillageContributionSnapshotRecord = z.object({
+    id: zTranscriptID,
+    latest_status: zVillageShareStatus.nullish(),
+    parent_transcript_id: zTranscriptID.nullish(),
+    project_hash: zProjectHash,
+    visibility: zVillageTranscriptVisibility
+});
+
+export type VillageContributionSnapshotRecord = z.infer<typeof zVillageContributionSnapshotRecord>;
 
 export const zVillagePullRequestAttachedTranscript = z.object({
     position: z.int(),
@@ -5782,6 +5889,24 @@ export const zVillageContributedCollectivesResponse = z.object({
 }).superRefine((value, ctx) => { const issue = collectiveContractIssue("VillageContributedCollectivesResponse", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
 
 export type VillageContributedCollectivesResponse = z.infer<typeof zVillageContributedCollectivesResponse>;
+
+export const zVillageContributionPageResponse = z.object({
+    group_id: zVillageUUID,
+    has_more: z.boolean(),
+    items: z.array(zVillageContributionPageItem),
+    next_cursor: z.string().nullish()
+});
+
+export type VillageContributionPageResponse = z.infer<typeof zVillageContributionPageResponse>;
+
+export const zVillageContributionSnapshotResponse = z.object({
+    count: z.int(),
+    group_id: zVillageUUID,
+    project_hash: zProjectHash,
+    records: z.array(zVillageContributionSnapshotRecord)
+});
+
+export type VillageContributionSnapshotResponse = z.infer<typeof zVillageContributionSnapshotResponse>;
 
 export const zVillageEnrichedTranscriptShare = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,

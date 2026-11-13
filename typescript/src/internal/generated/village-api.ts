@@ -197,8 +197,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit. */
+        /** @description List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The project picker is the count authority. A 503 carries snapshot_busy or snapshot_timeout in code. */
         get: operations["listContributableTranscripts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/contributable/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the caller's projects for the contribution picker, with the counts that decide what a selection can hold. A family belongs to its root's project. Every count is in sessions, meaning every transcript in the matching families, while limit counts projects. The picker is the count authority for the paged view. */
+        get: operations["listContributionProjects"];
         put?: never;
         post?: never;
         delete?: never;
@@ -414,6 +431,23 @@ export interface paths {
         patch: operations["batchReviewShares"];
         trace?: never;
     };
+    "/api/v1/collectives/{id}/shares/selection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared. */
+        post: operations["batchShareSelection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/collectives/{id}/shares/{transcriptID}": {
         parameters: {
             query?: never;
@@ -586,9 +620,29 @@ export interface paths {
         };
         /**
          * @deprecated
-         * @description List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit.
+         * @description List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The project picker is the count authority. A 503 carries snapshot_busy or snapshot_timeout in code.
          */
         get: operations["listContributableTranscriptsDeprecated"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{id}/contributable/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @deprecated
+         * @description List the caller's projects for the contribution picker, with the counts that decide what a selection can hold. A family belongs to its root's project. Every count is in sessions, meaning every transcript in the matching families, while limit counts projects. The picker is the count authority for the paged view.
+         */
+        get: operations["listContributionProjectsDeprecated"];
         put?: never;
         post?: never;
         delete?: never;
@@ -847,6 +901,26 @@ export interface paths {
          * @description Approve or reject many pending submissions in one owner-only action. The response separates ids that were decided by this action from ids that were already decided, never submitted to this collective, or stale.
          */
         patch: operations["batchReviewSharesDeprecated"];
+        trace?: never;
+    };
+    "/api/v1/groups/{id}/shares/selection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @deprecated
+         * @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.
+         */
+        post: operations["batchShareSelectionDeprecated"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/groups/{id}/shares/{transcriptID}": {
@@ -2049,6 +2123,7 @@ export interface components {
         SchemaVillageBatchShareEntry: Schema.VillageBatchShareEntry;
         SchemaVillageBatchShareRequest: Schema.VillageBatchShareRequest;
         SchemaVillageBatchShareResponse: Schema.VillageBatchShareResponse;
+        SchemaVillageBatchShareSelectionRequest: Schema.VillageBatchShareSelectionRequest;
         SchemaVillageCollective: Schema.VillageCollective;
         /**
          * Village Group Acceptance Mode
@@ -2107,8 +2182,42 @@ export interface components {
         SchemaVillageCollectiveViewerRole: Schema.VillageCollectiveViewerRole;
         SchemaVillageContributableResponse: Schema.VillageContributableResponse;
         SchemaVillageContributableTranscript: Schema.VillageContributableTranscript;
+        /**
+         * Village Contributable View
+         * @description The view of the contributable operation. Omission keeps the flat response; grouped, paged and snapshot select the other envelopes. Any other value is refused with a 400 that names the accepted values.
+         * @example grouped
+         * @example paged
+         * @example snapshot
+         * @enum {string}
+         */
+        SchemaVillageContributableView: Schema.VillageContributableView;
         SchemaVillageContributedCollective: Schema.VillageContributedCollective;
         SchemaVillageContributedCollectivesResponse: Schema.VillageContributedCollectivesResponse;
+        /**
+         * Village Contribution Error Code
+         * @description Machine-readable reason a contribution request was refused
+         * @example moved
+         * @example missing
+         * @example live
+         * @example private_unapproved
+         * @example conflict
+         * @example policy
+         * @example membership
+         * @example stale_selection
+         * @example snapshot_timeout
+         * @example snapshot_busy
+         * @enum {string}
+         */
+        SchemaVillageContributionErrorCode: Schema.VillageContributionErrorCode;
+        SchemaVillageContributionErrorDetail: Schema.VillageContributionErrorDetail;
+        SchemaVillageContributionFamilyMember: Schema.VillageContributionFamilyMember;
+        SchemaVillageContributionPageItem: Schema.VillageContributionPageItem;
+        SchemaVillageContributionPageResponse: Schema.VillageContributionPageResponse;
+        SchemaVillageContributionProjectPage: Schema.VillageContributionProjectPage;
+        SchemaVillageContributionProjectSummary: Schema.VillageContributionProjectSummary;
+        SchemaVillageContributionProviderFacet: Schema.VillageContributionProviderFacet;
+        SchemaVillageContributionSnapshotRecord: Schema.VillageContributionSnapshotRecord;
+        SchemaVillageContributionSnapshotResponse: Schema.VillageContributionSnapshotResponse;
         /**
          * Village Contribution Status
          * @description Status assigned when a new collective contribution is opened
@@ -2842,8 +2951,18 @@ export interface operations {
     listContributableTranscripts: {
         parameters: {
             query?: {
-                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
-                view?: components["schemas"]["OpenapiVillageGroupedView"];
+                /** @description grouped selects the helper-group list, paged selects one page of root sessions each with its helper family, snapshot selects the compact records of one project. Omission preserves the flat response. Any other value is refused with 400 and the accepted values are named. */
+                view?: components["schemas"]["SchemaVillageContributableView"];
+                /** @description Paged and snapshot views only. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule. */
+                q?: string;
+                /** @description Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded. */
+                project_hash?: components["schemas"]["SchemaProjectHash"];
+                /** @description Paged and snapshot views only. Keep only the families that hold a session of this model provider. */
+                provider?: string;
+                /** @description Paged view only. The opaque next_cursor of the previous page; omitted reads the first page. */
+                cursor?: string;
+                /** @description Paged view only. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit. */
+                limit?: number;
             };
             header?: never;
             path: {
@@ -2860,7 +2979,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageContributableResponse"] | components["schemas"]["SchemaVillageGroupedContributableResponse"];
+                    "application/json": components["schemas"]["SchemaVillageContributableResponse"] | components["schemas"]["SchemaVillageGroupedContributableResponse"] | components["schemas"]["SchemaVillageContributionPageResponse"] | components["schemas"]["SchemaVillageContributionSnapshotResponse"];
                 };
             };
             /** @description Bad Request */
@@ -2892,6 +3011,83 @@ export interface operations {
             };
             /** @description Request Entity Too Large */
             413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listContributionProjects: {
+        parameters: {
+            query?: {
+                /** @description One search text matched against project display names, root and helper titles, and exact transcript ids. Counts cover the matching families. */
+                q?: string;
+                /** @description Keep only the families that hold a session of this model provider. */
+                provider?: string;
+                /** @description The opaque next_cursor of the previous page; omitted reads the first page. */
+                cursor?: string;
+                /** @description Page size in PROJECTS, 1 to 500, omitted reads 500. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageContributionProjectPage"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3965,6 +4161,96 @@ export interface operations {
             };
         };
     };
+    batchShareSelection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageBatchShareSelectionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageBatchShareResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     reviewShare: {
         parameters: {
             query?: never;
@@ -4500,8 +4786,18 @@ export interface operations {
     listContributableTranscriptsDeprecated: {
         parameters: {
             query?: {
-                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
-                view?: components["schemas"]["OpenapiVillageGroupedView"];
+                /** @description grouped selects the helper-group list, paged selects one page of root sessions each with its helper family, snapshot selects the compact records of one project. Omission preserves the flat response. Any other value is refused with 400 and the accepted values are named. */
+                view?: components["schemas"]["SchemaVillageContributableView"];
+                /** @description Paged and snapshot views only. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule. */
+                q?: string;
+                /** @description Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded. */
+                project_hash?: components["schemas"]["SchemaProjectHash"];
+                /** @description Paged and snapshot views only. Keep only the families that hold a session of this model provider. */
+                provider?: string;
+                /** @description Paged view only. The opaque next_cursor of the previous page; omitted reads the first page. */
+                cursor?: string;
+                /** @description Paged view only. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit. */
+                limit?: number;
             };
             header?: never;
             path: {
@@ -4518,7 +4814,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageContributableResponse"] | components["schemas"]["SchemaVillageDeprecatedGroupedContributableResponse"];
+                    "application/json": components["schemas"]["SchemaVillageContributableResponse"] | components["schemas"]["SchemaVillageDeprecatedGroupedContributableResponse"] | components["schemas"]["SchemaVillageContributionPageResponse"] | components["schemas"]["SchemaVillageContributionSnapshotResponse"];
                 };
             };
             /** @description Bad Request */
@@ -4550,6 +4846,83 @@ export interface operations {
             };
             /** @description Request Entity Too Large */
             413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listContributionProjectsDeprecated: {
+        parameters: {
+            query?: {
+                /** @description One search text matched against project display names, root and helper titles, and exact transcript ids. Counts cover the matching families. */
+                q?: string;
+                /** @description Keep only the families that hold a session of this model provider. */
+                provider?: string;
+                /** @description The opaque next_cursor of the previous page; omitted reads the first page. */
+                cursor?: string;
+                /** @description Page size in PROJECTS, 1 to 500, omitted reads 500. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageContributionProjectPage"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5605,6 +5978,96 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    batchShareSelectionDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageBatchShareSelectionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageBatchShareResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
