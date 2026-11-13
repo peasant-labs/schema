@@ -15123,9 +15123,11 @@
             "type": "array"
           },
           "project_hash": {
-            "$ref": "#/components/schemas/ProjectHash"
+            "$ref": "#/components/schemas/ProjectHash",
+            "description": "The project of the selected roots. Helpers may belong to other projects and are not checked against it."
           },
           "transcript_ids": {
+            "description": "Exactly the sessions to offer, roots and helpers alike. The server never expands a root into its helpers.",
             "items": {
               "$ref": "#/components/schemas/TranscriptID"
             },
@@ -16705,7 +16707,8 @@
             "type": "integer"
           },
           "latest_status": {
-            "$ref": "#/components/schemas/VillageShareStatus"
+            "$ref": "#/components/schemas/VillageShareStatus",
+            "description": "The status of the latest contribution attempt in this collective. Absent means no attempt. already_shared stays and is true only for pending and approved."
           },
           "local_id": {
             "$ref": "#/components/schemas/SessionID"
@@ -16724,7 +16727,8 @@
             ]
           },
           "parent_transcript_id": {
-            "$ref": "#/components/schemas/TranscriptID"
+            "$ref": "#/components/schemas/TranscriptID",
+            "description": "The published transcript of the parent session. Absent for a root, and for a helper whose parent is not published."
           },
           "project_display_name": {
             "type": "string"
@@ -16762,6 +16766,7 @@
             "$ref": "#/components/schemas/SessionOrigin"
           },
           "session_start": {
+            "description": "When the session began. Absent when unknown.",
             "format": "date-time",
             "type": "string"
           },
@@ -16927,27 +16932,16 @@
       "VillageContributionErrorDetail": {
         "properties": {
           "code": {
-            "$ref": "#/components/schemas/VillageContributionErrorCode"
+            "$ref": "#/components/schemas/VillageContributionErrorCode",
+            "description": "The machine-readable reason for this transcript."
           },
           "current_project_hash": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ProjectHash"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/ProjectHash",
+            "description": "The project a moved transcript now belongs to."
           },
           "transcript_id": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TranscriptID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/TranscriptID",
+            "description": "The transcript this reason is about. Absent for a request-level reason such as policy."
           }
         },
         "required": [
@@ -16958,17 +16952,8 @@
       "VillageContributionFamilyMember": {
         "properties": {
           "matched": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "boolean"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "description": "True when this member itself matched q. Absent when the request carried no q.",
+            "type": "boolean"
           },
           "transcript": {
             "$ref": "#/components/schemas/VillageContributableTranscript"
@@ -16982,13 +16967,15 @@
       "VillageContributionPageItem": {
         "properties": {
           "helpers": {
+            "description": "Every helper session that descends from the root. Each helper keeps its own project, which may differ from the project of the root.",
             "items": {
               "$ref": "#/components/schemas/VillageContributionFamilyMember"
             },
             "type": "array"
           },
           "root": {
-            "$ref": "#/components/schemas/VillageContributionFamilyMember"
+            "$ref": "#/components/schemas/VillageContributionFamilyMember",
+            "description": "The root session of the family. The family belongs to the project of the root."
           }
         },
         "required": [
@@ -17012,17 +16999,8 @@
             "type": "array"
           },
           "next_cursor": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "description": "The opaque cursor of the following page. Absent on the last page.",
+            "type": "string"
           }
         },
         "required": [
@@ -17038,20 +17016,14 @@
             "type": "boolean"
           },
           "matching_total": {
+            "description": "The number of sessions in all matching families across every page, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "next_cursor": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "description": "The opaque cursor of the following page. Absent on the last page.",
+            "type": "string"
           },
           "projects": {
             "items": {
@@ -17066,6 +17038,9 @@
             "type": "array"
           },
           "selectable_total": {
+            "description": "The number of sessions among the matching ones that are not already live, across every page, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -17081,6 +17056,9 @@
       "VillageContributionProjectSummary": {
         "properties": {
           "matching_count": {
+            "description": "The number of sessions in the project's matching families, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "project_display_name": {
@@ -17093,19 +17071,12 @@
             "$ref": "#/components/schemas/VillageProjectNameSource"
           },
           "repository_state": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "string"
           },
           "selectable_count": {
+            "description": "The number of sessions among the matching ones that are not already live, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -17121,6 +17092,9 @@
       "VillageContributionProviderFacet": {
         "properties": {
           "count": {
+            "description": "The number of matching sessions of this provider, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "provider": {
@@ -17139,27 +17113,16 @@
             "$ref": "#/components/schemas/TranscriptID"
           },
           "latest_status": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VillageShareStatus"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/VillageShareStatus",
+            "description": "The status of the latest contribution attempt. Absent means no attempt."
           },
           "parent_transcript_id": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TranscriptID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/TranscriptID",
+            "description": "The published transcript of the parent session. Absent for a root, and for a helper whose parent is not published."
           },
           "project_hash": {
-            "$ref": "#/components/schemas/ProjectHash"
+            "$ref": "#/components/schemas/ProjectHash",
+            "description": "The session's own project, which may differ from the project of the root of its family."
           },
           "visibility": {
             "$ref": "#/components/schemas/VillageTranscriptVisibility"
@@ -17175,13 +17138,17 @@
       "VillageContributionSnapshotResponse": {
         "properties": {
           "count": {
+            "description": "The number of records, counted in sessions, not roots. Equals the length of records.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "group_id": {
             "$ref": "#/components/schemas/VillageUUID"
           },
           "project_hash": {
-            "$ref": "#/components/schemas/ProjectHash"
+            "$ref": "#/components/schemas/ProjectHash",
+            "description": "The project of the family roots. Helpers in the records may belong to other projects."
           },
           "records": {
             "items": {
@@ -17296,9 +17263,11 @@
       "VillageErrorResponse": {
         "properties": {
           "code": {
-            "$ref": "#/components/schemas/VillageContributionErrorCode"
+            "$ref": "#/components/schemas/VillageContributionErrorCode",
+            "description": "The primary machine-readable reason for the refusal. Accompanies contribution refusals; the error text is always present."
           },
           "details": {
+            "description": "The per-transcript reasons for the refusal. Accompanies contribution refusals; the error text is always present.",
             "items": {
               "$ref": "#/components/schemas/VillageContributionErrorDetail"
             },

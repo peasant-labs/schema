@@ -4822,14 +4822,14 @@ export type VillageContributionErrorCode = z.infer<typeof zVillageContributionEr
 
 export const zVillageContributionErrorDetail = z.object({
     code: zVillageContributionErrorCode,
-    current_project_hash: zProjectHash.nullish(),
-    transcript_id: zTranscriptID.nullish()
+    current_project_hash: zProjectHash.optional(),
+    transcript_id: zTranscriptID.optional()
 });
 
 export type VillageContributionErrorDetail = z.infer<typeof zVillageContributionErrorDetail>;
 
 export const zVillageContributionProviderFacet = z.object({
-    count: z.int(),
+    count: z.int().gte(0).lte(9007199254740991),
     provider: z.string()
 });
 
@@ -4943,23 +4943,23 @@ export const zVillageProjectNameSource = z.enum([
 export type VillageProjectNameSource = z.infer<typeof zVillageProjectNameSource>;
 
 export const zVillageContributionProjectSummary = z.object({
-    matching_count: z.int(),
+    matching_count: z.int().gte(0).lte(9007199254740991),
     project_display_name: z.string(),
     project_hash: zProjectHash,
     project_name_source: zVillageProjectNameSource,
-    repository_state: z.string().nullish(),
-    selectable_count: z.int()
+    repository_state: z.string().optional(),
+    selectable_count: z.int().gte(0).lte(9007199254740991)
 });
 
 export type VillageContributionProjectSummary = z.infer<typeof zVillageContributionProjectSummary>;
 
 export const zVillageContributionProjectPage = z.object({
     has_more: z.boolean(),
-    matching_total: z.int(),
-    next_cursor: z.string().nullish(),
+    matching_total: z.int().gte(0).lte(9007199254740991),
+    next_cursor: z.string().optional(),
     projects: z.array(zVillageContributionProjectSummary),
     providers: z.array(zVillageContributionProviderFacet),
-    selectable_total: z.int()
+    selectable_total: z.int().gte(0).lte(9007199254740991)
 });
 
 export type VillageContributionProjectPage = z.infer<typeof zVillageContributionProjectPage>;
@@ -5394,7 +5394,7 @@ export const zVillageContributableTranscript = z.object({
 export type VillageContributableTranscript = z.infer<typeof zVillageContributableTranscript>;
 
 export const zVillageContributionFamilyMember = z.object({
-    matched: z.boolean().nullish(),
+    matched: z.boolean().optional(),
     transcript: zVillageContributableTranscript
 });
 
@@ -5409,8 +5409,8 @@ export type VillageContributionPageItem = z.infer<typeof zVillageContributionPag
 
 export const zVillageContributionSnapshotRecord = z.object({
     id: zTranscriptID,
-    latest_status: zVillageShareStatus.nullish(),
-    parent_transcript_id: zTranscriptID.nullish(),
+    latest_status: zVillageShareStatus.optional(),
+    parent_transcript_id: zTranscriptID.optional(),
     project_hash: zProjectHash,
     visibility: zVillageTranscriptVisibility
 });
@@ -5894,13 +5894,13 @@ export const zVillageContributionPageResponse = z.object({
     group_id: zVillageUUID,
     has_more: z.boolean(),
     items: z.array(zVillageContributionPageItem),
-    next_cursor: z.string().nullish()
+    next_cursor: z.string().optional()
 });
 
 export type VillageContributionPageResponse = z.infer<typeof zVillageContributionPageResponse>;
 
 export const zVillageContributionSnapshotResponse = z.object({
-    count: z.int(),
+    count: z.int().gte(0).lte(9007199254740991),
     group_id: zVillageUUID,
     project_hash: zProjectHash,
     records: z.array(zVillageContributionSnapshotRecord)

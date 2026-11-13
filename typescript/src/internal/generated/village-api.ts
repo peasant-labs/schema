@@ -197,7 +197,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The project picker is the count authority. A 503 carries snapshot_busy or snapshot_timeout in code. */
+        /** @description List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit; the 413 applies only when view is omitted. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The parameters q, project_hash, provider, cursor and limit apply only to view=paged and view=snapshot; they are ignored without view and with view=grouped, and those two responses stay unchanged. view=snapshot without project_hash is a 400. The snapshot has no record or byte cap and refuses only with a 503 whose code is snapshot_timeout or snapshot_busy. The project picker is the count authority. */
         get: operations["listContributableTranscripts"];
         put?: never;
         post?: never;
@@ -440,7 +440,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared. */
+        /** @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared. */
         post: operations["batchShareSelection"];
         delete?: never;
         options?: never;
@@ -620,7 +620,7 @@ export interface paths {
         };
         /**
          * @deprecated
-         * @description List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The project picker is the count authority. A 503 carries snapshot_busy or snapshot_timeout in code.
+         * @description List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit; the 413 applies only when view is omitted. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The parameters q, project_hash, provider, cursor and limit apply only to view=paged and view=snapshot; they are ignored without view and with view=grouped, and those two responses stay unchanged. view=snapshot without project_hash is a 400. The snapshot has no record or byte cap and refuses only with a 503 whose code is snapshot_timeout or snapshot_busy. The project picker is the count authority.
          */
         get: operations["listContributableTranscriptsDeprecated"];
         put?: never;
@@ -914,7 +914,7 @@ export interface paths {
         put?: never;
         /**
          * @deprecated
-         * @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.
+         * @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.
          */
         post: operations["batchShareSelectionDeprecated"];
         delete?: never;
@@ -2953,15 +2953,15 @@ export interface operations {
             query?: {
                 /** @description grouped selects the helper-group list, paged selects one page of root sessions each with its helper family, snapshot selects the compact records of one project. Omission preserves the flat response. Any other value is refused with 400 and the accepted values are named. */
                 view?: components["schemas"]["SchemaVillageContributableView"];
-                /** @description Paged and snapshot views only. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule. */
+                /** @description Paged and snapshot views only; ignored without view and with view=grouped. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule. */
                 q?: string;
-                /** @description Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded. */
+                /** @description Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded; omitting it is a 400. Ignored without view and with view=grouped. */
                 project_hash?: components["schemas"]["SchemaProjectHash"];
-                /** @description Paged and snapshot views only. Keep only the families that hold a session of this model provider. */
+                /** @description Paged and snapshot views only; ignored without view and with view=grouped. Keep only the families that hold a session of this model provider. */
                 provider?: string;
-                /** @description Paged view only. The opaque next_cursor of the previous page; omitted reads the first page. */
+                /** @description Paged view only; ignored without view and with view=grouped. The opaque next_cursor of the previous page; omitted reads the first page. */
                 cursor?: string;
-                /** @description Paged view only. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit. */
+                /** @description Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit. */
                 limit?: number;
             };
             header?: never;
@@ -4788,15 +4788,15 @@ export interface operations {
             query?: {
                 /** @description grouped selects the helper-group list, paged selects one page of root sessions each with its helper family, snapshot selects the compact records of one project. Omission preserves the flat response. Any other value is refused with 400 and the accepted values are named. */
                 view?: components["schemas"]["SchemaVillageContributableView"];
-                /** @description Paged and snapshot views only. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule. */
+                /** @description Paged and snapshot views only; ignored without view and with view=grouped. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule. */
                 q?: string;
-                /** @description Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded. */
+                /** @description Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded; omitting it is a 400. Ignored without view and with view=grouped. */
                 project_hash?: components["schemas"]["SchemaProjectHash"];
-                /** @description Paged and snapshot views only. Keep only the families that hold a session of this model provider. */
+                /** @description Paged and snapshot views only; ignored without view and with view=grouped. Keep only the families that hold a session of this model provider. */
                 provider?: string;
-                /** @description Paged view only. The opaque next_cursor of the previous page; omitted reads the first page. */
+                /** @description Paged view only; ignored without view and with view=grouped. The opaque next_cursor of the previous page; omitted reads the first page. */
                 cursor?: string;
-                /** @description Paged view only. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit. */
+                /** @description Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit. */
                 limit?: number;
             };
             header?: never;

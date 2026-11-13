@@ -716,7 +716,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The project picker is the count authority. A 503 carries snapshot_busy or snapshot_timeout in code.",
+        "description": "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit; the 413 applies only when view is omitted. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The parameters q, project_hash, provider, cursor and limit apply only to view=paged and view=snapshot; they are ignored without view and with view=grouped, and those two responses stay unchanged. view=snapshot without project_hash is a 400. The snapshot has no record or byte cap and refuses only with a 503 whose code is snapshot_timeout or snapshot_busy. The project picker is the count authority.",
         "operationId": "listContributableTranscripts",
         "parameters": [
           {
@@ -741,46 +741,46 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Paged and snapshot views only. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule.",
+            "description": "Paged and snapshot views only; ignored without view and with view=grouped. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule.",
             "schema": {
-              "description": "Paged and snapshot views only. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule.",
+              "description": "Paged and snapshot views only; ignored without view and with view=grouped. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule.",
               "type": "string"
             }
           },
           {
             "name": "project_hash",
             "in": "query",
-            "description": "Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded.",
+            "description": "Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded; omitting it is a 400. Ignored without view and with view=grouped.",
             "schema": {
               "$ref": "#/components/schemas/SchemaProjectHash",
-              "description": "Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded."
+              "description": "Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded; omitting it is a 400. Ignored without view and with view=grouped."
             }
           },
           {
             "name": "provider",
             "in": "query",
-            "description": "Paged and snapshot views only. Keep only the families that hold a session of this model provider.",
+            "description": "Paged and snapshot views only; ignored without view and with view=grouped. Keep only the families that hold a session of this model provider.",
             "schema": {
-              "description": "Paged and snapshot views only. Keep only the families that hold a session of this model provider.",
+              "description": "Paged and snapshot views only; ignored without view and with view=grouped. Keep only the families that hold a session of this model provider.",
               "type": "string"
             }
           },
           {
             "name": "cursor",
             "in": "query",
-            "description": "Paged view only. The opaque next_cursor of the previous page; omitted reads the first page.",
+            "description": "Paged view only; ignored without view and with view=grouped. The opaque next_cursor of the previous page; omitted reads the first page.",
             "schema": {
-              "description": "Paged view only. The opaque next_cursor of the previous page; omitted reads the first page.",
+              "description": "Paged view only; ignored without view and with view=grouped. The opaque next_cursor of the previous page; omitted reads the first page.",
               "type": "string"
             }
           },
           {
             "name": "limit",
             "in": "query",
-            "description": "Paged view only. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
+            "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
             "schema": {
               "default": 500,
-              "description": "Paged view only. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
+              "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
               "maximum": 500,
               "minimum": 1,
               "type": "integer"
@@ -2392,7 +2392,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.",
+        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.",
         "operationId": "batchShareSelection",
         "parameters": [
           {
@@ -3225,7 +3225,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The project picker is the count authority. A 503 carries snapshot_busy or snapshot_timeout in code.",
+        "description": "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit; the 413 applies only when view is omitted. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The parameters q, project_hash, provider, cursor and limit apply only to view=paged and view=snapshot; they are ignored without view and with view=grouped, and those two responses stay unchanged. view=snapshot without project_hash is a 400. The snapshot has no record or byte cap and refuses only with a 503 whose code is snapshot_timeout or snapshot_busy. The project picker is the count authority.",
         "operationId": "listContributableTranscriptsDeprecated",
         "parameters": [
           {
@@ -3250,46 +3250,46 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Paged and snapshot views only. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule.",
+            "description": "Paged and snapshot views only; ignored without view and with view=grouped. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule.",
             "schema": {
-              "description": "Paged and snapshot views only. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule.",
+              "description": "Paged and snapshot views only; ignored without view and with view=grouped. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule.",
               "type": "string"
             }
           },
           {
             "name": "project_hash",
             "in": "query",
-            "description": "Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded.",
+            "description": "Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded; omitting it is a 400. Ignored without view and with view=grouped.",
             "schema": {
               "$ref": "#/components/schemas/SchemaProjectHash",
-              "description": "Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded."
+              "description": "Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded; omitting it is a 400. Ignored without view and with view=grouped."
             }
           },
           {
             "name": "provider",
             "in": "query",
-            "description": "Paged and snapshot views only. Keep only the families that hold a session of this model provider.",
+            "description": "Paged and snapshot views only; ignored without view and with view=grouped. Keep only the families that hold a session of this model provider.",
             "schema": {
-              "description": "Paged and snapshot views only. Keep only the families that hold a session of this model provider.",
+              "description": "Paged and snapshot views only; ignored without view and with view=grouped. Keep only the families that hold a session of this model provider.",
               "type": "string"
             }
           },
           {
             "name": "cursor",
             "in": "query",
-            "description": "Paged view only. The opaque next_cursor of the previous page; omitted reads the first page.",
+            "description": "Paged view only; ignored without view and with view=grouped. The opaque next_cursor of the previous page; omitted reads the first page.",
             "schema": {
-              "description": "Paged view only. The opaque next_cursor of the previous page; omitted reads the first page.",
+              "description": "Paged view only; ignored without view and with view=grouped. The opaque next_cursor of the previous page; omitted reads the first page.",
               "type": "string"
             }
           },
           {
             "name": "limit",
             "in": "query",
-            "description": "Paged view only. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
+            "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
             "schema": {
               "default": 500,
-              "description": "Paged view only. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
+              "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
               "maximum": 500,
               "minimum": 1,
               "type": "integer"
@@ -4918,7 +4918,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.",
+        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.",
         "operationId": "batchShareSelectionDeprecated",
         "parameters": [
           {
@@ -13728,9 +13728,11 @@
             "type": "array"
           },
           "project_hash": {
-            "$ref": "#/components/schemas/SchemaProjectHash"
+            "$ref": "#/components/schemas/SchemaProjectHash",
+            "description": "The project of the selected roots. Helpers may belong to other projects and are not checked against it."
           },
           "transcript_ids": {
+            "description": "Exactly the sessions to offer, roots and helpers alike. The server never expands a root into its helpers.",
             "items": {
               "$ref": "#/components/schemas/SchemaTranscriptID"
             },
@@ -15299,7 +15301,8 @@
             "type": "integer"
           },
           "latest_status": {
-            "$ref": "#/components/schemas/SchemaVillageShareStatus"
+            "$ref": "#/components/schemas/SchemaVillageShareStatus",
+            "description": "The status of the latest contribution attempt in this collective. Absent means no attempt. already_shared stays and is true only for pending and approved."
           },
           "local_id": {
             "$ref": "#/components/schemas/SchemaSessionID"
@@ -15318,7 +15321,8 @@
             ]
           },
           "parent_transcript_id": {
-            "$ref": "#/components/schemas/SchemaTranscriptID"
+            "$ref": "#/components/schemas/SchemaTranscriptID",
+            "description": "The published transcript of the parent session. Absent for a root, and for a helper whose parent is not published."
           },
           "project_display_name": {
             "type": "string"
@@ -15356,6 +15360,7 @@
             "$ref": "#/components/schemas/SchemaSessionOrigin"
           },
           "session_start": {
+            "description": "When the session began. Absent when unknown.",
             "format": "date-time",
             "type": "string"
           },
@@ -15521,27 +15526,16 @@
       "SchemaVillageContributionErrorDetail": {
         "properties": {
           "code": {
-            "$ref": "#/components/schemas/SchemaVillageContributionErrorCode"
+            "$ref": "#/components/schemas/SchemaVillageContributionErrorCode",
+            "description": "The machine-readable reason for this transcript."
           },
           "current_project_hash": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaProjectHash"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SchemaProjectHash",
+            "description": "The project a moved transcript now belongs to."
           },
           "transcript_id": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaTranscriptID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SchemaTranscriptID",
+            "description": "The transcript this reason is about. Absent for a request-level reason such as policy."
           }
         },
         "required": [
@@ -15552,17 +15546,8 @@
       "SchemaVillageContributionFamilyMember": {
         "properties": {
           "matched": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "boolean"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "description": "True when this member itself matched q. Absent when the request carried no q.",
+            "type": "boolean"
           },
           "transcript": {
             "$ref": "#/components/schemas/SchemaVillageContributableTranscript"
@@ -15576,13 +15561,15 @@
       "SchemaVillageContributionPageItem": {
         "properties": {
           "helpers": {
+            "description": "Every helper session that descends from the root. Each helper keeps its own project, which may differ from the project of the root.",
             "items": {
               "$ref": "#/components/schemas/SchemaVillageContributionFamilyMember"
             },
             "type": "array"
           },
           "root": {
-            "$ref": "#/components/schemas/SchemaVillageContributionFamilyMember"
+            "$ref": "#/components/schemas/SchemaVillageContributionFamilyMember",
+            "description": "The root session of the family. The family belongs to the project of the root."
           }
         },
         "required": [
@@ -15606,17 +15593,8 @@
             "type": "array"
           },
           "next_cursor": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "description": "The opaque cursor of the following page. Absent on the last page.",
+            "type": "string"
           }
         },
         "required": [
@@ -15632,20 +15610,14 @@
             "type": "boolean"
           },
           "matching_total": {
+            "description": "The number of sessions in all matching families across every page, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "next_cursor": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "description": "The opaque cursor of the following page. Absent on the last page.",
+            "type": "string"
           },
           "projects": {
             "items": {
@@ -15660,6 +15632,9 @@
             "type": "array"
           },
           "selectable_total": {
+            "description": "The number of sessions among the matching ones that are not already live, across every page, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -15675,6 +15650,9 @@
       "SchemaVillageContributionProjectSummary": {
         "properties": {
           "matching_count": {
+            "description": "The number of sessions in the project's matching families, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "project_display_name": {
@@ -15687,19 +15665,12 @@
             "$ref": "#/components/schemas/SchemaVillageProjectNameSource"
           },
           "repository_state": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "string"
           },
           "selectable_count": {
+            "description": "The number of sessions among the matching ones that are not already live, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -15715,6 +15686,9 @@
       "SchemaVillageContributionProviderFacet": {
         "properties": {
           "count": {
+            "description": "The number of matching sessions of this provider, counted in sessions, not roots.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "provider": {
@@ -15733,27 +15707,16 @@
             "$ref": "#/components/schemas/SchemaTranscriptID"
           },
           "latest_status": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaVillageShareStatus"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SchemaVillageShareStatus",
+            "description": "The status of the latest contribution attempt. Absent means no attempt."
           },
           "parent_transcript_id": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaTranscriptID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SchemaTranscriptID",
+            "description": "The published transcript of the parent session. Absent for a root, and for a helper whose parent is not published."
           },
           "project_hash": {
-            "$ref": "#/components/schemas/SchemaProjectHash"
+            "$ref": "#/components/schemas/SchemaProjectHash",
+            "description": "The session's own project, which may differ from the project of the root of its family."
           },
           "visibility": {
             "$ref": "#/components/schemas/SchemaVillageTranscriptVisibility"
@@ -15769,13 +15732,17 @@
       "SchemaVillageContributionSnapshotResponse": {
         "properties": {
           "count": {
+            "description": "The number of records, counted in sessions, not roots. Equals the length of records.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "group_id": {
             "$ref": "#/components/schemas/SchemaVillageUUID"
           },
           "project_hash": {
-            "$ref": "#/components/schemas/SchemaProjectHash"
+            "$ref": "#/components/schemas/SchemaProjectHash",
+            "description": "The project of the family roots. Helpers in the records may belong to other projects."
           },
           "records": {
             "items": {
@@ -15890,9 +15857,11 @@
       "SchemaVillageErrorResponse": {
         "properties": {
           "code": {
-            "$ref": "#/components/schemas/SchemaVillageContributionErrorCode"
+            "$ref": "#/components/schemas/SchemaVillageContributionErrorCode",
+            "description": "The primary machine-readable reason for the refusal. Accompanies contribution refusals; the error text is always present."
           },
           "details": {
+            "description": "The per-transcript reasons for the refusal. Accompanies contribution refusals; the error text is always present.",
             "items": {
               "$ref": "#/components/schemas/SchemaVillageContributionErrorDetail"
             },
