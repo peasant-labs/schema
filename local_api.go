@@ -235,6 +235,15 @@ type SessionSummary struct {
 	// that exact identity. Ordinary subagent parentage carries no teammate
 	// object. Local read evidence, never published transcript content.
 	Teammate *SessionTeammate `json:"teammate,omitempty"`
+	// Owner names whose artifact this session is in the local store. An absent
+	// value means this server does not project owners; {"kind":"unknown"} means
+	// the owner is projected but withheld. It is never guessed and never falls
+	// back to the local holder for a pulled row.
+	Owner *LocalArtifactIdentity `json:"owner,omitempty" nullable:"false"`
+	// AdapterVersion identifies the Peasant adapter/parser that produced this
+	// local artifact, not the native harness release. It is omitted when
+	// unknown; a present revision is positive.
+	AdapterVersion *int `json:"adapterVersion,omitempty" minimum:"1" nullable:"false" description:"Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive."`
 }
 
 // SessionDetailReadPayload is the local read projection. Anonymous embedding
@@ -261,10 +270,19 @@ type SessionDetailReadPayload struct {
 	// that exact identity. Local read evidence, never published transcript
 	// content: SessionDetailPayload itself never carries it.
 	Teammate *SessionTeammate `json:"teammate,omitempty"`
+	// Owner names whose artifact this session is in the local store. An absent
+	// value means this server does not project owners; {"kind":"unknown"} means
+	// the owner is projected but withheld. It is never guessed and never falls
+	// back to the local holder for a pulled row.
+	Owner *LocalArtifactIdentity `json:"owner,omitempty" nullable:"false"`
+	// AdapterVersion identifies the Peasant adapter/parser that produced this
+	// local artifact, not the native harness release. It is omitted when
+	// unknown; a present revision is positive.
+	AdapterVersion *int `json:"adapterVersion,omitempty" minimum:"1" nullable:"false" description:"Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive."`
 }
 
 // Validate checks the durable detail payload, the authorized navigation
-// metadata, and the optional local teammate evidence.
+// metadata, and the optional local teammate and owner evidence.
 func (p SessionDetailReadPayload) Validate() error {
 	if err := ValidateSessionDetailPayload(p.SessionDetailPayload); err != nil {
 		return err
@@ -274,7 +292,13 @@ func (p SessionDetailReadPayload) Validate() error {
 			return err
 		}
 	}
-	return p.Teammate.Validate()
+	if err := p.Teammate.Validate(); err != nil {
+		return err
+	}
+	if err := p.Owner.Validate(); err != nil {
+		return err
+	}
+	return validateArtifactAdapterVersion(p.AdapterVersion, "schema.SessionDetailReadPayload.Validate")
 }
 
 // LocalSyncSummary preserves the existing sync-list row alongside its matching
@@ -314,6 +338,15 @@ type LocalSyncSummary struct {
 	// under, the same value its SessionSummary carries. Present only when the
 	// stored parent transcript records spawning that exact identity.
 	Teammate *SessionTeammate `json:"teammate,omitempty"`
+	// Owner names whose artifact this session is in the local store, the same
+	// value its SessionSummary carries. An absent value means this server does
+	// not project owners; {"kind":"unknown"} means projected but withheld. It
+	// never falls back to the local holder for a pulled row.
+	Owner *LocalArtifactIdentity `json:"owner,omitempty" nullable:"false"`
+	// AdapterVersion identifies the Peasant adapter/parser that produced this
+	// local artifact, the same value its SessionSummary carries. It is omitted
+	// when unknown; a present revision is positive.
+	AdapterVersion *int `json:"adapterVersion,omitempty" minimum:"1" nullable:"false" description:"Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive."`
 }
 
 // LocalSyncSessionsPayload is the exact omitted-view response produced by the
@@ -387,6 +420,12 @@ func (r LocalSessionRow) Validate() error {
 	if err := r.Session.Teammate.Validate(); err != nil {
 		return err
 	}
+	if err := r.Session.Owner.Validate(); err != nil {
+		return err
+	}
+	if err := validateArtifactAdapterVersion(r.Session.AdapterVersion, "schema.LocalSessionRow.session.adapterVersion"); err != nil {
+		return err
+	}
 	if r.Sync != nil && len(r.Matches) != 0 {
 		return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped route projection: sync and matches are both populated; the row cannot belong to two incompatible route variants; retain only the originating sync or search arm", r.Session.ID)
 	}
@@ -400,6 +439,12 @@ func (r LocalSessionRow) Validate() error {
 		}
 		if !equalOptionalTeammate(s.Teammate, r.Session.Teammate) {
 			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync.teammate disagrees with session.teammate; the list and the sync chooser would show different teammate identities for one saved transcript; derive both summaries from the same evidence read", r.Session.ID)
+		}
+		if !equalOptionalArtifactIdentity(s.Owner, r.Session.Owner) {
+			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync.owner disagrees with session.owner; the list and the sync chooser would attribute one saved transcript to different owners; derive both summaries from the same claim projection", r.Session.ID)
+		}
+		if !equalOptionalRevision(s.AdapterVersion, r.Session.AdapterVersion) {
+			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync.adapterVersion disagrees with session.adapterVersion; the list and the sync chooser would report different producer revisions for one saved transcript; derive both summaries from the same stored row", r.Session.ID)
 		}
 	}
 	for i, match := range r.Matches {

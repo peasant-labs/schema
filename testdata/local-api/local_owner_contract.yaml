@@ -1,0 +1,363 @@
+# The local owner and claim contract: the shapes the read, claim, and decline
+# routes answer with, the per-kind artifact identity refusals, the server
+# computed prompt state, and the exact non-2xx statuses each route declares.
+#
+# Each case names the input JSON, whether Validate must accept it, and the
+# mutation it guards. The required_names manifest is deliberate: dropping or
+# renaming a case fails the loader even when the corpus still loads.
+required_names:
+  - local-owner-valid
+  - local-owner-empty-id
+  - local-owner-zero-created-at
+  - local-owner-id-over-bound
+  - owner-status-empty-claims
+  - owner-status-bounded-page
+  - owner-status-null-claims
+  - owner-status-claim-for-other-owner
+  - owner-status-total-below-page
+  - owner-status-missing-cursor
+  - owner-status-cursor-without-more
+  - owner-status-page-over-limit
+  - owner-status-counts-do-not-partition
+  - claim-entry-username-reuse-two-uuids
+  - claim-entry-unnormalized-url
+  - claim-entry-empty-username
+  - claim-entry-invalid-source
+  - claim-entry-zero-claimed-at
+  - claim-entry-local-owner-over-bound
+  - identity-local
+  - identity-village
+  - identity-foreign
+  - identity-unknown
+  - owner-unknown-with-local-identity
+  - owner-unknown-with-village-identity
+  - owner-local-with-village-user
+  - owner-local-with-username
+  - owner-village-without-user
+  - owner-village-without-claim
+  - owner-foreign-with-local-id
+  - owner-invalid-kind
+  - owner-empty-username
+  - owner-local-id-over-bound
+  - owner-village-unnormalized-url
+  - annotation-row-owner-author
+  - annotation-row-unknown-author
+  - prompt-not-applicable
+  - prompt-due
+  - prompt-declined
+  - prompt-completed
+  - prompt-not-applicable-with-account
+  - prompt-due-without-account
+  - prompt-due-with-decided-at
+  - prompt-declined-without-decided-at
+  - prompt-state-not-applicable
+  - prompt-state-due
+  - prompt-state-declined
+  - prompt-state-completed
+  - prompt-state-open
+  - claim-source-manual
+  - claim-source-sign-in-prompt
+  - claim-source-automatic
+  - claim-source-session-end
+
+local_owner:
+  cases:
+    - name: local-owner-valid
+      input: '{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "one permanent local owner carries its identifier and creation time"}
+      mutation: {description: "names one data directory owner with its creation time"}
+    - name: local-owner-empty-id
+      input: '{"id":"","createdAt":"2026-11-12T00:00:00Z"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the local owner identifier is non-empty"}
+      mutation: {description: "empties only the local owner id"}
+    - name: local-owner-zero-created-at
+      input: '{"id":"lo_1","createdAt":"0001-01-01T00:00:00Z"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the local owner records when it was created"}
+      mutation: {description: "sets only createdAt to the zero time"}
+    - name: local-owner-id-over-bound
+      input: '{"id":"lo_1234567890123456789012345678901234567890123456789012345678901234","createdAt":"2026-11-12T00:00:00Z"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the local owner id is at most 64 bytes"}
+      mutation: {description: "grows only the local owner id one byte past the bound"}
+
+owner_status:
+  cases:
+    - name: owner-status-empty-claims
+      input: '{"owner":{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"},"claims":[],"totalClaims":0,"prompt":{"state":"not_applicable"},"ownership":{"sessions":{"total":0,"claimed":0,"unclaimed":0},"annotations":{"total":0,"claimed":0,"unclaimed":0}}}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "an installation with no claims answers an empty page, a zero total, a not-applicable prompt, and zero ownership counts"}
+      mutation: {description: "emits the empty status an unclaimed data directory returns"}
+    - name: owner-status-bounded-page
+      input: '{"owner":{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"},"claims":[{"id":"clm_2","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"manual","claimedAt":"2026-11-12T01:00:00Z"},{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"}],"totalClaims":150,"nextBefore":"clm_1","prompt":{"state":"completed","account":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"decidedAt":"2026-11-12T01:00:00Z"},"ownership":{"sessions":{"total":3,"claimed":2,"unclaimed":1},"annotations":{"total":1,"claimed":1,"unclaimed":0}}}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "the status pages the append-only log and carries the total, the older-page cursor, and the ownership counts"}
+      mutation: {description: "returns two of one hundred fifty entries with the cursor naming the oldest returned entry"}
+    - name: owner-status-null-claims
+      input: '{"owner":{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"},"claims":null,"totalClaims":0,"prompt":{"state":"not_applicable"},"ownership":{"sessions":{"total":0,"claimed":0,"unclaimed":0},"annotations":{"total":0,"claimed":0,"unclaimed":0}}}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "an empty claim page is an empty array, never null"}
+      mutation: {description: "nulls the claims page of an otherwise valid empty status"}
+    - name: owner-status-claim-for-other-owner
+      input: '{"owner":{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"},"claims":[{"id":"clm_1","localOwnerId":"lo_2","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"manual","claimedAt":"2026-11-12T00:00:00Z"}],"totalClaims":1,"prompt":{"state":"not_applicable"},"ownership":{"sessions":{"total":0,"claimed":0,"unclaimed":0},"annotations":{"total":0,"claimed":0,"unclaimed":0}}}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a status carries only claims appended for its own local owner"}
+      mutation: {description: "changes only the claim localOwnerId away from the status owner"}
+    - name: owner-status-total-below-page
+      input: '{"owner":{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"},"claims":[{"id":"clm_2","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"manual","claimedAt":"2026-11-12T01:00:00Z"},{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"}],"totalClaims":1,"nextBefore":"clm_1","prompt":{"state":"not_applicable"},"ownership":{"sessions":{"total":0,"claimed":0,"unclaimed":0},"annotations":{"total":0,"claimed":0,"unclaimed":0}}}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the total counts every entry and cannot omit a returned one"}
+      mutation: {description: "drops totalClaims below the returned page size"}
+    - name: owner-status-missing-cursor
+      input: '{"owner":{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"},"claims":[{"id":"clm_2","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"manual","claimedAt":"2026-11-12T01:00:00Z"},{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"}],"totalClaims":150,"prompt":{"state":"not_applicable"},"ownership":{"sessions":{"total":0,"claimed":0,"unclaimed":0},"annotations":{"total":0,"claimed":0,"unclaimed":0}}}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "more entries than the page requires an older-page cursor"}
+      mutation: {description: "leaves totalClaims above the page size with no cursor"}
+    - name: owner-status-cursor-without-more
+      input: '{"owner":{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"},"claims":[{"id":"clm_2","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"manual","claimedAt":"2026-11-12T01:00:00Z"},{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"}],"totalClaims":2,"nextBefore":"clm_1","prompt":{"state":"not_applicable"},"ownership":{"sessions":{"total":0,"claimed":0,"unclaimed":0},"annotations":{"total":0,"claimed":0,"unclaimed":0}}}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a cursor appears only when older entries remain"}
+      mutation: {description: "sets a cursor while the total equals the page size"}
+    - name: owner-status-page-over-limit
+      input: '{"owner":{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"},"claims":[{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_2","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_3","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_4","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_5","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_6","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_7","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_8","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_9","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_10","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_11","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_12","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_13","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_14","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_15","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_16","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_17","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_18","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_19","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_20","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_21","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_22","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_23","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_24","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_25","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_26","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_27","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_28","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_29","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_30","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_31","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_32","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_33","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_34","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_35","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_36","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_37","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_38","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_39","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_40","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_41","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_42","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_43","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_44","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_45","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_46","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_47","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_48","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_49","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_50","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_51","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_52","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_53","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_54","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_55","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_56","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_57","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_58","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_59","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_60","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_61","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_62","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_63","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_64","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_65","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_66","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_67","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_68","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_69","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_70","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_71","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_72","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_73","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_74","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_75","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_76","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_77","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_78","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_79","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_80","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_81","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_82","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_83","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_84","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_85","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_86","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_87","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_88","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_89","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_90","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_91","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_92","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_93","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_94","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_95","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_96","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_97","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_98","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_99","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_100","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_101","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"automatic","claimedAt":"2026-11-12T00:00:00Z"}],"totalClaims":101,"prompt":{"state":"not_applicable"},"ownership":{"sessions":{"total":0,"claimed":0,"unclaimed":0},"annotations":{"total":0,"claimed":0,"unclaimed":0}}}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "one response returns at most the recent claim limit"}
+      mutation: {description: "grows the claim page one entry past the declared bound"}
+    - name: owner-status-counts-do-not-partition
+      input: '{"owner":{"id":"lo_1","createdAt":"2026-11-12T00:00:00Z"},"claims":[],"totalClaims":0,"prompt":{"state":"not_applicable"},"ownership":{"sessions":{"total":3,"claimed":1,"unclaimed":1},"annotations":{"total":0,"claimed":0,"unclaimed":0}}}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "claimed plus unclaimed must equal total"}
+      mutation: {description: "leaves one session unaccounted for in the ownership partition"}
+
+claim_entry:
+  cases:
+    - name: claim-entry-username-reuse-two-uuids
+      input: '[{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"manual","claimedAt":"2026-11-12T00:00:00Z"},{"id":"clm_2","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174001","username":"ada","source":"sign_in_prompt","claimedAt":"2026-11-12T01:00:00Z"}]'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "the account is the base URL plus user UUID; a reused username never merges two accounts"}
+      mutation: {description: "records two UUIDs under one display username"}
+    - name: claim-entry-unnormalized-url
+      input: '{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://Village.Example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"manual","claimedAt":"2026-11-12T00:00:00Z"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the claim entry reuses the normalized collective observation scope grammar"}
+      mutation: {description: "changes only the villageUrl host casing away from the canonical spelling"}
+    - name: claim-entry-empty-username
+      input: '{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"","source":"manual","claimedAt":"2026-11-12T00:00:00Z"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a display snapshot that names no person is refused"}
+      mutation: {description: "empties only the claim entry username"}
+    - name: claim-entry-invalid-source
+      input: '{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"session_end","claimedAt":"2026-11-12T00:00:00Z"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "claim source is a closed menu"}
+      mutation: {description: "changes only the source to a value outside the closed set"}
+    - name: claim-entry-zero-claimed-at
+      input: '{"id":"clm_1","localOwnerId":"lo_1","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"manual","claimedAt":"0001-01-01T00:00:00Z"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a claim entry records when it was appended"}
+      mutation: {description: "sets only claimedAt to the zero time"}
+    - name: claim-entry-local-owner-over-bound
+      input: '{"id":"clm_1","localOwnerId":"lo_1234567890123456789012345678901234567890123456789012345678901234","villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","username":"ada","source":"manual","claimedAt":"2026-11-12T00:00:00Z"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the local owner id is at most 64 bytes"}
+      mutation: {description: "grows only localOwnerId one byte past the bound"}
+
+artifact_identity:
+  cases:
+    - name: identity-local
+      input: '{"kind":"local","localOwnerId":"lo_1"}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "a local identity carries only this data directory's owner id"}
+      mutation: {description: "names the local holder with no Village identity"}
+    - name: identity-village
+      input: '{"kind":"village","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174000","claimId":"clm_1","username":"ada"}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "a village identity carries the full account scope and the claim entry that joins the row to it"}
+      mutation: {description: "names one claimed account with its base URL, UUID, claim id, and display snapshot"}
+    - name: identity-foreign
+      input: '{"kind":"foreign","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174000","username":"ada"}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "a pulled owner keeps its recorded Village scope and display snapshot but is never claimed"}
+      mutation: {description: "names a pulled owner with no claim id"}
+    - name: identity-unknown
+      input: '{"kind":"unknown"}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "a projected but withheld owner carries no identity"}
+      mutation: {description: "withholds the owner without falling back to the local holder"}
+    - name: owner-unknown-with-local-identity
+      input: '{"kind":"unknown","localOwnerId":"lo_1"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "unknown is never a local fallback"}
+      mutation: {description: "adds a local owner id to the unknown kind"}
+    - name: owner-unknown-with-village-identity
+      input: '{"kind":"unknown","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174000"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "unknown carries no identity at all"}
+      mutation: {description: "adds a Village scope to the unknown kind"}
+    - name: owner-local-with-village-user
+      input: '{"kind":"local","localOwnerId":"lo_1","villageUserId":"123e4567-e89b-12d3-a456-426614174000"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "kind local is not a Village account"}
+      mutation: {description: "adds a Village user UUID to a local identity"}
+    - name: owner-local-with-username
+      input: '{"kind":"local","localOwnerId":"lo_1","username":"ada"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the local owner has no display snapshot"}
+      mutation: {description: "adds a username to a local identity"}
+    - name: owner-village-without-user
+      input: '{"kind":"village","villageUrl":"https://village.example/base","claimId":"clm_1"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a village identity requires the stable user UUID"}
+      mutation: {description: "drops only villageUserId from a valid village identity"}
+    - name: owner-village-without-claim
+      input: '{"kind":"village","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174000"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a village row must join the claim entry that explains it"}
+      mutation: {description: "drops only claimId from a valid village identity"}
+    - name: owner-foreign-with-local-id
+      input: '{"kind":"foreign","localOwnerId":"lo_1","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174000"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a foreign owner is not this directory's local owner"}
+      mutation: {description: "adds a local owner id to a foreign identity"}
+    - name: owner-invalid-kind
+      input: '{"kind":"creator","localOwnerId":"lo_1"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "artifact identity kind is a closed menu"}
+      mutation: {description: "changes only the kind to a value outside the closed set"}
+    - name: owner-empty-username
+      input: '{"kind":"village","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174000","claimId":"clm_1","username":""}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "an empty display snapshot is refused"}
+      mutation: {description: "empties only the username of a valid village identity"}
+    - name: owner-local-id-over-bound
+      input: '{"kind":"local","localOwnerId":"lo_1234567890123456789012345678901234567890123456789012345678901234"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the local owner id is bounded at 64 bytes on the row too"}
+      mutation: {description: "grows only localOwnerId one byte past the bound"}
+    - name: owner-village-unnormalized-url
+      input: '{"kind":"village","villageUrl":"https://village.example/base/","villageUserId":"123e4567-e89b-12d3-a456-426614174000","claimId":"clm_1"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the row reuses the normalized account scope, not a second spelling"}
+      mutation: {description: "adds a trailing slash to the village base URL"}
+
+annotation_row:
+  cases:
+    - name: annotation-row-owner-author
+      input: '{"id":"a1","targetKind":"session","targetSessionId":"99d59925-36bc-424c-a789-8be54d9702ba","isPrimary":true,"annotatorKind":"rule","annotatorName":"outcome-classifier","typeId":"quality.session_outcome","typeName":"Session Outcome","value":"resolved","createdAt":1700000000000,"owner":{"kind":"local","localOwnerId":"lo_1"},"author":{"kind":"village","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174000","claimId":"clm_1","username":"ada"}}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "the annotation row keeps owner and author distinct without changing the shared summary"}
+      mutation: {description: "carries a local owner and a claimed Village author"}
+    - name: annotation-row-unknown-author
+      input: '{"id":"a1","targetKind":"session","targetSessionId":"99d59925-36bc-424c-a789-8be54d9702ba","isPrimary":true,"annotatorKind":"rule","annotatorName":"outcome-classifier","typeId":"quality.session_outcome","typeName":"Session Outcome","value":"resolved","createdAt":1700000000000,"owner":{"kind":"local","localOwnerId":"lo_1"},"author":{"kind":"unknown"}}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "a projected but withheld author is unknown, never the local owner"}
+      mutation: {description: "withholds the author while naming the local owner"}
+
+prompt:
+  cases:
+    - name: prompt-not-applicable
+      input: '{"state":"not_applicable"}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "no selected account means there is nothing to prompt for"}
+      mutation: {description: "omits the account and decision for the not-applicable state"}
+    - name: prompt-due
+      input: '{"state":"due","account":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"}}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "a signed-in account with no decision is due"}
+      mutation: {description: "carries the account scope with no decision"}
+    - name: prompt-declined
+      input: '{"state":"declined","account":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"decidedAt":"2026-11-12T00:00:00Z"}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "a decline is settled for one local owner plus account scope"}
+      mutation: {description: "records a declined decision with its account and time"}
+    - name: prompt-completed
+      input: '{"state":"completed","account":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"decidedAt":"2026-11-12T00:00:00Z"}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "a completed claim decision is settled even when nothing was left to claim"}
+      mutation: {description: "records a completed decision with its account and time"}
+    - name: prompt-not-applicable-with-account
+      input: '{"state":"not_applicable","account":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"}}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the account is present exactly when signed in"}
+      mutation: {description: "adds an account to the not-applicable state"}
+    - name: prompt-due-without-account
+      input: '{"state":"due"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a due prompt names the account it is due for"}
+      mutation: {description: "drops the account from the due state"}
+    - name: prompt-due-with-decided-at
+      input: '{"state":"due","account":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"decidedAt":"2026-11-12T00:00:00Z"}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "decidedAt is present only for a settled state"}
+      mutation: {description: "adds a decision time to the due state"}
+    - name: prompt-declined-without-decided-at
+      input: '{"state":"declined","account":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"}}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a settled state records when it was decided"}
+      mutation: {description: "drops decidedAt from the declined state"}
+
+prompt_states:
+  cases:
+    - {name: prompt-state-not-applicable, input: not_applicable, expected: true, classification: must-pass, provenance: {source: enum, ref: "LocalOwnerPromptState"}, mutation: {description: "accepts the no-account member"}}
+    - {name: prompt-state-due, input: due, expected: true, classification: must-pass, provenance: {source: enum, ref: "LocalOwnerPromptState"}, mutation: {description: "accepts the due member"}}
+    - {name: prompt-state-declined, input: declined, expected: true, classification: must-pass, provenance: {source: enum, ref: "LocalOwnerPromptState"}, mutation: {description: "accepts the declined member"}}
+    - {name: prompt-state-completed, input: completed, expected: true, classification: must-pass, provenance: {source: enum, ref: "LocalOwnerPromptState"}, mutation: {description: "accepts the completed member"}}
+    - {name: prompt-state-open, input: open, expected: false, classification: must-fail, provenance: {source: enum, ref: "LocalOwnerPromptState"}, mutation: {description: "refuses a value outside the closed set"}}
+
+claim_sources:
+  cases:
+    - {name: claim-source-manual, input: manual, expected: true, classification: must-pass, provenance: {source: enum, ref: "LocalClaimSource"}, mutation: {description: "accepts the explicit command member"}}
+    - {name: claim-source-sign-in-prompt, input: sign_in_prompt, expected: true, classification: must-pass, provenance: {source: enum, ref: "LocalClaimSource"}, mutation: {description: "accepts the sign-in prompt member"}}
+    - {name: claim-source-automatic, input: automatic, expected: true, classification: must-pass, provenance: {source: enum, ref: "LocalClaimSource"}, mutation: {description: "accepts the automatic member"}}
+    - {name: claim-source-session-end, input: session_end, expected: false, classification: must-fail, provenance: {source: enum, ref: "LocalClaimSource"}, mutation: {description: "refuses a value outside the closed set"}}
+
+operations:
+  - {name: read, method: get, path: /api/v1/local-owner, operation_id: getLocalOwnerStatus, error_statuses: [500]}
+  - {name: claim, method: post, path: /api/v1/local-owner/claim, operation_id: claimLocalOwner, error_statuses: [400, 401, 403, 500, 504]}
+  - {name: decline, method: post, path: /api/v1/local-owner/decline, operation_id: declineLocalOwnerPrompt, error_statuses: [401, 403, 500]}

@@ -87,6 +87,9 @@ import { zSessionRelationshipKind, type SessionRelationshipKind as SessionRelati
 import { zRelationshipTargetState, type RelationshipTargetState as RelationshipTargetStateContract } from "./contract/zod.gen.js";
 import { zEvidenceKind, type EvidenceKind as EvidenceKindContract } from "./contract/zod.gen.js";
 import { zSessionTeammateEvidence, type SessionTeammateEvidence as SessionTeammateEvidenceContract } from "./contract/zod.gen.js";
+import { zLocalArtifactIdentityKind, type LocalArtifactIdentityKind as LocalArtifactIdentityKindContract } from "./contract/zod.gen.js";
+import { zLocalClaimSource, type LocalClaimSource as LocalClaimSourceContract } from "./contract/zod.gen.js";
+import { zLocalOwnerPromptState, type LocalOwnerPromptState as LocalOwnerPromptStateContract } from "./contract/zod.gen.js";
 import { zSessionPurpose, type SessionPurpose as SessionPurposeContract } from "./contract/zod.gen.js";
 import { zContentOrigin, type ContentOrigin as ContentOriginContract } from "./contract/zod.gen.js";
 import { zActorOrigin, type ActorOrigin as ActorOriginContract } from "./contract/zod.gen.js";
@@ -1188,6 +1191,41 @@ export const SessionTeammateEvidence = Object.freeze({
 export const AllSessionTeammateEvidences = Object.freeze([SessionTeammateEvidence.NativeDynamicWorkflow]) as readonly SessionTeammateEvidence[];
 export function isSessionTeammateEvidence(value: unknown): value is SessionTeammateEvidence {
   return zSessionTeammateEvidence.safeParse(value).success;
+}
+
+export type LocalArtifactIdentityKind = LocalArtifactIdentityKindContract;
+export const LocalArtifactIdentityKind = Object.freeze({
+  Local: zLocalArtifactIdentityKind.parse("local"),
+  Village: zLocalArtifactIdentityKind.parse("village"),
+  Foreign: zLocalArtifactIdentityKind.parse("foreign"),
+  Unknown: zLocalArtifactIdentityKind.parse("unknown"),
+} as const);
+export const AllLocalArtifactIdentityKinds = Object.freeze([LocalArtifactIdentityKind.Local, LocalArtifactIdentityKind.Village, LocalArtifactIdentityKind.Foreign, LocalArtifactIdentityKind.Unknown]) as readonly LocalArtifactIdentityKind[];
+export function isLocalArtifactIdentityKind(value: unknown): value is LocalArtifactIdentityKind {
+  return zLocalArtifactIdentityKind.safeParse(value).success;
+}
+
+export type LocalClaimSource = LocalClaimSourceContract;
+export const LocalClaimSource = Object.freeze({
+  Manual: zLocalClaimSource.parse("manual"),
+  SignInPrompt: zLocalClaimSource.parse("sign_in_prompt"),
+  Automatic: zLocalClaimSource.parse("automatic"),
+} as const);
+export const AllLocalClaimSources = Object.freeze([LocalClaimSource.Manual, LocalClaimSource.SignInPrompt, LocalClaimSource.Automatic]) as readonly LocalClaimSource[];
+export function isLocalClaimSource(value: unknown): value is LocalClaimSource {
+  return zLocalClaimSource.safeParse(value).success;
+}
+
+export type LocalOwnerPromptState = LocalOwnerPromptStateContract;
+export const LocalOwnerPromptState = Object.freeze({
+  NotApplicable: zLocalOwnerPromptState.parse("not_applicable"),
+  Due: zLocalOwnerPromptState.parse("due"),
+  Declined: zLocalOwnerPromptState.parse("declined"),
+  Completed: zLocalOwnerPromptState.parse("completed"),
+} as const);
+export const AllLocalOwnerPromptStates = Object.freeze([LocalOwnerPromptState.NotApplicable, LocalOwnerPromptState.Due, LocalOwnerPromptState.Declined, LocalOwnerPromptState.Completed]) as readonly LocalOwnerPromptState[];
+export function isLocalOwnerPromptState(value: unknown): value is LocalOwnerPromptState {
+  return zLocalOwnerPromptState.safeParse(value).success;
 }
 
 export type SessionPurpose = SessionPurposeContract;

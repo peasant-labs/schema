@@ -223,13 +223,24 @@ cases:
     input:
       component: SessionDetailReadPayload
       required: [id, harness, startTime, endTime, durationMins, totalTokens, tokensIn, tokensOut, turnCount, toolCallCount, turns]
-      optional: [title, medians, revision, schemaVersion, teammate]
+      optional: [title, medians, revision, schemaVersion, teammate, owner, adapterVersion]
       nullable: [medians, teammate, turns]
-      nonnullable: [id, harness, startTime, endTime, durationMins, totalTokens, tokensIn, tokensOut, turnCount, toolCallCount, title, revision, schemaVersion]
+      nonnullable: [id, harness, startTime, endTime, durationMins, totalTokens, tokensIn, tokensOut, turnCount, toolCallCount, title, revision, schemaVersion, owner, adapterVersion]
     expected: true
     classification: must-pass
-    provenance: {source: requirement, ref: "the durable read keeps its turn content and adds three optional local metadata fields"}
-    mutation: {description: "contrasts the required durable metadata and turns with the optional title, medians, and revision"}
+    provenance: {source: requirement, ref: "the durable read keeps its turn content and adds three optional local metadata fields plus the local owner and producer revision"}
+    mutation: {description: "contrasts the required durable metadata and turns with the optional title, medians, revision, owner, and adapterVersion"}
+  - name: local artifact identity
+    input:
+      component: LocalArtifactIdentity
+      required: [kind]
+      optional: [localOwnerId, villageUrl, villageUserId, claimId, username]
+      nullable: []
+      nonnullable: [kind, localOwnerId, villageUrl, villageUserId, claimId, username]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "identity kind is required while each identity field is optional and non-null, so an absent identity is withheld rather than null"}
+    mutation: {description: "pins kind as required and localOwnerId, villageUrl, villageUserId, claimId, and username as optional non-null fields"}
   - name: transcript turn row
     input:
       component: TranscriptTurn
@@ -252,3 +263,69 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "the metadata-only frame promotes the header fields and adds local navigation and teammate evidence"}
     mutation: {description: "contrasts the required header metadata with the optional local frame additions"}
+  - name: local annotation row
+    input:
+      component: LocalAnnotationRow
+      required: [id, targetKind, isPrimary, annotatorKind, annotatorName, typeId, typeName, value, createdAt]
+      optional: [owner, author]
+      nullable: []
+      nonnullable: [id, targetKind, isPrimary, annotatorKind, annotatorName, typeId, typeName, value, createdAt, owner, author]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the row flattening the embedded AnnotationSummary must require the nine summary fields, not the Go field name"}
+    mutation: {description: "pins the nine promoted summary fields as required and both identity projections as optional non-null"}
+  - name: local owner
+    input:
+      component: LocalOwner
+      required: [id, createdAt]
+      optional: []
+      nullable: []
+      nonnullable: [id, createdAt]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "one permanent local owner carries its identifier and creation time"}
+    mutation: {description: "pins both local owner fields as required non-null"}
+  - name: local claim entry
+    input:
+      component: LocalClaimEntry
+      required: [id, localOwnerId, villageUrl, userId, username, source, claimedAt]
+      optional: []
+      nullable: []
+      nonnullable: [id, localOwnerId, villageUrl, userId, username, source, claimedAt]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "a claim entry reuses the account scope names and carries its source and claim time"}
+    mutation: {description: "pins every claim entry field as required and non-null"}
+  - name: local owner status
+    input:
+      component: LocalOwnerStatus
+      required: [owner, claims, totalClaims, prompt, ownership]
+      optional: [nextBefore]
+      nullable: []
+      nonnullable: [owner, claims, totalClaims, prompt, ownership, nextBefore]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the status always carries its owner, bounded claim page, total, prompt, and ownership counts"}
+    mutation: {description: "contrasts the required status body with the optional older-page cursor"}
+  - name: local owner claim prompt
+    input:
+      component: LocalOwnerClaimPrompt
+      required: [state]
+      optional: [account, decidedAt]
+      nullable: []
+      nonnullable: [state, account, decidedAt]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the server computes the prompt state and carries the account and decision only when they apply"}
+    mutation: {description: "pins the required state with optional non-null account and decided time"}
+  - name: local owner claim result
+    input:
+      component: LocalOwnerClaimResult
+      required: [status, claimed, alreadyClaimed]
+      optional: [claimId]
+      nullable: []
+      nonnullable: [status, claimed, alreadyClaimed, claimId]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the claim answer reports what the action did beside the recomputed status"}
+    mutation: {description: "pins the required result counts and optional claim entry id"}

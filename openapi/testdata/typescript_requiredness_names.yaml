@@ -20,5 +20,12 @@ required_names:
   - local sync session page
   - local flat session page
   - session detail read payload
+  - local artifact identity
+  - local annotation row
+  - local owner
+  - local claim entry
+  - local owner status
+  - local owner claim prompt
+  - local owner claim result
   - transcript turn row
   - session detail header payload

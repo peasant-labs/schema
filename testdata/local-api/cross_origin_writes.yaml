@@ -17,6 +17,8 @@ write_operations:
   - {method: put, path: "/api/v1/settings/auto-publish/{id}", operation_id: saveAutoPublishRule}
   - {method: post, path: "/api/v1/settings/auto-publish/{id}/install", operation_id: installAutoPublishHooks}
   - {method: delete, path: "/api/v1/settings/auto-publish/{id}", operation_id: deleteAutoPublishRule}
+  - {method: post, path: /api/v1/local-owner/claim, operation_id: claimLocalOwner}
+  - {method: post, path: /api/v1/local-owner/decline, operation_id: declineLocalOwnerPrompt}
   - {method: post, path: /api/v1/kickstart/sessions, operation_id: openKickstartSession}
   - {method: patch, path: "/api/v1/kickstart/sessions/{id}", operation_id: patchKickstartSession}
   - {method: post, path: "/api/v1/kickstart/sessions/{id}/scan", operation_id: scanKickstartSession}

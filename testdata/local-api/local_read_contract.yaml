@@ -47,6 +47,13 @@ required_names:
   - detail-read-metadata
   - detail-read-omitted-metadata
   - detail-read-empty-medians
+  - detail-read-owner-adapter
+  - row-owner-adapter
+  - annotation-row-owner-author
+  - invalid-owner-kind
+  - nonpositive-adapter-version
+  - mismatched-owner
+  - mismatched-adapter-version
 round_trip:
   cases:
     - name: flat-detail-root
@@ -169,6 +176,24 @@ round_trip:
       classification: must-pass
       provenance: {source: boundary, ref: "a medians sample with no eligible metric yields an empty object, not a rejection"}
       mutation: {description: "carries a present medians object with no metric values"}
+    - name: detail-read-owner-adapter
+      input: {kind: detail, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":0,"toolCallCount":0,"turns":[],"owner":{"kind":"village","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174000","claimId":"clm_1","username":"ada"},"adapterVersion":12}' }
+      expected: {valid: true, requiredKeys: [id, turns, owner, adapterVersion], forbiddenKeys: [detail, sessionDetail, author, producer]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the local detail read carries the artifact owner and producer revision beside the durable detail, never on SessionDetailPayload"}
+      mutation: {description: "adds a village owner and adapterVersion 12 to a valid flat detail read"}
+    - name: row-owner-adapter
+      input: {kind: row, json: '{"session":{"id":"owned","harness":"codex","startTime":"2026-11-09T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"inputSubmissionCount":1,"toolCallCount":0,"project":"p","projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","owner":{"kind":"local","localOwnerId":"own_1"},"adapterVersion":7},"sync":{"id":"owned","harness":"codex","projectName":"p","projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","hostSlug":"h","startTime":"2026-11-09T00:00:00Z","durationMs":60000,"totalTokens":9,"turnCount":5,"model":"m","inputSubmissionCount":1,"syncStatus":"new","previouslyPushed":false,"owner":{"kind":"local","localOwnerId":"own_1"},"adapterVersion":7}}' }
+      expected: {valid: true, requiredKeys: [session, sync], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the local session summary and sync summary both carry the artifact owner and adapter version"}
+      mutation: {description: "supplies the same local owner and adapterVersion on both summaries of one row"}
+    - name: annotation-row-owner-author
+      input: {kind: annotation-row, json: '{"id":"a1","targetKind":"session","targetSessionId":"99d59925-36bc-424c-a789-8be54d9702ba","isPrimary":true,"annotatorKind":"rule","annotatorName":"outcome-classifier","typeId":"quality.session_outcome","typeName":"Session Outcome","value":"resolved","createdAt":1700000000000,"owner":{"kind":"local","localOwnerId":"own_1"},"author":{"kind":"village","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174000","claimId":"clm_1","username":"ada"}}' }
+      expected: {valid: true, requiredKeys: [id, targetKind, owner, author], forbiddenKeys: [detail]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the local annotation envelope keeps owner and author distinct without changing AnnotationSummary or the pull envelope"}
+      mutation: {description: "adds a local owner and a village author to one shared annotation summary"}
     - name: transcript-segment-directory
       input: {kind: segment-directory, json: '{"sessionId":"ses_3cd91f52effeXd3QAJ54jOyzv5","revision":"4213","totalTurns":55,"totalSegments":2,"segments":[{"index":0,"firstTurn":4,"lastTurn":40,"byteLength":917504},{"index":1,"firstTurn":44,"lastTurn":149,"byteLength":655360}]}' }
       expected: {valid: true, requiredKeys: [sessionId, revision, totalTurns, totalSegments, segments], forbiddenKeys: [turns, position, page, perPage, directoryPage]}
@@ -339,3 +364,27 @@ validation:
       classification: must-fail
       provenance: {source: boundary, ref: "one saved transcript has one teammate identity across its route summaries"}
       mutation: {description: "keeps the teammate on the sync summary and omits it from the session summary"}
+    - name: invalid-owner-kind
+      input: {kind: detail, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":0,"toolCallCount":0,"turns":[],"owner":{"kind":"creator","localOwnerId":"own_1"}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "artifact owner kind is a closed menu, not an open label"}
+      mutation: {description: "changes only the owner kind to creator, outside the local, village, foreign, unknown menu"}
+    - name: nonpositive-adapter-version
+      input: {kind: detail, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":0,"toolCallCount":0,"turns":[],"adapterVersion":0}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a present producer revision is positive; an unknown revision is omitted"}
+      mutation: {description: "changes only adapterVersion to zero on an otherwise valid detail read"}
+    - name: mismatched-owner
+      input: {kind: row, json: '{"session":{"id":"owned","harness":"codex","startTime":"2026-11-09T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"toolCallCount":0,"owner":{"kind":"local","localOwnerId":"own_1"}},"sync":{"id":"owned","harness":"codex","projectName":"","hostSlug":"h","startTime":"x","durationMs":1,"totalTokens":9,"turnCount":5,"model":"m","syncStatus":"new","owner":{"kind":"village","villageUrl":"https://village.example/base","villageUserId":"123e4567-e89b-12d3-a456-426614174001","claimId":"clm_2"}}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "one saved transcript has one owner across its route summaries"}
+      mutation: {description: "changes only the sync owner to a Village account while the session stays local"}
+    - name: mismatched-adapter-version
+      input: {kind: row, json: '{"session":{"id":"owned","harness":"codex","startTime":"2026-11-09T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"toolCallCount":0,"adapterVersion":7},"sync":{"id":"owned","harness":"codex","projectName":"","hostSlug":"h","startTime":"x","durationMs":1,"totalTokens":9,"turnCount":5,"model":"m","syncStatus":"new","adapterVersion":8}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "one saved transcript has one producer revision across its route summaries"}
+      mutation: {description: "changes only the sync adapterVersion away from the session value"}
