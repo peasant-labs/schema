@@ -32,6 +32,16 @@ const schemaName = Object.keys(spec.components?.schemas ?? {}).find((name) => !e
 assert.notEqual(schemaName, undefined, "the Types OpenAPI catalog must provide a non-enum component for the packed-package Zod runtime probe");
 assert.match(schemaName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "Types OpenAPI representative component name must be a JavaScript identifier");
 const schemaExportName = `z${schemaName}`;
+const directoryPositionCorpus = parse(await readFile(new URL("../../testdata/typescript/transcript_directory_positions.yaml", import.meta.url), "utf8"));
+assert.ok(Array.isArray(directoryPositionCorpus.cases) && directoryPositionCorpus.cases.length > 0, "transcript_directory_positions.yaml must provide a position corpus for the packed-package probe");
+const packedPositionCases = [
+  directoryPositionCorpus.cases.find((row) => row.expected === true),
+  directoryPositionCorpus.cases.find((row) => row.expected === false),
+];
+for (const row of packedPositionCases) {
+  assert.notEqual(row, undefined, "transcript_directory_positions.yaml must hold both an accepted and a rejected case");
+  assert.equal(typeof row.input?.json, "string", "each packed position probe case must state its decoded JSON as a string");
+}
 
 const temp = await mkdtemp(join(tmpdir(), "peasant-labs-schema-package-"));
 try {
@@ -91,6 +101,8 @@ try {
     `import { ${enumName}, ${schemaExportName}, parseSessionDetailPayloadText, requiredContentCapabilities, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
     `import { sessionGraphCapabilityFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph-capability")};`,
     `import * as publicSchema from ${JSON.stringify(packageManifest.name)};`,
+    `if (typeof publicSchema.isTranscriptDirectoryPositionsValid !== "function") throw new TypeError("packed ${packageManifest.name} does not export isTranscriptDirectoryPositionsValid");`,
+    ...packedPositionCases.map((row) => `if (publicSchema.isTranscriptDirectoryPositionsValid(JSON.parse(${JSON.stringify(row.input.json)})) !== ${row.expected}) throw new TypeError(${JSON.stringify(`packed directory position verdict differs for ${row.name}`)});`),
     ...retainedCollectiveAliases.aliases.map(row => `if (publicSchema.z${row.name} !== publicSchema.z${row.canonical}) throw new Error("packed legacy validator ${row.name} lost canonical identity");`),
     ...retainedCollectiveAliases.aliases.filter(row => row.all_name !== undefined).map(row => `if (publicSchema.${row.name} !== publicSchema.${row.canonical} || publicSchema.${row.all_name} !== publicSchema.${row.canonical_all_name} || publicSchema.is${row.name} !== publicSchema.is${row.canonical}) throw new Error("packed legacy enum ${row.name} changed");`),
     `import { sessionGraphFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph")};`,

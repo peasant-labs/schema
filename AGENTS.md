@@ -75,6 +75,26 @@ window reads, equal to the Go constants. Do not add a TypeScript cut, measure or
 window resolver; if a browser ever needs one, that is a contract change with its
 own recorded decision.
 
+**Recorded exception:** `typescript/src/transcript-directory-positions.ts`
+mirrors the directory conversation-position rule of
+`validateDirectoryConversationTurns` (`local_api.go`) for the browser:
+`isTranscriptDirectoryPositionsValid` decides whether the optional
+`totalConversationTurns` and `conversationTurns` values in one decoded
+segment-directory response are usable. Go remains the semantic reference; the
+browser copy exists because a client reads the directory itself and must drop
+unusable positions before rendering them. When the shared position rule changes,
+both implementations change in the same PR. `testdata/transcript_segments.yaml`
+(the Go validator test's directory cases) and `testdata/transcript_cut.yaml`
+(the cut's recorded spans) are replayed by both languages, so they detect
+disagreement only for the cases they cover; browser-only inputs live in
+`testdata/typescript/transcript_directory_positions.yaml`. The browser is
+deliberately stricter for explicit null, non-safe numbers, and a span missing
+`before` or `count`, and it cannot see a JSON number lexeme already rounded to a
+safe integer. The window span stays generated-only: it comes from the struct
+tags on `TranscriptWindow.Span`, and no handwritten TypeScript validator
+restates it. This exception adds no TypeScript cut, byte measure or window
+resolver.
+
 **Recorded exception:** Kickstart response and view components are closed as well as
 request bodies. Adding a response property is a breaking change to pinned consumers;
 this choice is specific to the kickstart contract and is not a general precedent.
