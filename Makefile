@@ -65,10 +65,10 @@ test:
 freshness: typescript-deps
 	$(GO) run ./cmd/schema-gen
 	pnpm --dir typescript run generate
-	@git add -N -- generated/ testdata/session-detail/redactions.yaml typescript/src/internal/generated/
-	@if ! git diff --quiet -- generated/ testdata/session-detail/redactions.yaml typescript/src/internal/generated/; then \
+	@git add -N -- generated/ route/routes_gen.go testdata/session-detail/redactions.yaml typescript/src/internal/generated/
+	@if ! git diff --quiet -- generated/ route/routes_gen.go testdata/session-detail/redactions.yaml typescript/src/internal/generated/; then \
 		echo "generated artifacts drifted from their canonical Go/OpenAPI/YAML sources — run 'make schema' and commit the result."; \
-		git --no-pager diff --stat -- generated/ testdata/session-detail/redactions.yaml typescript/src/internal/generated/; \
+		git --no-pager diff --stat -- generated/ route/routes_gen.go testdata/session-detail/redactions.yaml typescript/src/internal/generated/; \
 		exit 1; \
 	fi
 

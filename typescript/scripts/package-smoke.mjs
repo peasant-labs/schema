@@ -69,7 +69,21 @@ try {
     stdio: "inherit",
   });
 
+  const routePaths = parse(await readFile(new URL("../../testdata/route_paths.yaml", import.meta.url), "utf8"));
+  assert.ok(Array.isArray(routePaths.cases) && routePaths.cases.length > 0, "route_paths.yaml must provide route member paths for the packed-package probe");
+  const routeObjects = { village: "VillageRoute", local: "LocalRoute" };
   const probe = [
+    `import { VillageRoute, ALL_VILLAGE_ROUTES } from ${JSON.stringify(packageManifest.name + "/village-api")};`,
+    `import { LocalRoute, ALL_LOCAL_ROUTES } from ${JSON.stringify(packageManifest.name + "/local-api")};`,
+    `if (ALL_VILLAGE_ROUTES.length === 0 || ALL_LOCAL_ROUTES.length === 0) throw new TypeError("packed route member sets are empty");`,
+    ...routePaths.cases.map((row) => {
+      const member = `${routeObjects[row.input.api]}[${JSON.stringify(row.input.member)}]`;
+      const call = `${member}.path(${JSON.stringify(row.input.params)})`;
+      if (row.classification === "must-fail") {
+        return `{ let refused = false; try { ${call}; } catch (error) { refused = error instanceof RangeError && error.message.includes(${JSON.stringify(row.expected.error_contains)}); } if (!refused) throw new TypeError(${JSON.stringify(`packed route member did not refuse ${row.name}`)}); }`;
+      }
+      return `if (${call} !== ${JSON.stringify(row.expected.typescript)}) throw new TypeError(${JSON.stringify(`packed route member path differs for ${row.name}`)});`;
+    }),
     `const envelopeAPI = await import(${JSON.stringify(packageManifest.name)});`,
     ...parse(await readFile(new URL("../../testdata/deprecated_grouped_contributable.yaml", import.meta.url), "utf8")).envelopes.cases.map(row => `if (envelopeAPI[${JSON.stringify(`z${row.input.schema}`)}].safeParse(${JSON.stringify(row.input.payload)}).success !== ${row.expected.valid}) throw new Error(${JSON.stringify(`packed grouped contribution envelope differs for ${row.name}`)});`),
     `const redaction = await import(${JSON.stringify(packageManifest.name)});`,

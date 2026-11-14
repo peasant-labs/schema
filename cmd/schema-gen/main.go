@@ -48,6 +48,13 @@ func main() {
 		log.Printf("Generated %s", path)
 	}
 
+	// --- Route members (route/routes_gen.go and the TypeScript routes module) ---
+	// A projection of the Village API and Local API documents built above.
+	if err := generateRoutes(moduleRoot, artifacts); err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Generated %s and %s", filepath.Join(moduleRoot, routeGoRelPath), filepath.Join(moduleRoot, routeTSRelPath))
+
 	// Specs still needed below for the HTML docs.
 	villageSpec, err := openapi.BuildVillageAPISpec()
 	if err != nil {
