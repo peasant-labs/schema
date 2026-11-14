@@ -2,7 +2,7 @@
 # must hold. A case renamed or removed without its entry here fails the suite:
 # these are the only cases for the helper's explicit-null, non-safe-number and
 # broken-container branches.
-expectedCaseCount: 19
+expectedCaseCount: 20
 requiredCaseNames:
   - directory-null
   - directory-array
@@ -10,7 +10,7 @@ requiredCaseNames:
   - directory-non-array-segments
   - directory-non-object-ref
   - directory-empty-segments
-  - directory-positions-without-total
+  - directory-spans-only-without-total
   - directory-explicit-null-total
   - directory-explicit-null-span
   - directory-string-total
@@ -22,4 +22,5 @@ requiredCaseNames:
   - directory-span-ends-past-total
   - directory-total-safe-integer-boundary
   - directory-total-above-safe-integer-boundary
+  - directory-span-before-above-safe-integer-boundary
   - directory-required-field-invalid-with-valid-positions

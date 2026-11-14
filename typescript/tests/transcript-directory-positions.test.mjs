@@ -112,12 +112,22 @@ test("the position manifests are strict inventories", () => {
   assert.ok(browserManifest.requiredCaseNames.some((name) => name === "directory-explicit-null-total"), "the browser manifest must name the explicit-null branch");
   assert.ok(sharedManifest.requiredCaseNames.length >= 2, "the shared manifest needs two names for duplicate-name mutation coverage");
 
-  assertManifestRejected(`${browserManifestSource}\nunknown: value\n`, "browser", "unknown manifest field");
-  assertManifestRejected(`${browserManifestSource}\nexpectedCaseCount: ${browserManifest.expectedCaseCount}\n`, "browser", "duplicate YAML key");
-  assertManifestRejected(replaceFixtureText(browserManifestSource, `expectedCaseCount: ${browserManifest.expectedCaseCount}`, `expectedCaseCount: ${browserManifest.expectedCaseCount + 1}`), "browser", "count and name mismatch");
-  assertManifestRejected(replaceFixtureText(browserManifestSource, `  - ${browserManifest.requiredCaseNames[1]}`, `  - ${browserManifest.requiredCaseNames[0]}`), "browser", "duplicate required case name");
-  assertManifestRejected(replaceFixtureText(browserManifestSource, `  - ${browserManifest.requiredCaseNames[0]}`, '  - ""'), "browser", "blank required case name");
-  assertManifestRejected(replaceFixtureText(sharedManifestSource, `expectedCaseCount: ${sharedManifest.expectedCaseCount}`, `expectedCaseCount: ${sharedManifest.expectedCaseCount - 1}`), "shared", "shared count and name mismatch");
+  assertManifestRejected(loadManifest, `${browserManifestSource}\nunknown: value\n`, "browser unknown manifest field");
+  assertManifestRejected(loadManifest, `${browserManifestSource}\nexpectedCaseCount: ${browserManifest.expectedCaseCount}\n`, "browser duplicate YAML key");
+  assertManifestRejected(loadManifest, replaceFixtureText(browserManifestSource, `expectedCaseCount: ${browserManifest.expectedCaseCount}`, `expectedCaseCount: ${browserManifest.expectedCaseCount + 1}`), "browser count and name mismatch");
+  assertManifestRejected(loadManifest, replaceFixtureText(browserManifestSource, `  - ${browserManifest.requiredCaseNames[1]}`, `  - ${browserManifest.requiredCaseNames[0]}`), "browser duplicate required case name");
+  assertManifestRejected(loadManifest, replaceFixtureText(browserManifestSource, `  - ${browserManifest.requiredCaseNames[0]}`, '  - ""'), "browser blank required case name");
+  assertManifestRejected(loadManifest, replaceFixtureText(sharedManifestSource, `expectedCaseCount: ${sharedManifest.expectedCaseCount}`, `expectedCaseCount: ${sharedManifest.expectedCaseCount - 1}`), "shared count and name mismatch");
+
+  assertManifestRejected(loadRequiredNamesManifest, replaceFixtureText(cutManifestSource, `  - ${cutManifest.requiredNames[1]}`, `  - ${cutManifest.requiredNames[0]}`), "cut duplicate required case name");
+  assertManifestRejected(loadRequiredNamesManifest, replaceFixtureText(cutManifestSource, `  - ${cutManifest.requiredNames[0]}`, '  - " "'), "cut blank required case name");
+  // A NEL-only name is blank to Go's fixture loaders but not to String.trim;
+  // this proves the loader carries the Go predicate rather than the trim shortcut.
+  assertManifestRejected(loadRequiredNamesManifest, replaceFixtureText(cutManifestSource, `  - ${cutManifest.requiredNames[0]}`, '  - "\\u0085"'), "cut NEL-only required case name");
+  assertManifestRejected(loadRequiredNamesManifest, "requiredNames: []\n", "cut empty required case list");
+  assertManifestRejected(loadRequiredNamesManifest, `${cutManifestSource}\n---\nrequiredNames:\n  - ${cutManifest.requiredNames[0]}\n`, "cut second YAML document");
+  assertManifestRejected(loadRequiredNamesManifest, `${cutManifestSource}\nunknown: value\n`, "cut unknown manifest field");
+  assertManifestRejected(loadRequiredNamesManifest, "requiredNames: [1]\n", "cut malformed required case name");
 
   assertInventoryRejected(
     replaceFixtureText(browserCorpusSource, `name: ${browserManifest.requiredCaseNames[0]}`, "name: unregistered_directory_position_case"),
@@ -159,6 +169,23 @@ function loadBrowserCorpus(source) {
 }
 
 function loadManifest(source, label) {
+  const manifest = requireExactRecord(decodeSingleDocument(source, label), label, ["expectedCaseCount", "requiredCaseNames"]);
+  if (!Number.isSafeInteger(manifest.expectedCaseCount) || manifest.expectedCaseCount <= 0) {
+    throw new TypeError(`${label}.expectedCaseCount: must be a positive safe integer`);
+  }
+  const names = requireNameList(manifest.requiredCaseNames, label, "requiredCaseNames");
+  if (names.length !== manifest.expectedCaseCount) {
+    throw new TypeError(`${label}.requiredCaseNames: has ${names.length} names, want exactly ${manifest.expectedCaseCount}`);
+  }
+  return { expectedCaseCount: manifest.expectedCaseCount, requiredCaseNames: names };
+}
+
+function loadRequiredNamesManifest(source, label) {
+  const manifest = requireExactRecord(decodeSingleDocument(source, label), label, ["requiredNames"]);
+  return { requiredNames: requireNameList(manifest.requiredNames, label, "requiredNames") };
+}
+
+function decodeSingleDocument(source, label) {
   let documents;
   try {
     documents = parseAllDocuments(source, { strict: true, uniqueKeys: true });
@@ -169,45 +196,54 @@ function loadManifest(source, label) {
   const document = documents[0];
   if (document === undefined) throw new TypeError(`${label}: YAML parser returned no document`);
   if (document.errors.length > 0) throw new TypeError(`${label}: YAML parsing failed: ${document.errors.map((error) => error.message).join("; ")}`);
-
-  let value;
   try {
-    value = document.toJS({ maxAliasCount: 0 });
+    return document.toJS({ maxAliasCount: 0 });
   } catch (error) {
     throw new TypeError(`${label}: YAML conversion failed`, { cause: error });
   }
-  const manifest = requireExactRecord(value, label, ["expectedCaseCount", "requiredCaseNames"]);
-  if (!Number.isSafeInteger(manifest.expectedCaseCount) || manifest.expectedCaseCount <= 0) {
-    throw new TypeError(`${label}.expectedCaseCount: must be a positive safe integer`);
-  }
-  if (!Array.isArray(manifest.requiredCaseNames)) throw new TypeError(`${label}.requiredCaseNames: must be a sequence`);
-  if (manifest.requiredCaseNames.length !== manifest.expectedCaseCount) {
-    throw new TypeError(`${label}.requiredCaseNames: has ${manifest.requiredCaseNames.length} names, want exactly ${manifest.expectedCaseCount}`);
-  }
-  const names = new Set();
-  for (const [index, name] of manifest.requiredCaseNames.entries()) {
-    if (typeof name !== "string") throw new TypeError(`${label}.requiredCaseNames[${index}]: must be a string`);
-    if (name.trim() === "") throw new TypeError(`${label}.requiredCaseNames[${index}]: must not be blank`);
-    if (names.has(name)) throw new TypeError(`${label}.requiredCaseNames[${index}]: repeats required case name ${JSON.stringify(name)}`);
-    names.add(name);
-  }
-  return { expectedCaseCount: manifest.expectedCaseCount, requiredCaseNames: manifest.requiredCaseNames };
 }
 
-function loadRequiredNamesManifest(source, label) {
-  const value = parse(source, { uniqueKeys: true });
-  const manifest = requireExactRecord(value, label, ["requiredNames"]);
-  if (!Array.isArray(manifest.requiredNames) || manifest.requiredNames.length === 0) {
-    throw new TypeError(`${label}.requiredNames: must be a non-empty sequence`);
+// requireNameList is the one name-list check both manifest loaders call: a
+// non-empty list of unique, non-blank names. Blankness uses Go's unicode.IsSpace
+// set, matching the sibling suite; JavaScript trim() would accept a name made of
+// U+0085, which Go's fixture loaders refuse. The sibling suite keeps its own
+// copy because extracting a support module shared with an unrelated corpus is
+// more churn than this change carries, so the two copies must stay in step.
+function requireNameList(value, label, field) {
+  if (!Array.isArray(value)) throw new TypeError(`${label}.${field}: must be a sequence`);
+  if (value.length === 0) throw new TypeError(`${label}.${field}: must name at least one case`);
+  const seen = new Set();
+  for (const [index, name] of value.entries()) {
+    if (typeof name !== "string") throw new TypeError(`${label}.${field}[${index}]: must be a string`);
+    if (!hasNonBlankFixtureName(name)) throw new TypeError(`${label}.${field}[${index}]: must not be blank`);
+    if (seen.has(name)) throw new TypeError(`${label}.${field}[${index}]: repeats required case name ${JSON.stringify(name)}`);
+    seen.add(name);
   }
-  const names = new Set();
-  for (const [index, name] of manifest.requiredNames.entries()) {
-    if (typeof name !== "string") throw new TypeError(`${label}.requiredNames[${index}]: must be a string`);
-    if (name.trim() === "") throw new TypeError(`${label}.requiredNames[${index}]: must not be blank`);
-    if (names.has(name)) throw new TypeError(`${label}.requiredNames[${index}]: repeats required case name ${JSON.stringify(name)}`);
-    names.add(name);
+  return value;
+}
+
+function hasNonBlankFixtureName(value) {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint !== undefined && !isGoWhitespace(codePoint)) return true;
   }
-  return { requiredNames: manifest.requiredNames };
+  return false;
+}
+
+// isGoWhitespace enumerates unicode.IsSpace, which decides what Go's fixture
+// loaders treat as a blank name.
+function isGoWhitespace(codePoint) {
+  return (codePoint >= 0x0009 && codePoint <= 0x000D)
+    || codePoint === 0x0020
+    || codePoint === 0x0085
+    || codePoint === 0x00A0
+    || codePoint === 0x1680
+    || (codePoint >= 0x2000 && codePoint <= 0x200A)
+    || codePoint === 0x2028
+    || codePoint === 0x2029
+    || codePoint === 0x202F
+    || codePoint === 0x205F
+    || codePoint === 0x3000;
 }
 
 function assertInventory(cases, manifest, label) {
@@ -224,11 +260,11 @@ function assertInventory(cases, manifest, label) {
   for (const name of required) assert.ok(actual.has(name), `${label}: is missing required case ${JSON.stringify(name)}`);
 }
 
-function assertManifestRejected(source, kind, label) {
+function assertManifestRejected(loader, source, label) {
   assert.throws(
-    () => loadManifest(source, `mutated ${kind} manifest (${label})`),
+    () => loader(source, `mutated manifest (${label})`),
     TypeError,
-    `${kind} manifest mutation (${label}) must be rejected`,
+    `manifest mutation (${label}) must be rejected`,
   );
 }
 

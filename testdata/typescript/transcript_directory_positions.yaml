@@ -48,7 +48,7 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: 'an empty session answers with an empty array'}
     mutation: {description: 'Serves an empty directory with no optional positions.'}
-  - name: directory-positions-without-total
+  - name: directory-spans-only-without-total
     input: {json: '{"segments":[{"conversationTurns":{"before":3,"count":2}},{"conversationTurns":{"before":5,"count":1}}]}'}
     expected: true
     classification: must-pass
@@ -126,6 +126,15 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: 'counts above the largest safe integer are refused'}
     mutation: {description: 'States one above the largest safe integer as the total.'}
+  - name: directory-span-before-above-safe-integer-boundary
+    input:
+      json: '{"segments":[{"conversationTurns":{"before":9007199254740992,"count":1}}]}'
+      numbers:
+        - {pointer: /segments/0/conversationTurns/before, safeInteger: false}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a span count above the largest safe integer is refused'}
+    mutation: {description: 'States one above the largest safe integer as a span before count.'}
   - name: directory-required-field-invalid-with-valid-positions
     input: {json: '{"sessionId":"","revision":"","totalTurns":-1,"totalSegments":9,"segments":[{"index":0,"firstTurn":0,"lastTurn":1,"byteLength":10,"conversationTurns":{"before":0,"count":2}}],"totalConversationTurns":2}'}
     expected: true
