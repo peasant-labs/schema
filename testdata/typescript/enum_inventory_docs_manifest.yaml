@@ -1,0 +1,5 @@
+requiredNames:
+  - harness-catalog-doc-remains-unchanged
+  - another-subset-uses-generic-doc
+  - complete-inventory-has-no-subset-doc
+  - subset-doc-cannot-close-comment

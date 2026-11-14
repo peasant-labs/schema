@@ -1,0 +1,7 @@
+requiredNames:
+  - grok-build
+  - antigravity-cli
+  - antigravity-ide
+  - antigravity-archived
+  - gemini-cli-archived
+  - unknown-harness-current

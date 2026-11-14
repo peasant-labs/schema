@@ -1,0 +1,17 @@
+requiredNames:
+  - same-names-in-different-order
+  - manifest-name-without-case
+  - case-name-without-manifest-name
+  - empty-manifest
+  - missing-manifest-field
+  - repeated-case-name
+  - repeated-manifest-name
+  - empty-case-name
+  - blank-manifest-name
+  - surrounding-case-whitespace
+  - surrounding-manifest-whitespace
+  - unknown-manifest-field
+  - multiple-documents
+  - invalid-yaml
+  - duplicate-yaml-key
+  - wrong-manifest-field-type
