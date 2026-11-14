@@ -1,0 +1,97 @@
+cases:
+  - name: same-names-in-different-order
+    classification: must-pass
+    provenance: {source: requirement, ref: exact membership}
+    mutation: {description: Change order without changing the name set.}
+    input: {manifest: "requiredNames: [alpha, beta]\n", caseNames: [beta, alpha]}
+    expected: {}
+  - name: manifest-name-without-case
+    classification: must-fail
+    provenance: {source: requirement, ref: exact membership}
+    mutation: {description: Remove one fixture case.}
+    input: {manifest: "requiredNames: [alpha, beta]\n", caseNames: [alpha]}
+    expected: {errorContains: 'missing required case "beta"'}
+  - name: case-name-without-manifest-name
+    classification: must-fail
+    provenance: {source: requirement, ref: exact membership}
+    mutation: {description: Remove one name from the manifest.}
+    input: {manifest: "requiredNames: [alpha]\n", caseNames: [alpha, beta]}
+    expected: {errorContains: 'case "beta" is not in the manifest'}
+  - name: empty-manifest
+    classification: must-fail
+    provenance: {source: boundary, ref: manifest non-vacuity}
+    mutation: {description: Remove every required name.}
+    input: {manifest: "requiredNames: []\n", caseNames: []}
+    expected: {errorContains: manifest names no cases}
+  - name: missing-manifest-field
+    classification: must-fail
+    provenance: {source: boundary, ref: manifest non-vacuity}
+    mutation: {description: Omit the required names field.}
+    input: {manifest: "{}\n", caseNames: []}
+    expected: {errorContains: manifest names no cases}
+  - name: repeated-case-name
+    classification: must-fail
+    provenance: {source: boundary, ref: fixture uniqueness}
+    mutation: {description: Repeat a fixture case name.}
+    input: {manifest: "requiredNames: [alpha]\n", caseNames: [alpha, alpha]}
+    expected: {errorContains: 'fixture repeats case name "alpha"'}
+  - name: repeated-manifest-name
+    classification: must-fail
+    provenance: {source: boundary, ref: manifest uniqueness}
+    mutation: {description: Repeat a manifest name.}
+    input: {manifest: "requiredNames: [alpha, alpha]\n", caseNames: [alpha]}
+    expected: {errorContains: 'manifest repeats name "alpha"'}
+  - name: empty-case-name
+    classification: must-fail
+    provenance: {source: boundary, ref: fixture names}
+    mutation: {description: Replace a fixture case name with an empty string.}
+    input: {manifest: "requiredNames: [alpha]\n", caseNames: [""]}
+    expected: {errorContains: 'invalid fixture case name ""'}
+  - name: blank-manifest-name
+    classification: must-fail
+    provenance: {source: boundary, ref: manifest names}
+    mutation: {description: Replace a manifest name with an empty string.}
+    input: {manifest: "requiredNames: ['']\n", caseNames: [alpha]}
+    expected: {errorContains: 'invalid manifest name ""'}
+  - name: surrounding-case-whitespace
+    classification: must-fail
+    provenance: {source: boundary, ref: fixture names}
+    mutation: {description: Surround a fixture case name with whitespace.}
+    input: {manifest: "requiredNames: [alpha]\n", caseNames: [" alpha "]}
+    expected: {errorContains: 'invalid fixture case name " alpha "'}
+  - name: surrounding-manifest-whitespace
+    classification: must-fail
+    provenance: {source: boundary, ref: manifest names}
+    mutation: {description: Surround a manifest name with whitespace.}
+    input: {manifest: "requiredNames: [' alpha ']\n", caseNames: [alpha]}
+    expected: {errorContains: 'invalid manifest name " alpha "'}
+  - name: unknown-manifest-field
+    classification: must-fail
+    provenance: {source: boundary, ref: strict YAML}
+    mutation: {description: Add an undeclared manifest field.}
+    input: {manifest: "requiredNames: [alpha]\nunexpected: true\n", caseNames: [alpha]}
+    expected: {errorContains: 'field unexpected not found'}
+  - name: multiple-documents
+    classification: must-fail
+    provenance: {source: boundary, ref: strict YAML}
+    mutation: {description: Add a second YAML document.}
+    input: {manifest: "requiredNames: [alpha]\n---\nrequiredNames: [alpha]\n", caseNames: [alpha]}
+    expected: {errorContains: exactly one YAML document}
+  - name: invalid-yaml
+    classification: must-fail
+    provenance: {source: boundary, ref: strict YAML}
+    mutation: {description: Leave a manifest sequence unterminated.}
+    input: {manifest: "requiredNames: [\n", caseNames: [alpha]}
+    expected: {errorContains: decode manifest}
+  - name: duplicate-yaml-key
+    classification: must-fail
+    provenance: {source: boundary, ref: strict YAML}
+    mutation: {description: Repeat the required names key.}
+    input: {manifest: "requiredNames: [alpha]\nrequiredNames: [alpha]\n", caseNames: [alpha]}
+    expected: {errorContains: already defined}
+  - name: wrong-manifest-field-type
+    classification: must-fail
+    provenance: {source: boundary, ref: strict YAML}
+    mutation: {description: Supply a scalar instead of a sequence of names.}
+    input: {manifest: "requiredNames: alpha\n", caseNames: [alpha]}
+    expected: {errorContains: decode manifest}

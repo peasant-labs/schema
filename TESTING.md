@@ -466,6 +466,10 @@ metadata keeps every case both traceable and non-vacuous.
   keeping the size and validity logic in pure functions a negative-control test
   can drive without a `*testing.T`. This promotes the module's existing
   file-level testing-helper isolation to a package boundary.
+- **Required case names.** `testcase/assert.RequireManifestNames` checks a
+  separate YAML manifest against fixture case names by exact membership, rejects
+  empty or repeated names, and requires a single document with known fields.
+  Use it for fixtures whose cases must not disappear or be added silently.
 
 The enum-exhaustion generator `licensecorpus` shows the payoff for a closed enum.
 `BuildCorpus` enumerates `schema.AllLicenses` into one must-pass case per menu

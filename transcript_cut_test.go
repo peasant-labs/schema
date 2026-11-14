@@ -16,6 +16,7 @@ import (
 
 	schema "github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/openapi"
+	caseassert "github.com/peasant-labs/schema/testcase/assert"
 	"gopkg.in/yaml.v3"
 )
 
@@ -176,10 +177,6 @@ type cutFixture struct {
 	Cases               []cutCase `yaml:"cases"`
 }
 
-type requiredNamesManifest struct {
-	RequiredNames []string `yaml:"requiredNames"`
-}
-
 func decodeStrictYAML[T any](t *testing.T, raw []byte, label string) T {
 	t.Helper()
 	var value T
@@ -194,38 +191,6 @@ func decodeStrictYAML[T any](t *testing.T, raw []byte, label string) T {
 	return value
 }
 
-// requireManifestNames fails when a required case is missing, a case is not in
-// the manifest, or a name repeats, so a row cannot be deleted or added silently.
-func requireManifestNames(t *testing.T, label string, manifestRaw []byte, names []string) {
-	t.Helper()
-	manifest := decodeStrictYAML[requiredNamesManifest](t, manifestRaw, label+" manifest")
-	if len(manifest.RequiredNames) == 0 {
-		t.Fatalf("%s manifest names no cases", label)
-	}
-	seen := map[string]bool{}
-	for _, name := range names {
-		if name == "" || seen[name] {
-			t.Fatalf("%s fixture has an empty or repeated case name %q", label, name)
-		}
-		seen[name] = true
-	}
-	required := map[string]bool{}
-	for _, name := range manifest.RequiredNames {
-		if required[name] {
-			t.Fatalf("%s manifest repeats %q", label, name)
-		}
-		required[name] = true
-		if !seen[name] {
-			t.Fatalf("%s fixture is missing required case %q", label, name)
-		}
-	}
-	for _, name := range names {
-		if !required[name] {
-			t.Fatalf("%s case %q is not in the manifest; add it there", label, name)
-		}
-	}
-}
-
 func loadCutFixture(t *testing.T) cutFixture {
 	t.Helper()
 	fixture := decodeStrictYAML[cutFixture](t, transcriptCutYAML, "transcript cut fixture")
@@ -236,7 +201,7 @@ func loadCutFixture(t *testing.T) cutFixture {
 			t.Fatalf("transcript cut case %q states no budget", c.Name)
 		}
 	}
-	requireManifestNames(t, "transcript cut", transcriptCutManifestYAML, names)
+	caseassert.RequireManifestNames(t, "transcript cut", transcriptCutManifestYAML, names)
 	return fixture
 }
 
@@ -473,7 +438,7 @@ func TestResolveTranscriptWindow(t *testing.T) {
 	for i, c := range fixture.Cases {
 		names[i] = c.Name
 	}
-	requireManifestNames(t, "transcript windows", transcriptWindowsManifestYAML, names)
+	caseassert.RequireManifestNames(t, "transcript windows", transcriptWindowsManifestYAML, names)
 	for _, name := range fixture.CrossesSegmentBoundary {
 		if !slices.Contains(names, name) {
 			t.Fatalf("crossesSegmentBoundary names unknown case %q", name)

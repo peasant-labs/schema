@@ -1,8 +1,3 @@
-required_names:
-  - harness-catalog-doc-remains-unchanged
-  - another-subset-uses-generic-doc
-  - complete-inventory-has-no-subset-doc
-  - subset-doc-cannot-close-comment
 cases:
   - name: harness-catalog-doc-remains-unchanged
     classification: must-pass

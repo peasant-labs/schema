@@ -1,4 +1,3 @@
-required_names: [grok-build, antigravity-cli, antigravity-ide, antigravity-archived, gemini-cli-archived, unknown-harness-current]
 cases:
   - name: grok-build
     body: '{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","model":{"harness":"grok-build","model":"claude-opus-4-6"}}'
