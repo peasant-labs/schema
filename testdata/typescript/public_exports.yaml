@@ -84,6 +84,9 @@ functions:
   - name: isConversationTurn
     target: runtime-predicate:ConversationTurn
     surfaces: [root]
+  - name: isTranscriptDirectoryPositionsValid
+    target: runtime-predicate:TranscriptDirectoryPositions
+    surfaces: [root]
 forbidden:
   - Provider
   - BestiaryHarness

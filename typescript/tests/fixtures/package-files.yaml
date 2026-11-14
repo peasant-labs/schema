@@ -63,6 +63,8 @@ files:
   - dist/route-member.js
   - dist/testcase.d.ts
   - dist/testcase.js
+  - dist/transcript-directory-positions.d.ts
+  - dist/transcript-directory-positions.js
   - dist/types.d.ts
   - dist/types.js
   - dist/village-api.d.ts
