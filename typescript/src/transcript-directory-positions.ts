@@ -1,10 +1,12 @@
-import { zConversationTurnSpan } from "./internal/generated/contract/zod.gen.js";
+import { zConversationTurnSpan, type ConversationTurnSpan } from "./internal/generated/contract/zod.gen.js";
 
 // Where a decoded segment-directory response places each segment among the
 // session's conversation turns. Go's validateDirectoryConversationTurns is the
-// semantic reference; this is the browser mirror of the same four rules: the
-// total is a count, a span ends at or before it, and immediate neighbours that
-// both state a span must meet exactly (an omitted span breaks the chain).
+// semantic reference; this is the browser mirror of the same four rules: both
+// counts of a stated span are non-negative, which the generated span shape
+// already enforces; the total is a count; a span ends at or before it; and
+// immediate neighbours that both state a span must meet exactly (an omitted
+// span breaks the chain).
 //
 // The browser is deliberately stricter than Go's struct validation in three
 // places, following the generated wire shape: an explicit null, a number
@@ -18,8 +20,6 @@ import { zConversationTurnSpan } from "./internal/generated/contract/zod.gen.js"
 // attestation of required fields, authorization, other pages, or a future
 // negotiated representation.
 
-type Span = { before: number; count: number };
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -30,7 +30,7 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
 
 // The generated ConversationTurnSpan shape is the only accepted span: both
 // counts present, integral, and inside 0..9007199254740991.
-function parseSpan(value: unknown): Span | undefined {
+function parseSpan(value: unknown): ConversationTurnSpan | undefined {
   const parsed = zConversationTurnSpan.safeParse(value);
   return parsed.success ? parsed.data : undefined;
 }
@@ -45,11 +45,11 @@ export function isTranscriptDirectoryPositionsValid(directory: unknown): boolean
 
   // Undefined means the previous ref stated no span, so the chain of
   // comparisons stops there instead of bridging to the next stated span.
-  let previous: Span | undefined;
+  let previous: ConversationTurnSpan | undefined;
   for (const ref of segments) {
     if (!isRecord(ref)) return false;
     const stated = ref.conversationTurns;
-    let span: Span | undefined;
+    let span: ConversationTurnSpan | undefined;
     if (stated !== undefined) {
       span = parseSpan(stated);
       if (span === undefined) return false;
@@ -64,12 +64,12 @@ export function isTranscriptDirectoryPositionsValid(directory: unknown): boolean
 // before + count can pass Number.MAX_SAFE_INTEGER and round, so compare by an
 // exact difference instead of the sum. Both operands are safe integers, so
 // total - count is exact.
-function endsAtOrBefore(span: Span, total: number): boolean {
+function endsAtOrBefore(span: ConversationTurnSpan, total: number): boolean {
   return span.count <= total && span.before <= total - span.count;
 }
 
 // The exact difference between two safe integers is exact, so this is the
 // strict next.before === previous.before + previous.count without the sum.
-function continues(previous: Span, next: Span): boolean {
+function continues(previous: ConversationTurnSpan, next: ConversationTurnSpan): boolean {
   return next.before - previous.before === previous.count;
 }

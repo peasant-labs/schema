@@ -83,10 +83,12 @@ mirrors the directory conversation-position rule of
 segment-directory response are usable. Go remains the semantic reference; the
 browser copy exists because a client reads the directory itself and must drop
 unusable positions before rendering them. When the shared position rule changes,
-both implementations change in the same PR. `testdata/transcript_segments.yaml`
-(the Go validator test's directory cases) and `testdata/transcript_cut.yaml`
-(the cut's recorded spans) are replayed by both languages, so they detect
-disagreement only for the cases they cover; browser-only inputs live in
+both implementations change in the same PR. The position-bearing directory
+cases in `testdata/transcript_segments.yaml` (selected by
+`testdata/typescript/transcript_directory_positions_shared_manifest.yaml`) and
+the recorded spans in `testdata/transcript_cut.yaml` are replayed by both
+languages, so they detect disagreement only for the cases they cover;
+browser-only inputs live in
 `testdata/typescript/transcript_directory_positions.yaml`. The browser is
 deliberately stricter for explicit null, non-safe numbers, and a span missing
 `before` or `count`, and it cannot see a JSON number lexeme already rounded to a
