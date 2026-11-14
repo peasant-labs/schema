@@ -1,0 +1,284 @@
+# Route member collection: what the generator reads from a built OpenAPI
+# document, and every document shape it must refuse instead of projecting
+# wrongly. Each input document is the JSON document written as YAML. A must-pass
+# case lists the collected operations in output order; a must-fail case names a
+# phrase the refusal must contain. The names are pinned in
+# route_members_manifest.yaml.
+cases:
+  - name: orders-by-pattern-then-method
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{id}:
+            delete:
+              operationId: deleteThing
+              parameters:
+                - {in: path, name: id, required: true, schema: {type: string}}
+            get:
+              operationId: getThing
+              deprecated: true
+              parameters:
+                - {in: path, name: id, required: true, schema: {$ref: "#/components/schemas/SchemaThingID"}}
+          /api/v1/health:
+            get:
+              operationId: getHealth
+        components:
+          schemas:
+            SchemaThingID: {type: string}
+    expected:
+      operations:
+        - {name: GetHealth, method: GET, pattern: /api/v1/health, operation_id: getHealth}
+        - name: GetThing
+          method: GET
+          pattern: /api/v1/things/{id}
+          operation_id: getThing
+          deprecated: true
+          params: [{name: id, kind: string}]
+        - name: DeleteThing
+          method: DELETE
+          pattern: /api/v1/things/{id}
+          operation_id: deleteThing
+          params: [{name: id, kind: string}]
+    classification: must-pass
+    provenance: {source: requirement, ref: "route members: AllVillage is ordered by pattern and then by AllMethods; a component reference resolves to its type"}
+    mutation: {description: "declares DELETE before GET and the longer path first, so the output order comes from the generator, not the document"}
+  - name: parameters-follow-the-template
+    input:
+      api: local
+      document:
+        paths:
+          /api/v1/pulls/{owner}/{number}:
+            get:
+              operationId: getPull
+              parameters:
+                - {in: query, name: verbose, schema: {type: boolean}}
+                - {in: path, name: number, required: true, schema: {type: integer, minimum: 1}}
+                - {in: path, name: owner, required: true, schema: {type: string}}
+    expected:
+      operations:
+        - name: GetPull
+          method: GET
+          pattern: /api/v1/pulls/{owner}/{number}
+          operation_id: getPull
+          params: [{name: owner, kind: string}, {name: number, kind: integer}]
+    classification: must-pass
+    provenance: {source: requirement, ref: "route members: a path builder's parameters follow the template, with the document's types"}
+    mutation: {description: "declares the integer parameter before the string one and adds a query parameter, which a path builder does not take"}
+  - name: no-paths
+    input:
+      api: village
+      document: {paths: {}}
+    expected: {error_contains: "declares no paths"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an empty document would generate an empty member set that hides the build failure"}
+    mutation: {description: "the document has no path"}
+  - name: missing-operation-id
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/health:
+            get: {}
+    expected: {error_contains: "GET /api/v1/health has no operationId"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "route members are named by operationId"}
+    mutation: {description: "removes the operationId"}
+  - name: operation-id-not-an-identifier
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/health:
+            get: {operationId: get-health}
+    expected: {error_contains: "which is not an identifier"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an operationId becomes a Go identifier and a TypeScript property"}
+    mutation: {description: "the operationId contains a hyphen"}
+  - name: repeated-operation-id
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/health:
+            get: {operationId: getHealth}
+          /api/v1/ready:
+            get: {operationId: getHealth}
+    expected: {error_contains: "repeats operationId getHealth"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "one member per operation; two operations cannot share a name"}
+    mutation: {description: "two operations share one operationId"}
+  - name: generated-identifier-collision
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{id}:
+            get:
+              operationId: getThing
+              parameters:
+                - {in: path, name: id, required: true, schema: {type: string}}
+          /api/v1/thing-path:
+            get: {operationId: getThingPath}
+    expected: {error_contains: "would generate Go identifier VillageGetThingPath"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a member name and another member's path builder name share one Go namespace"}
+    mutation: {description: "an operationId equals another operation's path builder name"}
+  - name: method-outside-the-set
+    input:
+      api: local
+      document:
+        paths:
+          /api/v1/health:
+            head: {operationId: headHealth}
+    expected: {error_contains: "declares method HEAD, which is not in the route method set"}
+    classification: must-fail
+    provenance: {source: enum, ref: "route.Method is the closed set GET, POST, PUT, PATCH, DELETE"}
+    mutation: {description: "declares a HEAD operation"}
+  - name: path-level-parameters
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{id}:
+            parameters:
+              - {in: path, name: id, required: true, schema: {type: string}}
+            get: {operationId: getThing}
+    expected: {error_contains: "declares path-level parameters"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the generator reads parameters per operation and would otherwise miss these"}
+    mutation: {description: "moves the path parameter to the path item"}
+  - name: referenced-parameter
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{id}:
+            get:
+              operationId: getThing
+              parameters:
+                - {$ref: "#/components/parameters/ThingID"}
+    expected: {error_contains: "declares the referenced parameter #/components/parameters/ThingID"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the generator does not resolve parameter references"}
+    mutation: {description: "the path parameter is a reference"}
+  - name: template-parameter-undeclared
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{id}:
+            get: {operationId: getThing}
+    expected: {error_contains: "has {id} in its path template but declares no path parameter of that name"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a path builder takes every template parameter with the document's type"}
+    mutation: {description: "removes the declaration of a template parameter"}
+  - name: declared-parameter-not-in-template
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things:
+            get:
+              operationId: listThings
+              parameters:
+                - {in: path, name: id, required: true, schema: {type: string}}
+    expected: {error_contains: "declares path parameter \"id\", which is not in the path template"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a path builder takes exactly the template parameters"}
+    mutation: {description: "declares a path parameter the template does not have"}
+  - name: unsupported-parameter-type
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{flag}:
+            get:
+              operationId: getThing
+              parameters:
+                - {in: path, name: flag, required: true, schema: {type: boolean}}
+    expected: {error_contains: "unsupported path parameter type \"boolean\""}
+    classification: must-fail
+    provenance: {source: enum, ref: "a path parameter is a string or an integer"}
+    mutation: {description: "the parameter is a boolean"}
+  - name: unresolved-schema-reference
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{id}:
+            get:
+              operationId: getThing
+              parameters:
+                - {in: path, name: id, required: true, schema: {$ref: "#/components/schemas/SchemaMissing"}}
+    expected: {error_contains: "unresolved schema reference #/components/schemas/SchemaMissing"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a parameter type behind a reference must be known"}
+    mutation: {description: "the reference names no component"}
+  - name: unbalanced-brace
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{id:
+            get: {operationId: getThing}
+    expected: {error_contains: "has an unbalanced brace"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a path template parameter is written {name}"}
+    mutation: {description: "drops a closing brace"}
+  - name: parameter-name-not-an-identifier
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{thing-id}:
+            get:
+              operationId: getThing
+              parameters:
+                - {in: path, name: thing-id, required: true, schema: {type: string}}
+    expected: {error_contains: "is not a lower camel identifier"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a path parameter becomes a Go parameter name"}
+    mutation: {description: "the parameter name contains a hyphen"}
+  - name: parameter-name-reserved-in-go
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{type}:
+            get:
+              operationId: getThing
+              parameters:
+                - {in: path, name: type, required: true, schema: {type: string}}
+    expected: {error_contains: "is reserved in the generated Go path builder"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a Go keyword cannot be a parameter name"}
+    mutation: {description: "the parameter is named type"}
+  - name: repeated-template-parameter
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{id}/copies/{id}:
+            get:
+              operationId: getThingCopy
+              parameters:
+                - {in: path, name: id, required: true, schema: {type: string}}
+    expected: {error_contains: "repeats path parameter \"id\""}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a path builder parameter name is unique"}
+    mutation: {description: "the template names one parameter twice"}
+  - name: parameter-name-reserved-by-the-builder
+    input:
+      api: village
+      document:
+        paths:
+          /api/v1/things/{err}:
+            get:
+              operationId: getThing
+              parameters:
+                - {in: path, name: err, required: true, schema: {type: string}}
+    expected: {error_contains: "has path parameter \"err\", which is reserved in the generated Go path builder"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the generated path builder declares err for the segment check"}
+    mutation: {description: "the parameter is named err"}

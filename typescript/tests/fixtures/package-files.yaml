@@ -41,6 +41,8 @@ files:
   - dist/internal/generated/public-contract.gen.js
   - dist/internal/generated/quality-fixtures.gen.d.ts
   - dist/internal/generated/quality-fixtures.gen.js
+  - dist/internal/generated/routes.gen.d.ts
+  - dist/internal/generated/routes.gen.js
   - dist/internal/generated/session-graph-capability-fixtures.gen.d.ts
   - dist/internal/generated/session-graph-capability-fixtures.gen.js
   - dist/internal/generated/session-graph-fixtures.gen.d.ts
@@ -57,6 +59,8 @@ files:
   - dist/internal/generated/village-api.js
   - dist/local-api.d.ts
   - dist/local-api.js
+  - dist/route-member.d.ts
+  - dist/route-member.js
   - dist/testcase.d.ts
   - dist/testcase.js
   - dist/types.d.ts

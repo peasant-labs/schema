@@ -7,6 +7,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- The Go `route` package provides a typed member per Village and Local API
+  operation, each carrying its method, and path builders returning `(string, error)`.
+  The TypeScript `/village-api` and `/local-api` subpaths export `VillageRoute`
+  and `LocalRoute`, whose members build paths with `path()`. Both languages
+  refuse an empty, `.` or `..` path parameter value. No spec document or
+  version stamp changes.
+
 - Types 0.50.0, Village API 0.40.0 and Local API 0.38.0 recognize the separate
   `antigravity-cli` and `antigravity-ide` harness identities, with corresponding
   Go constants and display names. The previous
