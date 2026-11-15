@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"bytes"
+	"crypto/sha256"
 	_ "embed"
 	"encoding/hex"
 	"encoding/json"
@@ -166,6 +167,7 @@ type cutExpectation struct {
 type cutCase struct {
 	Name        string         `yaml:"name"`
 	BudgetBytes int            `yaml:"budgetBytes"`
+	Cook        bool           `yaml:"cook"`
 	Turns       []cutTurnSpec  `yaml:"turns"`
 	Expected    cutExpectation `yaml:"expected"`
 }
@@ -173,8 +175,9 @@ type cutCase struct {
 type cutFixture struct {
 	// ContractBudgetBytes is the budget every server cuts with. It is stated
 	// here once and schema.TranscriptSegmentBudgetBytes must equal it.
-	ContractBudgetBytes int       `yaml:"contractBudgetBytes"`
-	Cases               []cutCase `yaml:"cases"`
+	ContractBudgetBytes int                  `yaml:"contractBudgetBytes"`
+	Cases               []cutCase            `yaml:"cases"`
+	Versions            map[string][]cutCase `yaml:"versions"`
 }
 
 func decodeStrictYAML[T any](t *testing.T, raw []byte, label string) T {
@@ -194,6 +197,15 @@ func decodeStrictYAML[T any](t *testing.T, raw []byte, label string) T {
 func loadCutFixture(t *testing.T) cutFixture {
 	t.Helper()
 	fixture := decodeStrictYAML[cutFixture](t, transcriptCutYAML, "transcript cut fixture")
+	pinned, ok := fixture.Versions["c1"]
+	if !ok || !reflect.DeepEqual(pinned, fixture.Cases) {
+		t.Fatal("transcript cut fixture must retain the original c1 case list")
+	}
+	current, ok := fixture.Versions[schema.CutVersion]
+	if !ok {
+		t.Fatalf("transcript cut fixture lacks expectations for cut version %q", schema.CutVersion)
+	}
+	fixture.Cases = current
 	names := make([]string, len(fixture.Cases))
 	for i, c := range fixture.Cases {
 		names[i] = c.Name
@@ -230,6 +242,16 @@ func TestCutTranscriptSegments(t *testing.T) {
 					t.Fatal(err)
 				}
 				turns[i] = turn
+			}
+			if c.Cook {
+				verdict := schema.CookTranscriptRows(turns, schema.HarnessCodex)
+				served := make([]schema.TurnDetail, 0, len(turns))
+				for i, turn := range turns {
+					if verdict[i].Keep {
+						served = append(served, turn)
+					}
+				}
+				turns = served
 			}
 			if c.Expected.TurnByteLengths != nil {
 				got := make([]int, len(turns))
@@ -300,6 +322,21 @@ func TestCutTranscriptSegments(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestTranscriptCutOriginalVersionIsFrozen prevents rewriting the old
+// expectations to make a changed rule pass. A new rule adds a new version.
+func TestTranscriptCutOriginalVersionIsFrozen(t *testing.T) {
+	fixture := loadCutFixture(t)
+	encoded, err := json.Marshal(fixture.Versions["c1"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := fmt.Sprintf("%x", sha256.Sum256(encoded))
+	const c1Digest = "ba6e6f4a4546e0f0343629a8c005190a39c7f4e74b56d313d7e9df42451e974a"
+	if got != c1Digest {
+		t.Fatalf("the original cut fixture digest is %s; preserve c1 and add expectations for a new version instead", got)
 	}
 }
 

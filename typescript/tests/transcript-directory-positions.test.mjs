@@ -43,7 +43,8 @@ const cutCorpusSource = await readFile(new URL("../../testdata/transcript_cut.ya
 const cutManifestSource = await readFile(new URL("../../testdata/transcript_cut_manifest.yaml", import.meta.url), "utf8");
 const cutCorpus = parse(cutCorpusSource, { uniqueKeys: true });
 const cutManifest = loadRequiredNamesManifest(cutManifestSource, "transcript cut manifest");
-assert.ok(Array.isArray(cutCorpus?.cases) && cutCorpus.cases.length > 0, "testdata/transcript_cut.yaml must hold at least one cut case");
+const cutCases = cutCorpus?.versions?.c1;
+assert.ok(Array.isArray(cutCases) && cutCases.length > 0, "testdata/transcript_cut.yaml must hold the original c1 cases");
 
 test("browser-only position corpus matches the helper verdict and leaves the input unchanged", async (t) => {
   for (const testCase of browserCorpus.cases) {
@@ -90,7 +91,7 @@ test("the cut's recorded spans form a valid position chain", async () => {
   // identity, and this test does not run Go.
   const visited = new Set();
   let statedSpans = 0;
-  for (const cutCase of cutCorpus.cases) {
+  for (const cutCase of cutCases) {
     const segments = cutCase.expected?.segments;
     assert.ok(Array.isArray(segments), `${cutCase.name}: a cut case must record its expected segments`);
     const refs = segments.map((segment) => {
@@ -141,7 +142,7 @@ test("the position manifests are strict inventories", () => {
   );
   assert.deepEqual(
     cutManifest.requiredNames.slice().sort(),
-    cutCorpus.cases.map((cutCase) => cutCase.name).sort(),
+    cutCases.map((cutCase) => cutCase.name).sort(),
     "the cut replay manifest must name exactly the recorded cut cases",
   );
 });
