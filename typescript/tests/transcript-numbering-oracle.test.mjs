@@ -96,3 +96,15 @@ test("the pinned pre-change reader reproduces the numbering capture", async (t) 
     });
   }
 });
+
+test("reference-bearing rows remain in the pinned pre-change reader", async () => {
+  const locator = parse(await readFile(new URL("../../testdata/transcript_entry_locate.yaml", import.meta.url), "utf8"), { uniqueKeys: true });
+  const row = locator.scan.cases.find((item) => item.name === "locator-references-protect-their-rows");
+  assert.ok(row, "the reference protection fixture must exist");
+  const turns = JSON.parse(row.input.detail).turns;
+  assert.deepEqual(prefilterTurns(turns).map((turn) => turn.index), row.expected.legacyKept);
+  assert.deepEqual(turns.map((turn) => turn.index), row.expected.piKept);
+  for (const index of row.expected.referenced) {
+    assert.ok(row.expected.legacyKept.includes(index), `referenced row ${index} must be kept`);
+  }
+});

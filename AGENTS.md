@@ -84,6 +84,10 @@ counterpart is pinned by one shared fixture, is never consulted for a
 server-numbered row, and fails that fixture on divergence. The rule against a
 TypeScript cut, measure, or window resolver above is unchanged.
 
+**Recorded exception:** `transcript_entry_locate.go` holds the exact-member
+scan over served rows. Both servers use the same rule to locate an existing
+relationship entry; copying it per host would make link targets drift.
+
 **Recorded exception:** Kickstart response and view components are closed as well as
 request bodies. Adding a response property is a breaking change to pinned consumers;
 this choice is specific to the kickstart contract and is not a general precedent.

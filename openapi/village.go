@@ -596,6 +596,12 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
 		},
 		{
+			method: http.MethodPost, path: "/api/v1/transcripts/{id}/segments/locate", id: "locateTranscriptEntry", tag: "transcripts",
+			description: "Locate a reference in the served main partition. The request carries the expected revision, representation and public content hash, but no location kind or partition selector. After access and hash verification, the first exact source, tool call or tool result member in served order wins. A denied viewer and a missing reference receive the same non-disclosing 404; the reference is never echoed. A stale revision or representation is 409, and a temporary load refusal is 503 with Retry-After.",
+			requests:    []interface{}{transcriptPath, new(schema.TranscriptEntryLocateRequest)}, response: new(schema.TranscriptEntryMatch),
+			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		},
+		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/segments/{index}", id: "getTranscriptSegment", tag: "transcripts",
 			description: "Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. V2 carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
 			requests:    []interface{}{transcriptSegmentQuery}, responseAlternatives: []interface{}{new(schema.TranscriptSegment), new(schema.TranscriptSegmentV2)},
@@ -1055,6 +1061,9 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	if err := setTranscriptHeaderReadHeaders(r.Spec, "/api/v1/transcripts/{id}/header"); err != nil {
 		return err
 	}
+	if err := setTranscriptReadOperationHeaders(r.Spec, http.MethodPost, "/api/v1/transcripts/{id}/segments/locate"); err != nil {
+		return err
+	}
 	for _, variant := range []struct {
 		path, v1, v2 string
 	}{
@@ -1096,6 +1105,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		{http.MethodPatch, "/api/v1/groups/{id}/shares"},
 		{http.MethodPatch, "/api/v1/groups/{id}/shares/{transcriptID}"},
 		{http.MethodPost, "/api/v1/transcripts/{id}/share"},
+		{http.MethodPost, "/api/v1/transcripts/{id}/segments/locate"},
 		{http.MethodPost, "/api/v1/groups/{id}/repositories"},
 	} {
 		if err := requireRequestBody(r.Spec, body.method, body.path); err != nil {
@@ -1135,16 +1145,29 @@ func setTranscriptHeaderReadHeaders(spec *openapi31.Spec, path string) error {
 }
 
 func setTranscriptReadHeaders(spec *openapi31.Spec, path string) error {
+	return setTranscriptReadOperationHeaders(spec, http.MethodGet, path)
+}
+
+func setTranscriptReadOperationHeaders(spec *openapi31.Spec, method, path string) error {
 	item, ok := spec.Paths.MapOfPathItemValues[path]
-	if !ok || item.Get == nil || item.Get.Responses == nil {
-		return fmt.Errorf("declare response headers for GET %s: the operation is missing; readers cannot rely on cache or retry semantics; register the read first", path)
+	var operation *openapi31.Operation
+	if ok {
+		switch method {
+		case http.MethodGet:
+			operation = item.Get
+		case http.MethodPost:
+			operation = item.Post
+		}
 	}
-	if _, ok := item.Get.Responses.MapOfResponseOrReferenceValues["503"]; !ok {
-		return fmt.Errorf("declare Retry-After for GET %s: the 503 response is missing; clients cannot retry temporary load refusals; register the refusal first", path)
+	if operation == nil || operation.Responses == nil {
+		return fmt.Errorf("declare response headers for %s %s: the operation is missing; readers cannot rely on cache or retry semantics; register the read first", method, path)
 	}
-	for code, response := range item.Get.Responses.MapOfResponseOrReferenceValues {
+	if _, ok := operation.Responses.MapOfResponseOrReferenceValues["503"]; !ok {
+		return fmt.Errorf("declare Retry-After for %s %s: the 503 response is missing; clients cannot retry temporary load refusals; register the refusal first", method, path)
+	}
+	for code, response := range operation.Responses.MapOfResponseOrReferenceValues {
 		if response.Response == nil {
-			return fmt.Errorf("declare response headers for GET %s: response %s is not inline; cache semantics cannot be declared; register an inline response", path, code)
+			return fmt.Errorf("declare response headers for %s %s: response %s is not inline; cache semantics cannot be declared; register an inline response", method, path, code)
 		}
 		if response.Response.Headers == nil {
 			response.Response.Headers = map[string]openapi31.HeaderOrReference{}
@@ -1157,7 +1180,7 @@ func setTranscriptReadHeaders(spec *openapi31.Spec, path string) error {
 			description := "When to retry a temporary load or admission refusal."
 			response.Response.Headers["Retry-After"] = openapi31.HeaderOrReference{Header: &openapi31.Header{Description: &description, Schema: map[string]interface{}{"type": "string"}}}
 		}
-		item.Get.Responses.MapOfResponseOrReferenceValues[code] = response
+		operation.Responses.MapOfResponseOrReferenceValues[code] = response
 	}
 	spec.Paths.MapOfPathItemValues[path] = item
 	return nil
