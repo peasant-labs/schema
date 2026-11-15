@@ -388,8 +388,10 @@ type TranscriptWindowV2 struct {
 	HasNewer          bool                       `json:"hasNewer"`
 }
 
-// TranscriptFlaggedTurn marks a recorded turn at a served main-partition position.
+// TranscriptFlaggedTurn marks a served main-partition position. Turn is the
+// recorded index only when the row carries a usable index; an absent Turn
+// asserts the position without making a recorded-identity claim.
 type TranscriptFlaggedTurn struct {
-	Position int `json:"position" minimum:"0"`
-	Turn     int `json:"turn"`
+	Position int  `json:"position" minimum:"0"`
+	Turn     *int `json:"turn,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 }

@@ -1,6 +1,7 @@
 enums:
   - {name: TranscriptReadTransportKind, all_name: AllTranscriptReadTransportKinds, members: [{name: LocalSession, value: local_session}, {name: VillageTranscript, value: village_transcript}], all_values: [local_session, village_transcript]}
   - {name: TranscriptRecordedIndexState, all_name: AllTranscriptRecordedIndexStates, members: [{name: Present, value: present}, {name: Absent, value: absent}, {name: Invalid, value: invalid}], all_values: [present, absent, invalid]}
+  - {name: TranscriptRetainedState, all_name: AllTranscriptRetainedStates, members: [{name: Absent, value: absent}, {name: Deferred, value: deferred}], all_values: [absent, deferred]}
   - {name: TranscriptReadValidation, all_name: AllTranscriptReadValidations, members: [{name: PublishedStrict, value: published_strict}, {name: ServedLegacy, value: served_legacy}, {name: Migrated, value: migrated}], all_values: [published_strict, served_legacy, migrated]}
   - {name: TranscriptNativePresence, all_name: AllTranscriptNativePresences, members: [{name: Absent, value: absent}, {name: Present, value: present}, {name: Withheld, value: withheld}], all_values: [absent, present, withheld]}
   - {name: TranscriptUsagePresence, all_name: AllTranscriptUsagePresences, members: [{name: Present, value: present}, {name: Empty, value: empty}, {name: Unknown, value: unknown}], all_values: [present, empty, unknown]}

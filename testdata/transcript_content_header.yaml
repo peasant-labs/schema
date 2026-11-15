@@ -1,0 +1,344 @@
+projection:
+  cases:
+    - name: header-sparse-legacy-projects-absent-members
+      classification: must-pass
+      provenance: {source: requirement, ref: "Village sparse_legacy_envelope served detail"}
+      mutation: {description: "No absent source fact becomes a placeholder"}
+      input: {detail: '{"id":"legacy","turns":[{"role":"user","content":"kept"}]}'}
+      expected: {json: '{"id":"legacy"}'}
+    - name: header-sparse-legacy-bare-keeps-no-harness
+      classification: must-pass
+      provenance: {source: requirement, ref: "Village sparse_legacy_bare served detail"}
+      mutation: {description: "Provider is not a harness fallback"}
+      input: {detail: '{"id":"legacy","provider":"claude","turns":[]}'}
+      expected: {json: '{"id":"legacy"}'}
+    - name: header-sparse-legacy-keeps-present-members
+      classification: must-pass
+      provenance: {source: requirement, ref: "Served metadata presence"}
+      mutation: {description: "Keep the legacy spelling, times, and every present zero"}
+      input: {detail: '{"id":"legacy","harness":"claude","startTime":"2024-05-01T09:00:00Z","endTime":"2024-05-01T09:10:00Z","durationMins":10,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"turns":[]}'}
+      expected: {json: '{"id":"legacy","harness":"claude","startTime":"2024-05-01T09:00:00Z","endTime":"2024-05-01T09:10:00Z","durationMins":10,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0}'}
+    - name: header-absent-and-empty-harness-differ
+      classification: must-pass
+      provenance: {source: requirement, ref: "Presence is distinct from an empty string"}
+      mutation: {description: "An empty harness is emitted while an absent one is not"}
+      input: {detail: '{"id":"legacy"}', other: '{"id":"legacy","harness":""}'}
+      expected: {json: '{"id":"legacy"}', other: '{"id":"legacy","harness":""}'}
+    - name: header-present-null-projects-as-absent
+      classification: must-pass
+      provenance: {source: requirement, ref: "Null is not a header value"}
+      mutation: {description: "Null and absent values both emit no member"}
+      input: {detail: '{"id":null,"harness":null,"startTime":null,"totalTokens":null}', other: '{}'}
+      expected: {json: '{}', other: '{}'}
+    - name: header-case-variant-harness-is-absent
+      classification: must-pass
+      provenance: {source: requirement, ref: "Exact decoded JSON member names"}
+      mutation: {description: "Case variants never supply canonical names"}
+      input: {detail: '{"Harness":"claude","ID":"legacy"}'}
+      expected: {json: '{}'}
+    - name: header-history-states-forwarded-open
+      classification: must-pass
+      provenance: {source: requirement, ref: "Strict-body section objects may carry turns; state is forwarded open"}
+      mutation: {description: "Only stated string states survive in order"}
+      input: {detail: '{"earlierHistory":[{"state":"uncertain_migrated","turns":[]},{"state":"future_history_state","turns":[]},{"turns":[]}]}'}
+      expected: {json: '{"earlierHistory":["uncertain_migrated","future_history_state"]}'}
+    - name: header-history-null-section-projects-no-state
+      classification: must-pass
+      provenance: {source: requirement, ref: "Null section has no state"}
+      mutation: {description: "A null section contributes no state"}
+      input: {detail: '{"earlierHistory":[null]}'}
+      expected: {json: '{}'}
+    - name: header-history-absent-and-empty-state-differ
+      classification: must-pass
+      provenance: {source: requirement, ref: "Legacy section without turns"}
+      mutation: {description: "An explicitly empty state is not an absent state"}
+      input: {detail: '{"earlierHistory":[{}]}', other: '{"earlierHistory":[{"state":""}]}'}
+      expected: {json: '{}', other: '{"earlierHistory":[""]}'}
+    - name: header-history-null-and-empty-member-are-absent
+      classification: must-pass
+      provenance: {source: requirement, ref: "History absence"}
+      mutation: {description: "Null and empty history do not emit a key"}
+      input: {detail: '{"earlierHistory":null}', other: '{"earlierHistory":[]}'}
+      expected: {json: '{}', other: '{}'}
+    - name: header-history-state-null-emits-no-element
+      classification: must-pass
+      provenance: {source: requirement, ref: "Village legacy envelope with null state and no section turns"}
+      mutation: {description: "A null state is not a string"}
+      input: {detail: '{"earlierHistory":[{"state":null}]}'}
+      expected: {json: '{}'}
+    - name: header-history-state-empty-string-is-a-state
+      classification: must-pass
+      provenance: {source: requirement, ref: "Legacy section with no turns"}
+      mutation: {description: "Empty is a stated string"}
+      input: {detail: '{"earlierHistory":[{"state":""}]}'}
+      expected: {json: '{"earlierHistory":[""]}'}
+    - name: header-history-state-non-string-emits-no-element
+      classification: must-pass
+      provenance: {source: manual, ref: "Constructor-only input; Village rejects a numeric state during typed decode"}
+      mutation: {description: "Non-string state is ignored without inventing a value"}
+      input: {detail: '{"earlierHistory":[{"state":5}]}'}
+      expected: {json: '{}'}
+    - name: header-history-turns-member-is-strict-only
+      classification: must-pass
+      provenance: {source: requirement, ref: "Strict-body section: a legacy section carrying turns is an embedded public root"}
+      mutation: {description: "History projection reads the state and omits turns"}
+      input: {detail: '{"earlierHistory":[{"state":"uncertain_migrated","turns":[]}]}'}
+      expected: {json: '{"earlierHistory":["uncertain_migrated"]}'}
+    - name: header-history-exact-key-and-duplicates
+      classification: must-pass
+      provenance: {source: requirement, ref: "Exact decoded names and source order"}
+      mutation: {description: "Case variants do not supply a state, and repeated states remain"}
+      input: {detail: '{"earlierHistory":[{"State":"wrong"},{"\u0073tate":"future"},{"state":"future"}]}'}
+      expected: {json: '{"earlierHistory":["future","future"]}'}
+    - name: header-legacy-metadata-forwarded-open
+      classification: must-pass
+      provenance: {source: requirement, ref: "Legacy scalar metadata"}
+      mutation: {description: "Unknown closed-set values remain open"}
+      input: {detail: '{"outcome":"future_outcome","purpose":"future_purpose","sessionOrigin":"future_origin"}'}
+      expected: {json: '{"purpose":"future_purpose","outcome":"future_outcome","sessionOrigin":"future_origin"}'}
+    - name: header-legacy-ids-preserved-verbatim
+      classification: must-pass
+      provenance: {source: requirement, ref: "Legacy identifiers are not route identities"}
+      mutation: {description: "Noncanonical and empty identifiers remain values"}
+      input: {detail: '{"parentSessionId":"not a valid id!","rootSessionId":""}'}
+      expected: {json: '{"parentSessionId":"not a valid id!","rootSessionId":""}'}
+    - name: header-legacy-counts-carried-verbatim
+      classification: must-pass
+      provenance: {source: requirement, ref: "Legacy optional counters"}
+      mutation: {description: "Out-of-range recorded counters survive"}
+      input: {detail: '{"inputSubmissionCount":-5,"conversationTurnCount":9007199254740992}'}
+      expected: {json: '{"inputSubmissionCount":-5,"conversationTurnCount":9007199254740992}'}
+    - name: header-omits-child-sessions
+      classification: must-pass
+      provenance: {source: requirement, ref: "Nested child session values remain in the durable detail"}
+      mutation: {description: "Neither complete nor sparse children are stated in the header"}
+      input: {detail: '{"id":"legacy","childSessions":[{"id":"c","startTime":"2026-01-01T00:00:00Z","project":"p"}]}', other: '{"id":"legacy","childSessions":[{}]}'}
+      expected: {json: '{"id":"legacy"}', other: '{"id":"legacy"}'}
+    - name: header-omits-null-and-partial-child-sessions
+      classification: must-pass
+      provenance: {source: requirement, ref: "Sparse child session values remain in the durable detail"}
+      mutation: {description: "Null or partially populated children never introduce placeholders"}
+      input: {detail: '{"id":"legacy","childSessions":[null]}', other: '{"id":"legacy","childSessions":[{"id":"c"}]}'}
+      expected: {json: '{"id":"legacy"}', other: '{"id":"legacy"}'}
+    - name: header-omits-relationships-and-scorecard
+      classification: must-pass
+      provenance: {source: requirement, ref: "Nested evidence remains in the durable detail"}
+      mutation: {description: "Relationship and scorecard objects never enter the header"}
+      input: {detail: '{"id":"legacy","relationships":[{"kind":"future"}],"scorecard":{"outcome":"future"}}', other: '{"id":"legacy"}'}
+      expected: {json: '{"id":"legacy"}', other: '{"id":"legacy"}'}
+    - name: header-withholds-repository-for-anonymous-owner
+      classification: must-pass
+      provenance: {source: requirement, ref: "Repository withholding"}
+      mutation: {description: "Only repository fields are omitted"}
+      input: {detail: '{"id":"legacy","project":"p","workingDirectory":"/p","gitBranch":"main","gitRemote":"remote","model":"m"}', withhold: true}
+      expected: {json: '{"id":"legacy","model":"m"}'}
+    - name: header-keeps-repository-for-authenticated-owner
+      classification: must-pass
+      provenance: {source: requirement, ref: "Repository withholding"}
+      mutation: {description: "A non-withheld projection keeps every field"}
+      input: {detail: '{"id":"legacy","project":"p","workingDirectory":"/p","gitBranch":"main","gitRemote":"remote","model":"m"}'}
+      expected: {json: '{"id":"legacy","project":"p","model":"m","workingDirectory":"/p","gitBranch":"main","gitRemote":"remote"}'}
+    - name: header-refuses-envelope
+      classification: must-fail
+      provenance: {source: requirement, ref: "The caller selects served detail"}
+      mutation: {description: "An envelope is not a detail"}
+      input: {detail: '{"sessionDetail":{}}'}
+      expected: {errorContains: "envelope"}
+    - name: header-refuses-duplicate-key
+      classification: must-fail
+      provenance: {source: requirement, ref: "Duplicate decoded object names are refused"}
+      mutation: {description: "Escaped-equivalent names cannot overwrite"}
+      input: {detail: '{"id":"first","\u0069d":"second"}'}
+      expected: {errorContains: "duplicate"}
+    - name: header-refuses-invalid-member
+      classification: must-fail
+      provenance: {source: requirement, ref: "Header projection has typed members"}
+      mutation: {description: "A fractional count cannot decode as an integer"}
+      input: {detail: '{"totalTokens":1.5}'}
+      expected: {errorContains: "totalTokens"}
+    - name: header-refuses-non-object
+      classification: must-fail
+      provenance: {source: requirement, ref: "A detail is a JSON object"}
+      mutation: {description: "An array is not a detail"}
+      input: {detail: '[]'}
+      expected: {errorContains: "object"}
+envelopes:
+  cases:
+    - name: header-baseline
+      classification: must-pass
+      provenance: {source: requirement, ref: "Bounded content header"}
+      mutation: {description: "A legacy header with no harness is valid"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{"id":"legacy"},"canonical":false,"omittedImages":0}'
+      expected: {}
+    - name: header-canonical-requires-harness
+      classification: must-fail
+      provenance: {source: requirement, ref: "Canonical claim includes the harness"}
+      mutation: {description: "An absent harness cannot support a canonical claim"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{"id":"legacy"},"canonical":true,"omittedImages":0}'
+      expected: {errorContains: "canonical and harness"}
+    - name: header-canonical-accepts-harness
+      classification: must-pass
+      provenance: {source: requirement, ref: "Canonical claim includes the harness"}
+      mutation: {description: "A canonical harness supports the claim"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{"harness":"codex"},"canonical":true,"omittedImages":0}'
+      expected: {}
+    - name: header-legacy-refuses-canonical-harness-claim
+      classification: must-fail
+      provenance: {source: requirement, ref: "Canonical harness triggers strict validation"}
+      mutation: {description: "A canonical harness cannot claim a legacy document"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{"harness":"codex"},"canonical":false,"omittedImages":0}'
+      expected: {errorContains: "canonical and harness"}
+    - name: header-flagged-ascending
+      classification: must-pass
+      provenance: {source: requirement, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "Ascending mark positions carry their turn identities"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0,"flaggedTurns":[{"position":1,"turn":7},{"position":4,"turn":3}]}'
+      expected: {}
+    - name: header-flagged-repeat-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "Duplicate positions cannot identify one row"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0,"flaggedTurns":[{"position":1,"turn":7},{"position":1,"turn":3}]}'
+      expected: {errorContains: "flaggedTurns"}
+    - name: mark-negative-turn-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "An invalid recorded index is omitted, not encoded as negative"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0,"flaggedTurns":[{"position":0,"turn":-1}]}'
+      expected: {errorContains: "flaggedTurns[0].turn"}
+    - name: mark-above-safe-turn-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "An unsafe recorded index cannot be emitted as a mark identity"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0,"flaggedTurns":[{"position":0,"turn":9007199254740992}]}'
+      expected: {errorContains: "flaggedTurns[0].turn"}
+    - name: mark-safe-maximum-turn-accepted
+      classification: must-pass
+      provenance: {source: requirement, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "The maximum safe recorded index is a usable mark identity"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0,"flaggedTurns":[{"position":0,"turn":9007199254740991}]}'
+      expected: {}
+    - name: mark-negative-position-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "A mark cannot name a negative served position"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0,"flaggedTurns":[{"position":-1}]}'
+      expected: {errorContains: "flaggedTurns"}
+    - name: header-retained-absent
+      classification: must-pass
+      provenance: {source: requirement, ref: "Retained evidence state"}
+      mutation: {description: "Absent evidence is a typed value"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0,"retainedEvidence":"absent"}'
+      expected: {}
+    - name: header-retained-deferred
+      classification: must-pass
+      provenance: {source: requirement, ref: "Retained evidence state"}
+      mutation: {description: "Deferred evidence is distinct from absent"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0,"retainedEvidence":"deferred"}'
+      expected: {}
+    - name: header-retained-omitted-when-withheld
+      classification: must-pass
+      provenance: {source: requirement, ref: "Retained evidence withholding"}
+      mutation: {description: "No retained state is a valid header statement"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0}'
+      expected: {notContains: '"retainedEvidence"'}
+marks:
+  cases:
+    - name: mark-kept-row-present-index-carries-turn
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "A kept row's usable recorded index is stated"}
+      input: {strict: true, turns: ['{"index":7,"role":"assistant","content":"answer","timestamp":"2026-01-01T00:00:00Z","depth":0}'], flags: [0]}
+      expected: {json: '[{"position":0,"turn":7}]'}
+    - name: mark-kept-row-zero-index-carries-turn
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "An explicitly recorded zero is not omitted"}
+      input: {strict: true, turns: ['{"index":0,"role":"assistant","content":"answer","timestamp":"2026-01-01T00:00:00Z","depth":0}'], flags: [0]}
+      expected: {json: '[{"position":0,"turn":0}]'}
+    - name: mark-kept-row-absent-index-omits-turn
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "An absent recorded index states only the position"}
+      input: {turns: ['{"role":"assistant","content":"answer"}'], flags: [0]}
+      expected: {json: '[{"position":0}]'}
+    - name: mark-kept-row-null-index-omits-turn
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "A null recorded index does not become zero"}
+      input: {turns: ['{"index":null,"role":"assistant","content":"answer"}'], flags: [0]}
+      expected: {json: '[{"position":0}]'}
+    - name: mark-kept-row-negative-index-omits-turn
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "A negative recorded index cannot be a mark identity"}
+      input: {strict: true, turns: ['{"index":-1,"role":"assistant","content":"answer","timestamp":"2026-01-01T00:00:00Z","depth":0}'], flags: [0]}
+      expected: {json: '[{"position":0}]'}
+    - name: mark-kept-row-above-safe-index-omits-turn
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "An unsafe recorded index cannot be a mark identity"}
+      input: {strict: true, turns: ['{"index":9007199254740992,"role":"assistant","content":"answer","timestamp":"2026-01-01T00:00:00Z","depth":0}'], flags: [0]}
+      expected: {json: '[{"position":0}]'}
+    - name: mark-dropped-row-produces-no-mark
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "A cooked-out row has no served position to mark"}
+      input: {turns: ['{"index":7,"role":"assistant","content":""}'], flags: [0]}
+      expected: {json: '[]'}
+    - name: mark-out-of-range-stored-position-produces-no-mark
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "A nonexistent stored row produces no mark"}
+      input: {turns: ['{"index":7,"role":"assistant","content":"answer"}'], flags: [1]}
+      expected: {json: '[]'}
+    - name: mark-remap-ascends-by-served-position
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "Twenty removed rows shift stored position 500 to served position 480"}
+      input: {dropPrefix: 20, keepPrefix: 480, turns: ['{"index":7,"role":"assistant","content":"last"}'], flags: [20, 500]}
+      expected: {json: '[{"position":0},{"position":480,"turn":7}]'}
+    - name: header-marks-remapped-to-served-positions
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "Both addressable and unaddressable marks use cooked positions"}
+      input: {turns: ['{"role":"assistant","content":""}', '{"role":"assistant","content":"first"}', '{"index":7,"role":"assistant","content":"second"}'], flags: [1, 2]}
+      expected: {json: '[{"position":0},{"position":1,"turn":7}]'}
+    - name: header-mark-dropped-when-its-row-is-cooked-out
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "A removed row cannot move its mark onto a surviving row"}
+      input: {turns: ['{"index":7,"role":"assistant","content":""}', '{"index":8,"role":"assistant","content":"answer"}'], flags: [0]}
+      expected: {json: '[]'}
+guards:
+  cases:
+    - name: mark-wire-schema-optional-turn
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "The schema requires position and permits a non-null optional safe integer turn"}
+      input: "mark-schema"
+      expected: "valid"
+    - name: header-session-header-presence-members-named
+      classification: must-pass
+      provenance: {source: requirement, ref: "Presence-preserving projection and declaration order"}
+      mutation: {description: "Adding, dropping, or changing a member fails the reflection guard"}
+      input: "presence"
+      expected: "valid"
+    - name: header-session-header-omission-set-named
+      classification: must-pass
+      provenance: {source: requirement, ref: "Bounded header omission set"}
+      mutation: {description: "The five omitted names are held as a closed set"}
+      input: "omissions"
+      expected: "valid"
+    - name: header-session-header-carries-no-retained-records
+      classification: must-pass
+      provenance: {source: requirement, ref: "Retained records remain outside the header"}
+      mutation: {description: "A header cannot carry full evidence records"}
+      input: "records"
+      expected: "valid"
+    - name: header-withholding-member-set-closed
+      classification: must-pass
+      provenance: {source: requirement, ref: "Repository withholding member inventory"}
+      mutation: {description: "The four repository members are exact"}
+      input: "withholding"
+      expected: "valid"
