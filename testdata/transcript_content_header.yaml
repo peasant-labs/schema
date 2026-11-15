@@ -242,6 +242,46 @@ envelopes:
       mutation: {description: "No retained state is a valid header statement"}
       input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0}'
       expected: {notContains: '"retainedEvidence"'}
+etagBaseline: '{"Representation":"r1.test","ContractVersion":"0.1.1","Kind":"session_detail","Canonical":false,"OmittedImages":0,"FlaggedTurns":[{"position":0}],"RetainedEvidence":"absent","ContentHashWord":"pending","RetainedOwnerVisibility":"visible"}'
+etagFields: [Representation, ContractVersion, Kind, Canonical, OmittedImages, FlaggedTurns, RetainedEvidence, ContentHashWord, RetainedOwnerVisibility]
+etags:
+  cases:
+    - name: header-etag-input-field-names
+      classification: must-pass
+      provenance: {source: requirement, ref: "Header revalidation input declaration"}
+      mutation: {description: "A changed field inventory cannot silently fall outside the digest"}
+      input: {guard: fields}
+      expected: {}
+    - name: header-etag-distinct-per-input
+      classification: must-pass
+      provenance: {source: requirement, ref: "Header revalidation input declaration"}
+      mutation: {description: "Changing each named field changes the entity tag"}
+      input:
+        mutations:
+          - {field: Representation, change: '{"Representation":"r1.changed"}'}
+          - {field: ContractVersion, change: '{"ContractVersion":"0.1.2"}'}
+          - {field: Kind, change: '{"Kind":"other"}'}
+          - {field: Canonical, change: '{"Canonical":true}'}
+          - {field: OmittedImages, change: '{"OmittedImages":1}'}
+          - {field: FlaggedTurns, change: '{"FlaggedTurns":[{"position":1}]}'}
+          - {field: RetainedEvidence, change: '{"RetainedEvidence":"deferred"}'}
+          - {field: ContentHashWord, change: '{"ContentHashWord":"known"}'}
+          - {field: RetainedOwnerVisibility, change: '{"RetainedOwnerVisibility":"withheld"}'}
+      expected: {}
+    - name: header-etag-closed-sets-are-types
+      classification: must-pass
+      provenance: {source: requirement, ref: "Header revalidation closed producer facts"}
+      mutation: {description: "The two closed inputs must remain named types with exactly their published values"}
+      input: {guard: closed-sets}
+      expected: {}
+    - name: header-etag-distinguishes-mark-turn-absent-from-zero
+      classification: must-pass
+      provenance: {source: manual, ref: "Synthetic stored flag; no deployed checker produced this input"}
+      mutation: {description: "The presence of recorded zero changes the header entity tag"}
+      input: {left: '{}', right: '{"FlaggedTurns":[{"position":0,"turn":0}]}'}
+      expected:
+        left: '"29ea66c1610de949cdd1b9f1ac8e685c0ec646a2998e6c99e04dd7d2bd657e40"'
+        right: '"f3e8e6494c618b172e1e9bf8db544fa349fe75b51c5a301250e38e80381c28fd"'
 marks:
   cases:
     - name: mark-kept-row-present-index-carries-turn

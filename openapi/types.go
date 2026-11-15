@@ -171,6 +171,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"TranscriptSessionHeader", new(schema.TranscriptSessionHeader)},
 		{"TranscriptContentHeader", new(schema.TranscriptContentHeader)},
 		{"TranscriptRetainedState", new(schema.TranscriptRetainedState)},
+		{"TranscriptViewerProjection", new(schema.TranscriptViewerProjection)},
 		{"SessionTeammate", new(schema.SessionTeammate)}, {"SessionTeammateEvidence", new(schema.SessionTeammateEvidence)},
 		{"LocalSyncSummary", new(schema.LocalSyncSummary)}, {"LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)},
 		{"LocalSessionRow", new(schema.LocalSessionRow)}, {"LocalSessionListItem", new(schema.LocalSessionListItem)},

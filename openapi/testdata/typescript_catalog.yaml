@@ -23,6 +23,11 @@ types:
   - {go_name: TranscriptSessionHeader, disposition: catalog, component: TranscriptSessionHeader, reason: bounded served session metadata}
   - {go_name: TranscriptContentHeader, disposition: catalog, component: TranscriptContentHeader, reason: bounded content header envelope}
   - {go_name: TranscriptRetainedState, disposition: catalog, component: TranscriptRetainedState, reason: retained evidence availability}
+  - {go_name: TranscriptViewerProjection, disposition: catalog, component: TranscriptViewerProjection, reason: served viewer class}
+  - {go_name: TranscriptRepresentationInputs, disposition: runtime-only, reason: producer inputs for representation identity}
+  - {go_name: HeaderETagInputs, disposition: runtime-only, reason: producer inputs for header validation identity}
+  - {go_name: TranscriptContentHashWord, disposition: runtime-only, reason: producer input for header validation identity}
+  - {go_name: TranscriptRetainedOwnerVisibility, disposition: runtime-only, reason: producer input for header validation identity}
   - {go_name: TranscriptCookTurn, disposition: runtime-only, reason: paired raw and decoded producer input}
   - {go_name: CookedTurn, disposition: runtime-only, reason: producer cooking verdict}
   - {go_name: TranscriptWindowTurnV2, disposition: runtime-only, reason: producer window resolver input}

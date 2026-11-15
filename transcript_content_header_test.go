@@ -42,11 +42,31 @@ type headerMarkInput struct {
 	KeepPrefix int      `yaml:"keepPrefix"`
 }
 
+type headerETagMutation struct {
+	Field  string `yaml:"field"`
+	Change string `yaml:"change"`
+}
+
+type headerETagInput struct {
+	Guard     string               `yaml:"guard"`
+	Left      string               `yaml:"left"`
+	Right     string               `yaml:"right"`
+	Mutations []headerETagMutation `yaml:"mutations"`
+}
+
+type headerETagExpected struct {
+	Left  string `yaml:"left"`
+	Right string `yaml:"right"`
+}
+
 type contentHeaderCases struct {
-	Projection testcase.Corpus[headerProjectionInput, headerExpected] `yaml:"projection"`
-	Envelopes  testcase.Corpus[string, headerExpected]                `yaml:"envelopes"`
-	Marks      testcase.Corpus[headerMarkInput, headerExpected]       `yaml:"marks"`
-	Guards     testcase.Corpus[string, string]                        `yaml:"guards"`
+	Projection   testcase.Corpus[headerProjectionInput, headerExpected] `yaml:"projection"`
+	Envelopes    testcase.Corpus[string, headerExpected]                `yaml:"envelopes"`
+	ETagBaseline string                                                 `yaml:"etagBaseline"`
+	ETagFields   []string                                               `yaml:"etagFields"`
+	ETags        testcase.Corpus[headerETagInput, headerETagExpected]   `yaml:"etags"`
+	Marks        testcase.Corpus[headerMarkInput, headerExpected]       `yaml:"marks"`
+	Guards       testcase.Corpus[string, string]                        `yaml:"guards"`
 }
 
 func loadContentHeaderCases(t *testing.T) contentHeaderCases {
@@ -54,6 +74,7 @@ func loadContentHeaderCases(t *testing.T) contentHeaderCases {
 	fixtures := decodeStrictYAML[contentHeaderCases](t, contentHeaderYAML, "transcript content header fixture")
 	caseassert.RequireValid(t, fixtures.Projection)
 	caseassert.RequireValid(t, fixtures.Envelopes)
+	caseassert.RequireValid(t, fixtures.ETags)
 	caseassert.RequireValid(t, fixtures.Marks)
 	caseassert.RequireValid(t, fixtures.Guards)
 	var names []string
@@ -61,6 +82,9 @@ func loadContentHeaderCases(t *testing.T) contentHeaderCases {
 		names = append(names, c.Name)
 	}
 	for _, c := range fixtures.Envelopes.Cases {
+		names = append(names, c.Name)
+	}
+	for _, c := range fixtures.ETags.Cases {
 		names = append(names, c.Name)
 	}
 	for _, c := range fixtures.Marks.Cases {
@@ -71,6 +95,81 @@ func loadContentHeaderCases(t *testing.T) contentHeaderCases {
 	}
 	caseassert.RequireManifestNames(t, "transcript content header", contentHeaderManifestYAML, names)
 	return fixtures
+}
+
+func TestTranscriptHeaderETag(t *testing.T) {
+	fixture := loadContentHeaderCases(t)
+	baseline := func(t *testing.T, change string) schema.HeaderETagInputs {
+		t.Helper()
+		var in schema.HeaderETagInputs
+		if err := json.Unmarshal([]byte(fixture.ETagBaseline), &in); err != nil {
+			t.Fatal(err)
+		}
+		if change != "" {
+			if err := json.Unmarshal([]byte(change), &in); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return in
+	}
+	typ := reflect.TypeFor[schema.HeaderETagInputs]()
+	for _, c := range fixture.ETags.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			switch c.Input.Guard {
+			case "fields":
+				fields := make([]string, typ.NumField())
+				for i := range fields {
+					fields[i] = typ.Field(i).Name
+				}
+				if !slices.Equal(fields, fixture.ETagFields) {
+					t.Fatalf("etag fields = %v, want %v", fields, fixture.ETagFields)
+				}
+				return
+			case "closed-sets":
+				hashWord, _ := typ.FieldByName("ContentHashWord")
+				visibility, _ := typ.FieldByName("RetainedOwnerVisibility")
+				if hashWord.Type != reflect.TypeFor[schema.TranscriptContentHashWord]() ||
+					visibility.Type != reflect.TypeFor[schema.TranscriptRetainedOwnerVisibility]() ||
+					!slices.Equal(schema.AllTranscriptContentHashWords, []schema.TranscriptContentHashWord{schema.TranscriptContentHashPending, schema.TranscriptContentHashKnown}) ||
+					!slices.Equal(schema.AllTranscriptRetainedOwnerVisibilities, []schema.TranscriptRetainedOwnerVisibility{schema.TranscriptRetainedOwnerVisible, schema.TranscriptRetainedOwnerWithheld}) ||
+					schema.TranscriptContentHashWord("other").IsValid() || schema.TranscriptRetainedOwnerVisibility("other").IsValid() {
+					t.Fatal("etag closed sets are not the declared named types and exact values")
+				}
+				return
+			case "":
+			default:
+				t.Fatalf("unknown etag guard %q", c.Input.Guard)
+			}
+			if len(c.Input.Mutations) != 0 {
+				base := baseline(t, "")
+				baseTag := schema.TranscriptHeaderETag(base)
+				var fields []string
+				for _, mutation := range c.Input.Mutations {
+					changed := baseline(t, mutation.Change)
+					fields = append(fields, mutation.Field)
+					baseValue, changedValue := reflect.ValueOf(base), reflect.ValueOf(changed)
+					for i := 0; i < typ.NumField(); i++ {
+						changedField := !reflect.DeepEqual(baseValue.Field(i).Interface(), changedValue.Field(i).Interface())
+						if changedField != (typ.Field(i).Name == mutation.Field) {
+							t.Fatalf("mutation %s unexpectedly changed field %s: %t", mutation.Field, typ.Field(i).Name, changedField)
+						}
+					}
+					if got := schema.TranscriptHeaderETag(changed); got == baseTag {
+						t.Fatalf("mutation of %s left etag unchanged", mutation.Field)
+					}
+				}
+				if !slices.Equal(fields, fixture.ETagFields) {
+					t.Fatalf("etag mutation fields = %v, want %v", fields, fixture.ETagFields)
+				}
+				return
+			}
+			left := schema.TranscriptHeaderETag(baseline(t, c.Input.Left))
+			right := schema.TranscriptHeaderETag(baseline(t, c.Input.Right))
+			if left != c.Expected.Left || right != c.Expected.Right || left == right {
+				t.Fatalf("etag pair = %q, %q; want distinct %q, %q", left, right, c.Expected.Left, c.Expected.Right)
+			}
+		})
+	}
 }
 
 // This checks the shared Schema capture, cook, recorded-index decoder and wire

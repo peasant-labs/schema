@@ -39,6 +39,10 @@ requiredNames:
   - header-retained-absent
   - header-retained-deferred
   - header-retained-omitted-when-withheld
+  - header-etag-input-field-names
+  - header-etag-distinct-per-input
+  - header-etag-closed-sets-are-types
+  - header-etag-distinguishes-mark-turn-absent-from-zero
   - mark-kept-row-present-index-carries-turn
   - mark-kept-row-zero-index-carries-turn
   - mark-kept-row-absent-index-omits-turn
