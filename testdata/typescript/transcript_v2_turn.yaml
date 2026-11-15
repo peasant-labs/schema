@@ -1,0 +1,67 @@
+cases:
+  - name: v2-turn-object-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "The reader accepts a served turn object"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '{"role":"assistant","content":"answer"}'}
+    expected: {accepted: true, json: '{"role":"assistant","content":"answer"}'}
+  - name: v2-turn-index-absent
+    classification: must-pass
+    provenance: {source: requirement, ref: "The reader accepts a served turn object"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '{"content":"answer"}'}
+    expected: {accepted: true, json: '{"content":"answer"}'}
+  - name: v2-turn-index-absent-not-null
+    classification: must-pass
+    provenance: {source: requirement, ref: "The reader accepts a served turn object"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '{}'}
+    expected: {accepted: true, json: '{}'}
+  - name: v2-turn-index-null
+    classification: must-pass
+    provenance: {source: requirement, ref: "The reader accepts a served turn object"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '{"index":null}'}
+    expected: {accepted: true, json: '{"index":null}'}
+  - name: v2-turn-index-null-is-null
+    classification: must-pass
+    provenance: {source: requirement, ref: "The reader accepts a served turn object"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '{"index":null,"content":"legacy"}'}
+    expected: {accepted: true, json: '{"index":null,"content":"legacy"}'}
+  - name: v2-turn-index-string
+    classification: must-pass
+    provenance: {source: boundary, ref: "The reader validates object-ness only"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '{"index":"7"}'}
+    expected: {accepted: true, json: '{"index":"7"}'}
+  - name: v2-turn-index-object
+    classification: must-pass
+    provenance: {source: boundary, ref: "The reader validates object-ness only"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '{"index":{"value":7}}'}
+    expected: {accepted: true, json: '{"index":{"value":7}}'}
+  - name: v2-turn-unknown-member-kept
+    classification: must-pass
+    provenance: {source: requirement, ref: "The reader accepts a served turn object"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '{"future":{"nested":[1,null,"value"]}}'}
+    expected: {accepted: true, json: '{"future":{"nested":[1,null,"value"]}}'}
+  - name: v2-turn-number-lexeme-normalized-to-value
+    classification: must-pass
+    provenance: {source: requirement, ref: "The reader accepts a served turn object"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '{"future":1e3}'}
+    expected: {accepted: true, json: '{"future":1000}'}
+  - name: v2-turn-non-object-refused
+    classification: must-fail
+    provenance: {source: boundary, ref: "The reader validates object-ness only"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: 'null'}
+    expected: {accepted: false}
+  - name: v2-turn-array-refused
+    classification: must-fail
+    provenance: {source: boundary, ref: "The reader validates object-ness only"}
+    mutation: {description: "Read this parsed JSON value without changing its members"}
+    input: {json: '[]'}
+    expected: {accepted: false}

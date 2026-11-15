@@ -10,6 +10,7 @@ export { normalizeCollectiveObservationScope, encodeContributionTraversalRevisio
 export { collectiveFetchHTTPStatus } from "./collective-status.js";
 export { isConversationTurn } from "./conversation-turn.js";
 export { isTranscriptDirectoryPositionsValid } from "./transcript-directory-positions.js";
+export { readTranscriptV2Turn, type TranscriptV2Turn } from "./transcript-v2-turn.js";
 import { requiredContentCapabilities, KnownContentCapability } from "./internal/generated/content-capabilities.gen.js";
 
 import { zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";
