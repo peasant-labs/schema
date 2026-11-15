@@ -9,6 +9,7 @@ export { reconcileVillageContributionAttempt, villageContributionAttemptActor, t
 export { normalizeCollectiveObservationScope, encodeContributionTraversalRevision, parseContributionTraversalRevision, validateContributionHistoryQuery, type ContributionTraversalIdentity, type LocalContributionHistoryQuery } from "./collective-validation.js";
 export { collectiveFetchHTTPStatus } from "./collective-status.js";
 export { isConversationTurn } from "./conversation-turn.js";
+export { isTranscriptDirectoryPositionsValid } from "./transcript-directory-positions.js";
 import { requiredContentCapabilities, KnownContentCapability } from "./internal/generated/content-capabilities.gen.js";
 
 import { zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";

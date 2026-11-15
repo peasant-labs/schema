@@ -32,6 +32,31 @@ const schemaName = Object.keys(spec.components?.schemas ?? {}).find((name) => !e
 assert.notEqual(schemaName, undefined, "the Types OpenAPI catalog must provide a non-enum component for the packed-package Zod runtime probe");
 assert.match(schemaName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "Types OpenAPI representative component name must be a JavaScript identifier");
 const schemaExportName = `z${schemaName}`;
+const directoryPositionCorpus = parse(await readFile(new URL("../../testdata/typescript/transcript_directory_positions.yaml", import.meta.url), "utf8"));
+assert.ok(Array.isArray(directoryPositionCorpus.cases) && directoryPositionCorpus.cases.length > 0, "transcript_directory_positions.yaml must provide a position corpus for the packed-package probe");
+// Look the two probe rows up by name: the shipped package must judge a stated
+// span and a span past the total, not only the container guards that the first
+// document-order row of each verdict would exercise. The corpus manifest already
+// fails closed on a rename, so a name lookup cannot go stale silently.
+const packedPositionProbes = [
+  { name: "directory-spans-only-without-total", verdict: true },
+  { name: "directory-span-ends-past-total", verdict: false },
+];
+const packedPositionCases = packedPositionProbes.map((probe) => {
+  const row = directoryPositionCorpus.cases.find((candidate) => candidate.name === probe.name);
+  assert.notEqual(row, undefined, `transcript_directory_positions.yaml must hold the packed position probe case ${probe.name}`);
+  assert.equal(typeof row.input?.json, "string", `packed position probe case ${probe.name} must state its decoded JSON as a string`);
+  assert.equal(row.expected, probe.verdict, `packed position probe case ${probe.name} must expect ${probe.verdict}`);
+  const decoded = JSON.parse(row.input.json);
+  assert.ok(statesPositionFields(decoded), `packed position probe case ${probe.name} must carry the total or a ref's conversationTurns; the probe would otherwise exercise only the container guards`);
+  return { name: probe.name, verdict: probe.verdict, json: row.input.json };
+});
+
+function statesPositionFields(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  if (Object.hasOwn(value, "totalConversationTurns")) return true;
+  return Array.isArray(value.segments) && value.segments.some((ref) => typeof ref === "object" && ref !== null && !Array.isArray(ref) && Object.hasOwn(ref, "conversationTurns"));
+}
 
 const temp = await mkdtemp(join(tmpdir(), "peasant-labs-schema-package-"));
 try {
@@ -91,6 +116,8 @@ try {
     `import { ${enumName}, ${schemaExportName}, parseSessionDetailPayloadText, requiredContentCapabilities, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
     `import { sessionGraphCapabilityFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph-capability")};`,
     `import * as publicSchema from ${JSON.stringify(packageManifest.name)};`,
+    `if (typeof publicSchema.isTranscriptDirectoryPositionsValid !== "function") throw new TypeError("packed ${packageManifest.name} does not export isTranscriptDirectoryPositionsValid");`,
+    ...packedPositionCases.map((probe) => `if (publicSchema.isTranscriptDirectoryPositionsValid(JSON.parse(${JSON.stringify(probe.json)})) !== ${probe.verdict}) throw new TypeError(${JSON.stringify(`packed directory position verdict differs for ${probe.name}`)});`),
     ...retainedCollectiveAliases.aliases.map(row => `if (publicSchema.z${row.name} !== publicSchema.z${row.canonical}) throw new Error("packed legacy validator ${row.name} lost canonical identity");`),
     ...retainedCollectiveAliases.aliases.filter(row => row.all_name !== undefined).map(row => `if (publicSchema.${row.name} !== publicSchema.${row.canonical} || publicSchema.${row.all_name} !== publicSchema.${row.canonical_all_name} || publicSchema.is${row.name} !== publicSchema.is${row.canonical}) throw new Error("packed legacy enum ${row.name} changed");`),
     `import { sessionGraphFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph")};`,
