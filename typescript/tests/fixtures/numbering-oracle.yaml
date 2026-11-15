@@ -1,0 +1,15 @@
+capturedFrom: bb908530f72bbdc44e4bc6c85582afe3668ffa74
+repository: https://github.com/peasant-labs/fairtrade-design-system
+license: Apache-2.0
+files:
+  src/ui/transcript/adapter.js: f994973e9a4550b9c03ab4a650f27c3b4ab3879f3b706f4098884ad898f8f937
+  src/ui/transcript/analytics.js: f592daee3e3fbcdc5dd8efd357d0c4b835ec72bc8c1e1fc2ea63dea2a838871e
+  src/ui/transcript/adapter.parse.js: c9c01a5d75d2cefb4a81e2b220c724f8f97068702b0d6bae4b8297559bf4cce8
+  src/ui/transcript/usage.js: fb981a4390ddbe4889d9ddf69139c949cacac4ba17205cc732a887d76930f46a
+  src/ui/transcript/time.js: 50c7def004445002aeb10c77b2348d15bf2b315569081f494bb9b958a9a805c6
+  src/ui/transcript/title.js: b66f54394a6ed5c1dfeebb4d0681d4aaffc26286a2f8aad13a4568af42da293f
+  src/ui/transcript/earlier-history-state.js: c55b1aebd852af1c6e74216475e99d4d2006c55ec44c25f58d9ebe9960ade387
+  src/ui/closed-value.js: d3fe733ca4c035917b72e485a8707c2c2d428048681d9ae88e5f34dd04ccc574
+constructorOnly:
+  - cook-duplicate-member-refused
+  - cook-escaped-duplicate-member-refused
