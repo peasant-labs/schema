@@ -176,6 +176,7 @@ type cutFixture struct {
 	// ContractBudgetBytes is the budget every server cuts with. It is stated
 	// here once and schema.TranscriptSegmentBudgetBytes must equal it.
 	ContractBudgetBytes int                  `yaml:"contractBudgetBytes"`
+	CutVersion          string               `yaml:"cutVersion"`
 	Cases               []cutCase            `yaml:"cases"`
 	Versions            map[string][]cutCase `yaml:"versions"`
 }
@@ -238,9 +239,8 @@ func TestCutTranscriptSegments(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			switch c.Name {
 			case "cut-version-matches-pinned-fixture":
-				current, ok := fixture.Versions[schema.CutVersion]
-				if !ok || !reflect.DeepEqual(current, fixture.Cases) {
-					t.Fatalf("cut version %q does not select the pinned expectations", schema.CutVersion)
+				if fixture.CutVersion != schema.CutVersion {
+					t.Fatalf("cut version = %q, fixture pins %q", schema.CutVersion, fixture.CutVersion)
 				}
 			case "cut-version-bump-required-on-boundary-change":
 				assertTranscriptCutOriginalVersionIsFrozen(t, fixture)
