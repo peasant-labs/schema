@@ -716,7 +716,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit; the 413 applies only when view is omitted. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The parameters q, project_hash, provider, cursor and limit apply only to view=paged and view=snapshot; they are ignored without view and with view=grouped, and those two responses stay unchanged. view=snapshot without project_hash is a 400. The snapshot has no record or byte cap and refuses only with a 503 whose code is snapshot_timeout or snapshot_busy. The project picker is the count authority.",
+        "description": "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit; the 413 applies only when view is omitted. view=paged returns one page of root sessions, each with its family of helper sessions, ordered by the last activity of the root session, newest first, where last activity is the root's session_end, or its session_start when session_end is unknown, or its published_at when both are unknown; families with the same last activity are ordered by the root's transcript id ascending, and helpers do not affect the position of their family. A session whose chain of parents loops back on itself (for example a session that names itself as its parent) is listed as a root with no helpers taken from the loop, so every session of the library is listed exactly once. view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The parameters q, project_hash, provider, cursor and limit apply only to view=paged and view=snapshot; they are ignored without view and with view=grouped, and those two responses stay unchanged. view=snapshot without project_hash is a 400. The snapshot has no record or byte cap and refuses only with a 503 whose code is snapshot_timeout or snapshot_busy. The project picker is the count authority.",
         "operationId": "listContributableTranscripts",
         "parameters": [
           {
@@ -777,10 +777,10 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
+            "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. A session whose chain of parents loops back on itself (for example a session that names itself as its parent) is listed as a root with no helpers taken from the loop, so every session of the library is listed exactly once. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
             "schema": {
               "default": 500,
-              "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
+              "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. A session whose chain of parents loops back on itself (for example a session that names itself as its parent) is listed as a root with no helpers taken from the loop, so every session of the library is listed exactly once. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
               "maximum": 500,
               "minimum": 1,
               "type": "integer"
@@ -2392,7 +2392,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.",
+        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code (VillageContributionErrorCode) and per-transcript details in the common error body, and the status says which kind of refusal it is. 400: the request body violates the contract; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.",
         "operationId": "batchShareSelection",
         "parameters": [
           {
@@ -2477,8 +2477,8 @@
               }
             }
           },
-          "422": {
-            "description": "Unprocessable Entity",
+          "413": {
+            "description": "Request Entity Too Large",
             "content": {
               "application/json": {
                 "schema": {
@@ -3225,7 +3225,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit; the 413 applies only when view is omitted. view=paged returns one page of root sessions, each with its family of helper sessions; view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The parameters q, project_hash, provider, cursor and limit apply only to view=paged and view=snapshot; they are ignored without view and with view=grouped, and those two responses stay unchanged. view=snapshot without project_hash is a 400. The snapshot has no record or byte cap and refuses only with a 503 whose code is snapshot_timeout or snapshot_busy. The project picker is the count authority.",
+        "description": "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit; the 413 applies only when view is omitted. view=paged returns one page of root sessions, each with its family of helper sessions, ordered by the last activity of the root session, newest first, where last activity is the root's session_end, or its session_start when session_end is unknown, or its published_at when both are unknown; families with the same last activity are ordered by the root's transcript id ascending, and helpers do not affect the position of their family. A session whose chain of parents loops back on itself (for example a session that names itself as its parent) is listed as a root with no helpers taken from the loop, so every session of the library is listed exactly once. view=snapshot returns the compact record of every session in the matching families of one project, with no record or byte cap. The parameters q, project_hash, provider, cursor and limit apply only to view=paged and view=snapshot; they are ignored without view and with view=grouped, and those two responses stay unchanged. view=snapshot without project_hash is a 400. The snapshot has no record or byte cap and refuses only with a 503 whose code is snapshot_timeout or snapshot_busy. The project picker is the count authority.",
         "operationId": "listContributableTranscriptsDeprecated",
         "parameters": [
           {
@@ -3286,10 +3286,10 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
+            "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. A session whose chain of parents loops back on itself (for example a session that names itself as its parent) is listed as a root with no helpers taken from the loop, so every session of the library is listed exactly once. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
             "schema": {
               "default": 500,
-              "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
+              "description": "Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. A session whose chain of parents loops back on itself (for example a session that names itself as its parent) is listed as a root with no helpers taken from the loop, so every session of the library is listed exactly once. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit.",
               "maximum": 500,
               "minimum": 1,
               "type": "integer"
@@ -4918,7 +4918,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code and per-transcript details. The response separates shared from already_shared.",
+        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved. A refusal carries a closed code (VillageContributionErrorCode) and per-transcript details in the common error body, and the status says which kind of refusal it is. 400: the request body violates the contract; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.",
         "operationId": "batchShareSelectionDeprecated",
         "parameters": [
           {
@@ -5003,8 +5003,8 @@
               }
             }
           },
-          "422": {
-            "description": "Unprocessable Entity",
+          "413": {
+            "description": "Request Entity Too Large",
             "content": {
               "application/json": {
                 "schema": {
@@ -15356,6 +15356,11 @@
               }
             ]
           },
+          "session_end": {
+            "description": "When the session's last turn happened. Absent when unknown.",
+            "format": "date-time",
+            "type": "string"
+          },
           "session_origin": {
             "$ref": "#/components/schemas/SchemaSessionOrigin"
           },
@@ -15499,7 +15504,6 @@
         "enum": [
           "moved",
           "missing",
-          "live",
           "private_unapproved",
           "conflict",
           "policy",
@@ -15511,7 +15515,6 @@
         "examples": [
           "moved",
           "missing",
-          "live",
           "private_unapproved",
           "conflict",
           "policy",
@@ -15569,7 +15572,7 @@
           },
           "root": {
             "$ref": "#/components/schemas/SchemaVillageContributionFamilyMember",
-            "description": "The root session of the family. The family belongs to the project of the root."
+            "description": "The root session of the family. The family belongs to the project of the root. A session whose chain of parents loops back on itself is a root with no helpers taken from the loop."
           }
         },
         "required": [
@@ -15587,6 +15590,7 @@
             "type": "boolean"
           },
           "items": {
+            "description": "The families of this page, most recently active first. A family is ordered by the last activity of its root session, newest first, where last activity is the root's session_end, or its session_start when that is unknown, or its published_at when both are unknown. Families with the same last activity are ordered by the root's transcript id ascending. Helpers do not affect the position of their family.",
             "items": {
               "$ref": "#/components/schemas/SchemaVillageContributionPageItem"
             },

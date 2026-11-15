@@ -16762,6 +16762,11 @@
               }
             ]
           },
+          "session_end": {
+            "description": "When the session's last turn happened. Absent when unknown.",
+            "format": "date-time",
+            "type": "string"
+          },
           "session_origin": {
             "$ref": "#/components/schemas/SessionOrigin"
           },
@@ -16905,7 +16910,6 @@
         "enum": [
           "moved",
           "missing",
-          "live",
           "private_unapproved",
           "conflict",
           "policy",
@@ -16917,7 +16921,6 @@
         "examples": [
           "moved",
           "missing",
-          "live",
           "private_unapproved",
           "conflict",
           "policy",
@@ -16975,7 +16978,7 @@
           },
           "root": {
             "$ref": "#/components/schemas/VillageContributionFamilyMember",
-            "description": "The root session of the family. The family belongs to the project of the root."
+            "description": "The root session of the family. The family belongs to the project of the root. A session whose chain of parents loops back on itself is a root with no helpers taken from the loop."
           }
         },
         "required": [
@@ -16993,6 +16996,7 @@
             "type": "boolean"
           },
           "items": {
+            "description": "The families of this page, most recently active first. A family is ordered by the last activity of its root session, newest first, where last activity is the root's session_end, or its session_start when that is unknown, or its published_at when both are unknown. Families with the same last activity are ordered by the root's transcript id ascending. Helpers do not affect the position of their family.",
             "items": {
               "$ref": "#/components/schemas/VillageContributionPageItem"
             },

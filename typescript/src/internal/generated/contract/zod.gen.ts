@@ -4808,7 +4808,6 @@ export type VillageContributableView = z.infer<typeof zVillageContributableView>
 export const zVillageContributionErrorCode = z.enum([
     'moved',
     'missing',
-    'live',
     'private_unapproved',
     'conflict',
     'policy',
@@ -5385,6 +5384,7 @@ export const zVillageContributableTranscript = z.object({
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
     root_session_id: zSessionID.nullish(),
+    session_end: z.iso.datetime().optional(),
     session_origin: zSessionOrigin,
     session_start: z.iso.datetime().optional(),
     title: z.string().nullable(),

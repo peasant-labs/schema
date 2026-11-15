@@ -979,7 +979,6 @@ export type VillageContributionErrorCode = VillageContributionErrorCodeContract;
 export const VillageContributionErrorCode = Object.freeze({
   Moved: zVillageContributionErrorCode.parse("moved"),
   Missing: zVillageContributionErrorCode.parse("missing"),
-  Live: zVillageContributionErrorCode.parse("live"),
   PrivateUnapproved: zVillageContributionErrorCode.parse("private_unapproved"),
   Conflict: zVillageContributionErrorCode.parse("conflict"),
   Policy: zVillageContributionErrorCode.parse("policy"),
@@ -988,7 +987,7 @@ export const VillageContributionErrorCode = Object.freeze({
   SnapshotTimeout: zVillageContributionErrorCode.parse("snapshot_timeout"),
   SnapshotBusy: zVillageContributionErrorCode.parse("snapshot_busy"),
 } as const);
-export const AllVillageContributionErrorCodes = Object.freeze([VillageContributionErrorCode.Moved, VillageContributionErrorCode.Missing, VillageContributionErrorCode.Live, VillageContributionErrorCode.PrivateUnapproved, VillageContributionErrorCode.Conflict, VillageContributionErrorCode.Policy, VillageContributionErrorCode.Membership, VillageContributionErrorCode.StaleSelection, VillageContributionErrorCode.SnapshotTimeout, VillageContributionErrorCode.SnapshotBusy]) as readonly VillageContributionErrorCode[];
+export const AllVillageContributionErrorCodes = Object.freeze([VillageContributionErrorCode.Moved, VillageContributionErrorCode.Missing, VillageContributionErrorCode.PrivateUnapproved, VillageContributionErrorCode.Conflict, VillageContributionErrorCode.Policy, VillageContributionErrorCode.Membership, VillageContributionErrorCode.StaleSelection, VillageContributionErrorCode.SnapshotTimeout, VillageContributionErrorCode.SnapshotBusy]) as readonly VillageContributionErrorCode[];
 export function isVillageContributionErrorCode(value: unknown): value is VillageContributionErrorCode {
   return zVillageContributionErrorCode.safeParse(value).success;
 }
