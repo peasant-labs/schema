@@ -61,14 +61,15 @@ type headerETagExpected struct {
 }
 
 type contentHeaderCases struct {
-	Projection   testcase.Corpus[headerProjectionInput, headerExpected] `yaml:"projection"`
-	Envelopes    testcase.Corpus[string, headerExpected]                `yaml:"envelopes"`
-	ETagBaseline string                                                 `yaml:"etagBaseline"`
-	ETagFields   []string                                               `yaml:"etagFields"`
-	ETags        testcase.Corpus[headerETagInput, headerETagExpected]   `yaml:"etags"`
-	Marks        testcase.Corpus[headerMarkInput, headerExpected]       `yaml:"marks"`
-	LocalHeaders testcase.Corpus[string, headerExpected]                `yaml:"localHeaders"`
-	Guards       testcase.Corpus[string, string]                        `yaml:"guards"`
+	Projection           testcase.Corpus[headerProjectionInput, headerExpected] `yaml:"projection"`
+	Envelopes            testcase.Corpus[string, headerExpected]                `yaml:"envelopes"`
+	ETagBaseline         string                                                 `yaml:"etagBaseline"`
+	ETagFields           []string                                               `yaml:"etagFields"`
+	ETagHeaderExclusions map[string]string                                      `yaml:"etagHeaderExclusions"`
+	ETags                testcase.Corpus[headerETagInput, headerETagExpected]   `yaml:"etags"`
+	Marks                testcase.Corpus[headerMarkInput, headerExpected]       `yaml:"marks"`
+	LocalHeaders         testcase.Corpus[string, headerExpected]                `yaml:"localHeaders"`
+	Guards               testcase.Corpus[string, string]                        `yaml:"guards"`
 }
 
 func loadContentHeaderCases(t *testing.T) contentHeaderCases {
@@ -163,6 +164,20 @@ func TestTranscriptHeaderETag(t *testing.T) {
 				}
 				if !slices.Equal(fields, fixture.ETagFields) {
 					t.Fatalf("etag fields = %v, want %v", fields, fixture.ETagFields)
+				}
+				headerType := reflect.TypeFor[schema.TranscriptContentHeader]()
+				for i := range headerType.NumField() {
+					field := headerType.Field(i)
+					_, included := typ.FieldByName(field.Name)
+					reason, excluded := fixture.ETagHeaderExclusions[field.Name]
+					if included == excluded || (excluded && strings.TrimSpace(reason) == "") {
+						t.Fatalf("header field %s must be an ETag input or have one reasoned exclusion", field.Name)
+					}
+				}
+				for name := range fixture.ETagHeaderExclusions {
+					if _, ok := headerType.FieldByName(name); !ok {
+						t.Fatalf("ETag exclusion %s has no header field", name)
+					}
 				}
 				return
 			case "closed-sets":
@@ -375,13 +390,25 @@ func TestTranscriptContentHeaderValidation(t *testing.T) {
 }
 
 func TestTranscriptSessionHeaderDeclaration(t *testing.T) {
-	for _, c := range loadContentHeaderCases(t).Guards.Cases {
+	cases := loadContentHeaderCases(t).Guards.Cases
+	var names []string
+	for _, c := range cases {
+		names = append(names, c.Name)
+	}
+	for _, name := range []string{"header-session-header-presence-members-named", "header-session-header-omission-set-named"} {
+		if !slices.Contains(names, name) {
+			t.Fatalf("the independently exercised header declaration guard %s is missing", name)
+		}
+	}
+	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			switch c.Input {
 			case "mark-schema":
 				assertFlaggedMarkSchema(t)
-			case "presence", "omissions":
-				assertHeaderDeclaration(t)
+			case "presence":
+				assertHeaderPresenceDeclaration(t)
+			case "omissions":
+				assertHeaderOmissionsDeclaration(t)
 			case "records":
 				value := reflect.TypeFor[schema.TranscriptSessionHeader]()
 				for i := range value.NumField() {
@@ -439,15 +466,49 @@ func assertFlaggedMarkSchema(t *testing.T) {
 	}
 }
 
-func assertHeaderDeclaration(t *testing.T) {
+func assertHeaderPresenceDeclaration(t *testing.T) {
 	t.Helper()
 	base := reflect.TypeFor[schema.SessionDetailHeader]()
 	projected := reflect.TypeFor[schema.TranscriptSessionHeader]()
-	omitted := []string{"childSessions", "relationships", "scorecard", "retainedUnknown", "diagnostics"}
 	presence := []string{"id", "harness", "startTime", "endTime", "durationMins", "totalTokens", "tokensIn", "tokensOut", "turnCount", "toolCallCount"}
 	if !slices.Equal(schema.TranscriptSessionHeaderPresenceMembers, presence) {
 		t.Fatalf("presence members = %v, want %v", schema.TranscriptSessionHeaderPresenceMembers, presence)
 	}
+	seen := map[string]bool{}
+	for i := range base.NumField() {
+		b := base.Field(i)
+		name := strings.Split(b.Tag.Get("json"), ",")[0]
+		if !slices.Contains(presence, name) {
+			continue
+		}
+		h, ok := projected.FieldByName(b.Name)
+		if !ok || strings.Split(h.Tag.Get("json"), ",")[0] != name {
+			t.Fatalf("presence member %s is missing from the header", name)
+		}
+		want := reflect.PointerTo(b.Type)
+		if name == "harness" || name == "startTime" || name == "endTime" {
+			want = reflect.TypeFor[*string]()
+		}
+		if h.Type != want || !strings.Contains(h.Tag.Get("json"), ",omitempty") || h.Tag.Get("nullable") != "false" || strings.Contains(b.Tag.Get("json"), ",omitempty") {
+			t.Fatalf("presence field %s has type/tags %s %q; want %s and nonnullable omitempty", name, h.Type, h.Tag, want)
+		}
+		if name == "turnCount" && h.Tag.Get("description") != b.Tag.Get("description") {
+			t.Fatal("turnCount description changed")
+		}
+		seen[name] = true
+	}
+	for _, name := range presence {
+		if !seen[name] {
+			t.Fatalf("presence member %s is missing from the base declaration", name)
+		}
+	}
+}
+
+func assertHeaderOmissionsDeclaration(t *testing.T) {
+	t.Helper()
+	base := reflect.TypeFor[schema.SessionDetailHeader]()
+	projected := reflect.TypeFor[schema.TranscriptSessionHeader]()
+	omitted := []string{"childSessions", "relationships", "scorecard", "retainedUnknown", "diagnostics"}
 	seenOmitted := map[string]bool{}
 	j := 0
 	for i := range base.NumField() {
@@ -466,17 +527,7 @@ func assertHeaderDeclaration(t *testing.T) {
 		if hName != name || h.Name != b.Name {
 			t.Fatalf("field %d = %s/%s, want %s/%s", j-1, h.Name, hName, b.Name, name)
 		}
-		if slices.Contains(presence, name) {
-			want := reflect.PointerTo(b.Type)
-			if name == "harness" || name == "startTime" || name == "endTime" {
-				want = reflect.TypeFor[*string]()
-			}
-			if h.Type != want || !strings.Contains(h.Tag.Get("json"), ",omitempty") || h.Tag.Get("nullable") != "false" || strings.Contains(b.Tag.Get("json"), ",omitempty") {
-				t.Fatalf("presence field %s has type/tags %s %q; want %s and nonnullable omitempty", name, h.Type, h.Tag, want)
-			}
-			if name == "turnCount" && h.Tag.Get("description") != b.Tag.Get("description") {
-				t.Fatal("turnCount description changed")
-			}
+		if slices.Contains(schema.TranscriptSessionHeaderPresenceMembers, name) {
 			continue
 		}
 		switch name {

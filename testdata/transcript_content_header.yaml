@@ -74,7 +74,7 @@ projection:
       expected: {json: '{"earlierHistory":[""]}'}
     - name: header-history-state-non-string-emits-no-element
       classification: must-pass
-      provenance: {source: manual, ref: "Constructor-only input; Village rejects a numeric state during typed decode"}
+      provenance: {source: requirement, ref: "The header keeps string states only; Village rejects a numeric state during typed decode"}
       mutation: {description: "Non-string state is ignored without inventing a value"}
       input: {detail: '{"earlierHistory":[{"state":5}]}'}
       expected: {json: '{}'}
@@ -304,6 +304,10 @@ envelopes:
       expected: {notContains: '"contentHash"'}
 etagBaseline: '{"Representation":"r1.test","ContractVersion":"0.1.1","Kind":"session_detail","Canonical":false,"OmittedImages":0,"FlaggedTurns":[{"position":0}],"RetainedEvidence":"absent","ContentHashWord":"pending","RetainedOwnerVisibility":"visible"}'
 etagFields: [Representation, ContractVersion, Kind, Canonical, OmittedImages, FlaggedTurns, RetainedEvidence, ContentHashWord, RetainedOwnerVisibility]
+etagHeaderExclusions:
+  Revision: "Included in representation identity"
+  SessionHeader: "Derived from the same revision and viewer-specific representation"
+  ContentHash: "The value follows the revision; hash presence is a separate ETag input"
 etags:
   cases:
     - name: header-etag-input-field-names
