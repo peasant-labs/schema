@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
@@ -47,5 +48,103 @@ func TestTranscriptSegmentV2RawGolden(t *testing.T) {
 	}
 	if err := json.NewEncoder(new(bytes.Buffer)).Encode(segment.Rows[0]); !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
 		t.Fatalf("plain row encoder error = %v", err)
+	}
+}
+
+func TestTranscriptSegmentV2RawFixture(t *testing.T) {
+	for _, c := range loadSegmentV2Cases(t).Raw.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var segment schema.TranscriptSegmentV2
+			if err := json.Unmarshal(bytes.TrimSuffix(transcriptSegmentV2RawGolden, []byte("\n")), &segment); err != nil {
+				t.Fatal(err)
+			}
+			encoded, err := schema.MarshalTranscriptSegmentV2(segment)
+			if err != nil {
+				t.Fatal(err)
+			}
+			switch c.Input.Mode {
+			case "members":
+				decoder := json.NewDecoder(bytes.NewReader(encoded))
+				if _, err := decoder.Token(); err != nil {
+					t.Fatal(err)
+				}
+				var names []string
+				for decoder.More() {
+					name, err := decoder.Token()
+					if err != nil {
+						t.Fatal(err)
+					}
+					names = append(names, name.(string))
+					var value json.RawMessage
+					if err := decoder.Decode(&value); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if !reflect.DeepEqual(names, c.Expected.Members) {
+					t.Fatalf("writer members = %v, want %v", names, c.Expected.Members)
+				}
+			case "segment-refusal":
+				_, err := json.Marshal(segment)
+				if !errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+					t.Fatalf("segment marshal error = %v", err)
+				}
+				err = json.NewEncoder(new(bytes.Buffer)).Encode(segment)
+				if !errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+					t.Fatalf("segment encoder error = %v", err)
+				}
+			case "row-refusal":
+				row := segment.Rows[0]
+				_, err := json.Marshal(row)
+				if !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+					t.Fatalf("row marshal error = %v", err)
+				}
+				err = json.NewEncoder(new(bytes.Buffer)).Encode(row)
+				if !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+					t.Fatalf("row encoder error = %v", err)
+				}
+			case "round-trip":
+				var decoded schema.TranscriptSegmentV2
+				if err := json.Unmarshal(encoded, &decoded); err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(decoded, segment) {
+					t.Fatal("the assembled segment did not round-trip every member and raw turn")
+				}
+			case "turn":
+				var decoded schema.TranscriptSegmentV2
+				if err := json.Unmarshal(encoded, &decoded); err != nil {
+					t.Fatal(err)
+				}
+				if c.Input.Row < 0 || c.Input.Row >= len(decoded.Rows) {
+					t.Fatal("fixture row is outside the segment")
+				}
+				if got := string(decoded.Rows[c.Input.Row].Turn.Raw()); got != c.Expected.Raw {
+					t.Fatalf("turn bytes = %q, want %q", got, c.Expected.Raw)
+				}
+			case "omissions":
+				var decoded struct {
+					Rows   []map[string]json.RawMessage `json:"rows"`
+					Native json.RawMessage              `json:"nativeMetadata"`
+				}
+				if err := json.Unmarshal(encoded, &decoded); err != nil {
+					t.Fatal(err)
+				}
+				if c.Input.Row < 0 || c.Input.Row >= len(decoded.Rows) {
+					t.Fatal("fixture row is outside the segment")
+				}
+				row := decoded.Rows[c.Input.Row]
+				if _, ok := row["recordedIndex"]; ok {
+					t.Fatal("absent recordedIndex was emitted")
+				}
+				if _, ok := row["displayNumber"]; ok {
+					t.Fatal("absent displayNumber was emitted")
+				}
+				if decoded.Native != nil {
+					t.Fatal("absent nativeMetadata was emitted")
+				}
+			default:
+				t.Fatalf("unknown raw fixture mode %q", c.Input.Mode)
+			}
+		})
 	}
 }

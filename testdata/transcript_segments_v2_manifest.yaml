@@ -59,3 +59,14 @@ requiredNames:
   - row-display-number-pattern
   - row-display-number-absent-means-predating-server
   - row-display-number-never-zero
+  - segment-v2-member-order-declared
+  - segment-v2-plain-marshal-refused
+  - row-v2-plain-marshal-refused
+  - segment-v2-assembly-round-trips
+  - turn-bytes-verbatim-in-segment
+  - turn-bytes-interior-whitespace-preserved
+  - turn-bytes-number-lexeme-preserved
+  - turn-bytes-html-characters-unescaped
+  - turn-bytes-absent-index-preserved
+  - turn-bytes-null-index-preserved
+  - segment-v2-omits-absent-optional-members

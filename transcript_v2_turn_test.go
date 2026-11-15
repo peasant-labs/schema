@@ -87,6 +87,16 @@ type v2WireExpected struct {
 	ContentSessionID    *string `yaml:"contentSessionId"`
 }
 
+type v2RawInput struct {
+	Mode string `yaml:"mode"`
+	Row  int    `yaml:"row"`
+}
+
+type v2RawExpected struct {
+	Raw     string   `yaml:"raw"`
+	Members []string `yaml:"members"`
+}
+
 type segmentV2Cases struct {
 	Turns       testcase.Corpus[v2TurnInput, v2TurnExpected]           `yaml:"turns"`
 	Capture     testcase.Corpus[v2CaptureInput, v2CaptureExpected]     `yaml:"capture"`
@@ -94,6 +104,7 @@ type segmentV2Cases struct {
 	Segments    testcase.Corpus[v2SegmentInput, v2SegmentExpected]     `yaml:"segments"`
 	Directories testcase.Corpus[v2DirectoryInput, v2DirectoryExpected] `yaml:"directories"`
 	Wire        testcase.Corpus[v2WireInput, v2WireExpected]           `yaml:"wire"`
+	Raw         testcase.Corpus[v2RawInput, v2RawExpected]             `yaml:"raw"`
 }
 
 func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
@@ -105,7 +116,8 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	caseassert.RequireValid(t, fixture.Segments)
 	caseassert.RequireValid(t, fixture.Directories)
 	caseassert.RequireValid(t, fixture.Wire)
-	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases)+len(fixture.Segments.Cases)+len(fixture.Directories.Cases)+len(fixture.Wire.Cases))
+	caseassert.RequireValid(t, fixture.Raw)
+	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases)+len(fixture.Segments.Cases)+len(fixture.Directories.Cases)+len(fixture.Wire.Cases)+len(fixture.Raw.Cases))
 	for _, c := range fixture.Turns.Cases {
 		names = append(names, c.Name)
 	}
@@ -122,6 +134,9 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 		names = append(names, c.Name)
 	}
 	for _, c := range fixture.Wire.Cases {
+		names = append(names, c.Name)
+	}
+	for _, c := range fixture.Raw.Cases {
 		names = append(names, c.Name)
 	}
 	caseassert.RequireManifestNames(t, "v2 segment", transcriptSegmentsV2ManifestYAML, names)

@@ -376,3 +376,71 @@ wire:
       mutation: *wireMutation
       input: {subject: row, json: '{"position":0,"recordedIndexState":"absent","displayNumber":"0","turn":{}}'}
       expected: {errorContains: "displayNumber is malformed"}
+raw:
+  cases:
+    - name: segment-v2-member-order-declared
+      classification: must-pass
+      provenance: &rawRequirement {source: requirement, ref: "A segment is written in declaration order without rewriting turn bytes"}
+      mutation: &rawMutation {description: "Exercise the production segment writer on the recorded golden"}
+      input: {mode: members}
+      expected: {members: [context, partition, index, rows, byteLength, hasOlder, hasNewer]}
+    - name: segment-v2-plain-marshal-refused
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: segment-refusal}
+      expected: {}
+    - name: row-v2-plain-marshal-refused
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: row-refusal}
+      expected: {}
+    - name: segment-v2-assembly-round-trips
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: round-trip}
+      expected: {}
+    - name: turn-bytes-verbatim-in-segment
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 2}
+      expected: {raw: '{"index":2, "n":1e3,"unknown":"\u00e9"}'}
+    - name: turn-bytes-interior-whitespace-preserved
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 1}
+      expected: {raw: '{"index": null,  "text": "<a> & b"}'}
+    - name: turn-bytes-number-lexeme-preserved
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 2}
+      expected: {raw: '{"index":2, "n":1e3,"unknown":"\u00e9"}'}
+    - name: turn-bytes-html-characters-unescaped
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 3}
+      expected: {raw: '{"content":"< > &"}'}
+    - name: turn-bytes-absent-index-preserved
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 0}
+      expected: {raw: '{"role": "user"}'}
+    - name: turn-bytes-null-index-preserved
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 1}
+      expected: {raw: '{"index": null,  "text": "<a> & b"}'}
+    - name: segment-v2-omits-absent-optional-members
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: omissions, row: 3}
+      expected: {}
