@@ -64,7 +64,7 @@ cases:
       <<: *page
       anchor: 500
       turns: [{position: 400, role: assistant}, {position: 500, role: user, index: 500}, {position: 501, role: assistant}]
-    expected: {errorContains: "position 400, the window's first edge (supplied interval: ordinals 10000..10002 of 20001 segments)"}
+    expected: {errorContains: "position 400, the window's first edge (supplied interval: ordinals 10000..10002 of 20001 segments)", errorIncludes: ["pass the partition's whole directory, or the adjacent pages that contain it"]}
   - name: window-refs-last-edge-not-covered-refused
     classification: must-fail
     provenance: *boundary
@@ -73,7 +73,7 @@ cases:
       <<: *page
       anchor: 1499
       turns: [{position: 1498, role: assistant}, {position: 1499, role: user, index: 1499}, {position: 1600, role: assistant}]
-    expected: {errorContains: "position 1600, the window's last edge (supplied interval: ordinals 10000..10002 of 20001 segments)"}
+    expected: {errorContains: "position 1600, the window's last edge (supplied interval: ordinals 10000..10002 of 20001 segments)", errorIncludes: ["pass the partition's whole directory, or the adjacent pages that contain it"]}
   - name: window-refs-position-chain-broken-refused
     classification: must-fail
     provenance: {source: manual, ref: "constructed: no sanctioned writer emits a mixed-revision concatenation, because the cut is single-revision"}
@@ -82,17 +82,235 @@ cases:
       <<: *page
       anchor: 300
       turns: [{position: 299, role: assistant}, {position: 300, role: user, index: 300}, {position: 301, role: assistant}]
-      refs: [{index: 10000, first: 0, last: 99}, {index: 10001, first: 100, last: 199}, {index: 10002, first: 200, last: 549}, {index: 10003, first: 0, last: 99}]
-    expected: {errorContains: "segment 10003 starts at position 0, not after segment 10002 ending at 549"}
+      refs: [{index: 10000, first: 0, last: 99}, {index: 10001, first: 100, last: 199}, {index: 10002, first: 200, last: 549}, {index: 10003, first: 0, last: 99}, {index: 10004, first: 100, last: 199}]
+    expected: {errorContains: "segment 10003 starts at position 0, not after segment 10002 ending at 549", errorIncludes: ["rebuild the directory from the rows this window was resolved on"]}
   - name: window-refs-empty-refused
     classification: must-fail
     provenance: *boundary
     mutation: *exercise
     input: {<<: *page, refs: []}
-    expected: {errorContains: "no refs were supplied"}
+    expected: {errorContains: "no refs were supplied", errorIncludes: ["pass the partition's directory"]}
   - name: window-total-segments-zero-refused
     classification: must-fail
     provenance: *boundary
     mutation: *exercise
     input: {<<: *page, totalSegments: 0}
-    expected: {errorContains: "context says no segments"}
+    expected: {errorContains: "context says no segments", errorIncludes: ["emit the partition's true segment count"]}
+  - name: window-anchor-beyond-last-clamps
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input: {<<: *base, anchor: 10}
+    expected: {anchorPosition: 4, anchorTurn: 4, anchorSegment: 2, firstPosition: 2, lastPosition: 4, segments: [1, 2], hasOlder: true, hasNewer: false}
+  - name: window-anchor-below-first-resolves-higher
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input:
+      totalSegments: 1
+      turnCount: 2
+      span: 1
+      anchor: 1
+      turns: [{position: 0, role: user, index: 5}, {position: 1, role: assistant, index: 6}]
+      refs: [{index: 0, first: 0, last: 1}]
+    expected: {anchorPosition: 0, anchorTurn: 5, anchorSegment: 0, firstPosition: 0, lastPosition: 1, segments: [0], hasOlder: false, hasNewer: false}
+  - name: window-default-anchors-first-served-user-turn
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input: {<<: *base, anchor: null}
+    expected: {anchorPosition: 0, anchorTurn: 0, anchorSegment: 0, firstPosition: 0, lastPosition: 1, segments: [0], hasOlder: false, hasNewer: true}
+  - name: window-default-anchors-first-user-turn-without-depth-zero
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input:
+      totalSegments: 1
+      turnCount: 2
+      span: 1
+      turns: [{position: 0, role: assistant}, {position: 1, role: user, depth: 1, index: 7}]
+      refs: [{index: 0, first: 0, last: 1}]
+    expected: {anchorPosition: 1, anchorTurn: 7, anchorSegment: 0, firstPosition: 0, lastPosition: 1, segments: [0], hasOlder: false, hasNewer: false}
+  - name: window-anchor-turn-absent-when-anchor-row-has-no-recorded-index
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input:
+      totalSegments: 1
+      turnCount: 1
+      turns: [{position: 0, role: user}]
+      refs: [{index: 0, first: 0, last: 0}]
+    expected: {anchorPosition: 0, anchorSegment: 0, firstPosition: 0, lastPosition: 0, segments: [0], hasOlder: false, hasNewer: false}
+  - name: window-anchored-refused-when-no-anchor-identity
+    classification: must-fail
+    provenance: *requirement
+    mutation: *exercise
+    input:
+      totalSegments: 1
+      turnCount: 1
+      anchor: 4
+      turns: [{position: 0, role: user}]
+      refs: [{index: 0, first: 0, last: 0}]
+    expected: {errorContains: "no user turn with a comparable recorded index"}
+  - name: window-span-out-of-range-refused-by-resolver
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input: {<<: *base, span: 11}
+    expected: {errorContains: "outside 1..10"}
+  - name: window-span-zero-is-default
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input: {<<: *base, span: 0, anchor: null}
+    expected: {anchorPosition: 0, anchorTurn: 0, anchorSegment: 0, firstPosition: 0, lastPosition: 4, segments: [0, 1, 2], hasOlder: false, hasNewer: false, span: 10}
+  - name: window-requested-differs-reports-both
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input:
+      <<: *base
+      anchor: 3
+      turns: [{position: 0, role: user, index: 0}, {position: 1, role: assistant}, {position: 2, role: user, index: 2}, {position: 3, role: assistant, index: 3}, {position: 4, role: user, index: 4}]
+    expected: {anchorPosition: 2, anchorTurn: 2, requestedPosition: 3, anchorSegment: 1, firstPosition: 0, lastPosition: 3, segments: [0, 1], hasOlder: false, hasNewer: true}
+  - name: window-nonmonotonic-index-resolves-in-served-order
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input:
+      <<: *base
+      anchor: 6
+      turns: [{position: 0, role: user, index: 9}, {position: 1, role: assistant}, {position: 2, role: user, index: 2}, {position: 3, role: assistant}, {position: 4, role: user, index: 1}]
+    expected: {anchorPosition: 4, anchorTurn: 1, anchorSegment: 2, firstPosition: 2, lastPosition: 4, segments: [1, 2], hasOlder: true, hasNewer: false}
+  - name: window-duplicate-index-anchor-first-in-served-order
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input:
+      <<: *base
+      anchor: 2
+      turns: [{position: 0, role: user, index: 2}, {position: 1, role: assistant}, {position: 2, role: user, index: 2}, {position: 3, role: assistant}, {position: 4, role: user, index: 4}]
+    expected: {anchorPosition: 0, anchorTurn: 2, requestedPosition: 0, anchorSegment: 0, firstPosition: 0, lastPosition: 1, segments: [0], hasOlder: false, hasNewer: true}
+  - name: window-requested-position-first-duplicate
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input:
+      <<: *base
+      anchor: 2
+      turns: [{position: 0, role: assistant, index: 2}, {position: 1, role: assistant}, {position: 2, role: user, index: 2}, {position: 3, role: assistant, index: 2}, {position: 4, role: user, index: 4}]
+    expected: {anchorPosition: 2, anchorTurn: 2, requestedPosition: 0, anchorSegment: 1, firstPosition: 0, lastPosition: 3, segments: [0, 1], hasOlder: false, hasNewer: true}
+  - name: window-segments-widened-to-requested-position
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input:
+      totalSegments: 3
+      turnCount: 5
+      span: 1
+      anchor: 8
+      turns: [{position: 0, role: assistant, index: 8}, {position: 1, role: assistant}, {position: 2, role: assistant}, {position: 3, role: assistant}, {position: 4, role: user, index: 8}]
+      refs: [{index: 0, first: 0, last: 1}, {index: 1, first: 2, last: 3}, {index: 2, first: 4, last: 4}]
+    expected: {anchorPosition: 4, anchorTurn: 8, requestedPosition: 0, anchorSegment: 2, firstPosition: 0, lastPosition: 4, segments: [0, 1, 2], hasOlder: false, hasNewer: false}
+  - name: window-history-partition-resolves
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input: {<<: *base, partition: history, section: 3}
+    expected: {anchorPosition: 2, anchorTurn: 2, requestedPosition: 2, anchorSegment: 1, firstPosition: 0, lastPosition: 3, segments: [0, 1], hasOlder: false, hasNewer: true}
+  - name: window-history-section-required
+    classification: must-fail
+    provenance: *requirement
+    mutation: *exercise
+    input: {<<: *base, partition: history}
+    expected: {errorContains: "history requires a nonnegative sectionIndex"}
+  - name: window-coverage-rejects-non-contiguous-run
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input: {<<: *base, windowMutation: noncontiguous}
+    expected: {errorContains: "not consecutive"}
+  - name: window-coverage-validator-checks-edge-flags
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input: {<<: *page, windowMutation: incorrect-newer}
+    expected: {errorContains: "edge flags disagree"}
+  - name: window-refs-must-ascend-consecutively
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input:
+      <<: *page
+      refs: [{index: 10000, first: 500, last: 799}, {index: 10002, first: 800, last: 1199}]
+    expected: {errorContains: "not consecutive"}
+  - name: window-ref-outside-context-total-refused
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input: {<<: *page, totalSegments: 10002}
+    expected: {errorContains: "outside totalSegments"}
+  - name: window-page-last-absolute-ordinal-has-newer
+    classification: must-pass
+    provenance: *boundary
+    mutation: *exercise
+    input:
+      <<: *page
+      anchor: 1400
+      turns: [{position: 1399, role: assistant}, {position: 1400, role: user, index: 1400}, {position: 1401, role: assistant}]
+    expected: {anchorPosition: 1400, anchorTurn: 1400, requestedPosition: 1400, anchorSegment: 10002, firstPosition: 1200, lastPosition: 1499, segments: [10002], hasOlder: true, hasNewer: true}
+  - name: window-page-final-ref-has-no-newer
+    classification: must-pass
+    provenance: *boundary
+    mutation: *exercise
+    input:
+      <<: *page
+      totalSegments: 10003
+      anchor: 1400
+      turns: [{position: 1399, role: assistant}, {position: 1400, role: user, index: 1400}, {position: 1401, role: assistant}]
+    expected: {anchorPosition: 1400, anchorTurn: 1400, requestedPosition: 1400, anchorSegment: 10002, firstPosition: 1200, lastPosition: 1499, segments: [10002], hasOlder: true, hasNewer: false}
+  - name: window-span-out-of-range-refused
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input: {<<: *base, span: -1}
+    expected: {errorContains: "outside 1..10"}
+  - name: window-span-clamped-to-partition
+    classification: must-pass
+    provenance: *boundary
+    mutation: *exercise
+    input: {<<: *base, span: 10}
+    expected: {anchorPosition: 2, anchorTurn: 2, requestedPosition: 2, anchorSegment: 1, firstPosition: 0, lastPosition: 4, segments: [0, 1, 2], hasOlder: false, hasNewer: false, span: 10}
+  - name: window-requested-position-absent-when-index-missing
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input: {<<: *base, anchor: 10}
+    expected: {anchorPosition: 4, anchorTurn: 4, anchorSegment: 2, firstPosition: 2, lastPosition: 4, segments: [1, 2], hasOlder: true, hasNewer: false}
+  - name: window-requested-position-absent-when-row-cooked-out
+    classification: must-pass
+    provenance: *requirement
+    mutation: {description: "Cook the stored rows before resolving the removed row's recorded index"}
+    input:
+      totalSegments: 1
+      turnCount: 3
+      cook: true
+      anchor: 1
+      span: 1
+      turns: [{position: 0, role: user, index: 0, content: "question"}, {position: 1, role: system, index: 1, content: "short"}, {position: 2, role: assistant, index: 2, content: "answer"}]
+      refs: [{index: 0, first: 0, last: 1}]
+    expected: {anchorPosition: 0, anchorTurn: 0, anchorSegment: 0, firstPosition: 0, lastPosition: 1, segments: [0], hasOlder: false, hasNewer: false}
+  - name: window-whole-directory-and-page-agree
+    classification: must-pass
+    provenance: *boundary
+    mutation: {description: "Compare a complete directory with a covering absolute-ordinal subinterval"}
+    input:
+      totalSegments: 3
+      turnCount: 7
+      span: 1
+      anchor: 5
+      compareOffset: 1
+      compareCount: 1
+      turns: [{position: 2, role: assistant}, {position: 3, role: user, index: 5}, {position: 4, role: assistant}]
+      refs: [{index: 0, first: 0, last: 1}, {index: 1, first: 2, last: 4}, {index: 2, first: 5, last: 6}]
+    expected: {anchorPosition: 3, anchorTurn: 5, requestedPosition: 3, anchorSegment: 1, firstPosition: 2, lastPosition: 4, segments: [1], hasOlder: true, hasNewer: true}
