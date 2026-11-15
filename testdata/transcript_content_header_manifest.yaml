@@ -39,6 +39,10 @@ requiredNames:
   - header-retained-absent
   - header-retained-deferred
   - header-retained-omitted-when-withheld
+  - header-hash-present-when-stored-bytes-served
+  - header-hash-omitted-when-migrated
+  - header-hash-omitted-when-withheld
+  - header-hash-omitted-when-uninstalled-rewrite
   - header-etag-input-field-names
   - header-etag-distinct-per-input
   - header-etag-closed-sets-are-types
@@ -54,6 +58,7 @@ requiredNames:
   - mark-remap-ascends-by-served-position
   - header-marks-remapped-to-served-positions
   - header-mark-dropped-when-its-row-is-cooked-out
+  - local-header-projects-all-metadata
   - header-session-header-presence-members-named
   - mark-wire-schema-optional-turn
   - header-session-header-omission-set-named

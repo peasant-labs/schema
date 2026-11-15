@@ -31,6 +31,7 @@ type headerExpected struct {
 	JSON          string `yaml:"json"`
 	Other         string `yaml:"other"`
 	ErrorContains string `yaml:"errorContains"`
+	Contains      string `yaml:"contains"`
 	NotContains   string `yaml:"notContains"`
 }
 
@@ -66,6 +67,7 @@ type contentHeaderCases struct {
 	ETagFields   []string                                               `yaml:"etagFields"`
 	ETags        testcase.Corpus[headerETagInput, headerETagExpected]   `yaml:"etags"`
 	Marks        testcase.Corpus[headerMarkInput, headerExpected]       `yaml:"marks"`
+	LocalHeaders testcase.Corpus[string, headerExpected]                `yaml:"localHeaders"`
 	Guards       testcase.Corpus[string, string]                        `yaml:"guards"`
 }
 
@@ -76,6 +78,7 @@ func loadContentHeaderCases(t *testing.T) contentHeaderCases {
 	caseassert.RequireValid(t, fixtures.Envelopes)
 	caseassert.RequireValid(t, fixtures.ETags)
 	caseassert.RequireValid(t, fixtures.Marks)
+	caseassert.RequireValid(t, fixtures.LocalHeaders)
 	caseassert.RequireValid(t, fixtures.Guards)
 	var names []string
 	for _, c := range fixtures.Projection.Cases {
@@ -90,11 +93,48 @@ func loadContentHeaderCases(t *testing.T) contentHeaderCases {
 	for _, c := range fixtures.Marks.Cases {
 		names = append(names, c.Name)
 	}
+	for _, c := range fixtures.LocalHeaders.Cases {
+		names = append(names, c.Name)
+	}
 	for _, c := range fixtures.Guards.Cases {
 		names = append(names, c.Name)
 	}
 	caseassert.RequireManifestNames(t, "transcript content header", contentHeaderManifestYAML, names)
 	return fixtures
+}
+
+func TestSessionDetailPayloadHeaderProjection(t *testing.T) {
+	for _, c := range loadContentHeaderCases(t).LocalHeaders.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var payload schema.SessionDetailPayload
+			if err := json.Unmarshal([]byte(c.Input), &payload); err != nil {
+				t.Fatal(err)
+			}
+			header := payload.Header()
+			source, projected := reflect.ValueOf(payload), reflect.ValueOf(header)
+			typ := projected.Type()
+			for i := range typ.NumField() {
+				field := typ.Field(i)
+				value := source.FieldByName(field.Name)
+				if !value.IsValid() {
+					t.Fatalf("header field %s has no typed payload source", field.Name)
+				}
+				if value.IsZero() {
+					t.Fatalf("fixture leaves header field %s at zero; the projection guard would be vacuous", field.Name)
+				}
+				if field.Name == "EarlierHistory" {
+					got, err := json.Marshal(header.EarlierHistory)
+					if err != nil || string(got) != c.Expected.JSON {
+						t.Fatalf("history = %s, %v; want %s", got, err, c.Expected.JSON)
+					}
+					continue
+				}
+				if !reflect.DeepEqual(value.Interface(), projected.Field(i).Interface()) {
+					t.Fatalf("header field %s differs from its typed payload", field.Name)
+				}
+			}
+		})
+	}
 }
 
 func TestTranscriptHeaderETag(t *testing.T) {
@@ -326,6 +366,9 @@ func TestTranscriptContentHeaderValidation(t *testing.T) {
 			}
 			if c.Expected.NotContains != "" && strings.Contains(string(raw), c.Expected.NotContains) {
 				t.Fatalf("header unexpectedly contains %s: %s", c.Expected.NotContains, raw)
+			}
+			if c.Expected.Contains != "" && !strings.Contains(string(raw), c.Expected.Contains) {
+				t.Fatalf("header lacks %s: %s", c.Expected.Contains, raw)
 			}
 		})
 	}

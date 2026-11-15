@@ -1116,6 +1116,56 @@ type SessionDetailHeader struct {
 	Diagnostics     *InterpretationDiagnostics `json:"diagnostics,omitempty" nullable:"false"`
 }
 
+// Header projects a typed durable payload to the existing local-frame header.
+// Earlier history carries only section states; turns and native records remain
+// in the durable payload. This is not the served-byte projection used by the
+// Village content header.
+func (p SessionDetailPayload) Header() SessionDetailHeader {
+	var history []EarlierHistoryState
+	if len(p.EarlierHistory) > 0 {
+		history = make([]EarlierHistoryState, len(p.EarlierHistory))
+		for i, section := range p.EarlierHistory {
+			history[i] = section.State
+		}
+	}
+	return SessionDetailHeader{
+		SchemaVersion:         p.SchemaVersion,
+		ID:                    p.ID,
+		Harness:               p.Harness,
+		StartTime:             p.StartTime,
+		EndTime:               p.EndTime,
+		DurationMins:          p.DurationMins,
+		TotalTokens:           p.TotalTokens,
+		TokensIn:              p.TokensIn,
+		TokensOut:             p.TokensOut,
+		TurnCount:             p.TurnCount,
+		InputSubmissionCount:  p.InputSubmissionCount,
+		ConversationTurnCount: p.ConversationTurnCount,
+		ToolCallCount:         p.ToolCallCount,
+		Source:                p.Source,
+		Status:                p.Status,
+		Project:               p.Project,
+		Model:                 p.Model,
+		ThinkingLevel:         p.ThinkingLevel,
+		ThinkingLevelRaw:      p.ThinkingLevelRaw,
+		ThinkingLevelHistory:  p.ThinkingLevelHistory,
+		WorkingDirectory:      p.WorkingDirectory,
+		GitBranch:             p.GitBranch,
+		GitRemote:             p.GitRemote,
+		ChildSessions:         p.ChildSessions,
+		ParentSessionID:       p.ParentSessionID,
+		RootSessionID:         p.RootSessionID,
+		Purpose:               p.Purpose,
+		Relationships:         p.Relationships,
+		EarlierHistory:        history,
+		Outcome:               p.Outcome,
+		SessionOrigin:         p.SessionOrigin,
+		Scorecard:             p.Scorecard,
+		RetainedUnknown:       p.RetainedUnknown,
+		Diagnostics:           p.Diagnostics,
+	}
+}
+
 // Validate checks the header's metadata against the same shared rules the
 // durable payload applies where those rules do not need turns.
 func (h SessionDetailHeader) Validate() error {

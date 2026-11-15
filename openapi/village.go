@@ -481,6 +481,12 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	transcriptPath := new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 	})
+	transcriptHeaderQuery := new(struct {
+		ID             schema.TranscriptID `path:"id" description:"Transcript identifier"`
+		Revision       string              `query:"revision" description:"Optional revision to read; omission selects the current revision."`
+		Representation string              `query:"representation" description:"Optional projection identity to revalidate; a mismatch requires reload."`
+		IfNoneMatch    string              `header:"If-None-Match" description:"Optional entity tag of the previously authorized header."`
+	})
 	// The Village operations retain the Local API's v1 parameters and shapes;
 	// v2 is an opt-in addition on these Village paths only.
 	type segmentedV2Query struct {
@@ -576,6 +582,12 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			description: "Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered.",
 			requests:    []interface{}{transcriptPath}, response: new(schema.TranscriptContent),
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
+		},
+		{
+			method: http.MethodGet, path: "/api/v1/transcripts/{id}/header", id: "getTranscriptHeader", tag: "transcripts",
+			description: "Read bounded session metadata without turns or retained records. The header carries its revision and representation, optional stored-content hash, served-position integrity marks and retained-evidence availability. A mark's turn identity is omitted when the served row has no usable recorded index. The hash and marks are omitted for migrated or repository-withheld projections. Repository fields follow getTranscriptContent's withholding rule. Access, owner visibility and integrity are checked before conditional revalidation; denied viewers receive 404, stale revision or representation receives 409, and a temporary load refusal receives 503 with Retry-After. Successful headers require private revalidation with ETag; refusal responses are no-store.",
+			requests:    []interface{}{transcriptHeaderQuery}, response: new(schema.TranscriptContentHeader),
+			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/segments", id: "getTranscriptSegments", tag: "transcripts",
@@ -1040,6 +1052,9 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	if err := addVillageOperations(r, operations); err != nil {
 		return err
 	}
+	if err := setTranscriptHeaderReadHeaders(r.Spec, "/api/v1/transcripts/{id}/header"); err != nil {
+		return err
+	}
 	for _, variant := range []struct {
 		path, v1, v2 string
 	}{
@@ -1088,6 +1103,34 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		}
 	}
 
+	return nil
+}
+
+func setTranscriptHeaderReadHeaders(spec *openapi31.Spec, path string) error {
+	item, ok := spec.Paths.MapOfPathItemValues[path]
+	if !ok || item.Get == nil || item.Get.Responses == nil {
+		return fmt.Errorf("declare transcript header response headers for GET %s: the operation is missing; clients cannot revalidate; register the read first", path)
+	}
+	item.Get.Responses.MapOfResponseOrReferenceValues["304"] = openapi31.ResponseOrReference{
+		Response: &openapi31.Response{Description: "Not modified after authorization and revalidation."},
+	}
+	spec.Paths.MapOfPathItemValues[path] = item
+	if err := setTranscriptReadHeaders(spec, path); err != nil {
+		return err
+	}
+	item = spec.Paths.MapOfPathItemValues[path]
+	for _, code := range []string{"200", "304"} {
+		response, ok := item.Get.Responses.MapOfResponseOrReferenceValues[code]
+		if !ok || response.Response == nil {
+			return fmt.Errorf("declare transcript header response headers for GET %s: response %s is missing; clients cannot revalidate; register an inline response", path, code)
+		}
+		cache := "private, no-cache when the revision is named; no-store when no revision is named or a migration rewrite was not installed."
+		etag := "Entity tag over the authorized header's revalidation inputs."
+		response.Response.Headers["Cache-Control"] = openapi31.HeaderOrReference{Header: &openapi31.Header{Description: &cache, Schema: map[string]interface{}{"type": "string"}}}
+		response.Response.Headers["ETag"] = openapi31.HeaderOrReference{Header: &openapi31.Header{Description: &etag, Schema: map[string]interface{}{"type": "string"}}}
+		item.Get.Responses.MapOfResponseOrReferenceValues[code] = response
+	}
+	spec.Paths.MapOfPathItemValues[path] = item
 	return nil
 }
 

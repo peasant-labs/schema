@@ -242,6 +242,30 @@ envelopes:
       mutation: {description: "No retained state is a valid header statement"}
       input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0}'
       expected: {notContains: '"retainedEvidence"'}
+    - name: header-hash-present-when-stored-bytes-served
+      classification: must-pass
+      provenance: {source: requirement, ref: "Header wire only; the authorized host decides whether stored bytes are served"}
+      mutation: {description: "A known stored hash can be carried in a header"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","contentHash":"stored-hash","sessionHeader":{},"canonical":false,"omittedImages":0}'
+      expected: {contains: '"contentHash":"stored-hash"'}
+    - name: header-hash-omitted-when-migrated
+      classification: must-pass
+      provenance: {source: requirement, ref: "Header wire only; the authorized host determines migration status"}
+      mutation: {description: "A migrated projection can omit the stored hash"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0}'
+      expected: {notContains: '"contentHash"'}
+    - name: header-hash-omitted-when-withheld
+      classification: must-pass
+      provenance: {source: requirement, ref: "Header wire only; the authorized host determines withholding"}
+      mutation: {description: "A withheld projection can omit the stored hash"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0}'
+      expected: {notContains: '"contentHash"'}
+    - name: header-hash-omitted-when-uninstalled-rewrite
+      classification: must-pass
+      provenance: {source: requirement, ref: "Header wire only; the authorized host determines rewrite installation"}
+      mutation: {description: "An uninstalled rewrite can omit the stored hash"}
+      input: '{"contractVersion":"0.1.1","kind":"session_detail","revision":"1","representation":"r1.test","sessionHeader":{},"canonical":false,"omittedImages":0}'
+      expected: {notContains: '"contentHash"'}
 etagBaseline: '{"Representation":"r1.test","ContractVersion":"0.1.1","Kind":"session_detail","Canonical":false,"OmittedImages":0,"FlaggedTurns":[{"position":0}],"RetainedEvidence":"absent","ContentHashWord":"pending","RetainedOwnerVisibility":"visible"}'
 etagFields: [Representation, ContractVersion, Kind, Canonical, OmittedImages, FlaggedTurns, RetainedEvidence, ContentHashWord, RetainedOwnerVisibility]
 etags:
@@ -350,6 +374,14 @@ marks:
       mutation: {description: "A removed row cannot move its mark onto a surviving row"}
       input: {turns: ['{"index":7,"role":"assistant","content":""}', '{"index":8,"role":"assistant","content":"answer"}'], flags: [0]}
       expected: {json: '[]'}
+localHeaders:
+  cases:
+    - name: local-header-projects-all-metadata
+      classification: must-pass
+      provenance: {source: requirement, ref: "Typed session payload local-frame projection"}
+      mutation: {description: "Each metadata member is carried and history is reduced to states"}
+      input: '{"schemaVersion":"0.1.1","id":"ses_test","harness":"codex","startTime":"2026-01-01T00:00:00Z","endTime":"2026-01-01T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":1,"inputSubmissionCount":1,"conversationTurnCount":1,"toolCallCount":1,"turns":[],"source":"source","status":"complete","project":"repo","model":"model","thinkingLevel":"high","thinkingLevelRaw":"native-high","thinkingLevelHistory":[{"level":"low"}],"workingDirectory":"/repo","gitBranch":"main","gitRemote":"origin","childSessions":[{"id":"child","startTime":"2026-01-01T00:00:00Z","project":"repo"}],"parentSessionId":"ses_parent1","rootSessionId":"ses_root1","purpose":"unknown","relationships":[{"kind":"started_by","targetState":"target_known","targetLocalId":"ses_parent1","evidence":"native_typed"}],"earlierHistory":[{"state":"uncertain_migrated","turns":[]}],"outcome":"resolved","sessionOrigin":"unknown","scorecard":{"totalTokens":1},"retainedUnknown":[{"sourceRef":"s","recordIndex":0,"position":0,"pointer":"","namespace":"record","kind":"unknown","payload":"{}"}],"diagnostics":{"partial":true}}'
+      expected: {json: '["uncertain_migrated"]'}
 guards:
   cases:
     - name: mark-wire-schema-optional-turn
