@@ -349,6 +349,29 @@ func TestTranscriptV2Turn(t *testing.T) {
 			if index != nil && *index != *c.Expected.Index {
 				t.Fatalf("recorded index = %d, want %d", *index, *c.Expected.Index)
 			}
+			// Exercise the transport writer even for a syntactically valid turn
+			// that the document boundary would reject, such as duplicate keys.
+			sessionID := schema.SessionID("ses_test")
+			segment := schema.TranscriptSegmentV2{
+				Context: schema.TranscriptReadContext{
+					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
+					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+					NativePresence: schema.TranscriptNativeAbsent, TotalTurns: 1, TotalSegments: 1,
+				},
+				Partition: schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain},
+				Rows:      []schema.TranscriptSegmentRow{{Position: 0, RecordedIndexState: state, RecordedIndex: index, Turn: turn}},
+			}
+			body, err := schema.MarshalTranscriptSegmentV2(segment)
+			if err != nil {
+				t.Fatalf("write preserved turn: %v", err)
+			}
+			var served schema.TranscriptSegmentV2
+			if err := json.Unmarshal(body, &served); err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(served.Rows[0].Turn.Raw(), want) {
+				t.Fatalf("writer changed turn bytes: got %q, want %q", served.Rows[0].Turn.Raw(), want)
+			}
 		})
 	}
 }
