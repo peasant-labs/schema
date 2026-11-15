@@ -29,7 +29,7 @@ var transcriptV1RefGolden []byte
 //go:embed testdata/village_directory_v1_golden.json
 var transcriptV1DirectoryGolden []byte
 
-//go:embed generated/peasantlocal-api-0.38.0.json
+//go:embed testdata/local_api_document_v1_unchanged.json
 var transcriptV1LocalDocument []byte
 
 type v1CompatibilityInput struct {
