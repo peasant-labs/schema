@@ -233,8 +233,26 @@ func refExpectation(ref schema.TranscriptSegmentRef) (cutRefExpectation, bool) {
 // TestCutTranscriptSegments replays the cut cases. The refs are compared whole,
 // so a moved boundary, a changed byte length or a changed position each fail.
 func TestCutTranscriptSegments(t *testing.T) {
-	for _, c := range loadCutFixture(t).Cases {
+	fixture := loadCutFixture(t)
+	for _, c := range fixture.Cases {
 		t.Run(c.Name, func(t *testing.T) {
+			switch c.Name {
+			case "cut-version-matches-pinned-fixture":
+				current, ok := fixture.Versions[schema.CutVersion]
+				if !ok || !reflect.DeepEqual(current, fixture.Cases) {
+					t.Fatalf("cut version %q does not select the pinned expectations", schema.CutVersion)
+				}
+			case "cut-version-bump-required-on-boundary-change":
+				assertTranscriptCutOriginalVersionIsFrozen(t, fixture)
+				if len(c.Expected.Segments) < 2 {
+					t.Fatal("the version guard must exercise a segment boundary")
+				}
+			case "cut-budget-is-contract-constant":
+				assertTranscriptSegmentBudgetIsTheContractValue(t, fixture)
+				if c.BudgetBytes != fixture.ContractBudgetBytes {
+					t.Fatalf("the budget case uses %d, want the contract budget %d", c.BudgetBytes, fixture.ContractBudgetBytes)
+				}
+			}
 			turns := make([]schema.TurnDetail, len(c.Turns))
 			for i, spec := range c.Turns {
 				turn, err := spec.turn()
@@ -328,7 +346,11 @@ func TestCutTranscriptSegments(t *testing.T) {
 // TestTranscriptCutOriginalVersionIsFrozen prevents rewriting the old
 // expectations to make a changed rule pass. A new rule adds a new version.
 func TestTranscriptCutOriginalVersionIsFrozen(t *testing.T) {
-	fixture := loadCutFixture(t)
+	assertTranscriptCutOriginalVersionIsFrozen(t, loadCutFixture(t))
+}
+
+func assertTranscriptCutOriginalVersionIsFrozen(t *testing.T, fixture cutFixture) {
+	t.Helper()
 	encoded, err := json.Marshal(fixture.Versions["c1"])
 	if err != nil {
 		t.Fatal(err)
@@ -344,7 +366,11 @@ func TestTranscriptCutOriginalVersionIsFrozen(t *testing.T) {
 // to the value the cut fixture states, so the budget cannot change without a
 // fixture edit that names it.
 func TestTranscriptSegmentBudgetIsTheContractValue(t *testing.T) {
-	fixture := loadCutFixture(t)
+	assertTranscriptSegmentBudgetIsTheContractValue(t, loadCutFixture(t))
+}
+
+func assertTranscriptSegmentBudgetIsTheContractValue(t *testing.T, fixture cutFixture) {
+	t.Helper()
 	if fixture.ContractBudgetBytes <= 0 {
 		t.Fatal("the transcript cut fixture states no contractBudgetBytes")
 	}
