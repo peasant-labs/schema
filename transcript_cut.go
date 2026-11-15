@@ -159,28 +159,7 @@ func ResolveTranscriptWindow(sessionID SessionID, revision string, requestedAnch
 		return TranscriptWindow{}, fmt.Errorf("%ssession %s has no user turn among its %d turns, so a window cannot be centred on turn %d; no window was resolved; a window requires a user turn: %w", where, sessionID, len(turns), requestedAnchor, ErrTranscriptWindowNoUserTurn)
 	}
 
-	firstPos := anchorPos
-	seen := 0
-	for pos := anchorPos - 1; pos >= 0; pos-- {
-		firstPos = pos
-		if turns[pos].Role == RoleAssistant {
-			seen++
-			if seen == span {
-				break
-			}
-		}
-	}
-	lastPos := anchorPos
-	seen = 0
-	for pos := anchorPos + 1; pos < len(turns); pos++ {
-		lastPos = pos
-		if turns[pos].Role == RoleAssistant {
-			seen++
-			if seen == span {
-				break
-			}
-		}
-	}
+	firstPos, lastPos := assistantSpanBounds(func(i int) Role { return turns[i].Role }, len(turns), anchorPos, span)
 
 	firstTurn := turns[firstPos].Index
 	lastTurn := turns[lastPos].Index
@@ -208,6 +187,34 @@ func ResolveTranscriptWindow(sessionID SessionID, revision string, requestedAnch
 		return TranscriptWindow{}, err
 	}
 	return window, nil
+}
+
+// assistantSpanBounds collects up to span assistant rows on each side of an
+// anchor. Both window resolvers use this positional rule.
+func assistantSpanBounds(roleAt func(int) Role, n, anchor, span int) (first, last int) {
+	first = anchor
+	seen := 0
+	for pos := anchor - 1; pos >= 0; pos-- {
+		first = pos
+		if roleAt(pos) == RoleAssistant {
+			seen++
+			if seen == span {
+				break
+			}
+		}
+	}
+	last = anchor
+	seen = 0
+	for pos := anchor + 1; pos < n; pos++ {
+		last = pos
+		if roleAt(pos) == RoleAssistant {
+			seen++
+			if seen == span {
+				break
+			}
+		}
+	}
+	return first, last
 }
 
 // resolveTranscriptWindowAnchor returns the position of the user turn a window

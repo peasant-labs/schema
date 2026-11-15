@@ -817,46 +817,49 @@ func (d TranscriptSegmentDirectory) Validate() error {
 			return fmt.Errorf("%ssegment %d starts at turn %d, not after segment %d ending at %d; segment ranges must ascend without overlap or a turn would be served twice", where, ref.Index, ref.FirstTurn, d.Segments[i-1].Index, d.Segments[i-1].LastTurn)
 		}
 	}
-	if err := validateDirectoryConversationTurns(d, where); err != nil {
+	spans := make([]*ConversationTurnSpan, len(d.Segments))
+	for i := range d.Segments {
+		spans[i] = d.Segments[i].ConversationTurns
+	}
+	if err := validateDirectoryConversationTurns(d.TotalConversationTurns, spans, where); err != nil {
 		return err
 	}
 	return nil
 }
 
-func validateDirectoryConversationTurns(d TranscriptSegmentDirectory, where string) error {
-	if d.TotalConversationTurns != nil && *d.TotalConversationTurns < 0 {
-		return fmt.Errorf("%stotalConversationTurns is %d; a reader would print a negative total beside every position; emit the count of conversation turns or omit the field", where, *d.TotalConversationTurns)
+func validateDirectoryConversationTurns(total *int, spans []*ConversationTurnSpan, where string) error {
+	if total != nil && *total < 0 {
+		return fmt.Errorf("%stotalConversationTurns is %d; a reader would print a negative total beside every position; emit the count of conversation turns or omit the field", where, *total)
 	}
-	for _, ref := range d.Segments {
-		if ref.ConversationTurns == nil {
+	for i, span := range spans {
+		if span == nil {
 			continue
 		}
-		span := ref.ConversationTurns
 		if span.Before < 0 || span.Count < 0 {
-			return fmt.Errorf("%ssegment %d declares conversationTurns {before: %d, count: %d}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref", where, ref.Index, span.Before, span.Count)
+			return fmt.Errorf("%ssegment ref %d declares conversationTurns {before: %d, count: %d}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref", where, i, span.Before, span.Count)
 		}
 	}
-	if d.TotalConversationTurns != nil {
-		total := int64(*d.TotalConversationTurns)
-		for _, ref := range d.Segments {
-			if ref.ConversationTurns == nil {
+	if total != nil {
+		count := int64(*total)
+		for i, span := range spans {
+			if span == nil {
 				continue
 			}
-			end := int64(ref.ConversationTurns.Before) + int64(ref.ConversationTurns.Count)
-			if end > total {
-				return fmt.Errorf("%ssegment %d ends at conversation turn %d, past totalConversationTurns %d; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields", where, ref.Index, end, total)
+			end := int64(span.Before) + int64(span.Count)
+			if end > count {
+				return fmt.Errorf("%ssegment ref %d ends at conversation turn %d, past totalConversationTurns %d; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields", where, i, end, count)
 			}
 		}
 	}
-	for i := 1; i < len(d.Segments); i++ {
-		prev := d.Segments[i-1].ConversationTurns
-		curr := d.Segments[i].ConversationTurns
+	for i := 1; i < len(spans); i++ {
+		prev := spans[i-1]
+		curr := spans[i]
 		if prev == nil || curr == nil {
 			continue
 		}
 		want := int64(prev.Before) + int64(prev.Count)
 		if int64(curr.Before) != want {
-			return fmt.Errorf("%ssegment %d declares %d conversation turns before it, but segment %d ends at %d; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields", where, d.Segments[i].Index, curr.Before, d.Segments[i-1].Index, want)
+			return fmt.Errorf("%ssegment ref %d declares %d conversation turns before it, but ref %d ends at %d; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields", where, i, curr.Before, i-1, want)
 		}
 	}
 	return nil

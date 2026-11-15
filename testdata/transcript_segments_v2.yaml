@@ -142,3 +142,23 @@ evidence:
       mutation: {description: "An empty provenance object has no valid evidence dimensions"}
       input: '{"role":"system","content":"","provenance":{}}'
       expected: "one or more evidence dimensions are missing or outside their closed sets"
+segments:
+  cases:
+    - name: segment-v2-second-segment-rows-accepted
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "The second segment begins at its partition-wide offset"}
+      input: {segment: 1, total: 2, start: 50, count: 50, refFirst: 50, refLast: 99}
+      expected: {segmentValid: true, boundaryValid: true}
+    - name: segment-v2-row-position-off-by-one-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "Contiguous rows begin before the directory ref"}
+      input: {segment: 1, total: 2, start: 49, count: 50, refFirst: 50, refLast: 99}
+      expected: {segmentValid: true, boundaryValid: false, errorContains: "row 0 carries position 49"}
+    - name: segment-v2-refuses-rows-out-of-served-order
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A gap between positions is not a contiguous segment"}
+      input: {segment: 1, total: 2, start: 50, count: 2, gapAt: 1, refFirst: 50, refLast: 51}
+      expected: {segmentValid: false, boundaryValid: false, errorContains: "row 1"}

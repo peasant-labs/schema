@@ -1,0 +1,13 @@
+requiredNames:
+  - window-anchor-in-range
+  - window-default-has-no-requested-anchor
+  - window-default-anchors-first-row-when-no-user-turn
+  - window-no-user-turn-refused
+  - window-empty-partition-refused
+  - window-page-middle-absolute-ordinal-accepted
+  - window-page-first-absolute-ordinal-has-older
+  - window-refs-first-edge-not-covered-refused
+  - window-refs-last-edge-not-covered-refused
+  - window-refs-position-chain-broken-refused
+  - window-refs-empty-refused
+  - window-total-segments-zero-refused

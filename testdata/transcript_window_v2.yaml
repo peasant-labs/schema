@@ -1,0 +1,98 @@
+cases:
+  - name: window-anchor-in-range
+    classification: must-pass
+    provenance: &requirement {source: requirement, ref: "A window uses served positions and absolute ordinals"}
+    mutation: &exercise {description: "Resolve the supplied rows and refs"}
+    input: &base
+      totalSegments: 3
+      turnCount: 5
+      span: 1
+      anchor: 2
+      turns: [{position: 0, role: user, index: 0}, {position: 1, role: assistant}, {position: 2, role: user, index: 2}, {position: 3, role: assistant}, {position: 4, role: user, index: 4}]
+      refs: [{index: 0, first: 0, last: 1}, {index: 1, first: 2, last: 3}, {index: 2, first: 4, last: 4}]
+    expected: {anchorPosition: 2, anchorTurn: 2, requestedPosition: 2, anchorSegment: 1, firstPosition: 0, lastPosition: 3, segments: [0, 1], hasOlder: false, hasNewer: true}
+  - name: window-default-has-no-requested-anchor
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input: {<<: *base, anchor: null}
+    expected: {anchorPosition: 0, anchorTurn: 0, anchorSegment: 0, firstPosition: 0, lastPosition: 1, segments: [0], hasOlder: false, hasNewer: true}
+  - name: window-default-anchors-first-row-when-no-user-turn
+    classification: must-pass
+    provenance: *requirement
+    mutation: *exercise
+    input: {totalSegments: 1, turnCount: 2, span: 1, turns: [{position: 0, role: assistant}, {position: 1, role: assistant}], refs: [{index: 0, first: 0, last: 1}]}
+    expected: {anchorPosition: 0, anchorSegment: 0, firstPosition: 0, lastPosition: 1, segments: [0], hasOlder: false, hasNewer: false}
+  - name: window-no-user-turn-refused
+    classification: must-fail
+    provenance: *requirement
+    mutation: *exercise
+    input: {totalSegments: 1, turnCount: 1, anchor: 4, turns: [{position: 0, role: assistant, index: 4}], refs: [{index: 0, first: 0, last: 0}]}
+    expected: {errorContains: "no user turn"}
+  - name: window-empty-partition-refused
+    classification: must-fail
+    provenance: *requirement
+    mutation: *exercise
+    input: {totalSegments: 0, turnCount: 0, refs: [], turns: []}
+    expected: {errorContains: "no served rows"}
+  - name: window-page-middle-absolute-ordinal-accepted
+    classification: must-pass
+    provenance: &boundary {source: boundary, ref: "Directory pages retain absolute ordinals"}
+    mutation: *exercise
+    input: &page
+      totalSegments: 20001
+      turnCount: 1601
+      span: 1
+      anchor: 1000
+      turns: [{position: 999, role: assistant}, {position: 1000, role: user, index: 1000}, {position: 1001, role: assistant}]
+      refs: [{index: 10000, first: 500, last: 799}, {index: 10001, first: 800, last: 1199}, {index: 10002, first: 1200, last: 1499}]
+    expected: {anchorPosition: 1000, anchorTurn: 1000, requestedPosition: 1000, anchorSegment: 10001, firstPosition: 800, lastPosition: 1199, segments: [10001], hasOlder: true, hasNewer: true}
+  - name: window-page-first-absolute-ordinal-has-older
+    classification: must-pass
+    provenance: *boundary
+    mutation: *exercise
+    input:
+      <<: *page
+      anchor: 600
+      turns: [{position: 599, role: assistant}, {position: 600, role: user, index: 600}, {position: 601, role: assistant}]
+    expected: {anchorPosition: 600, anchorTurn: 600, requestedPosition: 600, anchorSegment: 10000, firstPosition: 500, lastPosition: 799, segments: [10000], hasOlder: true, hasNewer: true}
+  - name: window-refs-first-edge-not-covered-refused
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input:
+      <<: *page
+      anchor: 500
+      turns: [{position: 400, role: assistant}, {position: 500, role: user, index: 500}, {position: 501, role: assistant}]
+    expected: {errorContains: "position 400, the window's first edge (supplied interval: ordinals 10000..10002 of 20001 segments)"}
+  - name: window-refs-last-edge-not-covered-refused
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input:
+      <<: *page
+      anchor: 1499
+      turns: [{position: 1498, role: assistant}, {position: 1499, role: user, index: 1499}, {position: 1600, role: assistant}]
+    expected: {errorContains: "position 1600, the window's last edge (supplied interval: ordinals 10000..10002 of 20001 segments)"}
+  - name: window-refs-position-chain-broken-refused
+    classification: must-fail
+    provenance: {source: manual, ref: "constructed: no sanctioned writer emits a mixed-revision concatenation, because the cut is single-revision"}
+    mutation: *exercise
+    input:
+      <<: *page
+      anchor: 300
+      turns: [{position: 299, role: assistant}, {position: 300, role: user, index: 300}, {position: 301, role: assistant}]
+      refs: [{index: 10000, first: 0, last: 99}, {index: 10001, first: 100, last: 199}, {index: 10002, first: 200, last: 549}, {index: 10003, first: 0, last: 99}]
+    expected: {errorContains: "segment 10003 starts at position 0, not after segment 10002 ending at 549"}
+  - name: window-refs-empty-refused
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input: {<<: *page, refs: []}
+    expected: {errorContains: "no refs were supplied"}
+  - name: window-total-segments-zero-refused
+    classification: must-fail
+    provenance: *boundary
+    mutation: *exercise
+    input: {<<: *page, totalSegments: 0}
+    expected: {errorContains: "context says no segments"}

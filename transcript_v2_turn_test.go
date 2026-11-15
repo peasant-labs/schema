@@ -39,10 +39,27 @@ type v2CaptureExpected struct {
 	ErrorContains string   `yaml:"errorContains"`
 }
 
+type v2SegmentInput struct {
+	Segment  int `yaml:"segment"`
+	Total    int `yaml:"total"`
+	Start    int `yaml:"start"`
+	Count    int `yaml:"count"`
+	GapAt    int `yaml:"gapAt"`
+	RefFirst int `yaml:"refFirst"`
+	RefLast  int `yaml:"refLast"`
+}
+
+type v2SegmentExpected struct {
+	SegmentValid  bool   `yaml:"segmentValid"`
+	BoundaryValid bool   `yaml:"boundaryValid"`
+	ErrorContains string `yaml:"errorContains"`
+}
+
 type segmentV2Cases struct {
 	Turns    testcase.Corpus[v2TurnInput, v2TurnExpected]       `yaml:"turns"`
 	Capture  testcase.Corpus[v2CaptureInput, v2CaptureExpected] `yaml:"capture"`
 	Evidence testcase.Corpus[string, string]                    `yaml:"evidence"`
+	Segments testcase.Corpus[v2SegmentInput, v2SegmentExpected] `yaml:"segments"`
 }
 
 func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
@@ -51,7 +68,8 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	caseassert.RequireValid(t, fixture.Turns)
 	caseassert.RequireValid(t, fixture.Capture)
 	caseassert.RequireValid(t, fixture.Evidence)
-	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases))
+	caseassert.RequireValid(t, fixture.Segments)
+	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases)+len(fixture.Segments.Cases))
 	for _, c := range fixture.Turns.Cases {
 		names = append(names, c.Name)
 	}
@@ -61,8 +79,61 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	for _, c := range fixture.Evidence.Cases {
 		names = append(names, c.Name)
 	}
+	for _, c := range fixture.Segments.Cases {
+		names = append(names, c.Name)
+	}
 	caseassert.RequireManifestNames(t, "v2 segment", transcriptSegmentsV2ManifestYAML, names)
 	return fixture
+}
+
+func TestTranscriptSegmentV2Boundaries(t *testing.T) {
+	for _, c := range loadSegmentV2Cases(t).Segments.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			sessionID := schema.SessionID("ses_test")
+			turn, err := schema.NewTranscriptV2Turn([]byte(`{"index":0}`))
+			if err != nil {
+				t.Fatal(err)
+			}
+			rows := make([]schema.TranscriptSegmentRow, c.Input.Count)
+			for i := range rows {
+				position := c.Input.Start + i
+				if c.Input.GapAt > 0 && i >= c.Input.GapAt {
+					position++
+				}
+				index := 0
+				rows[i] = schema.TranscriptSegmentRow{Position: position, RecordedIndexState: schema.TranscriptRecordedIndexPresent, RecordedIndex: &index, Turn: turn}
+			}
+			segment := schema.TranscriptSegmentV2{
+				Context: schema.TranscriptReadContext{
+					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
+					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+					NativePresence: schema.TranscriptNativeAbsent, TotalTurns: 100, TotalSegments: c.Input.Total,
+				},
+				Partition: schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain},
+				Index:     c.Input.Segment, Rows: rows, HasOlder: c.Input.Segment > 0, HasNewer: c.Input.Segment < c.Input.Total-1,
+			}
+			ref := schema.TranscriptSegmentRefV2{Index: c.Input.Segment, SourceFirstPosition: c.Input.RefFirst, SourceLastPosition: c.Input.RefLast}
+			segmentErr := segment.Validate()
+			boundaryErr := schema.ValidateTranscriptSegmentV2Boundaries(segment, ref)
+			if (segmentErr == nil) != c.Expected.SegmentValid || (boundaryErr == nil) != c.Expected.BoundaryValid {
+				t.Fatalf("segment error = %v, boundary error = %v, want %+v", segmentErr, boundaryErr, c.Expected)
+			}
+			if c.Expected.ErrorContains != "" {
+				err := boundaryErr
+				if !c.Expected.SegmentValid {
+					err = segmentErr
+				}
+				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+					t.Fatalf("error = %v, want text %q", err, c.Expected.ErrorContains)
+				}
+			}
+			if c.Expected.SegmentValid && c.Expected.BoundaryValid {
+				if _, err := schema.MarshalTranscriptSegmentV2(segment); err != nil {
+					t.Fatalf("write valid segment: %v", err)
+				}
+			}
+		})
+	}
 }
 
 func TestTranscriptV2TurnEvidence(t *testing.T) {
