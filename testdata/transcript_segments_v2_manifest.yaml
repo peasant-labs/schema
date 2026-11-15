@@ -40,3 +40,22 @@ requiredNames:
   - ref-v2-turn-range-present
   - ref-v2-turn-range-optional
   - ref-v2-turn-range-half-rejected
+  - transport-local-session
+  - transport-village-transcript
+  - transport-both-rejected
+  - transport-neither-rejected
+  - transport-wrong-kind-rejected
+  - content-session-id-absent
+  - content-session-id-empty
+  - content-session-id-outside-grammar
+  - context-native-presence-present
+  - context-native-presence-withheld
+  - representation-required
+  - partition-history-requires-section
+  - partition-main-refuses-section
+  - position-refuses-negative
+  - row-recorded-index-paired-with-state
+  - row-recorded-index-absent-cannot-carry-value
+  - row-display-number-pattern
+  - row-display-number-absent-means-predating-server
+  - row-display-number-never-zero

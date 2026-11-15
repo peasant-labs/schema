@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -75,12 +76,24 @@ type v2DirectoryExpected struct {
 	ErrorContains string `yaml:"errorContains"`
 }
 
+type v2WireInput struct {
+	Subject string `yaml:"subject"`
+	JSON    string `yaml:"json"`
+}
+
+type v2WireExpected struct {
+	ErrorContains       string  `yaml:"errorContains"`
+	CheckContentSession bool    `yaml:"checkContentSession"`
+	ContentSessionID    *string `yaml:"contentSessionId"`
+}
+
 type segmentV2Cases struct {
 	Turns       testcase.Corpus[v2TurnInput, v2TurnExpected]           `yaml:"turns"`
 	Capture     testcase.Corpus[v2CaptureInput, v2CaptureExpected]     `yaml:"capture"`
 	Evidence    testcase.Corpus[string, string]                        `yaml:"evidence"`
 	Segments    testcase.Corpus[v2SegmentInput, v2SegmentExpected]     `yaml:"segments"`
 	Directories testcase.Corpus[v2DirectoryInput, v2DirectoryExpected] `yaml:"directories"`
+	Wire        testcase.Corpus[v2WireInput, v2WireExpected]           `yaml:"wire"`
 }
 
 func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
@@ -91,7 +104,8 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	caseassert.RequireValid(t, fixture.Evidence)
 	caseassert.RequireValid(t, fixture.Segments)
 	caseassert.RequireValid(t, fixture.Directories)
-	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases)+len(fixture.Segments.Cases)+len(fixture.Directories.Cases))
+	caseassert.RequireValid(t, fixture.Wire)
+	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases)+len(fixture.Segments.Cases)+len(fixture.Directories.Cases)+len(fixture.Wire.Cases))
 	for _, c := range fixture.Turns.Cases {
 		names = append(names, c.Name)
 	}
@@ -107,8 +121,59 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	for _, c := range fixture.Directories.Cases {
 		names = append(names, c.Name)
 	}
+	for _, c := range fixture.Wire.Cases {
+		names = append(names, c.Name)
+	}
 	caseassert.RequireManifestNames(t, "v2 segment", transcriptSegmentsV2ManifestYAML, names)
 	return fixture
+}
+
+func TestTranscriptV2WireValidation(t *testing.T) {
+	for _, c := range loadSegmentV2Cases(t).Wire.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var err error
+			switch c.Input.Subject {
+			case "transport":
+				var transport schema.TranscriptReadTransport
+				if err := json.Unmarshal([]byte(c.Input.JSON), &transport); err != nil {
+					t.Fatal(err)
+				}
+				err = transport.Validate()
+			case "context":
+				var context schema.TranscriptReadContext
+				if err := json.Unmarshal([]byte(c.Input.JSON), &context); err != nil {
+					t.Fatal(err)
+				}
+				err = context.Validate()
+				if c.Expected.CheckContentSession && !reflect.DeepEqual(context.ContentSessionID, c.Expected.ContentSessionID) {
+					t.Fatalf("contentSessionId = %v, want %v", context.ContentSessionID, c.Expected.ContentSessionID)
+				}
+			case "partition":
+				var partition schema.TranscriptSegmentPartition
+				if err := json.Unmarshal([]byte(c.Input.JSON), &partition); err != nil {
+					t.Fatal(err)
+				}
+				err = partition.Validate()
+			case "row":
+				var row schema.TranscriptSegmentRow
+				if err := json.Unmarshal([]byte(c.Input.JSON), &row); err != nil {
+					t.Fatal(err)
+				}
+				err = row.Validate()
+			default:
+				t.Fatalf("unknown fixture subject %q", c.Input.Subject)
+			}
+			if c.Classification == testcase.MustPass {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+				t.Fatalf("validation = %v, want error containing %q", err, c.Expected.ErrorContains)
+			}
+		})
+	}
 }
 
 func TestTranscriptSegmentDirectoryV2(t *testing.T) {

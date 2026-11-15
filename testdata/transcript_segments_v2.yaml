@@ -260,3 +260,119 @@ directories:
       mutation: *directoryMutation
       input: {totalTurns: 1, totalSegments: 1, refCount: 1, firstTurn: 1}
       expected: {errorContains: "must both be nonnegative or both absent"}
+wire:
+  cases:
+    - name: transport-local-session
+      classification: must-pass
+      provenance: &wireRequirement {source: requirement, ref: "The route identity belongs to the transport"}
+      mutation: &wireMutation {description: "Decode and validate the supplied wire object"}
+      input: {subject: transport, json: '{"kind":"local_session","sessionId":"ses_test"}'}
+      expected: {}
+    - name: transport-village-transcript
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: transport, json: '{"kind":"village_transcript","transcriptId":"123e4567-e89b-12d3-a456-426614174000"}'}
+      expected: {}
+    - name: transport-both-rejected
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: transport, json: '{"kind":"local_session","sessionId":"ses_test","transcriptId":"123e4567-e89b-12d3-a456-426614174000"}'}
+      expected: {errorContains: "requires only sessionId"}
+    - name: transport-neither-rejected
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: transport, json: '{"kind":"local_session"}'}
+      expected: {errorContains: "requires only sessionId"}
+    - name: transport-wrong-kind-rejected
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: transport, json: '{"kind":"village_transcript","sessionId":"ses_test"}'}
+      expected: {errorContains: "requires only transcriptId"}
+    - name: content-session-id-absent
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkContentSession: true}
+    - name: content-session-id-empty
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"contentSessionId":"","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkContentSession: true, contentSessionId: ""}
+    - name: content-session-id-outside-grammar
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"contentSessionId":"legacy value","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkContentSession: true, contentSessionId: "legacy value"}
+    - name: context-native-presence-present
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":0,"totalSegments":0}'}
+      expected: {}
+    - name: context-native-presence-withheld
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":0,"totalSegments":0}'}
+      expected: {}
+    - name: representation-required
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {errorContains: "representation must be present"}
+    - name: partition-history-requires-section
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: partition, json: '{"kind":"history"}'}
+      expected: {errorContains: "history requires a nonnegative sectionIndex"}
+    - name: partition-main-refuses-section
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: partition, json: '{"kind":"main","sectionIndex":0}'}
+      expected: {errorContains: "main carries sectionIndex"}
+    - name: position-refuses-negative
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":-1,"recordedIndexState":"absent","turn":{}}'}
+      expected: {errorContains: "position or recorded-index state"}
+    - name: row-recorded-index-paired-with-state
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"present","turn":{}}'}
+      expected: {errorContains: "pair a present state with its recorded index"}
+    - name: row-recorded-index-absent-cannot-carry-value
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"absent","recordedIndex":0,"turn":{}}'}
+      expected: {errorContains: "pair a present state with its recorded index"}
+    - name: row-display-number-pattern
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"present","recordedIndex":42,"displayNumber":"27aa","turn":{"index":42}}'}
+      expected: {}
+    - name: row-display-number-absent-means-predating-server
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"absent","turn":{}}'}
+      expected: {}
+    - name: row-display-number-never-zero
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"absent","displayNumber":"0","turn":{}}'}
+      expected: {errorContains: "displayNumber is malformed"}
