@@ -494,6 +494,36 @@ wire:
       mutation: {description: "Native presence belongs to the repeated context, not the segment root"}
       input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
       expected: {forbiddenMembers: [nativePresence], contains: '"nativePresence":"present"'}
+    - name: native-attached-generic
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A tool-attached native record is carried in the segment"}
+      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-1","kind":"pi.toolresult.details","source":{"entryRef":"result-1","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":0,"toolCallId":"call-1"},"data":{"value":"kept"}}]}'}
+      expected: {requiredMembers: [nativeMetadata], contains: '"toolCallId":"call-1"'}
+    - name: native-turn-only
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A turn-attached record need not name a tool call"}
+      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-2","kind":"pi.custommessage.details","source":{"entryRef":"entry-2","sourceType":"pi.custom_message"},"attachment":{"turnIndex":0},"customType":"example","data":{"value":"kept"}}]}'}
+      expected: {requiredMembers: [nativeMetadata], contains: '"turnIndex":0', notContains: '"toolCallId"'}
+    - name: native-session-only-excluded
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: {description: "A session-level record cannot be written as a segment attachment"}
+      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"session-record","kind":"pi.custom.data","source":{"entryRef":"entry-3","sourceType":"pi.custom"},"customType":"example","data":{}}]}'}
+      expected: {errorContains: "session-level records do not travel with segments"}
+    - name: native-withheld-omitted
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A withheld projection omits native records"}
+      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {forbiddenMembers: [nativeMetadata], contains: '"nativePresence":"withheld"'}
+    - name: native-withheld-record-refused
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: {description: "A withheld context cannot disclose an attached native record"}
+      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"withheld","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-2","kind":"pi.custommessage.details","source":{"entryRef":"entry-2","sourceType":"pi.custom_message"},"attachment":{"turnIndex":0},"customType":"example","data":{}}]}'}
+      expected: {errorContains: "must not disclose withheld records"}
 raw:
   cases:
     - name: segment-v2-member-order-declared

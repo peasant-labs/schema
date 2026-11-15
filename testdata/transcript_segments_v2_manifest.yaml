@@ -79,6 +79,11 @@ requiredNames:
   - manifest-usage-unknown
   - directory-carries-no-display-number
   - segment-carries-no-native-presence
+  - native-attached-generic
+  - native-turn-only
+  - native-session-only-excluded
+  - native-withheld-omitted
+  - native-withheld-record-refused
   - segment-v2-member-order-declared
   - segment-v2-plain-marshal-refused
   - row-v2-plain-marshal-refused

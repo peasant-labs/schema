@@ -214,8 +214,9 @@ type NativeMetadataRecord struct {
 	Kind   NativeMetadataKind `json:"kind"`
 	Source NativeSourceRef    `json:"source"`
 	// Attachment-bearing records must travel in the same partition as their
-	// target turn, in a durable read or a segment that includes the turn. Current
-	// segments carry no native metadata. Validation builds the turn map per
+	// target turn, in a durable read or a segment that includes the turn. V1
+	// segments carry no native metadata; v2 segments carry the records attached
+	// to their rows. Validation builds the turn map per
 	// partition, so a payload omitting the turn cannot carry its attached record.
 	// A metadata-only session_detail frame therefore carries only session-level
 	// records without attachments. Consumers read attached evidence from the read

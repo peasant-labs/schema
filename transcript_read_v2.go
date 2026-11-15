@@ -360,6 +360,14 @@ func (s TranscriptSegmentV2) Validate() error {
 			return err
 		}
 	}
+	if len(s.NativeMetadata) > 0 && s.Context.NativePresence != TranscriptNativePresent {
+		return fmt.Errorf("%snativeMetadata is present while the context says native records are absent or withheld; the segment must not disclose withheld records; omit the records or emit their correct presence", where)
+	}
+	for i, record := range s.NativeMetadata {
+		if record.Attachment == nil || record.Attachment.TurnIndex == nil {
+			return fmt.Errorf("%snativeMetadata[%d] is not attached to a turn; session-level records do not travel with segments; emit only records attached to the served rows", where, i)
+		}
+	}
 	return nil
 }
 
