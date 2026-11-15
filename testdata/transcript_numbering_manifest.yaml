@@ -34,3 +34,24 @@ requiredNames:
   - number-ascending-in-source-order
   - number-served-position-skips-dropped-rows
   - numbering-golden-seeded-from-prechange-js
+  - cook-role-case-variant-keeps-and-suffixes
+  - cook-role-case-variant-does-not-open-task
+  - cook-role-both-spellings-present-canonical-wins
+  - cook-role-both-spellings-reversed-canonical-wins
+  - cook-role-null-distinct-from-absent
+  - cook-escaped-key-spelling-is-the-canonical-key
+  - cook-protected-member-case-variant-does-not-protect
+  - cook-depth-case-variant-is-absent
+  - cook-content-case-variant-is-not-equal
+  - cook-content-parts-case-variant-is-not-an-image
+  - cook-unknown-member-is-ignored
+  - cook-duplicate-member-refused
+  - cook-escaped-duplicate-member-refused
+  - cook-absent-content-adjacent-duplicate-refused
+  - cook-null-content-adjacent-duplicate-refused
+  - cook-invalid-provenance-refused
+  - cook-valid-provenance-empty-submission-kept
+  - cook-provenance-unknown-member-refused
+  - cook-pi-skips-evidence-validation
+  - cook-null-provenance-refused
+  - cook-refusal-is-not-a-verdict

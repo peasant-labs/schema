@@ -32,7 +32,6 @@ type v2TurnExpected struct {
 
 type v2CaptureInput struct {
 	Detail string `yaml:"detail"`
-	Want   int    `yaml:"want"`
 }
 
 type v2CaptureExpected struct {
@@ -376,10 +375,10 @@ func TestTranscriptV2Turn(t *testing.T) {
 	}
 }
 
-func TestTranscriptV2TurnBytes(t *testing.T) {
+func TestTranscriptCookTurns(t *testing.T) {
 	for _, c := range loadSegmentV2Cases(t).Capture.Cases {
 		t.Run(c.Name, func(t *testing.T) {
-			turns, err := schema.TranscriptV2TurnBytes(json.RawMessage(c.Input.Detail), c.Input.Want)
+			turns, err := schema.NewTranscriptCookTurns(json.RawMessage(c.Input.Detail))
 			if c.Classification == testcase.MustFail {
 				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
 					t.Fatalf("capture error = %v, want text %q", err, c.Expected.ErrorContains)
@@ -393,8 +392,12 @@ func TestTranscriptV2TurnBytes(t *testing.T) {
 				t.Fatalf("captured %d turns, want %d", len(turns), len(c.Expected.Turns))
 			}
 			for i, turn := range turns {
-				if string(turn.Raw()) != c.Expected.Turns[i] {
-					t.Fatalf("turn %d = %q, want %q", i, turn.Raw(), c.Expected.Turns[i])
+				if string(turn.Raw().Raw()) != c.Expected.Turns[i] {
+					t.Fatalf("turn %d = %q, want %q", i, turn.Raw().Raw(), c.Expected.Turns[i])
+				}
+				var decoded schema.TurnDetail
+				if err := json.Unmarshal(turn.Raw().Raw(), &decoded); err != nil || !reflect.DeepEqual(decoded, turn.Detail()) {
+					t.Fatalf("turn %d was not paired with the detail decoded from its bytes: %v", i, err)
 				}
 			}
 		})

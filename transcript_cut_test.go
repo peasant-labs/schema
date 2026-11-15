@@ -244,7 +244,7 @@ func TestCutTranscriptSegments(t *testing.T) {
 				turns[i] = turn
 			}
 			if c.Cook {
-				verdict := schema.CookTranscriptRows(turns, schema.HarnessCodex)
+				verdict := cookFixtureTurns(t, turns)
 				served := make([]schema.TurnDetail, 0, len(turns))
 				for i, turn := range turns {
 					if verdict[i].Keep {

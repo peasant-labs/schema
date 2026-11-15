@@ -113,28 +113,3 @@ func DecodeTranscriptRecordedIndex(turn TranscriptV2Turn) (TranscriptRecordedInd
 	index := int(n)
 	return TranscriptRecordedIndexPresent, &index
 }
-
-// TranscriptV2TurnBytes captures the turns from one served session detail in
-// stored order. want is the number of turns read from the same bytes by the
-// caller; a different count cannot be paired safely.
-func TranscriptV2TurnBytes(sessionDetail json.RawMessage, want int) ([]TranscriptV2Turn, error) {
-	const where = "v2 turn capture failed at schema.TranscriptV2TurnBytes: "
-	trimmed := bytes.TrimSpace(sessionDetail)
-	if !utf8.Valid(sessionDetail) || len(trimmed) == 0 || trimmed[0] != '{' || !json.Valid(trimmed) {
-		return nil, fmt.Errorf("%ssession detail is not one valid UTF-8 JSON object; turn bytes cannot be paired; pass the served session detail object", where)
-	}
-	var detail map[string]json.RawMessage
-	if err := json.Unmarshal(sessionDetail, &detail); err != nil {
-		return nil, fmt.Errorf("%sdecode session detail: %w", where, err)
-	}
-	var turns []TranscriptV2Turn
-	if raw, ok := detail["turns"]; ok && !bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
-		if err := json.Unmarshal(raw, &turns); err != nil {
-			return nil, fmt.Errorf("%sdecode turns: %w; pass the served turn array", where, err)
-		}
-	}
-	if len(turns) != want {
-		return nil, fmt.Errorf("%sthe served detail contains %d turns but the typed read contains %d; bytes cannot be paired safely; decode both from the same detail", where, len(turns), want)
-	}
-	return turns, nil
-}

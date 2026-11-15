@@ -87,7 +87,7 @@ func TestResolveTranscriptWindowV2(t *testing.T) {
 				for _, row := range c.Input.Turns {
 					source[row.Position] = schema.TurnDetail{Role: schema.Role(row.Role), Depth: row.Depth, Content: row.Content}
 				}
-				verdict := schema.CookTranscriptRows(source, schema.HarnessCodex)
+				verdict := cookFixtureTurns(t, source)
 				served := make([]schema.TranscriptWindowTurnV2, 0, len(turns))
 				for i, row := range turns {
 					if verdict[i].Keep {

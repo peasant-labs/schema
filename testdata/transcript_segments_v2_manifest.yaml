@@ -18,8 +18,12 @@ requiredNames:
   - segment-v2-rows-pair-with-stored-turns
   - segment-v2-empty-turns-absent
   - segment-v2-empty-turns-null
-  - segment-v2-missing-turns-count-refused
+  - segment-v2-nonarray-turns-refused
   - segment-v2-detail-not-object-refused
+  - segment-v2-envelope-refused
+  - segment-v2-nonobject-turn-refused
+  - segment-v2-typed-decode-refused
+  - segment-v2-nested-duplicate-refused
   - provenance-empty-object-refused-before-cook
   - segment-v2-second-segment-rows-accepted
   - segment-v2-row-position-off-by-one-refused

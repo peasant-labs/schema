@@ -98,42 +98,64 @@ capture:
       mutation: {description: "Capture each turn from the served detail without re-encoding it"}
       input:
         detail: '{"turns":[{"a": 1, "index":null},{"s":"<a>","n":1e3}]}'
-        want: 2
       expected:
         turns: ['{"a": 1, "index":null}', '{"s":"<a>","n":1e3}']
     - name: segment-v2-rows-pair-with-stored-turns
-      classification: must-fail
+      classification: must-pass
       provenance: *boundary
-      mutation: {description: "Refuse a mismatch between the typed count and captured turns"}
+      mutation: {description: "Pair the stored turn and typed value from one capture"}
       input:
         detail: '{"turns":[{"index":1}]}'
-        want: 2
       expected:
-        errorContains: "contains 1 turns but the typed read contains 2"
+        turns: ['{"index":1}']
     - name: segment-v2-empty-turns-absent
       classification: must-pass
       provenance: *legacy
-      mutation: {description: "An absent turn array is empty only when the typed count is zero"}
-      input: {detail: '{}', want: 0}
+      mutation: {description: "An absent turn array yields no turns"}
+      input: {detail: '{}'}
       expected: {turns: []}
     - name: segment-v2-empty-turns-null
       classification: must-pass
       provenance: *legacy
-      mutation: {description: "A null turn array is empty only when the typed count is zero"}
-      input: {detail: '{"turns":null}', want: 0}
+      mutation: {description: "A null turn array yields no turns"}
+      input: {detail: '{"turns":null}'}
       expected: {turns: []}
-    - name: segment-v2-missing-turns-count-refused
+    - name: segment-v2-nonarray-turns-refused
       classification: must-fail
       provenance: *boundary
-      mutation: {description: "Missing turns cannot account for a nonzero typed count"}
-      input: {detail: '{}', want: 1}
-      expected: {errorContains: "contains 0 turns but the typed read contains 1"}
+      mutation: {description: "A present turns member must be an array or null"}
+      input: {detail: '{"turns":{}}'}
+      expected: {errorContains: "turns is not an array"}
     - name: segment-v2-detail-not-object-refused
       classification: must-fail
       provenance: *boundary
       mutation: {description: "The capture boundary requires a session detail object"}
-      input: {detail: '[]', want: 0}
-      expected: {errorContains: "not one valid UTF-8 JSON object"}
+      input: {detail: '[]'}
+      expected: {errorContains: "not one valid JSON object"}
+    - name: segment-v2-envelope-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "The caller must select the detail rather than passing an envelope"}
+      input: {detail: '{"sessionDetail":{"turns":[]}}'}
+      expected: {errorContains: "an envelope was supplied"}
+    - name: segment-v2-nonobject-turn-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A turn position must hold an object"}
+      input: {detail: '{"turns":[null]}'}
+      expected: {errorContains: "turn 0 is not one JSON object"}
+    - name: segment-v2-typed-decode-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A turn value that cannot decode to the typed domain is refused"}
+      input: {detail: '{"turns":[{"role":"assistant","content":true}]}'}
+      expected: {errorContains: "turn 0 cannot be decoded"}
+    - name: segment-v2-nested-duplicate-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A duplicate member in a turn descendant is refused"}
+      input: {detail: '{"turns":[{"toolCalls":[{"name":"x","name":"y"}]}]}'}
+      expected: {errorContains: 'duplicate object key "name"'}
 evidence:
   cases:
     - name: provenance-empty-object-refused-before-cook
