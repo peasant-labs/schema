@@ -194,6 +194,9 @@ func validateTranscriptRefChain(refs []TranscriptSegmentRefV2, firstOrdinal, tot
 			if ref.Index >= total {
 				return fmt.Errorf("%ssegment %d is outside totalSegments %d; the ref names an ordinal the partition does not have; rebuild the directory", where, ref.Index, total)
 			}
+			if i == 0 {
+				return fmt.Errorf("%ssegment %d does not match expected first ordinal %d; the interval cannot be placed; pass refs starting at the requested ordinal", where, ref.Index, firstOrdinal)
+			}
 			return fmt.Errorf("%ssegment ordinals %d and %d are not consecutive; a host may have concatenated non-adjacent or reordered pages; pass adjacent pages in ordinal order", where, refs[i-1].Index, ref.Index)
 		}
 		if i == 0 {
@@ -292,6 +295,7 @@ func (w TranscriptWindowV2) validateWindowShape(checkRequestedBounds bool) error
 // resolved on, including the anchor and an optional requested-position widening.
 func ValidateTranscriptWindowV2Coverage(window TranscriptWindowV2, refs []TranscriptSegmentRefV2) error {
 	const where = "v2 transcript window coverage failed at schema.ValidateTranscriptWindowV2Coverage: "
+	// Skip numeric requested bounds: the containing-ref check pins them after matching the ref edges.
 	if err := window.validateWindowShape(false); err != nil {
 		return err
 	}
