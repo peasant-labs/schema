@@ -140,7 +140,8 @@ const (
 	// and getTranscriptWindow with the existing transcript types.
 	// Bumped to 0.40.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	VillageAPIVersion = "0.40.0"
+	// Bumped to 0.41.0 for the additive positioned segmented transcript reads.
+	VillageAPIVersion = "0.41.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -380,5 +381,6 @@ const (
 	// re-documented folded-turn turnCount fields (additive = minor bump).
 	// Bumped to 0.50.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	TypesVersion = "0.50.0"
+	// Bumped to 0.51.0 for the positioned segmented transcript read catalog.
+	TypesVersion = "0.51.0"
 )
