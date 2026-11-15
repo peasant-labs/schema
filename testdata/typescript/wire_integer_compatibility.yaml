@@ -101,6 +101,78 @@ cases:
     mutation: {description: "Reject the first unsafe source position"}
     input: {target: retained, json: '{"kind":"unknown","namespace":"record","payload":"{}","pointer":"","position":9007199254740992,"recordIndex":0,"sourceRef":"s"}'}
     expected: {valid: false}
+  - name: header-count-omitted-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "An absent served count is omitted"}
+    mutation: {description: "Keep a missing count distinct from zero"}
+    input: {target: header, json: '{}'}
+    expected: {valid: true}
+  - name: header-count-null-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A null count is not a header value"}
+    mutation: {description: "Replace omission with explicit null"}
+    input: {target: header, json: '{"conversationTurnCount":null}'}
+    expected: {valid: false}
+  - name: header-count-zero-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "An explicitly recorded zero is retained"}
+    mutation: {description: "Pass a zero count"}
+    input: {target: header, json: '{"conversationTurnCount":0}'}
+    expected: {valid: true}
+  - name: header-count-negative-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A legacy header preserves negative counts"}
+    mutation: {description: "Pass a negative integer"}
+    input: {target: header, json: '{"conversationTurnCount":-1}'}
+    expected: {valid: true}
+  - name: header-count-safe-maximum-accepted
+    classification: must-pass
+    provenance: {source: boundary, ref: "The JavaScript safe-integer boundary remains accepted"}
+    mutation: {description: "Pass the maximum safe integer"}
+    input: {target: header, json: '{"conversationTurnCount":9007199254740991}'}
+    expected: {valid: true}
+  - name: header-count-positive-unsafe-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A served header carries integers beyond the safe range"}
+    mutation: {description: "Pass the first positive unsafe integer"}
+    input: {target: header, json: '{"conversationTurnCount":9007199254740992}'}
+    expected: {valid: true}
+  - name: header-count-negative-unsafe-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A served header carries negative integers beyond the safe range"}
+    mutation: {description: "Pass the first negative unsafe integer"}
+    input: {target: header, json: '{"conversationTurnCount":-9007199254740992}'}
+    expected: {valid: true}
+  - name: header-count-fraction-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Served counts must be integers"}
+    mutation: {description: "Replace an integer with a fractional value"}
+    input: {target: header, json: '{"conversationTurnCount":1.5}'}
+    expected: {valid: false}
+  - name: header-count-string-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Served counts are JSON numbers"}
+    mutation: {description: "Replace an integer with a string"}
+    input: {target: header, json: '{"conversationTurnCount":"1"}'}
+    expected: {valid: false}
+  - name: header-count-boolean-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Served counts are JSON numbers"}
+    mutation: {description: "Replace an integer with a boolean"}
+    input: {target: header, json: '{"conversationTurnCount":true}'}
+    expected: {valid: false}
+  - name: header-count-array-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Served counts are JSON numbers"}
+    mutation: {description: "Replace an integer with an array"}
+    input: {target: header, json: '{"conversationTurnCount":[]}'}
+    expected: {valid: false}
+  - name: header-count-object-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Served counts are JSON numbers"}
+    mutation: {description: "Replace an integer with an object"}
+    input: {target: header, json: '{"conversationTurnCount":{}}'}
+    expected: {valid: false}
   - name: header-upper-endpoint-accepted
     classification: must-pass
     provenance: {source: requirement, ref: "A Go int64 maximum rounds when JSON.parse produces a number"}

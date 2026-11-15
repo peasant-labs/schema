@@ -2429,6 +2429,11 @@ export const canonicalSessionGraphFixtures = {
         "field": "inputSubmissionCount"
       },
       {
+        "component": "TranscriptSessionHeader",
+        "field": "inputSubmissionCount",
+        "domain": "served_int64"
+      },
+      {
         "component": "AuthoritativeSessionStats",
         "field": "conversationTurnCount"
       },
@@ -2459,6 +2464,11 @@ export const canonicalSessionGraphFixtures = {
       {
         "component": "SessionDetailReadPayload",
         "field": "conversationTurnCount"
+      },
+      {
+        "component": "TranscriptSessionHeader",
+        "field": "conversationTurnCount",
+        "domain": "served_int64"
       },
       {
         "component": "QualitySession",

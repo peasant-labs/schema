@@ -1,10 +1,32 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { parse } from "yaml";
 
 import * as contract from "../dist/index.js";
 import { sessionGraphFixtures } from "../dist/fixtures/session-graph.js";
+import { Classification, loadCorpus } from "../dist/testcase.js";
 
 const fixtures = sessionGraphFixtures();
+const integerFixture = "../../testdata/typescript/wire_integer_compatibility";
+const integerSource = await readFile(new URL(`${integerFixture}.yaml`, import.meta.url), "utf8");
+const integerManifest = parse(await readFile(new URL(`${integerFixture}_manifest.yaml`, import.meta.url), "utf8"), { uniqueKeys: true });
+const integerCases = loadCorpus(integerSource, {
+  decodeInput: (value) => value,
+  decodeExpected: (value) => value,
+}).cases;
+assert.deepEqual(Object.keys(integerManifest), ["requiredNames"]);
+assert.ok(integerManifest.requiredNames.length > 0);
+assert.equal(new Set(integerManifest.requiredNames).size, integerManifest.requiredNames.length);
+assert.deepEqual(integerCases.map((row) => row.name).sort(), [...integerManifest.requiredNames].sort());
+const headerRows = integerCases.filter((row) => row.input.target === "header");
+assert.deepEqual(
+  headerRows.map((row) => row.name).sort(),
+  integerManifest.requiredNames.filter((name) => name.startsWith("header-")).sort(),
+);
+for (const row of headerRows) {
+  assert.equal(row.expected.valid, row.classification === Classification.MustPass, `${row.name}: verdict and classification must agree`);
+}
 
 // A counts row states its value under one of the two session count keys; the
 // value, not the key, is what every carrier must accept or refuse.
@@ -14,15 +36,20 @@ const countValue = (row) => {
   return key === undefined ? undefined : raw[key];
 };
 
-test("every canonical count carrier enforces the shared count corpus", async (t) => {
-  const rows = [...fixtures.durable.counts.cases, ...fixtures.durable.invalid_counts.cases];
-  assert.ok(rows.some((row) => row.classification === "must-pass") && rows.some((row) => row.classification === "must-fail"), "the count corpus must hold accepted and refused rows");
-  for (const { component, field, nullable = false } of fixtures.typescriptConstraints.countCarriers) await t.test(`${component}.${field}`, () => {
+test("every listed count carrier enforces its declared count corpus", async (t) => {
+  const canonicalRows = [...fixtures.durable.counts.cases, ...fixtures.durable.invalid_counts.cases];
+  for (const rows of [canonicalRows, headerRows]) {
+    assert.ok(rows.some((row) => row.classification === Classification.MustPass) && rows.some((row) => row.classification === Classification.MustFail), "each count corpus must hold accepted and refused rows");
+  }
+  for (const { component, field, nullable = false, domain = "canonical" } of fixtures.typescriptConstraints.countCarriers) await t.test(`${component}.${field}`, () => {
     const schema = contract[`z${component}`];
     assert.ok(schema?.shape?.[field], `${component} must expose ${field}`);
+    assert.ok(domain === "canonical" || domain === "served_int64", `${component}.${field}: unknown count domain ${domain}`);
+    if (domain === "served_int64") assert.equal(nullable, false, `${component}.${field}: served header counts omit null`);
+    const rows = domain === "canonical" ? canonicalRows : headerRows;
     for (const row of rows) {
       const value = countValue(row);
-      let accepted = row.classification === "must-pass";
+      let accepted = row.classification === Classification.MustPass;
       // A nullable carrier is required and reads null as unmeasured.
       if (nullable && value === undefined) accepted = false;
       if (nullable && value === null) accepted = true;

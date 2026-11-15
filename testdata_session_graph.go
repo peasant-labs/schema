@@ -49,11 +49,13 @@ type SessionGraphEnumInput struct {
 
 // sessionGraphCountCarrier names one optional count field on a generated
 // component. Nullable marks a field that is required and reads null as
-// unmeasured, where every other carrier omits an unmeasured count.
+// unmeasured, where every other carrier omits an unmeasured count. Domain
+// selects the served-header corpus when the field carries legacy integers.
 type sessionGraphCountCarrier struct {
 	Component string `yaml:"component"`
 	Field     string `yaml:"field"`
 	Nullable  bool   `yaml:"nullable"`
+	Domain    string `yaml:"domain"`
 }
 type SessionGraphFixtureCorpus struct {
 	TypeScriptConstraints struct {

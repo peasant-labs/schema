@@ -16,6 +16,18 @@ requiredNames:
   - int32-negative-count-refused
   - retained-unknown-keeps-safe-number
   - retained-unknown-unsafe-number-refused
+  - header-count-omitted-accepted
+  - header-count-null-refused
+  - header-count-zero-accepted
+  - header-count-negative-accepted
+  - header-count-safe-maximum-accepted
+  - header-count-positive-unsafe-accepted
+  - header-count-negative-unsafe-accepted
+  - header-count-fraction-refused
+  - header-count-string-refused
+  - header-count-boolean-refused
+  - header-count-array-refused
+  - header-count-object-refused
   - header-upper-endpoint-accepted
   - header-upper-ambiguous-overflow-indistinguishable
   - header-lower-endpoint-accepted
