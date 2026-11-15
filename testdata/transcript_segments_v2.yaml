@@ -338,6 +338,30 @@ wire:
       mutation: *wireMutation
       input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":0,"totalSegments":0}'}
       expected: {}
+    - name: context-harness-absent
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "An omitted harness stays omitted in the read context"}
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkHarness: true}
+    - name: context-harness-present-empty
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "An explicitly empty harness is present and is not an omitted value"}
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"harness":"","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkHarness: true, harness: ""}
+    - name: context-harness-legacy-spelling
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Preserve the spelling of a served legacy harness"}
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"harness":"claude","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkHarness: true, harness: "claude"}
+    - name: context-harness-null-projects-as-absent
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A null input produces no harness in the output"}
+      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"harness":null,"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkHarness: true}
     - name: context-native-presence-withheld
       classification: must-pass
       provenance: *wireRequirement

@@ -84,6 +84,8 @@ type v2WireExpected struct {
 	ErrorContains       string  `yaml:"errorContains"`
 	CheckContentSession bool    `yaml:"checkContentSession"`
 	ContentSessionID    *string `yaml:"contentSessionId"`
+	CheckHarness        bool    `yaml:"checkHarness"`
+	Harness             *string `yaml:"harness"`
 }
 
 type v2RawInput struct {
@@ -161,6 +163,29 @@ func TestTranscriptV2WireValidation(t *testing.T) {
 				err = context.Validate()
 				if c.Expected.CheckContentSession && !reflect.DeepEqual(context.ContentSessionID, c.Expected.ContentSessionID) {
 					t.Fatalf("contentSessionId = %v, want %v", context.ContentSessionID, c.Expected.ContentSessionID)
+				}
+				if c.Expected.CheckHarness {
+					if !reflect.DeepEqual(context.Harness, c.Expected.Harness) {
+						t.Fatalf("harness = %v, want %v", context.Harness, c.Expected.Harness)
+					}
+					wire, marshalErr := json.Marshal(context)
+					if marshalErr != nil {
+						t.Fatal(marshalErr)
+					}
+					var object map[string]json.RawMessage
+					if err := json.Unmarshal(wire, &object); err != nil {
+						t.Fatal(err)
+					}
+					raw, present := object["harness"]
+					if present != (c.Expected.Harness != nil) {
+						t.Fatalf("marshaled harness presence = %v, want %v: %s", present, c.Expected.Harness != nil, wire)
+					}
+					if present {
+						var value string
+						if err := json.Unmarshal(raw, &value); err != nil || value != *c.Expected.Harness {
+							t.Fatalf("marshaled harness = %s, want %q: %v", raw, *c.Expected.Harness, err)
+						}
+					}
 				}
 			case "partition":
 				var partition schema.TranscriptSegmentPartition

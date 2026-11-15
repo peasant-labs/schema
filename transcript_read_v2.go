@@ -118,7 +118,7 @@ type TranscriptReadContext struct {
 	ContentSessionID       *string                  `json:"contentSessionId,omitempty"`
 	Revision               string                   `json:"revision"`
 	Representation         string                   `json:"representation"`
-	Harness                Harness                  `json:"harness,omitempty"`
+	Harness                *string                  `json:"harness,omitempty" nullable:"false"`
 	Model                  string                   `json:"model,omitempty"`
 	ThinkingLevel          ThinkingLevel            `json:"thinkingLevel,omitempty"`
 	ThinkingLevelRaw       ThinkingLevelRaw         `json:"thinkingLevelRaw,omitempty"`

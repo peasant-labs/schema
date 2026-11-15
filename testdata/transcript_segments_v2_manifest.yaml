@@ -53,6 +53,10 @@ requiredNames:
   - content-session-id-empty
   - content-session-id-outside-grammar
   - context-native-presence-present
+  - context-harness-absent
+  - context-harness-present-empty
+  - context-harness-legacy-spelling
+  - context-harness-null-projects-as-absent
   - context-native-presence-withheld
   - representation-required
   - partition-history-requires-section
