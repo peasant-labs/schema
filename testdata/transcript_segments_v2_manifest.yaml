@@ -20,3 +20,4 @@ requiredNames:
   - segment-v2-empty-turns-null
   - segment-v2-missing-turns-count-refused
   - segment-v2-detail-not-object-refused
+  - provenance-empty-object-refused-before-cook

@@ -23,6 +23,12 @@ import (
 // the new one. Change it only as a deliberate contract change.
 const TranscriptSegmentBudgetBytes = 1 << 20
 
+// CutVersion names the producer rules for the turn byte measure, segment cut,
+// window resolvers, cooking, numbering, and TranscriptSegmentBudgetBytes.
+// Changing served rows, segment boundaries, or display numbers changes this
+// identity and adds a new version's cut and numbering fixture expectations.
+const CutVersion = "c1"
+
 // The window span is the number of assistant turns collected on each side of
 // the anchor. A caller may narrow it; it cannot widen the design value.
 const (

@@ -134,3 +134,11 @@ capture:
       mutation: {description: "The capture boundary requires a session detail object"}
       input: {detail: '[]', want: 0}
       expected: {errorContains: "not one valid UTF-8 JSON object"}
+evidence:
+  cases:
+    - name: provenance-empty-object-refused-before-cook
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "An empty provenance object has no valid evidence dimensions"}
+      input: '{"role":"system","content":"","provenance":{}}'
+      expected: "one or more evidence dimensions are missing or outside their closed sets"

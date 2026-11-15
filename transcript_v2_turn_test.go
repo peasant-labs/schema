@@ -40,8 +40,9 @@ type v2CaptureExpected struct {
 }
 
 type segmentV2Cases struct {
-	Turns   testcase.Corpus[v2TurnInput, v2TurnExpected]       `yaml:"turns"`
-	Capture testcase.Corpus[v2CaptureInput, v2CaptureExpected] `yaml:"capture"`
+	Turns    testcase.Corpus[v2TurnInput, v2TurnExpected]       `yaml:"turns"`
+	Capture  testcase.Corpus[v2CaptureInput, v2CaptureExpected] `yaml:"capture"`
+	Evidence testcase.Corpus[string, string]                    `yaml:"evidence"`
 }
 
 func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
@@ -49,15 +50,37 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	fixture := decodeStrictYAML[segmentV2Cases](t, transcriptSegmentsV2YAML, "v2 segment fixture")
 	caseassert.RequireValid(t, fixture.Turns)
 	caseassert.RequireValid(t, fixture.Capture)
-	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases))
+	caseassert.RequireValid(t, fixture.Evidence)
+	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases))
 	for _, c := range fixture.Turns.Cases {
 		names = append(names, c.Name)
 	}
 	for _, c := range fixture.Capture.Cases {
 		names = append(names, c.Name)
 	}
+	for _, c := range fixture.Evidence.Cases {
+		names = append(names, c.Name)
+	}
 	caseassert.RequireManifestNames(t, "v2 segment", transcriptSegmentsV2ManifestYAML, names)
 	return fixture
+}
+
+func TestTranscriptV2TurnEvidence(t *testing.T) {
+	for _, c := range loadSegmentV2Cases(t).Evidence.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var turn schema.TurnDetail
+			if err := json.Unmarshal([]byte(c.Input), &turn); err != nil {
+				t.Fatal(err)
+			}
+			if turn.Provenance == nil {
+				t.Fatal("fixture does not carry provenance")
+			}
+			err := turn.Provenance.Validate()
+			if err == nil || !strings.Contains(err.Error(), c.Expected) {
+				t.Fatalf("evidence error = %v, want text %q", err, c.Expected)
+			}
+		})
+	}
 }
 
 func TestTranscriptV2Turn(t *testing.T) {

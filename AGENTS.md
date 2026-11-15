@@ -75,6 +75,15 @@ window reads, equal to the Go constants. Do not add a TypeScript cut, measure or
 window resolver; if a browser ever needs one, that is a contract change with its
 own recorded decision.
 
+**Recorded exception:** `transcript_numbering.go` holds the cooking and
+numbering rule for the same reason as the cut: every server that serves the
+partitioned reads must decide membership and assign the same display number.
+Its JavaScript counterpart is the browser rule that already exists, because a
+whole-document render or Markdown export has no server-numbered row. The
+counterpart is pinned by one shared fixture, is never consulted for a
+server-numbered row, and fails that fixture on divergence. The rule against a
+TypeScript cut, measure, or window resolver above is unchanged.
+
 **Recorded exception:** Kickstart response and view components are closed as well as
 request bodies. Adding a response property is a breaking change to pinned consumers;
 this choice is specific to the kickstart contract and is not a general precedent.
