@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -23,12 +22,19 @@ var TranscriptSessionHeaderPresenceMembers = []string{
 // session detail. It excludes nested records and preserves the absence of
 // source members which would otherwise acquire a typed zero value.
 type TranscriptSessionHeader struct {
-	SchemaVersion         PushContractVersion   `json:"schemaVersion,omitempty"`
-	ID                    *string               `json:"id,omitempty" nullable:"false"`
-	Harness               *string               `json:"harness,omitempty" nullable:"false"`
-	StartTime             *time.Time            `json:"startTime,omitempty" nullable:"false"`
-	EndTime               *time.Time            `json:"endTime,omitempty" nullable:"false"`
-	DurationMins          *float64              `json:"durationMins,omitempty" nullable:"false"`
+	SchemaVersion PushContractVersion `json:"schemaVersion,omitempty"`
+	ID            *string             `json:"id,omitempty" nullable:"false"`
+	Harness       *string             `json:"harness,omitempty" nullable:"false"`
+	// Timestamps retain the served spelling, even if it cannot be re-encoded
+	// by time.Time. They make no claim that the value is a usable instant.
+	StartTime    *string  `json:"startTime,omitempty" nullable:"false"`
+	EndTime      *string  `json:"endTime,omitempty" nullable:"false"`
+	DurationMins *float64 `json:"durationMins,omitempty" nullable:"false"`
+	// Integer counters retain served values. JavaScript numbers may round values
+	// outside the safe-integer range, so Zod cannot check their exact original
+	// int64 lexemes. Go's constructor and served bytes are authoritative.
+	// Readers treat unsafe counts as unknown: never display them as exact or use
+	// them for ordering or totals.
 	TotalTokens           *int                  `json:"totalTokens,omitempty" nullable:"false"`
 	TokensIn              *int                  `json:"tokensIn,omitempty" nullable:"false"`
 	TokensOut             *int                  `json:"tokensOut,omitempty" nullable:"false"`

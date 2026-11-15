@@ -1,0 +1,140 @@
+cases:
+  - name: integer-without-maximum-accepts-wide-values
+    classification: must-pass
+    provenance: {source: requirement, ref: "An unbounded integer property carries served values beyond the JavaScript safe range"}
+    mutation: {description: "Replace the generator's safe-integer default"}
+    input:
+      property: {type: integer}
+      before: 'z.int()'
+    expected:
+      after: 'z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)'
+      values: [{value: 9007199254740992, valid: true}, {value: -9007199254740992, valid: true}, {value: 1.5, valid: false}, {value: 100000000000000000000, valid: false}, {value: -100000000000000000000, valid: false}]
+  - name: integer-minimum-kept-without-maximum
+    classification: must-pass
+    provenance: {source: requirement, ref: "A declared minimum survives the wide integer rule"}
+    mutation: {description: "Preserve the lower bound while widening integer validation"}
+    input:
+      property: {type: integer, minimum: 0}
+      before: 'z.int().gte(0)'
+    expected:
+      after: 'z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)'
+      values: [{value: 9007199254740992, valid: true}, {value: -1, valid: false}, {value: 1.5, valid: false}]
+  - name: integer-safe-maximum-keeps-safe-check
+    classification: must-pass
+    provenance: {source: requirement, ref: "A declared maximum within the safe range keeps the generated integer form"}
+    mutation: {description: "Retain both declared bounds"}
+    input:
+      property: {type: integer, minimum: 0, maximum: 10}
+      before: 'z.int().gte(0).lte(10)'
+    expected:
+      after: 'z.int().gte(0).lte(10)'
+      values: [{value: 0, valid: true}, {value: 10, valid: true}, {value: 11, valid: false}, {value: -1, valid: false}]
+  - name: integer-wide-maximum-is-applied-separately
+    classification: must-pass
+    provenance: {source: requirement, ref: "A maximum above the safe range must not add an implicit safe-integer maximum"}
+    mutation: {description: "Keep a declared wide upper bound and minimum"}
+    input:
+      property: {type: integer, minimum: 0, maximum: 10000000000000000}
+      before: 'z.int().gte(0).lte(10000000000000000)'
+    expected:
+      after: 'z.number().refine(Number.isInteger).gte(0).lte(10000000000000000)'
+      values: [{value: 9007199254740992, valid: true}, {value: 10000000000000002, valid: false}, {value: -1, valid: false}]
+  - name: integer-int64-keeps-original-bigint
+    classification: must-pass
+    provenance: {source: requirement, ref: "Formatted int64 keeps its existing bigint validator and bounds"}
+    mutation: {description: "Leave format-derived bigint validation untouched"}
+    input:
+      property: {type: integer, format: int64}
+      before: "z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })"
+    expected:
+      after: "z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })"
+      values: [{value: "9223372036854775807", valid: true}, {value: "-9223372036854775808", valid: true}, {value: "9223372036854775808", valid: false}, {value: "-9223372036854775809", valid: false}]
+  - name: integer-int32-keeps-format-bounds
+    classification: must-pass
+    provenance: {source: requirement, ref: "Formatted int32 keeps its existing range checks"}
+    mutation: {description: "Leave format-derived signed int32 validation untouched"}
+    input:
+      property: {type: integer, format: int32}
+      before: 'z.int().min(-2147483648).max(2147483647)'
+    expected:
+      after: 'z.int().min(-2147483648).max(2147483647)'
+      values: [{value: -2147483648, valid: true}, {value: 2147483647, valid: true}, {value: -2147483649, valid: false}, {value: 2147483648, valid: false}]
+  - name: integer-int64-keeps-earlier-safe-number-refinement
+    classification: must-pass
+    provenance: {source: requirement, ref: "Earlier postprocessors may already refine an int64 property"}
+    mutation: {description: "Preserve the existing safe-integer number expression verbatim"}
+    input:
+      property: {type: integer, format: int64, minimum: 0, maximum: 9007199254740991}
+      before: 'z.number().int().min(0).max(9007199254740991)'
+    expected:
+      after: 'z.number().int().min(0).max(9007199254740991)'
+      values: [{value: 0, valid: true}, {value: 9007199254740991, valid: true}, {value: 9007199254740992, valid: false}]
+  - name: integer-maximum-beyond-int64-is-capped
+    classification: must-pass
+    provenance: {source: requirement, ref: "An unformatted integer stays within the representable int64 domain"}
+    mutation: {description: "Retain the declared maximum and intersect it with the int64 domain"}
+    input:
+      property: {type: integer, maximum: 100000000000000000000}
+      before: 'z.int().lte(100000000000000000000)'
+    expected:
+      after: 'z.number().refine(Number.isInteger).lte(100000000000000000000).gte(-9223372036854775808).lte(9223372036854775808)'
+      values: [{value: 9007199254740992, valid: true}, {value: 100000000000000000000, valid: false}]
+  - name: integer-publication-reachable-component-unchanged
+    classification: must-pass
+    provenance: {source: requirement, ref: "Existing publication validators stay unchanged, including referenced components"}
+    mutation: {description: "Keep an unformatted integer in a component referenced by the publication root"}
+    input:
+      property: {type: integer}
+      before: 'z.int()'
+      preserve: Fixture
+    expected:
+      after: 'z.int()'
+      values: [{value: 9007199254740991, valid: true}, {value: 9007199254740992, valid: false}]
+  - name: integer-missing-preserved-root-fails-generation
+    classification: must-fail
+    provenance: {source: requirement, ref: "A missing protected publication root cannot silently broaden its validators"}
+    mutation: {description: "Name a nonexistent protected root"}
+    input:
+      property: {type: integer}
+      before: 'z.int()'
+      preserve: Missing
+    expected:
+      error: 'missing protected component'
+  - name: datetime-with-offset
+    classification: must-pass
+    provenance: {source: requirement, ref: "Ordinary date-time properties accept RFC3339 numeric offsets"}
+    mutation: {description: "Enable offset handling"}
+    input:
+      property: {type: string, format: date-time}
+      before: 'z.iso.datetime()'
+    expected:
+      after: 'z.iso.datetime({ offset: true })'
+      values: [{value: "2026-01-01T09:00:00+03:00", valid: true}, {value: "2026-01-01T09:00:00-05:30", valid: true}, {value: "2026-01-01T09:00:00+24:00", valid: false}]
+  - name: datetime-evidence-constraint-stays-utc
+    classification: must-pass
+    provenance: {source: requirement, ref: "Evidence date-time properties retain the earlier UTC-only refinement"}
+    mutation: {description: "Leave a not.pattern evidence property untouched"}
+    input:
+      property: {type: string, format: date-time, not: {pattern: "^0001"}}
+      before: 'z.iso.datetime()'
+    expected:
+      after: 'z.iso.datetime()'
+      values: [{value: "2026-01-01T09:00:00Z", valid: true}, {value: "2026-01-01T09:00:00+03:00", valid: false}]
+  - name: integer-missing-marker-fails-generation
+    classification: must-fail
+    provenance: {source: requirement, ref: "A generator output change must fail closed"}
+    mutation: {description: "Remove the expected integer marker"}
+    input:
+      property: {type: integer}
+      before: 'z.number()'
+    expected:
+      error: 'lost integer marker'
+  - name: datetime-missing-marker-fails-generation
+    classification: must-fail
+    provenance: {source: requirement, ref: "A generator output change must fail closed"}
+    mutation: {description: "Remove the expected date-time marker"}
+    input:
+      property: {type: string, format: date-time}
+      before: 'z.string()'
+    expected:
+      error: 'lost date-time marker'

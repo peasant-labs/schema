@@ -20,6 +20,7 @@ import { applyThinkingLevelZodRefinements } from "./lib/thinking-level-zod-refin
 import { applyPublicOwnerZodRefinements, applyLegacyPullZodRefinements } from "./lib/public-owner-zod-refinements.mjs";
 import { applyContributionAttemptZodRefinements } from "./lib/contribution-attempt-zod-refinements.mjs";
 import { applyCollectiveZodRefinements } from "./lib/collective-zod-refinements.mjs";
+import { applyWireScalarZodRefinements } from "./lib/wire-scalar-zod-refinements.mjs";
 import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
 import { normalizeAutoPublishTargetZod, applyAutoPublishTargetZodRefinements } from "./lib/auto-publish-target-zod-refinements.mjs";
 import { applySessionTeammateZodRefinements } from "./lib/session-teammate-zod-refinements.mjs";
@@ -89,7 +90,9 @@ async function refineRootZodContract() {
   const generatedSource = await readGeneratorOutput(zodPath, "the root Zod contract");
   const retainedSource = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(generatedSource));
   const attemptSource = applyContributionAttemptZodRefinements(retainedSource);
-  const source = applyCollectiveZodRefinements(attemptSource, spec);
+  const source = applyWireScalarZodRefinements(applyCollectiveZodRefinements(attemptSource, spec), spec, {
+    preserveComponentsReachableFrom: ["PublishRequest", "AuthoritativePublishRequest"],
+  });
   const refined = applySessionTeammateZodRefinements(applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))), sessionTeammateBound);
   const contentPartsRefined = applyContentPartsZodRefinements(refined);
   await writeFile(zodPath, applyUnverifiedPullRequestZodRefinements(applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(contentPartsRefined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username)));

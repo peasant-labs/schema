@@ -468,7 +468,7 @@ func assertHeaderDeclaration(t *testing.T) {
 		}
 		if slices.Contains(presence, name) {
 			want := reflect.PointerTo(b.Type)
-			if name == "harness" {
+			if name == "harness" || name == "startTime" || name == "endTime" {
 				want = reflect.TypeFor[*string]()
 			}
 			if h.Type != want || !strings.Contains(h.Tag.Get("json"), ",omitempty") || h.Tag.Get("nullable") != "false" || strings.Contains(b.Tag.Get("json"), ",omitempty") {

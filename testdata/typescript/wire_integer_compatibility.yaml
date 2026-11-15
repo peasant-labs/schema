@@ -1,0 +1,139 @@
+cases:
+  - name: timestamp-number-coerces-to-bigint
+    classification: must-pass
+    provenance: {source: requirement, ref: "Existing TimestampInfo output is bigint"}
+    mutation: {description: "A numeric timestamp retains the established output type"}
+    input: {target: timestamp, json: '{"start":1700000000000,"end":1700000001000}'}
+    expected: {valid: true, start: "1700000000000", end: "1700000001000"}
+  - name: timestamp-string-endpoints-remain-supported
+    classification: must-pass
+    provenance: {source: requirement, ref: "Existing int64 coercion and bounds"}
+    mutation: {description: "String inputs retain both exact signed endpoints"}
+    input: {target: timestamp, json: '{"start":"-9223372036854775808","end":"9223372036854775807"}'}
+    expected: {valid: true, start: "-9223372036854775808", end: "9223372036854775807"}
+  - name: timestamp-bigint-input-remains-supported
+    classification: must-pass
+    provenance: {source: requirement, ref: "Existing int64 coercion accepts bigint callers"}
+    mutation: {description: "Convert fixture strings to bigint before the public parse"}
+    input: {target: timestamp, json: '{"start":"-9223372036854775808","end":"9223372036854775807"}', bigint: true}
+    expected: {valid: true, start: "-9223372036854775808", end: "9223372036854775807"}
+  - name: timestamp-above-int64-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Existing int64 maximum"}
+    mutation: {description: "Pass an exact numeric string above the maximum"}
+    input: {target: timestamp, json: '{"start":"9223372036854775808","end":"0"}'}
+    expected: {valid: false}
+  - name: timestamp-below-int64-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Existing int64 minimum"}
+    mutation: {description: "Pass an exact numeric string below the minimum"}
+    input: {target: timestamp, json: '{"start":"-9223372036854775809","end":"0"}'}
+    expected: {valid: false}
+  - name: timestamp-ingested-unsafe-number-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Existing TimestampInfo unformatted validator also stays unchanged"}
+    mutation: {description: "Keep the prior safe-integer restriction on ingested"}
+    input: {target: timestamp, path: ingested, json: '9007199254740992'}
+    expected: {valid: false}
+  - name: publish-timestamp-number-coerces-to-bigint
+    classification: must-pass
+    provenance: {source: requirement, ref: "PublishRequest uses the existing TimestampInfo schema"}
+    mutation: {description: "Parse the full valid publish fixture with numeric timestamps"}
+    input: {target: publish, json: '{"start":1700000000000,"end":1700000001000}'}
+    expected: {valid: true, start: "1700000000000", end: "1700000001000"}
+  - name: publish-timestamp-string-endpoints-supported
+    classification: must-pass
+    provenance: {source: requirement, ref: "PublishRequest retains the timestamp coercion contract"}
+    mutation: {description: "Pass the exact signed bounds as strings to the publish schema"}
+    input: {target: publish, json: '{"start":"-9223372036854775808","end":"9223372036854775807"}'}
+    expected: {valid: true, start: "-9223372036854775808", end: "9223372036854775807"}
+  - name: publish-timestamp-overflow-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "The published request retains int64 bounds"}
+    mutation: {description: "Pass an exact timestamp above the signed upper bound"}
+    input: {target: publish, json: '{"start":"9223372036854775808","end":"0"}'}
+    expected: {valid: false}
+  - name: publish-safe-stats-counter-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "Existing publication counter bounds remain unchanged"}
+    mutation: {description: "A safe integer is accepted through the real publication request"}
+    input: {target: publish, path: stats.tokensIn, json: '9007199254740991'}
+    expected: {valid: true}
+  - name: publish-unsafe-stats-counter-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Existing publication counter bounds remain unchanged"}
+    mutation: {description: "A value outside the prior safe-integer range remains refused"}
+    input: {target: publish, path: stats.tokensIn, json: '9007199254740992'}
+    expected: {valid: false}
+  - name: authoritative-publish-unsafe-stats-counter-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "The authoritative publication path also retains its existing bounds"}
+    mutation: {description: "An unsafe integer is refused by the real authoritative request"}
+    input: {target: authoritative, path: stats.turnCount, json: '9007199254740992'}
+    expected: {valid: false}
+  - name: int32-positive-maximum-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "Existing int32-formatted publisher count"}
+    mutation: {description: "Keep the signed 32-bit maximum"}
+    input: {target: repository, json: '{"is_private":false,"name":"repo","owner":"owner","publisher_count":2147483647}'}
+    expected: {valid: true}
+  - name: int32-positive-overflow-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Existing int32-formatted publisher count"}
+    mutation: {description: "Reject one above the signed 32-bit maximum"}
+    input: {target: repository, json: '{"is_private":false,"name":"repo","owner":"owner","publisher_count":2147483648}'}
+    expected: {valid: false}
+  - name: int32-negative-count-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Existing declared nonnegative int32 minimum"}
+    mutation: {description: "Retain the stricter declared lower bound"}
+    input: {target: repository, json: '{"is_private":false,"name":"repo","owner":"owner","publisher_count":-1}'}
+    expected: {valid: false}
+  - name: retained-unknown-keeps-safe-number
+    classification: must-pass
+    provenance: {source: requirement, ref: "The existing int64 safe-number postprocessor remains authoritative"}
+    mutation: {description: "Retain the maximum safe index as a number"}
+    input: {target: retained, json: '{"kind":"unknown","namespace":"record","payload":"{}","pointer":"","position":9007199254740991,"recordIndex":0,"sourceRef":"s"}'}
+    expected: {valid: true, numberPosition: true}
+  - name: retained-unknown-unsafe-number-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "The existing retained-unknown safe-integer limit"}
+    mutation: {description: "Reject the first unsafe source position"}
+    input: {target: retained, json: '{"kind":"unknown","namespace":"record","payload":"{}","pointer":"","position":9007199254740992,"recordIndex":0,"sourceRef":"s"}'}
+    expected: {valid: false}
+  - name: header-upper-endpoint-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A Go int64 maximum rounds when JSON.parse produces a number"}
+    mutation: {description: "Accept the served upper endpoint after JavaScript rounding"}
+    input: {target: header, json: '{"conversationTurnCount":9223372036854775807}'}
+    expected: {valid: true}
+  - name: header-upper-ambiguous-overflow-indistinguishable
+    classification: must-pass
+    provenance: {source: requirement, ref: "The adjacent out-of-range lexeme rounds to the same number"}
+    mutation: {description: "Document the accepted ambiguous value, not a Go-servable value"}
+    input: {target: header, json: '{"conversationTurnCount":9223372036854775808}'}
+    expected: {valid: true}
+  - name: header-lower-endpoint-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A Go int64 minimum is accepted after JSON.parse"}
+    mutation: {description: "Accept the served lower endpoint"}
+    input: {target: header, json: '{"conversationTurnCount":-9223372036854775808}'}
+    expected: {valid: true}
+  - name: header-lower-ambiguous-overflow-indistinguishable
+    classification: must-pass
+    provenance: {source: requirement, ref: "The adjacent out-of-range lexeme rounds to the same number"}
+    mutation: {description: "Document the accepted ambiguous value, not a Go-servable value"}
+    input: {target: header, json: '{"conversationTurnCount":-9223372036854775809}'}
+    expected: {valid: true}
+  - name: header-clearly-above-int64-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Clearly out-of-range represented numbers are refused"}
+    mutation: {description: "Reject a number far above the signed upper endpoint"}
+    input: {target: header, json: '{"conversationTurnCount":100000000000000000000}'}
+    expected: {valid: false}
+  - name: header-clearly-below-int64-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Clearly out-of-range represented numbers are refused"}
+    mutation: {description: "Reject a number far below the signed lower endpoint"}
+    input: {target: header, json: '{"conversationTurnCount":-100000000000000000000}'}
+    expected: {valid: false}

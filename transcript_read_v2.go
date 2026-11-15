@@ -228,9 +228,9 @@ var transcriptDisplayNumberPattern = regexp.MustCompile(`^[1-9][0-9]*[a-z]*$`)
 // TranscriptSegmentRow holds one served row. Turn is the source JSON object;
 // recordedIndexState and recordedIndex are its only recorded-index statement.
 type TranscriptSegmentRow struct {
-	Position           int                          `json:"position"`
+	Position           int                          `json:"position" minimum:"0"`
 	RecordedIndexState TranscriptRecordedIndexState `json:"recordedIndexState"`
-	RecordedIndex      *int                         `json:"recordedIndex,omitempty"`
+	RecordedIndex      *int                         `json:"recordedIndex,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	DisplayNumber      string                       `json:"displayNumber,omitempty" minLength:"1" pattern:"^[1-9][0-9]*[a-z]*$"`
 	Turn               TranscriptV2Turn             `json:"turn"`
 }
@@ -259,7 +259,7 @@ type TranscriptSegmentDirectoryV2 struct {
 	Partition        TranscriptSegmentPartition `json:"partition"`
 	History          []TranscriptHistorySection `json:"history,omitempty"`
 	UsagePresent     TranscriptUsagePresence    `json:"usagePresent"`
-	Segments         []TranscriptSegmentRefV2   `json:"segments"`
+	Segments         []TranscriptSegmentRefV2   `json:"segments" nullable:"false"`
 	DirectoryPage    *int                       `json:"directoryPage,omitempty"`
 	DirectoryPerPage *int                       `json:"directoryPerPage,omitempty"`
 }
@@ -329,7 +329,7 @@ type TranscriptSegmentV2 struct {
 	Context        TranscriptReadContext      `json:"context"`
 	Partition      TranscriptSegmentPartition `json:"partition"`
 	Index          int                        `json:"index"`
-	Rows           []TranscriptSegmentRow     `json:"rows"`
+	Rows           []TranscriptSegmentRow     `json:"rows" nullable:"false" minItems:"1"`
 	ByteLength     int                        `json:"byteLength"`
 	HasOlder       bool                       `json:"hasOlder"`
 	HasNewer       bool                       `json:"hasNewer"`
@@ -383,7 +383,7 @@ type TranscriptWindowV2 struct {
 	Span              int                        `json:"span" minimum:"1" maximum:"10"`
 	FirstPosition     int                        `json:"firstPosition"`
 	LastPosition      int                        `json:"lastPosition"`
-	Segments          []int                      `json:"segments"`
+	Segments          []int                      `json:"segments" nullable:"false" minItems:"1"`
 	HasOlder          bool                       `json:"hasOlder"`
 	HasNewer          bool                       `json:"hasNewer"`
 }

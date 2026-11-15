@@ -1,0 +1,25 @@
+cases:
+  - name: durable-timestamp-positive-offset
+    classification: must-pass
+    provenance: {source: requirement, ref: "RFC3339 allows a positive numeric offset"}
+    mutation: {description: "Use a positive offset on the durable turn and detail"}
+    input:
+      turn: '{"index":0,"role":"assistant","content":"","timestamp":"2026-01-01T09:00:00+03:00","depth":0}'
+      detail: '{"id":"legacy","harness":"codex","startTime":"2026-01-01T09:00:00+03:00","endTime":"2026-01-01T09:00:00+03:00","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"turns":[{"index":0,"role":"assistant","content":"","timestamp":"2026-01-01T09:00:00+03:00","depth":0}]}'
+    expected: true
+  - name: durable-timestamp-negative-offset
+    classification: must-pass
+    provenance: {source: requirement, ref: "RFC3339 allows a negative numeric offset"}
+    mutation: {description: "Use a negative offset on the durable turn and detail"}
+    input:
+      turn: '{"index":0,"role":"assistant","content":"","timestamp":"2026-01-01T09:00:00-05:30","depth":0}'
+      detail: '{"id":"legacy","harness":"codex","startTime":"2026-01-01T09:00:00-05:30","endTime":"2026-01-01T09:00:00-05:30","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"turns":[{"index":0,"role":"assistant","content":"","timestamp":"2026-01-01T09:00:00-05:30","depth":0}]}'
+    expected: true
+  - name: durable-timestamp-offset-outside-rfc3339-known-limit
+    classification: must-fail
+    provenance: {source: manual, ref: "Known pre-existing limit: Go time decoding accepts +24:00 but the durable browser validator refuses it"}
+    mutation: {description: "Use an offset that Go cannot re-encode; this is a recorded limit, not a wire requirement"}
+    input:
+      turn: '{"index":0,"role":"assistant","content":"","timestamp":"2026-01-01T09:00:00+24:00","depth":0}'
+      detail: '{"id":"legacy","harness":"codex","startTime":"2026-01-01T09:00:00+24:00","endTime":"2026-01-01T09:00:00+24:00","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"turns":[{"index":0,"role":"assistant","content":"","timestamp":"2026-01-01T09:00:00+24:00","depth":0}]}'
+    expected: false

@@ -17,6 +17,12 @@ requiredNames:
   - header-legacy-metadata-forwarded-open
   - header-legacy-ids-preserved-verbatim
   - header-legacy-counts-carried-verbatim
+  - header-legacy-wide-integer-fields-project
+  - header-int64-endpoints-project-verbatim
+  - header-int64-upper-overflow-refused
+  - header-int64-lower-overflow-refused
+  - header-legacy-offset-timestamps-project
+  - header-legacy-zone-offset-timestamp-verbatim
   - header-omits-child-sessions
   - header-omits-null-and-partial-child-sessions
   - header-omits-relationships-and-scorecard

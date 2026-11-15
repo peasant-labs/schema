@@ -1,0 +1,16 @@
+requiredNames:
+  - directory-empty-array-accepted
+  - directory-null-array-refused
+  - segment-nonempty-rows-accepted
+  - segment-null-rows-refused
+  - segment-empty-rows-refused
+  - window-nonempty-segments-accepted
+  - window-null-segments-refused
+  - window-empty-segments-refused
+  - row-absent-recorded-index-accepted
+  - row-zero-recorded-index-accepted
+  - row-null-recorded-index-refused
+  - row-negative-recorded-index-refused
+  - row-unsafe-recorded-index-refused
+  - row-missing-position-refused
+  - row-negative-position-refused

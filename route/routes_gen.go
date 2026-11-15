@@ -1021,6 +1021,20 @@ func VillageGetTranscriptContentPath(id string) (string, error) {
 	return "/api/v1/transcripts/" + pathSegment(id) + "/content", nil
 }
 
+// VillageGetTranscriptHeader is GET /api/v1/transcripts/{id}/header
+// (operationId getTranscriptHeader) in the Village API document.
+var VillageGetTranscriptHeader = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/header", operationID: "getTranscriptHeader"}
+
+// VillageGetTranscriptHeaderPath returns the path of VillageGetTranscriptHeader.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetTranscriptHeaderPath(id string) (string, error) {
+	if err := checkPathSegment(VillageGetTranscriptHeader, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/header", nil
+}
+
 // VillageListTranscriptPullRequests is GET /api/v1/transcripts/{id}/pulls
 // (operationId listTranscriptPullRequests) in the Village API document.
 var VillageListTranscriptPullRequests = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/pulls", operationID: "listTranscriptPullRequests"}
@@ -1047,6 +1061,20 @@ func VillageGetTranscriptSegmentsPath(id string) (string, error) {
 		return "", err
 	}
 	return "/api/v1/transcripts/" + pathSegment(id) + "/segments", nil
+}
+
+// VillageLocateTranscriptEntry is POST /api/v1/transcripts/{id}/segments/locate
+// (operationId locateTranscriptEntry) in the Village API document.
+var VillageLocateTranscriptEntry = Route{method: MethodPost, pattern: "/api/v1/transcripts/{id}/segments/locate", operationID: "locateTranscriptEntry"}
+
+// VillageLocateTranscriptEntryPath returns the path of VillageLocateTranscriptEntry.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageLocateTranscriptEntryPath(id string) (string, error) {
+	if err := checkPathSegment(VillageLocateTranscriptEntry, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/segments/locate", nil
 }
 
 // VillageGetTranscriptSegment is GET /api/v1/transcripts/{id}/segments/{index}
@@ -1284,8 +1312,10 @@ var AllVillage = []Route{
 	VillageUpdateTranscript,
 	VillageListTranscriptCollectives,
 	VillageGetTranscriptContent,
+	VillageGetTranscriptHeader,
 	VillageListTranscriptPullRequests,
 	VillageGetTranscriptSegments,
+	VillageLocateTranscriptEntry,
 	VillageGetTranscriptSegment,
 	VillageShareTranscriptWithGroups,
 	VillageUnshareTranscriptFromGroup,

@@ -1,0 +1,91 @@
+cases:
+  - name: directory-empty-array-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "An empty partition has a non-null empty directory"}
+    mutation: {description: "Supply an empty segments array"}
+    input: {schema: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+    expected: true
+  - name: directory-null-array-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A directory always contains a non-null segments array"}
+    mutation: {description: "Replace the empty array with null"}
+    input: {schema: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":null}'}
+    expected: false
+  - name: segment-nonempty-rows-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A segment has at least one served row"}
+    mutation: {description: "Supply one row with an absent recorded index"}
+    input: {schema: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":1,"hasOlder":false,"hasNewer":false}'}
+    expected: true
+  - name: segment-null-rows-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A segment cannot serve null rows"}
+    mutation: {description: "Replace the rows with null"}
+    input: {schema: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":null,"byteLength":1,"hasOlder":false,"hasNewer":false}'}
+    expected: false
+  - name: segment-empty-rows-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A segment has at least one served row"}
+    mutation: {description: "Replace the rows with an empty array"}
+    input: {schema: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[],"byteLength":1,"hasOlder":false,"hasNewer":false}'}
+    expected: false
+  - name: window-nonempty-segments-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A resolved window names a nonempty ordinal run"}
+    mutation: {description: "Supply one segment ordinal"}
+    input: {schema: window, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
+    expected: true
+  - name: window-null-segments-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A resolved window names a nonempty ordinal run"}
+    mutation: {description: "Replace the ordinal run with null"}
+    input: {schema: window, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":null,"hasOlder":false,"hasNewer":false}'}
+    expected: false
+  - name: window-empty-segments-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A resolved window names a nonempty ordinal run"}
+    mutation: {description: "Replace the ordinal run with an empty array"}
+    input: {schema: window, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[],"hasOlder":false,"hasNewer":false}'}
+    expected: false
+  - name: row-absent-recorded-index-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A row with no usable index omits recordedIndex"}
+    mutation: {description: "Omit the index for an absent state"}
+    input: {schema: row, json: '{"position":0,"recordedIndexState":"absent","turn":{}}'}
+    expected: true
+  - name: row-zero-recorded-index-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "Zero is a real recorded index"}
+    mutation: {description: "Supply the safe index zero"}
+    input: {schema: row, json: '{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{}}'}
+    expected: true
+  - name: row-null-recorded-index-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Absent or invalid recorded indexes are omitted, never null"}
+    mutation: {description: "Replace the omitted index with null"}
+    input: {schema: row, json: '{"position":0,"recordedIndexState":"invalid","recordedIndex":null,"turn":{}}'}
+    expected: false
+  - name: row-negative-recorded-index-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A recorded index is a nonnegative safe integer"}
+    mutation: {description: "Supply a negative recorded index"}
+    input: {schema: row, json: '{"position":0,"recordedIndexState":"present","recordedIndex":-1,"turn":{}}'}
+    expected: false
+  - name: row-unsafe-recorded-index-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A recorded index is a nonnegative safe integer"}
+    mutation: {description: "Supply an index above the safe integer range"}
+    input: {schema: row, json: '{"position":0,"recordedIndexState":"present","recordedIndex":9007199254740992,"turn":{}}'}
+    expected: false
+  - name: row-missing-position-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Position is required on every served row"}
+    mutation: {description: "Omit the served position"}
+    input: {schema: row, json: '{"recordedIndexState":"absent","turn":{}}'}
+    expected: false
+  - name: row-negative-position-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A served position is nonnegative"}
+    mutation: {description: "Supply a negative served position"}
+    input: {schema: row, json: '{"position":-1,"recordedIndexState":"absent","turn":{}}'}
+    expected: false

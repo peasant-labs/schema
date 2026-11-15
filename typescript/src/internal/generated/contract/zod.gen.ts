@@ -6,7 +6,7 @@ import * as z from 'zod';
 
 export const zActivityEdge = z.object({
     from: z.string(),
-    taskCount: z.int(),
+    taskCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     to: z.string()
 });
 
@@ -54,8 +54,8 @@ export const zAnnotationDatatype = z.enum([
 export type AnnotationDatatype = z.infer<typeof zAnnotationDatatype>;
 
 export const zAnnotationEntryTarget = z.object({
-    endIndex: z.int(),
-    entryIndex: z.int(),
+    endIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    entryIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     sessionId: z.string().min(1)
 }).superRefine((value, context) => {
     if (value.sessionId === "") context.addIssue({ code: "custom", message: "entry targets require a non-empty sessionId" });
@@ -94,11 +94,11 @@ export const zAnnotationPushResult = z.object({
 export type AnnotationPushResult = z.infer<typeof zAnnotationPushResult>;
 
 export const zAnnotationPushResponse = z.object({
-    created: z.int(),
-    errors: z.int(),
+    created: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    errors: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     results: z.array(zAnnotationPushResult).optional(),
-    skipped: z.int(),
-    updated: z.int()
+    skipped: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    updated: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type AnnotationPushResponse = z.infer<typeof zAnnotationPushResponse>;
@@ -171,8 +171,8 @@ export const zAssociationEvidenceObservation = z.object({
     kind: zAssociationEvidenceKind,
     recordedCommitHash: z.string().nullish(),
     touchedFilePath: z.string().nullish(),
-    windowEndMs: z.int().nullish(),
-    windowStartMs: z.int().nullish()
+    windowEndMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    windowStartMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish()
 }).superRefine((value, context) => {
     const isAbsent = (detail: unknown) => detail === undefined || detail === null;
     const isGoWhitespace = (codePoint: number) => (codePoint >= 0x0009 && codePoint <= 0x000D)
@@ -365,7 +365,7 @@ export type AutoPublishRuleKind = z.infer<typeof zAutoPublishRuleKind>;
 
 export const zBatchCreateAnnotationsErrorResponse = z.object({
     error: z.string(),
-    failingIndex: z.int()
+    failingIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type BatchCreateAnnotationsErrorResponse = z.infer<typeof zBatchCreateAnnotationsErrorResponse>;
@@ -413,7 +413,7 @@ export const zBuiltinCommand = z.enum([
 export type BuiltinCommand = z.infer<typeof zBuiltinCommand>;
 
 export const zCLILoginQuery = z.object({
-    port: z.int(),
+    port: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     state: z.string()
 });
 
@@ -439,22 +439,22 @@ export const zChangeBinding = z.enum(['bound', 'candidate']);
 export type ChangeBinding = z.infer<typeof zChangeBinding>;
 
 export const zChangeSummary = z.object({
-    aheadCount: z.int(),
+    aheadCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     baseHash: z.string().optional(),
-    behindCount: z.int(),
+    behindCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     branch: z.string(),
-    filesChanged: z.int(),
-    lastWorkMs: z.int().nullish(),
+    filesChanged: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    lastWorkMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     mergeCommitHash: z.string().optional(),
     merged: z.boolean(),
-    mergedAtMs: z.int().nullish(),
-    newEdges: z.int(),
-    removedEdges: z.int(),
+    mergedAtMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    newEdges: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    removedEdges: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     reverted: z.boolean().optional(),
-    sessionCount: z.int(),
-    taskCount: z.int(),
-    tipCommitMs: z.int().nullish(),
-    violations: z.int()
+    sessionCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    taskCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    tipCommitMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    violations: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type ChangeSummary = z.infer<typeof zChangeSummary>;
@@ -488,7 +488,7 @@ export type ChannelSubscription = z.infer<typeof zChannelSubscription>;
 export const zChildSessionRef = z.object({
     id: z.string(),
     project: z.string().optional(),
-    startTime: z.iso.datetime()
+    startTime: z.iso.datetime({ offset: true })
 });
 
 export type ChildSessionRef = z.infer<typeof zChildSessionRef>;
@@ -732,8 +732,8 @@ export const zCreateAnnotationRequest = z.object({
     reason: z.string().nullish(),
     sessionId: z.string(),
     targetAnnotationId: z.string().nullish(),
-    targetEntryEndIndex: z.int().nullish(),
-    targetEntryIndex: z.int().nullish(),
+    targetEntryEndIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    targetEntryIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     typeId: z.string(),
     value: z.string()
 });
@@ -757,16 +757,16 @@ export const zDashboardPayload = z.object({
     avgDurationMins: z.number(),
     avgTurnsPerSession: z.number(),
     harnessBreakdown: z.record(z.string(), z.int()).nullable(),
-    totalSessions: z.int(),
-    totalTokens: z.int()
+    totalSessions: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type DashboardPayload = z.infer<typeof zDashboardPayload>;
 
 export const zDayStats = z.object({
     date: z.string(),
-    sessions: z.int(),
-    tokens: z.int()
+    sessions: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    tokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type DayStats = z.infer<typeof zDayStats>;
@@ -841,10 +841,10 @@ export type DiffLine = z.infer<typeof zDiffLine>;
 export const zDiffHunk = z.object({
     header: z.string().optional(),
     lines: z.array(zDiffLine).nullable(),
-    newLines: z.int(),
-    newStart: z.int(),
-    oldLines: z.int(),
-    oldStart: z.int(),
+    newLines: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    newStart: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    oldLines: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    oldStart: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     sessionId: z.string().optional(),
     sessionTitle: z.string().optional()
 });
@@ -968,8 +968,8 @@ export const zChangeDiffPayload = z.object({
 export type ChangeDiffPayload = z.infer<typeof zChangeDiffPayload>;
 
 export const zFileChange = z.object({
-    linesAdded: z.int(),
-    linesRemoved: z.int(),
+    linesAdded: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    linesRemoved: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     oldPath: z.string().nullish(),
     path: z.string(),
     status: zFileChangeStatus
@@ -978,25 +978,25 @@ export const zFileChange = z.object({
 export type FileChange = z.infer<typeof zFileChange>;
 
 export const zFileFamiliarity = z.object({
-    daysSince: z.int().nullable(),
+    daysSince: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     decayLevel: zDecayLevel,
-    depth: z.int(),
-    humanTurns: z.int(),
+    depth: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    humanTurns: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     isSourceFile: z.boolean(),
     lastEngagedAt: z.string().nullable(),
     path: z.string(),
-    sessionCount: z.int(),
-    totalTurns: z.int()
+    sessionCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTurns: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type FileFamiliarity = z.infer<typeof zFileFamiliarity>;
 
 export const zFrictionCluster = z.object({
-    count: z.int(),
+    count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     file: z.string(),
     kind: z.string(),
     label: z.string(),
-    sessions: z.int()
+    sessions: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type FrictionCluster = z.infer<typeof zFrictionCluster>;
@@ -1212,8 +1212,8 @@ export const zLocalKickstartDiffLineType = z.enum([
 export type LocalKickstartDiffLineType = z.infer<typeof zLocalKickstartDiffLineType>;
 
 export const zLocalKickstartDiffLine = z.object({
-    newNo: z.int().gte(0).optional(),
-    oldNo: z.int().gte(0).optional(),
+    newNo: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    oldNo: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
     text: z.string(),
     type: zLocalKickstartDiffLineType
 }).strict();
@@ -1335,10 +1335,10 @@ export type LocalKickstartIngestState = z.infer<typeof zLocalKickstartIngestStat
 
 export const zLocalKickstartIngest = z.object({
     error: z.string().optional(),
-    new: z.int().gte(0),
+    new: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     note: z.string().optional(),
     state: zLocalKickstartIngestState,
-    updated: z.int().gte(0)
+    updated: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
 }).strict();
 
 export type LocalKickstartIngest = z.infer<typeof zLocalKickstartIngest>;
@@ -1418,7 +1418,7 @@ export const zLocalKickstartNodeState = z.enum([
 export type LocalKickstartNodeState = z.infer<typeof zLocalKickstartNodeState>;
 
 export const zLocalKickstartNode = z.object({
-    childCount: z.int().gte(0).optional(),
+    childCount: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
     harness: z.string().optional(),
     id: z.string().min(1),
     kind: zLocalKickstartNodeKind,
@@ -1469,15 +1469,15 @@ export const zLocalKickstartScanState = z.enum([
 export type LocalKickstartScanState = z.infer<typeof zLocalKickstartScanState>;
 
 export const zLocalKickstartScan = z.object({
-    done: z.int().gte(0),
+    done: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     droppedLabels: z.array(z.string()).max(3).optional(),
-    droppedSelections: z.int().gte(0).optional(),
+    droppedSelections: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
     error: z.string().optional(),
-    lockedNodes: z.int().gte(0).optional(),
+    lockedNodes: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
     notice: z.string().regex(/\S/).optional(),
     phase: z.string().optional(),
     state: zLocalKickstartScanState,
-    total: z.int().gte(0)
+    total: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
 }).strict();
 
 export type LocalKickstartScan = z.infer<typeof zLocalKickstartScan>;
@@ -1549,7 +1549,7 @@ export const zLocalOperationDiagnosticOutcome = z.enum(['failed', 'uncertain']);
 export type LocalOperationDiagnosticOutcome = z.infer<typeof zLocalOperationDiagnosticOutcome>;
 
 export const zLocalPublicationAttemptFailure = z.object({
-    attemptedAt: z.iso.datetime(),
+    attemptedAt: z.iso.datetime({ offset: true }),
     message: z.string()
 });
 
@@ -1605,7 +1605,7 @@ export type LocalSettingValue = z.infer<typeof zLocalSettingValue>;
 export const zLocalKickstartAnswers = z.object({
     connectAnswer: zLocalKickstartConnectAnswer.optional(),
     resolutions: z.record(z.string(), zLocalKickstartResolution).optional(),
-    revision: z.int().gte(0),
+    revision: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     selectedIds: z.array(z.string()).optional(),
     values: z.record(z.string(), zLocalSettingValue).optional()
 }).strict();
@@ -1645,7 +1645,7 @@ export type LocalKickstartField = z.infer<typeof zLocalKickstartField>;
 export const zLocalKickstartOverwrite = z.object({
     key: z.string().min(1),
     previous: zLocalSettingValue,
-    revision: z.int().gte(0)
+    revision: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
 }).strict();
 
 export type LocalKickstartOverwrite = z.infer<typeof zLocalKickstartOverwrite>;
@@ -1669,7 +1669,7 @@ export const zLocalKickstartSession = z.object({
     connect: zLocalKickstartConnect,
     id: z.string().min(1),
     openedAt: z.string().min(1),
-    revision: z.int().gte(0),
+    revision: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     scan: zLocalKickstartScan,
     scope: zLocalKickstartScope,
     stops: z.array(zLocalKickstartStop),
@@ -1683,7 +1683,7 @@ export const zLocalKickstartEvent = z.object({
     ingest: zLocalKickstartIngest.optional(),
     kind: zLocalKickstartEventKind,
     reason: zLocalKickstartCloseReason.optional(),
-    revision: z.int().gte(0),
+    revision: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     scan: zLocalKickstartScan.optional(),
     sessionId: z.string().min(1),
     view: zLocalKickstartSession.optional()
@@ -1693,7 +1693,7 @@ export type LocalKickstartEvent = z.infer<typeof zLocalKickstartEvent>;
 
 export const zLocalKickstartPatchResult = z.object({
     overwritten: z.array(zLocalKickstartOverwrite).optional(),
-    revision: z.int().gte(0),
+    revision: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     stale: z.boolean(),
     view: zLocalKickstartSession.optional()
 }).strict();
@@ -1749,7 +1749,7 @@ export const zLongestStreak = z.object({
 export type LongestStreak = z.infer<typeof zLongestStreak>;
 
 export const zMapEdge = z.object({
-    count: z.int(),
+    count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     from: z.string(),
     to: z.string()
 });
@@ -1853,7 +1853,7 @@ export type ModelInfo = z.infer<typeof zModelInfo>;
 
 export const zNativeAttachmentRef = z.object({
     toolCallId: z.string().optional(),
-    turnIndex: z.int().nullish()
+    turnIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish()
 });
 
 export type NativeAttachmentRef = z.infer<typeof zNativeAttachmentRef>;
@@ -1921,12 +1921,12 @@ export const zOmittedReason = z.enum([
 export type OmittedReason = z.infer<typeof zOmittedReason>;
 
 export const zImagePart = z.object({
-    byteSize: z.int().gte(0).optional(),
-    height: z.int().gte(0).optional(),
+    byteSize: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    height: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
     mediaType: zImageMediaType.optional(),
     omittedReason: zOmittedReason.optional(),
     ref: z.string().length(64).regex(/^[0-9a-f]{64}$/).optional(),
-    width: z.int().gte(0).optional()
+    width: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional()
 });
 
 export type ImagePart = z.infer<typeof zImagePart>;
@@ -2089,13 +2089,13 @@ export const zProjectResolutionPayload = z.object({
 export type ProjectResolutionPayload = z.infer<typeof zProjectResolutionPayload>;
 
 export const zProjectSummary = z.object({
-    lastWorkMs: z.int().nullish(),
-    openChanges: z.int(),
+    lastWorkMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    openChanges: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     project: z.string(),
     projectHash: zProjectHash,
-    recordedFiles: z.int(),
-    sessions: z.int(),
-    totalFiles: z.int()
+    recordedFiles: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    sessions: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalFiles: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type ProjectSummary = z.infer<typeof zProjectSummary>;
@@ -2107,19 +2107,19 @@ export const zProjectSummariesPayload = z.object({
 export type ProjectSummariesPayload = z.infer<typeof zProjectSummariesPayload>;
 
 export const zPromptDigestHeader = z.object({
-    commitsCovered: z.int(),
-    commitsTotal: z.int(),
+    commitsCovered: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    commitsTotal: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     harness: zHarness,
-    promptCount: z.int(),
+    promptCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     redactionLevel: z.string(),
-    sessionCount: z.int(),
+    sessionCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     villageUrl: z.string()
 });
 
 export type PromptDigestHeader = z.infer<typeof zPromptDigestHeader>;
 
 export const zPromptDigestSkill = z.object({
-    invocationCount: z.int(),
+    invocationCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     name: z.string()
 });
 
@@ -2313,26 +2313,26 @@ export const zReadStateGrade = z.enum([
 export type ReadStateGrade = z.infer<typeof zReadStateGrade>;
 
 export const zMapNode = z.object({
-    agentEditedCount: z.int(),
-    attributedRegionCount: z.int(),
-    changedRegionCount: z.int(),
+    agentEditedCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    attributedRegionCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    changedRegionCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     effortDensity: z.number(),
-    fileCount: z.int(),
+    fileCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     id: z.string(),
     kind: zMapNodeKind,
     language: z.string().optional(),
-    layer: z.int(),
-    loc: z.int(),
+    layer: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    loc: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     name: z.string(),
-    order: z.int(),
+    order: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     parent: z.string().optional(),
     readAttribution: zReadAttributionState,
-    readCount: z.int(),
+    readCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     readState: zReadStateGrade,
-    recordedFiles: z.int(),
-    reviewedRegionCount: z.int(),
-    totalFiles: z.int(),
-    touchCount: z.int()
+    recordedFiles: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    reviewedRegionCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalFiles: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    touchCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type MapNode = z.infer<typeof zMapNode>;
@@ -2379,7 +2379,7 @@ export const zRedactionInfo = z.object({
     applied: z.boolean(),
     content_hash_at_redact: z.string().optional(),
     level: z.string().optional(),
-    redacted_at_ms: z.int().nullish(),
+    redacted_at_ms: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     rule_set_version: z.string().optional()
 });
 
@@ -2447,7 +2447,7 @@ export const zReturningContributorRate = z.object({
 export type ReturningContributorRate = z.infer<typeof zReturningContributorRate>;
 
 export const zReviewSuggestion = z.object({
-    daysSince: z.int(),
+    daysSince: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     lastEngaged: z.string(),
     path: z.string(),
     suggestedPrompt: z.string()
@@ -2557,7 +2557,7 @@ export const zScryCheckResponse = z.object({
 export type ScryCheckResponse = z.infer<typeof zScryCheckResponse>;
 
 export const zSearchResult = z.object({
-    entryIndex: z.int(),
+    entryIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     project: z.string(),
     projectHash: zProjectHash.optional(),
     role: z.string(),
@@ -2611,7 +2611,7 @@ export type AuthoritativeSubagentRef = z.infer<typeof zAuthoritativeSubagentRef>
 
 export const zInsightEvidence = z.object({
     commitHash: z.string().optional(),
-    entryIndex: z.int().nullish(),
+    entryIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     file: z.string().optional(),
     sessionId: zSessionID
 });
@@ -2672,14 +2672,14 @@ export const zCommitRef = z.object({
     hash: z.string(),
     sessionIds: z.array(zSessionID),
     subject: z.string(),
-    timeMs: z.int().nullish()
+    timeMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish()
 });
 
 export type CommitRef = z.infer<typeof zCommitRef>;
 
 export const zRewrittenCommit = z.object({
     associations: z.array(zSessionAssociation),
-    authorTimeMs: z.int().nullish(),
+    authorTimeMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     confidence: zConfidence,
     ghostHash: z.string(),
     method: zRewriteMethod,
@@ -2842,7 +2842,7 @@ export const zQualityMetrics = z.object({
 export type QualityMetrics = z.infer<typeof zQualityMetrics>;
 
 export const zSessionPullRequest = z.object({
-    number: z.int().gte(1),
+    number: z.number().refine(Number.isInteger).gte(1).lte(9223372036854775808),
     owner: z.string().min(1),
     repo: z.string().min(1),
     source: z.string().min(1),
@@ -2889,17 +2889,17 @@ export type SessionRelationshipKind = z.infer<typeof zSessionRelationshipKind>;
 export const zSessionScorecard = z.object({
     costTotalUsd: z.number().nullish(),
     m2TokenOutcomeRatio: z.number().nullish(),
-    m4ConsecutiveErrorMax: z.int().nullish(),
+    m4ConsecutiveErrorMax: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     m5ContextUtilizationPct: z.number().nullish(),
     m6OutputSurvivalPct: z.number().nullish(),
     m7SpecHasConstraints: z.boolean().nullish(),
     m7SpecHasExamples: z.boolean().nullish(),
     outcome: zSessionOutcome.optional(),
-    retryTokensWasted: z.int().nullish(),
+    retryTokensWasted: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     signalDensity: z.number().nullish(),
     specQualityScore: z.number().nullish(),
-    totalTokens: z.int().nullish(),
-    withinSessionReverts: z.int().nullish()
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    withinSessionReverts: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish()
 });
 
 export type SessionScorecard = z.infer<typeof zSessionScorecard>;
@@ -3028,11 +3028,11 @@ export const zSessionSummary = z.object({
     relationships: z.array(zSessionRelationship).optional(),
     rootSessionId: zSessionID.nullish(),
     sessionOrigin: zSessionOrigin.optional(),
-    startTime: z.iso.datetime(),
+    startTime: z.iso.datetime({ offset: true }),
     teammate: zSessionTeammate.nullish(),
-    toolCallCount: z.int(),
-    totalTokens: z.int(),
-    turnCount: z.int()
+    toolCallCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    turnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type SessionSummary = z.infer<typeof zSessionSummary>;
@@ -3203,8 +3203,8 @@ export const zSyncRedactionItem = z.object({
     contextAfter: z.array(z.string()),
     contextBefore: z.array(z.string()),
     description: z.string(),
-    entryIndex: z.int().gte(0).optional(),
-    lineNumber: z.int().gte(0),
+    entryIndex: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    lineNumber: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     originalText: z.string(),
     redactedReplacement: z.string(),
     ruleDisplayName: z.string(),
@@ -3215,7 +3215,7 @@ export const zSyncRedactionItem = z.object({
 export type SyncRedactionItem = z.infer<typeof zSyncRedactionItem>;
 
 export const zSyncRedactionRuleGroup = z.object({
-    count: z.int().gte(0),
+    count: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     displayName: z.string(),
     items: z.array(zSyncRedactionItem),
     ruleId: z.string()
@@ -3226,14 +3226,14 @@ export type SyncRedactionRuleGroup = z.infer<typeof zSyncRedactionRuleGroup>;
 export const zSyncRedactionCategoryGroup = z.object({
     category: z.string(),
     rules: z.array(zSyncRedactionRuleGroup),
-    totalCount: z.int().gte(0)
+    totalCount: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
 });
 
 export type SyncRedactionCategoryGroup = z.infer<typeof zSyncRedactionCategoryGroup>;
 
 export const zSyncRedactionsResponse = z.object({
     categories: z.array(zSyncRedactionCategoryGroup),
-    total: z.int().gte(0)
+    total: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
 });
 
 export type SyncRedactionsResponse = z.infer<typeof zSyncRedactionsResponse>;
@@ -3269,8 +3269,8 @@ export const zLocalSyncSummary = z.object({
     startTime: z.string(),
     syncStatus: zSyncStatus,
     teammate: zSessionTeammate.nullish(),
-    totalTokens: z.int(),
-    turnCount: z.int()
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    turnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type LocalSyncSummary = z.infer<typeof zLocalSyncSummary>;
@@ -3489,8 +3489,8 @@ export const zAnnotationSummary = z.object({
     targetAnnotationId: z.string().nullish(),
     targetAssociationId: zAssociationID.nullish(),
     targetContentHash: z.string().nullish(),
-    targetEntryEndIndex: z.int().nullish(),
-    targetEntryIndex: z.int().nullish(),
+    targetEntryEndIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    targetEntryIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     targetFilePath: z.string().nullish(),
     targetKind: zTargetKind,
     targetProjectHash: zProjectHash.nullish(),
@@ -3570,8 +3570,8 @@ export const zLegacyPullAnnotation = z.object({
     targetAnnotationId: z.string().nullish(),
     targetAssociationId: zAssociationID.optional(),
     targetContentHash: z.string().nullish(),
-    targetEntryEndIndex: z.int().nullish(),
-    targetEntryIndex: z.int().nullish(),
+    targetEntryEndIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    targetEntryIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     targetFilePath: z.string().nullish(),
     targetKind: zTargetKind.optional(),
     targetProjectHash: zProjectHash.optional(),
@@ -3589,28 +3589,28 @@ export type LegacyPullAnnotation = z.infer<typeof zLegacyPullAnnotation>;
 export const zQualitySession = z.object({
     conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     date: z.string(),
-    discoveryTurns: z.int(),
+    discoveryTurns: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     durationMinutes: z.number(),
     effectiveAnnotations: z.array(zAnnotationSummary).optional(),
     explorationRatio: z.number(),
-    filesTouched: z.int(),
+    filesTouched: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     id: z.string(),
-    inputTokens: z.int(),
-    linesChanged: z.int(),
+    inputTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    linesChanged: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     outcome: z.string(),
-    outputTokens: z.int(),
+    outputTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     project: z.string(),
-    retryLoops: z.int(),
-    retryTokensWasted: z.int(),
+    retryLoops: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    retryTokensWasted: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     scope: z.string(),
-    scopeBreadth: z.int(),
+    scopeBreadth: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     signalDensity: z.number(),
     specQualityScore: z.number(),
     title: z.string(),
-    toolCalls: z.int(),
-    totalTokens: z.int(),
-    turnCount: z.int(),
-    withinSessionReverts: z.int()
+    toolCalls: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    turnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    withinSessionReverts: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type QualitySession = z.infer<typeof zQualitySession>;
@@ -3623,14 +3623,14 @@ export type QualityPayload = z.infer<typeof zQualityPayload>;
 
 export const zTaskSummary = z.object({
     editedFiles: z.array(z.string()).nullable(),
-    entryIndex: z.int(),
+    entryIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     labels: z.array(z.string()).nullable(),
     outcome: z.string().optional(),
-    readCount: z.int(),
+    readCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     readFiles: z.array(z.string()),
     retryLoop: z.boolean(),
     sessionId: z.string(),
-    startMs: z.int().nullish(),
+    startMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     title: z.string()
 });
 
@@ -3640,7 +3640,7 @@ export const zChangeSession = z.object({
     binding: zChangeBinding,
     harness: z.string(),
     sessionId: z.string(),
-    startMs: z.int().nullish(),
+    startMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     tasks: z.array(zTaskSummary).nullable(),
     title: z.string()
 });
@@ -3653,18 +3653,18 @@ export const zMapNodeDetailPayload = z.object({
     insights: z.array(zSessionInsight),
     kind: zMapNodeKind,
     language: z.string().optional(),
-    lastTouchMs: z.int().nullish(),
-    loc: z.int(),
+    lastTouchMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    loc: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     path: z.string(),
-    reEdits: z.int(),
+    reEdits: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     recentCommits: z.array(zCommitRef).nullable(),
-    recordedFiles: z.int(),
-    retryLoops: z.int(),
+    recordedFiles: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    retryLoops: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     rewrittenCommits: z.array(zRewrittenCommit),
-    sessionCount: z.int(),
+    sessionCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     shapedBy: z.array(zTaskSummary).nullable(),
-    taskCount: z.int(),
-    totalFiles: z.int(),
+    taskCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalFiles: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     usedBy: z.array(z.string()).nullable()
 });
 
@@ -3719,7 +3719,7 @@ export const zSessionDetailHeader = z.object({
     diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistoryState).optional(),
-    endTime: z.iso.datetime(),
+    endTime: z.iso.datetime({ offset: true }),
     gitBranch: z.string().optional(),
     gitRemote: z.string().optional(),
     harness: zHarness,
@@ -3737,16 +3737,16 @@ export const zSessionDetailHeader = z.object({
     scorecard: zSessionScorecard.nullish(),
     sessionOrigin: zSessionOrigin.optional(),
     source: z.string().optional(),
-    startTime: z.iso.datetime(),
+    startTime: z.iso.datetime({ offset: true }),
     status: z.string().optional(),
     thinkingLevel: zThinkingLevel.optional(),
     thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
-    tokensIn: z.int(),
-    tokensOut: z.int(),
-    toolCallCount: z.int(),
-    totalTokens: z.int(),
-    turnCount: z.int(),
+    tokensIn: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    tokensOut: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    toolCallCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    turnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     workingDirectory: z.string().optional()
 });
 
@@ -3756,7 +3756,7 @@ export const zTimelineSessionRef = z.object({
     harness: zHarness,
     hasCommitBinding: z.boolean(),
     sessionId: zSessionID,
-    startMs: z.int().nullish(),
+    startMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     title: z.string()
 });
 
@@ -3783,13 +3783,13 @@ export const zTimestampInfo = z.object({
 export type TimestampInfo = z.infer<typeof zTimestampInfo>;
 
 export const zTokenUsageDetail = z.object({
-    cacheRead: z.int().nullish(),
-    cacheWrite: z.int().nullish(),
-    cacheWrite1h: z.int().nullish(),
-    input: z.int().nullish(),
-    output: z.int().nullish(),
-    reasoning: z.int().nullish(),
-    totalTokens: z.int().nullish()
+    cacheRead: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    cacheWrite: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    cacheWrite1h: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    input: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    output: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    reasoning: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish()
 });
 
 export type TokenUsageDetail = z.infer<typeof zTokenUsageDetail>;
@@ -3928,6 +3928,35 @@ export const zCanonicalPublishOperation = z.object({
 
 export type CanonicalPublishOperation = z.infer<typeof zCanonicalPublishOperation>;
 
+export const zTranscriptEntryLocateRequest = z.object({
+    contentHash: z.string(),
+    reference: z.string().min(1),
+    representation: z.string(),
+    revision: z.string()
+});
+
+export type TranscriptEntryLocateRequest = z.infer<typeof zTranscriptEntryLocateRequest>;
+
+/**
+ * Transcript Entry Reference Kind
+ *
+ * Closed session graph value
+ */
+export const zTranscriptEntryReferenceKind = z.enum([
+    'source',
+    'tool_call',
+    'tool_result'
+]);
+
+export type TranscriptEntryReferenceKind = z.infer<typeof zTranscriptEntryReferenceKind>;
+
+export const zTranscriptFlaggedTurn = z.object({
+    position: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    turn: z.int().gte(0).lte(9007199254740991).optional()
+});
+
+export type TranscriptFlaggedTurn = z.infer<typeof zTranscriptFlaggedTurn>;
+
 /**
  * Transcript ID
  *
@@ -3976,19 +4005,19 @@ export const zCollectiveFetchDomainResult = z.object({
 export type CollectiveFetchDomainResult = z.infer<typeof zCollectiveFetchDomainResult>;
 
 export const zPromptDigestItem = z.object({
-    additions: z.int().nullish(),
+    additions: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     args: z.string().optional(),
-    commitCount: z.int().nullish(),
+    commitCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     commitSha: z.string().optional(),
-    deletions: z.int().nullish(),
-    filesChanged: z.int().nullish(),
+    deletions: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    filesChanged: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     kind: zDigestItemKind,
-    ordinal: z.int().nullish(),
-    promptCount: z.int().nullish(),
+    ordinal: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    promptCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     text: z.string(),
-    timestamp: z.iso.datetime(),
+    timestamp: z.iso.datetime({ offset: true }),
     transcriptId: zTranscriptID,
-    turnIndex: z.int().nullish()
+    turnIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish()
 });
 
 export type PromptDigestItem = z.infer<typeof zPromptDigestItem>;
@@ -4045,7 +4074,7 @@ export const zSessionDetailHeaderPayload = z.object({
     diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistoryState).optional(),
-    endTime: z.iso.datetime(),
+    endTime: z.iso.datetime({ offset: true }),
     gitBranch: z.string().optional(),
     gitRemote: z.string().optional(),
     harness: zHarness,
@@ -4064,21 +4093,94 @@ export const zSessionDetailHeaderPayload = z.object({
     scorecard: zSessionScorecard.optional(),
     sessionOrigin: zSessionOrigin.optional(),
     source: z.string().optional(),
-    startTime: z.iso.datetime(),
+    startTime: z.iso.datetime({ offset: true }),
     status: z.string().optional(),
     teammate: zSessionTeammate.nullish(),
     thinkingLevel: zThinkingLevel.optional(),
     thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
-    tokensIn: z.int(),
-    tokensOut: z.int(),
-    toolCallCount: z.int(),
-    totalTokens: z.int(),
-    turnCount: z.int(),
+    tokensIn: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    tokensOut: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    toolCallCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    turnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     workingDirectory: z.string().optional()
 });
 
 export type SessionDetailHeaderPayload = z.infer<typeof zSessionDetailHeaderPayload>;
+
+/**
+ * Transcript Native Presence
+ *
+ * Closed session graph value
+ */
+export const zTranscriptNativePresence = z.enum([
+    'absent',
+    'present',
+    'withheld'
+]);
+
+export type TranscriptNativePresence = z.infer<typeof zTranscriptNativePresence>;
+
+/**
+ * Transcript Read Transport Kind
+ *
+ * Closed session graph value
+ */
+export const zTranscriptReadTransportKind = z.enum(['local_session', 'village_transcript']);
+
+export type TranscriptReadTransportKind = z.infer<typeof zTranscriptReadTransportKind>;
+
+/**
+ * Transcript Read Validation
+ *
+ * Closed session graph value
+ */
+export const zTranscriptReadValidation = z.enum([
+    'published_strict',
+    'served_legacy',
+    'migrated'
+]);
+
+export type TranscriptReadValidation = z.infer<typeof zTranscriptReadValidation>;
+
+/**
+ * Transcript Recorded Index State
+ *
+ * Closed session graph value
+ */
+export const zTranscriptRecordedIndexState = z.enum([
+    'present',
+    'absent',
+    'invalid'
+]);
+
+export type TranscriptRecordedIndexState = z.infer<typeof zTranscriptRecordedIndexState>;
+
+/**
+ * Transcript Retained State
+ *
+ * Closed session graph value
+ */
+export const zTranscriptRetainedState = z.enum(['absent', 'deferred']);
+
+export type TranscriptRetainedState = z.infer<typeof zTranscriptRetainedState>;
+
+/**
+ * Transcript Segment Partition Kind
+ *
+ * Closed session graph value
+ */
+export const zTranscriptSegmentPartitionKind = z.enum(['main', 'history']);
+
+export type TranscriptSegmentPartitionKind = z.infer<typeof zTranscriptSegmentPartitionKind>;
+
+export const zTranscriptSegmentPartition = z.object({
+    kind: zTranscriptSegmentPartitionKind,
+    sectionIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish()
+});
+
+export type TranscriptSegmentPartition = z.infer<typeof zTranscriptSegmentPartition>;
 
 export const zTranscriptSegmentRef = z.object({
     byteLength: z.int().gte(0).lte(9007199254740991),
@@ -4102,6 +4204,67 @@ export const zTranscriptSegmentDirectory = z.object({
 });
 
 export type TranscriptSegmentDirectory = z.infer<typeof zTranscriptSegmentDirectory>;
+
+export const zTranscriptSegmentRefV2 = z.object({
+    byteLength: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    conversationTurns: zConversationTurnSpan.nullish(),
+    firstTurn: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    index: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    lastTurn: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    sourceFirstPosition: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    sourceLastPosition: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
+});
+
+export type TranscriptSegmentRefV2 = z.infer<typeof zTranscriptSegmentRefV2>;
+
+export const zTranscriptSessionHeader = z.object({
+    conversationTurnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    durationMins: z.number().optional(),
+    earlierHistory: z.array(z.string()).optional(),
+    endTime: z.string().optional(),
+    gitBranch: z.string().optional(),
+    gitRemote: z.string().optional(),
+    harness: z.string().optional(),
+    id: z.string().optional(),
+    inputSubmissionCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    model: z.string().optional(),
+    outcome: z.string().optional(),
+    parentSessionId: z.string().optional(),
+    project: z.string().optional(),
+    purpose: z.string().optional(),
+    rootSessionId: z.string().optional(),
+    schemaVersion: z.string().optional(),
+    sessionOrigin: z.string().optional(),
+    source: z.string().optional(),
+    startTime: z.string().optional(),
+    status: z.string().optional(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
+    tokensIn: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    tokensOut: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    toolCallCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    turnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    workingDirectory: z.string().optional()
+});
+
+export type TranscriptSessionHeader = z.infer<typeof zTranscriptSessionHeader>;
+
+export const zTranscriptContentHeader = z.object({
+    canonical: z.boolean(),
+    contentHash: z.string().optional(),
+    contractVersion: z.string(),
+    flaggedTurns: z.array(zTranscriptFlaggedTurn).optional(),
+    kind: zContentKind,
+    omittedImages: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    representation: z.string(),
+    retainedEvidence: zTranscriptRetainedState.nullish(),
+    revision: z.string(),
+    sessionHeader: zTranscriptSessionHeader
+});
+
+export type TranscriptContentHeader = z.infer<typeof zTranscriptContentHeader>;
 
 /**
  * TranscriptUpdateLicense
@@ -4164,6 +4327,52 @@ export const zTranscriptUpdateRequest = z.object({
 
 export type TranscriptUpdateRequest = z.infer<typeof zTranscriptUpdateRequest>;
 
+/**
+ * Transcript Usage Presence
+ *
+ * Closed session graph value
+ */
+export const zTranscriptUsagePresence = z.enum([
+    'present',
+    'empty',
+    'unknown'
+]);
+
+export type TranscriptUsagePresence = z.infer<typeof zTranscriptUsagePresence>;
+
+export const zTranscriptHistorySection = z.object({
+    index: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    state: z.string().optional(),
+    totalConversationTurns: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    totalTurns: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    usagePresent: zTranscriptUsagePresence
+});
+
+export type TranscriptHistorySection = z.infer<typeof zTranscriptHistorySection>;
+
+export const zTranscriptV2Turn = z.record(z.string(), z.unknown());
+
+export type TranscriptV2Turn = z.infer<typeof zTranscriptV2Turn>;
+
+export const zTranscriptSegmentRow = z.object({
+    displayNumber: z.string().min(1).regex(/^[1-9][0-9]*[a-z]*$/).optional(),
+    position: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    recordedIndex: z.int().gte(0).lte(9007199254740991).optional(),
+    recordedIndexState: zTranscriptRecordedIndexState,
+    turn: zTranscriptV2Turn
+});
+
+export type TranscriptSegmentRow = z.infer<typeof zTranscriptSegmentRow>;
+
+/**
+ * Transcript Viewer Projection
+ *
+ * Closed session graph value
+ */
+export const zTranscriptViewerProjection = z.enum(['anonymous', 'authenticated']);
+
+export type TranscriptViewerProjection = z.infer<typeof zTranscriptViewerProjection>;
+
 export const zTranscriptWindow = z.object({
     anchorTurn: z.int().gte(0).lte(9007199254740991),
     firstTurn: z.int().gte(0).lte(9007199254740991),
@@ -4181,8 +4390,8 @@ export type TranscriptWindow = z.infer<typeof zTranscriptWindow>;
 
 export const zTrendsPayload = z.object({
     days: z.array(zDayStats).nullable(),
-    totalSessions: z.int(),
-    totalTokens: z.int()
+    totalSessions: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type TrendsPayload = z.infer<typeof zTrendsPayload>;
@@ -4261,10 +4470,10 @@ export const zUICapabilitiesResponse = z.object({
 export type UICapabilitiesResponse = z.infer<typeof zUICapabilitiesResponse>;
 
 export const zUnifiedMetadata = z.object({
-    adapterVersion: z.int().gte(1).optional(),
+    adapterVersion: z.number().refine(Number.isInteger).gte(1).lte(9223372036854775808).optional(),
     contentHash: z.string(),
     cwd: z.string().optional(),
-    derivedAt: z.int().nullish(),
+    derivedAt: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     diagnostics: zDiagnosticsInfo,
     git: zGitContext,
     harness: zHarness,
@@ -4277,7 +4486,7 @@ export const zUnifiedMetadata = z.object({
     redaction: zRedactionInfo,
     relationships: z.array(zSessionRelationship).optional(),
     rootSessionId: zSessionID.nullish(),
-    schemaVersion: z.int(),
+    schemaVersion: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     sessionId: zSessionID,
     source: zSourceInfo,
     stats: zSessionStats,
@@ -4308,8 +4517,8 @@ export const zChangeDetailPayload = z.object({
     files: z.array(zFileChange).nullable(),
     frictions: z.array(zFrictionCluster).nullable(),
     insights: z.array(zSessionInsight),
-    linesAdded: z.int(),
-    linesRemoved: z.int(),
+    linesAdded: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    linesRemoved: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     newEdges: z.array(zMapEdge).nullable(),
     newNodes: z.array(z.string()).nullable(),
     outputTokens: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
@@ -4403,8 +4612,8 @@ export const zToolCallDetail = z.object({
     arguments: z.string(),
     callEntryRef: zSourceEntryRef.optional(),
     callProvenance: zContentProvenance.nullish(),
-    durationMs: z.int().nullish(),
-    exitCode: z.int().nullish(),
+    durationMs: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    exitCode: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     filePath: z.string().optional(),
     id: z.string(),
     isError: z.boolean().optional(),
@@ -4426,21 +4635,21 @@ export const zTranscriptTurn = z.object({
     content: z.string(),
     contentParts: z.array(zTurnContentPart).optional(),
     controlKind: z.string().nullish(),
-    depth: z.int(),
+    depth: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     entryType: zEntryType.optional(),
     hasThinking: z.boolean().optional(),
-    index: z.int(),
+    index: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     observedModel: zObservedModelID.optional(),
-    parentIndex: z.int().nullish(),
+    parentIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     provenance: zContentProvenance.optional(),
     role: zRole,
     sourceEntryRef: zSourceEntryRef.optional(),
     stopReason: zStopReason.optional(),
     thinkingLevel: zThinkingLevel.optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
-    timestamp: z.iso.datetime(),
-    tokensIn: z.int().nullish(),
-    tokensOut: z.int().nullish(),
+    timestamp: z.iso.datetime({ offset: true }),
+    tokensIn: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    tokensOut: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     toolCalls: z.array(zToolCallDetail).optional(),
     truncated: z.boolean(),
     usage: zUsageDetail.optional()
@@ -4467,21 +4676,21 @@ export const zTurnDetail = z.object({
     content: z.string(),
     contentParts: z.array(zTurnContentPart).optional(),
     controlKind: z.string().nullish(),
-    depth: z.int(),
+    depth: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     entryType: zEntryType.optional(),
     hasThinking: z.boolean().optional(),
-    index: z.int(),
+    index: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     observedModel: zObservedModelID.optional(),
-    parentIndex: z.int().nullish(),
+    parentIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     provenance: zContentProvenance.nullish(),
     role: zRole,
     sourceEntryRef: zSourceEntryRef.optional(),
     stopReason: zStopReason.nullish(),
     thinkingLevel: zThinkingLevel.optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
-    timestamp: z.iso.datetime(),
-    tokensIn: z.int().nullish(),
-    tokensOut: z.int().nullish(),
+    timestamp: z.iso.datetime({ offset: true }),
+    tokensIn: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    tokensOut: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     toolCalls: z.array(zToolCallDetail).optional(),
     usage: zUsageDetail.nullish()
 });
@@ -4502,7 +4711,7 @@ export const zSessionDetailPayload = z.object({
     diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistorySection).optional(),
-    endTime: z.iso.datetime(),
+    endTime: z.iso.datetime({ offset: true }),
     gitBranch: z.string().optional(),
     gitRemote: z.string().optional(),
     harness: zHarness,
@@ -4521,16 +4730,16 @@ export const zSessionDetailPayload = z.object({
     scorecard: zSessionScorecard.nullish(),
     sessionOrigin: zSessionOrigin.optional(),
     source: z.string().optional(),
-    startTime: z.iso.datetime(),
+    startTime: z.iso.datetime({ offset: true }),
     status: z.string().optional(),
     thinkingLevel: zThinkingLevel.optional(),
     thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
-    tokensIn: z.int(),
-    tokensOut: z.int(),
-    toolCallCount: z.int(),
-    totalTokens: z.int(),
-    turnCount: z.int(),
+    tokensIn: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    tokensOut: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    toolCallCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    turnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     turns: z.array(zTurnDetail).nullable(),
     workingDirectory: z.string().optional()
 });
@@ -4543,7 +4752,7 @@ export const zSessionDetailReadPayload = z.object({
     diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistorySection).optional(),
-    endTime: z.iso.datetime(),
+    endTime: z.iso.datetime({ offset: true }),
     gitBranch: z.string().optional(),
     gitRemote: z.string().optional(),
     harness: zHarness,
@@ -4565,18 +4774,18 @@ export const zSessionDetailReadPayload = z.object({
     scorecard: zSessionScorecard.optional(),
     sessionOrigin: zSessionOrigin.optional(),
     source: z.string().optional(),
-    startTime: z.iso.datetime(),
+    startTime: z.iso.datetime({ offset: true }),
     status: z.string().optional(),
     teammate: zSessionTeammate.nullish(),
     thinkingLevel: zThinkingLevel.optional(),
     thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
     title: z.string().optional(),
-    tokensIn: z.int(),
-    tokensOut: z.int(),
-    toolCallCount: z.int(),
-    totalTokens: z.int(),
-    turnCount: z.int(),
+    tokensIn: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    tokensOut: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    toolCallCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    turnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     turns: z.array(zTurnDetail).nullable(),
     workingDirectory: z.string().optional()
 });
@@ -4618,12 +4827,12 @@ export const zAnnotationTypeSummary = z.object({
     id: z.string().optional(),
     lowerIsBetter: z.boolean().nullish(),
     origin: zTypeOrigin,
-    priorityOverride: z.int().nullish(),
+    priorityOverride: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     scaleKind: zScaleKind.optional(),
     status: zAnnotationStatus,
     typeId: z.string(),
     valueDomain: zValueDomain,
-    version: z.int()
+    version: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type AnnotationTypeSummary = z.infer<typeof zAnnotationTypeSummary>;
@@ -4829,7 +5038,7 @@ export const zVillageGitHubWebhookPayload = z.record(z.string(), z.unknown());
 export type VillageGitHubWebhookPayload = z.infer<typeof zVillageGitHubWebhookPayload>;
 
 export const zVillageLinkRepositoryRequest = z.object({
-    installation_id: z.int().nullish(),
+    installation_id: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     name: z.string(),
     owner: z.string()
 });
@@ -4838,7 +5047,7 @@ export type VillageLinkRepositoryRequest = z.infer<typeof zVillageLinkRepository
 
 export const zVillageListTranscriptAttestation = z.object({
     attestation_type: z.string(),
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
     org_login: z.string(),
     transcript_id: zTranscriptID
 });
@@ -4854,7 +5063,7 @@ export type VillageListUserOrganization = z.infer<typeof zVillageListUserOrganiz
 
 export const zVillageMetadataUserOrganization = z.object({
     avatar_url: z.string().nullable(),
-    fetched_at: z.iso.datetime(),
+    fetched_at: z.iso.datetime({ offset: true }),
     org_id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     org_login: z.string(),
     visible: z.boolean()
@@ -4931,8 +5140,8 @@ export const zPullAnnotation = z.object({
     targetAnnotationId: z.string().nullish(),
     targetAssociationId: zAssociationID.optional(),
     targetContentHash: z.string().nullish(),
-    targetEntryEndIndex: z.int().nullish(),
-    targetEntryIndex: z.int().nullish(),
+    targetEntryEndIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    targetEntryIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     targetFilePath: z.string().nullish(),
     targetKind: zTargetKind.optional(),
     targetProjectHash: zProjectHash.optional(),
@@ -4953,7 +5162,7 @@ export type VillageCollectiveContributor = z.infer<typeof zVillageCollectiveCont
 
 export const zVillageCollectiveMember = z.object({
     github_orgs: z.array(z.string()),
-    joined_at: z.iso.datetime(),
+    joined_at: z.iso.datetime({ offset: true }),
     member: zVillagePublicOwner,
     role: zVillageCollectiveRole
 }).superRefine((value, context) => {
@@ -4976,7 +5185,7 @@ export const zVillagePendingShare = z.object({
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
     root_session_id: zSessionID.nullish(),
-    shared_at: z.iso.datetime(),
+    shared_at: z.iso.datetime({ offset: true }),
     title: z.string().nullable(),
     transcript_id: zTranscriptID
 }).superRefine((value, context) => {
@@ -5013,10 +5222,10 @@ export type VillagePullRequestAttachmentState = z.infer<typeof zVillagePullReque
 export const zVillagePromptRequest = z.object({
     head_remote: z.string(),
     name: z.string(),
-    number: z.int(),
+    number: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     owner: z.string(),
     remote: z.string(),
-    requested_at: z.iso.datetime(),
+    requested_at: z.iso.datetime({ offset: true }),
     state: zVillagePullRequestAttachmentState
 });
 
@@ -5030,7 +5239,7 @@ export type VillagePromptRequestsResponse = z.infer<typeof zVillagePromptRequest
 
 export const zVillagePullRequestRef = z.object({
     name: z.string().min(1),
-    number: z.int().gte(1),
+    number: z.number().refine(Number.isInteger).gte(1).lte(9223372036854775808),
     owner: z.string().min(1)
 });
 
@@ -5053,8 +5262,8 @@ export type VillageRemoveCollectiveMemberResponse = z.infer<typeof zVillageRemov
 export const zVillageRepositoryCommit = z.object({
     author_email: z.string().nullable(),
     author_name: z.string().nullable(),
-    authored_at: z.iso.datetime().nullable(),
-    committed_at: z.iso.datetime().nullable(),
+    authored_at: z.iso.datetime({ offset: true }).nullable(),
+    committed_at: z.iso.datetime({ offset: true }).nullable(),
     message: z.string().nullable(),
     sha: z.string()
 });
@@ -5062,9 +5271,9 @@ export const zVillageRepositoryCommit = z.object({
 export type VillageRepositoryCommit = z.infer<typeof zVillageRepositoryCommit>;
 
 export const zVillageRepositoryCommitsResponse = z.object({
-    commit_count: z.int(),
+    commit_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     commits: z.array(zVillageRepositoryCommit),
-    last_synced: z.iso.datetime().nullable(),
+    last_synced: z.iso.datetime({ offset: true }).nullable(),
     name: z.string(),
     owner: z.string(),
     refreshed: z.boolean()
@@ -5179,7 +5388,7 @@ export type VillageTranscriptIntegrity = z.infer<typeof zVillageTranscriptIntegr
 export const zVillageTranscriptPullRequest = z.object({
     head_ref: z.string().nullable(),
     name: z.string().min(1),
-    number: z.int().gte(1),
+    number: z.number().refine(Number.isInteger).gte(1).lte(9223372036854775808),
     owner: z.string().min(1),
     state: zVillagePullRequestAttachmentState,
     title: z.string().nullable()
@@ -5208,41 +5417,41 @@ export const zVillageTranscriptVisibility = z.enum([
 export type VillageTranscriptVisibility = z.infer<typeof zVillageTranscriptVisibility>;
 
 export const zVillageCollectiveTranscript = z.object({
-    blob_size_bytes: z.int().nullable(),
-    compute_version: z.int().nullable(),
-    computed_at: z.iso.datetime().nullable(),
+    blob_size_bytes: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    compute_version: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    computed_at: z.iso.datetime({ offset: true }).nullable(),
     content_hash: zTranscriptContentHash.nullable(),
     conversation_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     description: z.string().nullable(),
     diagnostics_partial: z.boolean().nullable(),
     diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
-    discovery_turns: z.int().nullable(),
+    discovery_turns: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     displayed_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
-    duration_ms: z.int().nullable(),
+    duration_ms: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     exploration_ratio: z.number().nullable(),
-    files_touched: z.int().nullable(),
+    files_touched: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     git_branch: z.string().nullable(),
     git_remote: z.string().nullable(),
     harness_version: z.string().nullable(),
     id: zTranscriptID,
-    ingested_at: z.iso.datetime().nullable(),
+    ingested_at: z.iso.datetime({ offset: true }).nullable(),
     input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
     license_id: zLicense.nullable(),
-    lines_changed: z.int().nullable(),
+    lines_changed: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     local_id: zSessionID,
     m2_token_outcome_ratio: z.number().nullable(),
-    m3_unique_tool_count: z.int().nullable(),
-    m4_consecutive_error_max: z.int().nullable(),
-    m4_error_recovery_count: z.int().nullable(),
-    m5_avg_message_tokens: z.int().nullable(),
+    m3_unique_tool_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m4_consecutive_error_max: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m4_error_recovery_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m5_avg_message_tokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     m5_context_utilization_pct: z.number().nullable(),
-    m5_peak_context_tokens: z.int().nullable(),
-    m6_lines_survived: z.int().nullable(),
-    m6_lines_total: z.int().nullable(),
+    m5_peak_context_tokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m6_lines_survived: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m6_lines_total: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     m6_output_survival_pct: z.number().nullable(),
     m7_spec_has_constraints: z.boolean().nullable(),
     m7_spec_has_examples: z.boolean().nullable(),
-    m7_spec_word_count: z.int().nullable(),
+    m7_spec_word_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     model_name: z.string().nullable(),
     model_provider: z.string(),
     outcome: zSessionOutcome.nullable(),
@@ -5254,33 +5463,33 @@ export const zVillageCollectiveTranscript = z.object({
     project_name: z.string().nullable(),
     project_name_source: zVillageProjectNameSource.nullable(),
     project_remote_label: z.string().nullable(),
-    published_at: z.iso.datetime(),
+    published_at: z.iso.datetime({ offset: true }),
     pull_requests: zVillagePullRequestsSummary,
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
-    retry_loops: z.int().nullable(),
-    retry_tokens_wasted: z.int().nullable(),
+    retry_loops: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    retry_tokens_wasted: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     root_session_id: zSessionID.nullish(),
     schema_version: z.string(),
-    scope_breadth: z.int().nullable(),
-    session_end: z.iso.datetime().nullable(),
+    scope_breadth: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    session_end: z.iso.datetime({ offset: true }).nullable(),
     session_origin: zSessionOrigin,
-    session_start: z.iso.datetime().nullable(),
+    session_start: z.iso.datetime({ offset: true }).nullable(),
     signal_density: z.number().nullable(),
     source_format: zSourceFormat.nullable(),
     spec_quality_score: z.number().nullable(),
-    subagent_count: z.int().nullable(),
+    subagent_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     subagents: z.array(z.record(z.string(), z.unknown())).nullable(),
     title: z.string().nullable(),
     title_generated: z.string().nullable(),
-    token_count: z.int().nullable(),
-    tokens_in: z.int().nullable(),
-    tokens_out: z.int().nullable(),
-    tool_call_count: z.int().nullable(),
-    turn_count: z.int().nullable(),
-    updated_at: z.iso.datetime(),
+    token_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    tokens_in: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    tokens_out: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    tool_call_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    turn_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    updated_at: z.iso.datetime({ offset: true }),
     visibility: zVillageTranscriptVisibility,
-    within_session_reverts: z.int().nullable()
+    within_session_reverts: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable()
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageCollectiveTranscript: " + reason });
     if (value.owner.kind !== "profile") { const present = ["git_branch","git_remote","project_hash","project_name","project_display_name","project_name_source","project_remote_label"].filter((field) => { const v = (value as Record<string, unknown>)[field]; return v !== null && v !== undefined; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
@@ -5299,7 +5508,7 @@ export const zVillageContributableTranscript = z.object({
     project_display_name: z.string(),
     project_hash: zProjectHash,
     project_name_source: zVillageProjectNameSource,
-    published_at: z.iso.datetime(),
+    published_at: z.iso.datetime({ offset: true }),
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
     root_session_id: zSessionID.nullish(),
@@ -5311,9 +5520,9 @@ export const zVillageContributableTranscript = z.object({
 export type VillageContributableTranscript = z.infer<typeof zVillageContributableTranscript>;
 
 export const zVillagePullRequestAttachedTranscript = z.object({
-    position: z.int(),
+    position: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     previous_visibility: zVillageTranscriptVisibility,
-    session_start: z.iso.datetime().nullable(),
+    session_start: z.iso.datetime({ offset: true }).nullable(),
     title: z.string().nullable(),
     transcript_id: zTranscriptID
 });
@@ -5321,41 +5530,41 @@ export const zVillagePullRequestAttachedTranscript = z.object({
 export type VillagePullRequestAttachedTranscript = z.infer<typeof zVillagePullRequestAttachedTranscript>;
 
 export const zVillageTranscript = z.object({
-    blob_size_bytes: z.int().nullable(),
-    compute_version: z.int().nullable(),
-    computed_at: z.iso.datetime().nullable(),
+    blob_size_bytes: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    compute_version: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    computed_at: z.iso.datetime({ offset: true }).nullable(),
     content_hash: zTranscriptContentHash.nullable(),
     conversation_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     description: z.string().nullable(),
     diagnostics_partial: z.boolean().nullable(),
     diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
-    discovery_turns: z.int().nullable(),
+    discovery_turns: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     displayed_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
-    duration_ms: z.int().nullable(),
+    duration_ms: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     exploration_ratio: z.number().nullable(),
-    files_touched: z.int().nullable(),
+    files_touched: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     git_branch: z.string().nullable(),
     git_remote: z.string().nullable(),
     harness_version: z.string().nullable(),
     id: zTranscriptID,
-    ingested_at: z.iso.datetime().nullable(),
+    ingested_at: z.iso.datetime({ offset: true }).nullable(),
     input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
     license_id: zLicense.nullable(),
-    lines_changed: z.int().nullable(),
+    lines_changed: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     local_id: zSessionID,
     m2_token_outcome_ratio: z.number().nullable(),
-    m3_unique_tool_count: z.int().nullable(),
-    m4_consecutive_error_max: z.int().nullable(),
-    m4_error_recovery_count: z.int().nullable(),
-    m5_avg_message_tokens: z.int().nullable(),
+    m3_unique_tool_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m4_consecutive_error_max: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m4_error_recovery_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m5_avg_message_tokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     m5_context_utilization_pct: z.number().nullable(),
-    m5_peak_context_tokens: z.int().nullable(),
-    m6_lines_survived: z.int().nullable(),
-    m6_lines_total: z.int().nullable(),
+    m5_peak_context_tokens: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m6_lines_survived: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    m6_lines_total: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     m6_output_survival_pct: z.number().nullable(),
     m7_spec_has_constraints: z.boolean().nullable(),
     m7_spec_has_examples: z.boolean().nullable(),
-    m7_spec_word_count: z.int().nullable(),
+    m7_spec_word_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     model_name: z.string().nullable(),
     model_provider: z.string(),
     outcome: zSessionOutcome.nullable(),
@@ -5366,32 +5575,32 @@ export const zVillageTranscript = z.object({
     project_name: z.string().nullable(),
     project_name_source: zVillageProjectNameSource.nullable(),
     project_remote_label: z.string().nullable(),
-    published_at: z.iso.datetime(),
+    published_at: z.iso.datetime({ offset: true }),
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
-    retry_loops: z.int().nullable(),
-    retry_tokens_wasted: z.int().nullable(),
+    retry_loops: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    retry_tokens_wasted: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     root_session_id: zSessionID.nullish(),
     schema_version: z.string(),
-    scope_breadth: z.int().nullable(),
-    session_end: z.iso.datetime().nullable(),
+    scope_breadth: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    session_end: z.iso.datetime({ offset: true }).nullable(),
     session_origin: zSessionOrigin,
-    session_start: z.iso.datetime().nullable(),
+    session_start: z.iso.datetime({ offset: true }).nullable(),
     signal_density: z.number().nullable(),
     source_format: zSourceFormat.nullable(),
     spec_quality_score: z.number().nullable(),
-    subagent_count: z.int().nullable(),
+    subagent_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     subagents: z.array(z.record(z.string(), z.unknown())).nullable(),
     title: z.string().nullable(),
     title_generated: z.string().nullable(),
-    token_count: z.int().nullable(),
-    tokens_in: z.int().nullable(),
-    tokens_out: z.int().nullable(),
-    tool_call_count: z.int().nullable(),
-    turn_count: z.int().nullable(),
-    updated_at: z.iso.datetime(),
+    token_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    tokens_in: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    tokens_out: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    tool_call_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    turn_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    updated_at: z.iso.datetime({ offset: true }),
     visibility: zVillageTranscriptVisibility,
-    within_session_reverts: z.int().nullable()
+    within_session_reverts: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable()
 });
 
 export type VillageTranscript = z.infer<typeof zVillageTranscript>;
@@ -5525,7 +5734,7 @@ export const zLocalPublication = z.object({
     autoPublish: z.boolean(),
     lastAttempt: zLocalPublicationAttemptFailure.optional(),
     outsideSelection: z.boolean(),
-    publishedAt: z.iso.datetime().optional(),
+    publishedAt: z.iso.datetime({ offset: true }).optional(),
     sessionId: z.string(),
     state: zLocalPublicationState,
     transcriptId: zTranscriptID.optional(),
@@ -5596,7 +5805,7 @@ export const zLocalSettingsResponse = z.object({
 export type LocalSettingsResponse = z.infer<typeof zLocalSettingsResponse>;
 
 export const zLocalSyncSessionRow = z.object({
-    childCount: z.int().gte(0),
+    childCount: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     preview: z.string(),
     publication: zLocalPublication,
     sync: zLocalSyncSummary,
@@ -5654,18 +5863,98 @@ export const zSyncPushSessionResult = z.object({
 export type SyncPushSessionResult = z.infer<typeof zSyncPushSessionResult>;
 
 export const zSyncPushResponse = z.object({
-    errors: z.int().gte(0),
-    new: z.int().gte(0),
+    errors: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    new: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     sessions: z.array(zSyncPushSessionResult),
-    skipped: z.int().gte(0),
-    updated: z.int().gte(0)
+    skipped: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    updated: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
 });
 
 export type SyncPushResponse = z.infer<typeof zSyncPushResponse>;
 
+export const zTranscriptReadTransport = z.object({
+    kind: zTranscriptReadTransportKind,
+    sessionId: zSessionID.nullish(),
+    transcriptId: zVillageUUID.nullish()
+});
+
+export type TranscriptReadTransport = z.infer<typeof zTranscriptReadTransport>;
+
+export const zTranscriptReadContext = z.object({
+    contentHash: z.string().optional(),
+    contentSessionId: z.string().nullish(),
+    harness: z.string().optional(),
+    model: z.string().optional(),
+    nativePresence: zTranscriptNativePresence,
+    representation: z.string(),
+    revision: z.string(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
+    totalConversationTurns: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    totalSegments: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    totalTurns: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    transport: zTranscriptReadTransport,
+    validation: zTranscriptReadValidation
+});
+
+export type TranscriptReadContext = z.infer<typeof zTranscriptReadContext>;
+
+export const zTranscriptEntryMatch = z.object({
+    context: zTranscriptReadContext,
+    kind: zTranscriptEntryReferenceKind,
+    position: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    recordedIndex: z.int().gte(0).lte(9007199254740991).optional(),
+    segmentOrdinal: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
+});
+
+export type TranscriptEntryMatch = z.infer<typeof zTranscriptEntryMatch>;
+
+export const zTranscriptSegmentDirectoryV2 = z.object({
+    context: zTranscriptReadContext,
+    directoryPage: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    directoryPerPage: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
+    history: z.array(zTranscriptHistorySection).optional(),
+    partition: zTranscriptSegmentPartition,
+    segments: z.array(zTranscriptSegmentRefV2),
+    usagePresent: zTranscriptUsagePresence
+});
+
+export type TranscriptSegmentDirectoryV2 = z.infer<typeof zTranscriptSegmentDirectoryV2>;
+
+export const zTranscriptSegmentV2 = z.object({
+    byteLength: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    context: zTranscriptReadContext,
+    hasNewer: z.boolean(),
+    hasOlder: z.boolean(),
+    index: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    nativeMetadata: z.array(zNativeMetadataRecord).optional(),
+    partition: zTranscriptSegmentPartition,
+    rows: z.array(zTranscriptSegmentRow).min(1)
+});
+
+export type TranscriptSegmentV2 = z.infer<typeof zTranscriptSegmentV2>;
+
+export const zTranscriptWindowV2 = z.object({
+    anchorPosition: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    anchorSegment: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    anchorTurn: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    context: zTranscriptReadContext,
+    firstPosition: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    hasNewer: z.boolean(),
+    hasOlder: z.boolean(),
+    lastPosition: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    partition: zTranscriptSegmentPartition,
+    requestedAnchor: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    requestedPosition: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    segments: z.array(z.int()).min(1),
+    span: z.int().gte(1).lte(10)
+});
+
+export type TranscriptWindowV2 = z.infer<typeof zTranscriptWindowV2>;
+
 export const zVillageCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
     creator: zVillagePublicOwner,
     data_access: zVillageCollectiveDataAccess,
     description: z.string().nullable(),
@@ -5676,14 +5965,14 @@ export const zVillageCollective = z.object({
     post_prompts_check: z.boolean(),
     prompts_check_mode: zVillagePromptsCheckMode,
     transcript_deletion_policy: zVillageTranscriptDeletionPolicy,
-    updated_at: z.iso.datetime()
+    updated_at: z.iso.datetime({ offset: true })
 });
 
 export type VillageCollective = z.infer<typeof zVillageCollective>;
 
 export const zVillageCollectiveDetailRecord = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
     creator: zVillagePublicOwner,
     data_access: zVillageCollectiveDataAccess,
     description: z.string().nullable(),
@@ -5694,7 +5983,7 @@ export const zVillageCollectiveDetailRecord = z.object({
     post_prompts_check: z.boolean().nullish(),
     prompts_check_mode: zVillagePromptsCheckMode.nullish(),
     transcript_deletion_policy: zVillageTranscriptDeletionPolicy,
-    updated_at: z.iso.datetime()
+    updated_at: z.iso.datetime({ offset: true })
 });
 
 export type VillageCollectiveDetailRecord = z.infer<typeof zVillageCollectiveDetailRecord>;
@@ -5714,8 +6003,8 @@ export const zVillageCollectiveDetailResponse = z.object({
 export type VillageCollectiveDetailResponse = z.infer<typeof zVillageCollectiveDetailResponse>;
 
 export const zVillageCollectiveInvitationSent = z.object({
-    created_at: z.iso.datetime(),
-    expires_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
+    expires_at: z.iso.datetime({ offset: true }),
     id: zVillageUUID,
     invited_by: zVillagePublicOwner,
     invited_username: z.string().min(1)
@@ -5749,7 +6038,7 @@ export type VillageCollectiveSearchResponse = z.infer<typeof zVillageCollectiveS
 export const zVillageCollectiveSubmission = z.object({
     event_num: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     group_id: zVillageUUID,
-    recorded_at: z.iso.datetime(),
+    recorded_at: z.iso.datetime({ offset: true }),
     status: zVillageShareStatus,
     title: z.string().nullable(),
     transcript_id: zTranscriptID
@@ -5787,7 +6076,7 @@ export const zVillageEnrichedTranscriptShare = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     group_id: zVillageUUID,
     group_name: z.string(),
-    shared_at: z.iso.datetime(),
+    shared_at: z.iso.datetime({ offset: true }),
     status: zVillageShareStatus,
     transcript_id: zTranscriptID
 });
@@ -5805,8 +6094,8 @@ export type VillageInvitedCollective = z.infer<typeof zVillageInvitedCollective>
 
 export const zVillageCollectiveInvitation = z.object({
     collective: zVillageInvitedCollective,
-    created_at: z.iso.datetime(),
-    expires_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
+    expires_at: z.iso.datetime({ offset: true }),
     id: zVillageUUID,
     invited_by: zVillagePublicOwner
 });
@@ -5814,12 +6103,12 @@ export const zVillageCollectiveInvitation = z.object({
 export type VillageCollectiveInvitation = z.infer<typeof zVillageCollectiveInvitation>;
 
 export const zVillageLinkedRepository = z.object({
-    created_at: z.iso.datetime().nullable(),
+    created_at: z.iso.datetime({ offset: true }).nullable(),
     group_id: zVillageUUID,
     id: zVillageUUID,
     installation_id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     is_private: z.boolean(),
-    last_synced_at: z.iso.datetime().nullable(),
+    last_synced_at: z.iso.datetime({ offset: true }).nullable(),
     linked_by: zVillagePublicOwner,
     name: z.string(),
     owner: z.string()
@@ -5857,7 +6146,7 @@ export type VillageOrganizationCollectivesResponse = z.infer<typeof zVillageOrga
 
 export const zVillagePublicCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
     data_access: zVillageCollectiveDataAccess,
     description: z.string().nullable(),
     id: zVillageUUID,
@@ -5871,22 +6160,22 @@ export type VillagePublicCollective = z.infer<typeof zVillagePublicCollective>;
 
 export const zVillagePullRequestAttachment = z.object({
     author: zVillagePublicOwner,
-    check_run_id: z.int().nullable(),
-    comment_id: z.int().nullable(),
-    confirmed_at: z.iso.datetime().nullable(),
-    created_at: z.iso.datetime(),
-    detached_at: z.iso.datetime().nullable(),
+    check_run_id: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    comment_id: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    confirmed_at: z.iso.datetime({ offset: true }).nullable(),
+    created_at: z.iso.datetime({ offset: true }),
+    detached_at: z.iso.datetime({ offset: true }).nullable(),
     head_ref: z.string().nullable(),
     head_sha: z.string(),
     id: zVillageUUID,
     is_private_repository: z.boolean(),
     name: z.string(),
-    number: z.int(),
+    number: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     owner: z.string(),
     requested_by: zVillagePublicOwner.nullable(),
     state: zVillagePullRequestAttachmentState,
     title: z.string().nullable(),
-    updated_at: z.iso.datetime()
+    updated_at: z.iso.datetime({ offset: true })
 });
 
 export type VillagePullRequestAttachment = z.infer<typeof zVillagePullRequestAttachment>;
@@ -5916,7 +6205,7 @@ export type VillageTag = z.infer<typeof zVillageTag>;
 export const zVillageTranscriptAttestation = z.object({
     attestation_type: z.string(),
     attester: zVillagePublicOwner,
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
     id: zVillageUUID,
     note: z.string().nullable(),
     org_login: z.string(),
@@ -5930,7 +6219,7 @@ export const zVillageTranscriptCollective = z.object({
     id: zVillageUUID,
     linked_github_org: z.string().nullable(),
     name: z.string(),
-    shared_at: z.iso.datetime()
+    shared_at: z.iso.datetime({ offset: true })
 });
 
 export type VillageTranscriptCollective = z.infer<typeof zVillageTranscriptCollective>;
@@ -5960,11 +6249,11 @@ export const zVillageTranscriptListRow = z.object({
 export type VillageTranscriptListRow = z.infer<typeof zVillageTranscriptListRow>;
 
 export const zVillageTranscriptListResponse = z.object({
-    agent_total: z.int(),
+    agent_total: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     next_items: z.array(zVillageTranscriptListRow),
-    page: z.int(),
-    per_page: z.int(),
-    total: z.int(),
+    page: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    per_page: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    total: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     transcripts: z.array(zVillageTranscriptListRow)
 });
 
@@ -5973,7 +6262,7 @@ export type VillageTranscriptListResponse = z.infer<typeof zVillageTranscriptLis
 export const zVillageTranscriptShare = z.object({
     group_id: zVillageUUID,
     group_name: z.string(),
-    shared_at: z.iso.datetime()
+    shared_at: z.iso.datetime({ offset: true })
 });
 
 export type VillageTranscriptShare = z.infer<typeof zVillageTranscriptShare>;
@@ -6022,7 +6311,7 @@ export type VillageUpdateUserSettingsRequest = z.infer<typeof zVillageUpdateUser
 
 export const zVillageUser = z.object({
     avatar_url: z.string().nullable(),
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
     display_name: z.string().nullable(),
     github_id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     github_username: z.string(),
@@ -6031,7 +6320,7 @@ export const zVillageUser = z.object({
     provider: z.string(),
     provider_user_id: z.string(),
     provider_username: z.string().nullable(),
-    updated_at: z.iso.datetime(),
+    updated_at: z.iso.datetime({ offset: true }),
     username_chosen: z.boolean()
 });
 
@@ -6039,7 +6328,7 @@ export type VillageUser = z.infer<typeof zVillageUser>;
 
 export const zVillageUserCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
     creator: zVillagePublicOwner,
     data_access: zVillageCollectiveDataAccess,
     description: z.string().nullable(),
@@ -6047,12 +6336,12 @@ export const zVillageUserCollective = z.object({
     id: zVillageUUID,
     linked_github_org: z.string().nullable(),
     member_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    member_since: z.iso.datetime(),
+    member_since: z.iso.datetime({ offset: true }),
     name: z.string(),
     role: zVillageCollectiveRole,
     transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     transcript_deletion_policy: zVillageTranscriptDeletionPolicy,
-    updated_at: z.iso.datetime()
+    updated_at: z.iso.datetime({ offset: true })
 });
 
 export type VillageUserCollective = z.infer<typeof zVillageUserCollective>;
@@ -6081,16 +6370,16 @@ export const zVillageUserCollectiveShare = z.object({
     owner: zVillagePublicOwner,
     parent_session_id: zSessionID.nullable(),
     parent_transcript_id: zTranscriptID.nullable(),
-    published_at: z.iso.datetime(),
+    published_at: z.iso.datetime({ offset: true }),
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
     root_session_id: zSessionID.nullish(),
-    shared_at: z.iso.datetime(),
+    shared_at: z.iso.datetime({ offset: true }),
     status: zVillageShareStatus,
     title: z.string().nullable(),
-    tokens_in: z.int().nullable(),
-    tokens_out: z.int().nullable(),
-    turn_count: z.int().nullable(),
+    tokens_in: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    tokens_out: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
+    turn_count: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     visibility: zVillageTranscriptVisibility
 });
 
@@ -6251,7 +6540,7 @@ export type VillageVerifyNotificationEmailRequest = z.infer<typeof zVillageVerif
 
 export const zVillageVisibleCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime({ offset: true }),
     creator: zVillagePublicOwner,
     data_access: zVillageCollectiveDataAccess,
     description: z.string().nullable(),
@@ -6259,12 +6548,12 @@ export const zVillageVisibleCollective = z.object({
     id: zVillageUUID,
     linked_github_org: z.string().nullable(),
     member_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    member_since: z.iso.datetime().nullable(),
+    member_since: z.iso.datetime({ offset: true }).nullable(),
     name: z.string(),
     role: zVillageCollectiveRole.nullable(),
     transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     transcript_deletion_policy: zVillageTranscriptDeletionPolicy,
-    updated_at: z.iso.datetime()
+    updated_at: z.iso.datetime({ offset: true })
 });
 
 export type VillageVisibleCollective = z.infer<typeof zVillageVisibleCollective>;
@@ -6283,7 +6572,7 @@ export const zVisibility = z.enum([
 export type Visibility = z.infer<typeof zVisibility>;
 
 export const zLegacyPullTranscriptInfo = z.object({
-    annotationCount: z.int(),
+    annotationCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     contentHash: z.string().optional(),
     contractVersion: z.string().optional(),
     harness: zHarness.optional(),
@@ -6305,9 +6594,9 @@ export const zLegacyPullTranscriptInfo = z.object({
 export type LegacyPullTranscriptInfo = z.infer<typeof zLegacyPullTranscriptInfo>;
 
 export const zLegacyPullListResponse = z.object({
-    limit: z.int(),
-    page: z.int(),
-    total: z.int(),
+    limit: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    page: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    total: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     transcripts: z.array(zLegacyPullTranscriptInfo).nullable()
 });
 
@@ -6356,7 +6645,7 @@ export const zAuthoritativePublishResponse = z.object({
 export type AuthoritativePublishResponse = z.infer<typeof zAuthoritativePublishResponse>;
 
 export const zPullTranscriptInfo = z.object({
-    annotationCount: z.int(),
+    annotationCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     contentHash: z.string().optional(),
     contractVersion: z.string().optional(),
     harness: zHarness.optional(),
@@ -6377,9 +6666,9 @@ export const zPullTranscriptInfo = z.object({
 export type PullTranscriptInfo = z.infer<typeof zPullTranscriptInfo>;
 
 export const zPullListResponse = z.object({
-    limit: z.int(),
-    page: z.int(),
-    total: z.int(),
+    limit: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    page: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    total: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     transcripts: z.array(zPullTranscriptInfo).nullable()
 });
 
@@ -6427,7 +6716,7 @@ export type ScryCheckRequest = z.infer<typeof zScryCheckRequest>;
 export const zWalkthroughStep = z.object({
     excerpt: z.string(),
     file: z.string(),
-    line: z.int().nullish()
+    line: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish()
 });
 
 export type WalkthroughStep = z.infer<typeof zWalkthroughStep>;
@@ -6438,7 +6727,7 @@ export const zWalkthroughTrail = z.object({
     sessionId: z.string(),
     steps: z.array(zWalkthroughStep).nullable(),
     title: z.string(),
-    turnCount: z.int()
+    turnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type WalkthroughTrail = z.infer<typeof zWalkthroughTrail>;
@@ -6446,11 +6735,11 @@ export type WalkthroughTrail = z.infer<typeof zWalkthroughTrail>;
 export const zFamiliarityPayload = z.object({
     familiarityPct: z.number(),
     files: z.array(zFileFamiliarity).nullable(),
-    freshnessDays: z.int().nullable(),
+    freshnessDays: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullable(),
     projectHash: zProjectHash,
     suggestions: z.array(zReviewSuggestion).nullable(),
     trails: z.array(zWalkthroughTrail).nullable(),
-    unexploredCount: z.int()
+    unexploredCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
 });
 
 export type FamiliarityPayload = z.infer<typeof zFamiliarityPayload>;

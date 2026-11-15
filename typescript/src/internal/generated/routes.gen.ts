@@ -357,6 +357,10 @@ export const VillageRoute = Object.freeze({
    */
   GetTranscriptContent: routeMember(HttpMethod.Get, "/api/v1/transcripts/{id}/content", "getTranscriptContent"),
   /**
+   * `GET /api/v1/transcripts/{id}/header` (operationId `getTranscriptHeader`).
+   */
+  GetTranscriptHeader: routeMember(HttpMethod.Get, "/api/v1/transcripts/{id}/header", "getTranscriptHeader"),
+  /**
    * `GET /api/v1/transcripts/{id}/pulls` (operationId `listTranscriptPullRequests`).
    */
   ListTranscriptPullRequests: routeMember(HttpMethod.Get, "/api/v1/transcripts/{id}/pulls", "listTranscriptPullRequests"),
@@ -364,6 +368,10 @@ export const VillageRoute = Object.freeze({
    * `GET /api/v1/transcripts/{id}/segments` (operationId `getTranscriptSegments`).
    */
   GetTranscriptSegments: routeMember(HttpMethod.Get, "/api/v1/transcripts/{id}/segments", "getTranscriptSegments"),
+  /**
+   * `POST /api/v1/transcripts/{id}/segments/locate` (operationId `locateTranscriptEntry`).
+   */
+  LocateTranscriptEntry: routeMember(HttpMethod.Post, "/api/v1/transcripts/{id}/segments/locate", "locateTranscriptEntry"),
   /**
    * `GET /api/v1/transcripts/{id}/segments/{index}` (operationId `getTranscriptSegment`).
    */
@@ -513,8 +521,10 @@ export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.UpdateTranscript,
   VillageRoute.ListTranscriptCollectives,
   VillageRoute.GetTranscriptContent,
+  VillageRoute.GetTranscriptHeader,
   VillageRoute.ListTranscriptPullRequests,
   VillageRoute.GetTranscriptSegments,
+  VillageRoute.LocateTranscriptEntry,
   VillageRoute.GetTranscriptSegment,
   VillageRoute.ShareTranscriptWithGroups,
   VillageRoute.UnshareTranscriptFromGroup,

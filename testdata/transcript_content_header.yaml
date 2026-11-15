@@ -28,7 +28,7 @@ projection:
       classification: must-pass
       provenance: {source: requirement, ref: "Null is not a header value"}
       mutation: {description: "Null and absent values both emit no member"}
-      input: {detail: '{"id":null,"harness":null,"startTime":null,"totalTokens":null}', other: '{}'}
+      input: {detail: '{"id":null,"harness":null,"startTime":null,"endTime":null,"totalTokens":null}', other: '{}'}
       expected: {json: '{}', other: '{}'}
     - name: header-case-variant-harness-is-absent
       classification: must-pass
@@ -108,6 +108,42 @@ projection:
       mutation: {description: "Out-of-range recorded counters survive"}
       input: {detail: '{"inputSubmissionCount":-5,"conversationTurnCount":9007199254740992}'}
       expected: {json: '{"inputSubmissionCount":-5,"conversationTurnCount":9007199254740992}'}
+    - name: header-legacy-wide-integer-fields-project
+      classification: must-pass
+      provenance: {source: requirement, ref: "Served legacy integer metadata is not limited to JavaScript safe integers"}
+      mutation: {description: "Every integer header counter can retain an out-of-safe-range value"}
+      input: {detail: '{"totalTokens":9007199254740992,"tokensIn":-9007199254740992,"tokensOut":9007199254740992,"turnCount":-9007199254740992,"inputSubmissionCount":9007199254740992,"conversationTurnCount":-9007199254740992,"toolCallCount":9007199254740992}'}
+      expected: {json: '{"totalTokens":9007199254740992,"tokensIn":-9007199254740992,"tokensOut":9007199254740992,"turnCount":-9007199254740992,"inputSubmissionCount":9007199254740992,"conversationTurnCount":-9007199254740992,"toolCallCount":9007199254740992}'}
+    - name: header-int64-endpoints-project-verbatim
+      classification: must-pass
+      provenance: {source: requirement, ref: "Go projection preserves served signed int64 endpoint lexemes"}
+      mutation: {description: "Every counter can carry an endpoint without truncation or refusal"}
+      input: {detail: '{"totalTokens":9223372036854775807,"tokensIn":-9223372036854775808,"tokensOut":9223372036854775807,"turnCount":-9223372036854775808,"inputSubmissionCount":9223372036854775807,"conversationTurnCount":-9223372036854775808,"toolCallCount":9223372036854775807}'}
+      expected: {json: '{"totalTokens":9223372036854775807,"tokensIn":-9223372036854775808,"tokensOut":9223372036854775807,"turnCount":-9223372036854775808,"inputSubmissionCount":9223372036854775807,"conversationTurnCount":-9223372036854775808,"toolCallCount":9223372036854775807}'}
+    - name: header-int64-upper-overflow-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "Go owns the exact signed int64 bound before browser rounding"}
+      mutation: {description: "A lexeme above the signed upper bound cannot be projected"}
+      input: {detail: '{"conversationTurnCount":9223372036854775808}'}
+      expected: {errorContains: "conversationTurnCount"}
+    - name: header-int64-lower-overflow-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "Go owns the exact signed int64 bound before browser rounding"}
+      mutation: {description: "A lexeme below the signed lower bound cannot be projected"}
+      input: {detail: '{"conversationTurnCount":-9223372036854775809}'}
+      expected: {errorContains: "conversationTurnCount"}
+    - name: header-legacy-offset-timestamps-project
+      classification: must-pass
+      provenance: {source: requirement, ref: "Served timestamp spellings are retained as strings"}
+      mutation: {description: "Keep positive and negative offsets and fractional precision verbatim"}
+      input: {detail: '{"startTime":"2026-01-01T09:00:00+03:00","endTime":"2026-01-01T09:00:00.123456789-05:30"}'}
+      expected: {json: '{"startTime":"2026-01-01T09:00:00+03:00","endTime":"2026-01-01T09:00:00.123456789-05:30"}'}
+    - name: header-legacy-zone-offset-timestamp-verbatim
+      classification: must-pass
+      provenance: {source: bug, ref: "A served legacy offset may be accepted by Go time decoding but not encodable by time.Time"}
+      mutation: {description: "Keep a served unencodable offset without normalizing or refusing"}
+      input: {detail: '{"startTime":"2026-01-01T09:00:00+24:00"}'}
+      expected: {json: '{"startTime":"2026-01-01T09:00:00+24:00"}'}
     - name: header-omits-child-sessions
       classification: must-pass
       provenance: {source: requirement, ref: "Nested child session values remain in the durable detail"}
