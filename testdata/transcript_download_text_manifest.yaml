@@ -14,6 +14,11 @@ requiredNames:
   - download-text-shape
   - download-text-envelope-without-detail-refused
   - download-text-invalid-legacy-observed-model-refused
+  - download-text-legacy-observed-model-absent
+  - download-text-legacy-observed-model-null
+  - download-text-legacy-observed-model-empty
+  - download-text-legacy-observed-model-non-string-refused
+  - download-text-strict-observed-model-invalid-refused
   - download-text-legacy-observed-model-edge-space-refused
   - download-text-legacy-envelope-kind-refused
   - download-text-pi-identity-mismatch-refused

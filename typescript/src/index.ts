@@ -279,7 +279,9 @@ export function parseTranscriptDownloadText(text: string): TranscriptDownloadRea
   if (envelope && isRecord(value) && value.kind !== "session_detail") downloadFailure("shape", "the legacy envelope has an unsupported kind");
   if (isRecord(detail) && Array.isArray(detail.turns)) {
     for (const turn of detail.turns) {
-      if (isRecord(turn) && Object.hasOwn(turn, "observedModel") && !zObservedModelID.safeParse(turn.observedModel).success) {
+      if (isRecord(turn) && Object.hasOwn(turn, "observedModel")
+        && turn.observedModel !== null && turn.observedModel !== ""
+        && !zObservedModelID.safeParse(turn.observedModel).success) {
         downloadFailure("shape", "a legacy observedModel is not a valid model identifier");
       }
     }

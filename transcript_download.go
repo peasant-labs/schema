@@ -217,8 +217,13 @@ func transcriptDownloadObservedModels(detail json.RawMessage) error {
 			continue
 		}
 		var value *string
-		if json.Unmarshal(raw, &value) != nil || value == nil {
+		if json.Unmarshal(raw, &value) != nil {
 			return fmt.Errorf("turn %d has a non-string observedModel; use a valid model identifier", i)
+		}
+		// Stored reads decode null and empty values as an unrecorded model.
+		// Leave the original bytes intact rather than inventing evidence.
+		if value == nil || *value == "" {
+			continue
 		}
 		if _, err := NewObservedModelID(*value); err != nil {
 			return fmt.Errorf("turn %d has an invalid observedModel: %w", i, err)

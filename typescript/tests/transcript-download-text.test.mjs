@@ -55,8 +55,11 @@ function expand(item) {
   return text;
 }
 
-for (const item of fixtures.cases) {
-  if (!item.input.replay.includes("ts")) continue;
+const browserCases = fixtures.cases.filter((item) => item.input.replay.includes("ts"));
+assert.ok(browserCases.length > 0, "the browser replay must visit at least one case");
+assert.ok(fixtures.cases.some((item) => item.input.replay.includes("go") && !item.input.replay.includes("ts")),
+  "the corpus must exercise the separate Go-only replay set");
+for (const item of browserCases) {
   test(item.name, () => {
     const text = expand(item.input);
     const run = () => {
