@@ -1,12 +1,15 @@
 import { zConversationTurnSpan, type ConversationTurnSpan } from "./internal/generated/contract/zod.gen.js";
 
 // Where a decoded segment-directory response places each segment among the
-// session's conversation turns. Go's validateDirectoryConversationTurns is the
-// semantic reference; this is the browser mirror of the same four rules: both
-// counts of a stated span are non-negative, which the generated span shape
-// already enforces; the total is a count; a span ends at or before it; and
-// immediate neighbours that both state a span must meet exactly (an omitted
-// span breaks the chain).
+// session's conversation turns. This is the browser mirror of Go's four
+// validateDirectoryConversationTurns rules: both counts of a stated span are
+// non-negative, which the generated span shape already enforces; the total is a
+// count; a span ends at or before it; and immediate neighbours that both state
+// a span must meet exactly (an omitted span breaks the chain).
+//
+// Go's validateDirectoryConversationTurns remains the semantic reference: when
+// the shared position rule changes, both implementations change in the same PR,
+// and the shared fixtures detect disagreement only for the cases they cover.
 //
 // The browser is deliberately stricter than Go's struct validation in three
 // places, following the generated wire shape: an explicit null, a number
