@@ -1,8 +1,12 @@
 // The generator's integer and date-time defaults are narrower than served
 // values. Preserve declared safe bounds and constrain wider integer numbers to
 // the represented int64 domain; fail if emitted property markers change.
-// Scope and JSON.parse rounding limits:
-// https://github.com/peasant-labs/polyrepo/01a1e142-ecff-7b0d-a31c-f18383c2a13f
+// Without a declared safe maximum, unformatted integers use
+// z.number().refine(Number.isInteger) and inclusive represented bounds
+// -9223372036854775808..9223372036854775808.
+// JSON.parse rounds numeric lexemes: adjacent out-of-range lexemes can share
+// an endpoint. The Go constructor and served bytes retain the exact bounds;
+// consumers treat unsafe numbers as unknown, not counts, order, or totals.
 // Evidence timestamps have their own UTC refinement.
 // Existing publication schemas and their referenced components retain their
 // prior validators; the caller identifies those roots from the canonical spec.
