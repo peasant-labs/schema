@@ -3,6 +3,27 @@ forbidden_components:
   - BestiaryHarness
   - VersionResponse
 types:
+  - {go_name: TranscriptReadTransportKind, disposition: catalog, component: TranscriptReadTransportKind, reason: segmented read transport kind}
+  - {go_name: TranscriptReadTransport, disposition: catalog, component: TranscriptReadTransport, reason: segmented read route identity}
+  - {go_name: TranscriptRecordedIndexState, disposition: catalog, component: TranscriptRecordedIndexState, reason: recorded index presence state}
+  - {go_name: TranscriptReadValidation, disposition: catalog, component: TranscriptReadValidation, reason: served validation state}
+  - {go_name: TranscriptNativePresence, disposition: catalog, component: TranscriptNativePresence, reason: native evidence presence state}
+  - {go_name: TranscriptUsagePresence, disposition: catalog, component: TranscriptUsagePresence, reason: partition usage presence state}
+  - {go_name: TranscriptReadContext, disposition: catalog, component: TranscriptReadContext, reason: shared segmented read context}
+  - {go_name: TranscriptSegmentPartitionKind, disposition: catalog, component: TranscriptSegmentPartitionKind, reason: segmented read partition kind}
+  - {go_name: TranscriptSegmentPartition, disposition: catalog, component: TranscriptSegmentPartition, reason: segmented read partition identity}
+  - {go_name: TranscriptHistorySection, disposition: catalog, component: TranscriptHistorySection, reason: earlier history section manifest}
+  - {go_name: TranscriptSegmentRefV2, disposition: catalog, component: TranscriptSegmentRefV2, reason: positioned segment reference}
+  - {go_name: TranscriptSegmentRow, disposition: catalog, component: TranscriptSegmentRow, reason: positioned served row}
+  - {go_name: TranscriptSegmentDirectoryV2, disposition: catalog, component: TranscriptSegmentDirectoryV2, reason: positioned segment directory}
+  - {go_name: TranscriptSegmentV2, disposition: catalog, component: TranscriptSegmentV2, reason: positioned segment body}
+  - {go_name: TranscriptWindowV2, disposition: catalog, component: TranscriptWindowV2, reason: positioned window descriptor}
+  - {go_name: TranscriptFlaggedTurn, disposition: catalog, component: TranscriptFlaggedTurn, reason: served position and recorded index of a flag}
+  - {go_name: TranscriptV2Turn, disposition: catalog, component: TranscriptV2Turn, reason: open legacy turn object in a segment row}
+  - {go_name: TranscriptCookTurn, disposition: runtime-only, reason: paired raw and decoded producer input}
+  - {go_name: CookedTurn, disposition: runtime-only, reason: producer cooking verdict}
+  - {go_name: TranscriptWindowTurnV2, disposition: runtime-only, reason: producer window resolver input}
+  - {go_name: TranscriptWindowV2Input, disposition: runtime-only, reason: producer window resolver input}
   - {go_name: VillageDeprecatedGroupedContributableResponse, disposition: catalog, component: VillageDeprecatedGroupedContributableResponse, reason: released grouped envelope during deprecated resource route window}
   - {go_name: VillageOrganizationCollective, disposition: catalog, component: VillageOrganizationCollective, reason: existing viewer-permitted organization collective projection}
   - {go_name: VillageOrganizationCollectivesResponse, disposition: catalog, component: VillageOrganizationCollectivesResponse, reason: narrow complete disclosed organization collective set}
