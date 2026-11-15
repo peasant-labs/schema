@@ -817,9 +817,9 @@ func (d TranscriptSegmentDirectory) Validate() error {
 			return fmt.Errorf("%ssegment %d starts at turn %d, not after segment %d ending at %d; segment ranges must ascend without overlap or a turn would be served twice", where, ref.Index, ref.FirstTurn, d.Segments[i-1].Index, d.Segments[i-1].LastTurn)
 		}
 	}
-	spans := make([]*ConversationTurnSpan, len(d.Segments))
-	for i := range d.Segments {
-		spans[i] = d.Segments[i].ConversationTurns
+	spans := make([]transcriptDirectoryConversationRef, len(d.Segments))
+	for i, ref := range d.Segments {
+		spans[i] = transcriptDirectoryConversationRef{ordinal: ref.Index, span: ref.ConversationTurns}
 	}
 	if err := validateDirectoryConversationTurns(d.TotalConversationTurns, spans, where); err != nil {
 		return err
@@ -827,39 +827,48 @@ func (d TranscriptSegmentDirectory) Validate() error {
 	return nil
 }
 
-func validateDirectoryConversationTurns(total *int, spans []*ConversationTurnSpan, where string) error {
+// transcriptDirectoryConversationRef keeps each span paired with the absolute
+// segment ordinal used in diagnostics, including on a later directory page.
+type transcriptDirectoryConversationRef struct {
+	ordinal int
+	span    *ConversationTurnSpan
+}
+
+func validateDirectoryConversationTurns(total *int, spans []transcriptDirectoryConversationRef, where string) error {
 	if total != nil && *total < 0 {
 		return fmt.Errorf("%stotalConversationTurns is %d; a reader would print a negative total beside every position; emit the count of conversation turns or omit the field", where, *total)
 	}
-	for i, span := range spans {
+	for _, ref := range spans {
+		span := ref.span
 		if span == nil {
 			continue
 		}
 		if span.Before < 0 || span.Count < 0 {
-			return fmt.Errorf("%ssegment ref %d declares conversationTurns {before: %d, count: %d}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref", where, i, span.Before, span.Count)
+			return fmt.Errorf("%ssegment %d declares conversationTurns {before: %d, count: %d}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref", where, ref.ordinal, span.Before, span.Count)
 		}
 	}
 	if total != nil {
 		count := int64(*total)
-		for i, span := range spans {
+		for _, ref := range spans {
+			span := ref.span
 			if span == nil {
 				continue
 			}
 			end := int64(span.Before) + int64(span.Count)
 			if end > count {
-				return fmt.Errorf("%ssegment ref %d ends at conversation turn %d, past totalConversationTurns %d; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields", where, i, end, count)
+				return fmt.Errorf("%ssegment %d ends at conversation turn %d, past totalConversationTurns %d; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields", where, ref.ordinal, end, count)
 			}
 		}
 	}
 	for i := 1; i < len(spans); i++ {
-		prev := spans[i-1]
-		curr := spans[i]
+		prev := spans[i-1].span
+		curr := spans[i].span
 		if prev == nil || curr == nil {
 			continue
 		}
 		want := int64(prev.Before) + int64(prev.Count)
 		if int64(curr.Before) != want {
-			return fmt.Errorf("%ssegment ref %d declares %d conversation turns before it, but ref %d ends at %d; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields", where, i, curr.Before, i-1, want)
+			return fmt.Errorf("%ssegment %d declares %d conversation turns before it, but segment %d ends at %d; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields", where, spans[i].ordinal, curr.Before, spans[i-1].ordinal, want)
 		}
 	}
 	return nil

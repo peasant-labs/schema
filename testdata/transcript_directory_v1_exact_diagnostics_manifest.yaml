@@ -1,0 +1,6 @@
+requiredNames:
+  - directory-positions-negative-before
+  - directory-positions-negative-count
+  - directory-positions-exceed-total
+  - directory-positions-not-continuous
+  - directory-positions-overlapping-spans

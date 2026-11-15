@@ -304,7 +304,7 @@ func (d TranscriptSegmentDirectoryV2) Validate() error {
 	if d.Context.TotalTurns < len(d.Segments) {
 		return fmt.Errorf("%stotalTurns is smaller than the served ref count; each segment contains a row; emit the partition total", where)
 	}
-	spans := make([]*ConversationTurnSpan, len(d.Segments))
+	spans := make([]transcriptDirectoryConversationRef, len(d.Segments))
 	for i, ref := range d.Segments {
 		if err := ref.Validate(); err != nil {
 			return err
@@ -318,7 +318,7 @@ func (d TranscriptSegmentDirectoryV2) Validate() error {
 		if i > 0 && ref.SourceFirstPosition-d.Segments[i-1].SourceLastPosition != 1 {
 			return fmt.Errorf("%sref %d does not begin immediately after the preceding served range; rows would be skipped or repeated; rebuild the directory", where, ref.Index)
 		}
-		spans[i] = ref.ConversationTurns
+		spans[i] = transcriptDirectoryConversationRef{ordinal: ref.Index, span: ref.ConversationTurns}
 	}
 	return validateDirectoryConversationTurns(d.Context.TotalConversationTurns, spans, where)
 }

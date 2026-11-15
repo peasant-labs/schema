@@ -1,0 +1,7 @@
+requiredNames:
+  - v1-page-negative-span-absolute-ordinal
+  - v1-page-span-past-total-absolute-ordinal
+  - v1-page-broken-chain-absolute-ordinals
+  - v2-page-negative-span-absolute-ordinal
+  - v2-page-span-past-total-absolute-ordinal
+  - v2-page-broken-chain-absolute-ordinals

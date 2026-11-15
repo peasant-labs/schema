@@ -1,0 +1,43 @@
+cases:
+  - name: v1-page-negative-span-absolute-ordinal
+    classification: must-fail
+    provenance: {source: boundary, ref: "a page-two ref must retain the v1 absolute segment ordinal"}
+    mutation: {description: "a negative span reports its actual segment"}
+    input: {version: v1, page: 2, perPage: 10000, totalTurns: 10002, totalSegments: 10002, totalConversation: 5, refs: [{index: 10000, before: -1, count: 2}]}
+    expected: >-
+      transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: segment 10000 declares conversationTurns {before: -1, count: 2}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref
+  - name: v1-page-span-past-total-absolute-ordinal
+    classification: must-fail
+    provenance: {source: boundary, ref: "baseline v1 page-two span diagnostic"}
+    mutation: {description: "a span exceeding the total reports its actual segment"}
+    input: {version: v1, page: 2, perPage: 10000, totalTurns: 10002, totalSegments: 10002, totalConversation: 1, refs: [{index: 10000, before: 1, count: 1}]}
+    expected: >-
+      transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: segment 10000 ends at conversation turn 2, past totalConversationTurns 1; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields
+  - name: v1-page-broken-chain-absolute-ordinals
+    classification: must-fail
+    provenance: {source: boundary, ref: "both v1 page-two segment ordinals are absolute"}
+    mutation: {description: "a discontinuity reports both actual segments"}
+    input: {version: v1, page: 2, perPage: 10000, totalTurns: 10002, totalSegments: 10002, totalConversation: 10, refs: [{index: 10000, before: 0, count: 2}, {index: 10001, before: 3, count: 1}]}
+    expected: >-
+      transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: segment 10001 declares 3 conversation turns before it, but segment 10000 ends at 2; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields
+  - name: v2-page-negative-span-absolute-ordinal
+    classification: must-fail
+    provenance: {source: boundary, ref: "v2 passes each ref's absolute ordinal into the shared validator"}
+    mutation: {description: "a negative span reports its actual segment"}
+    input: {version: v2, page: 2, perPage: 10000, totalTurns: 10002, totalSegments: 10002, totalConversation: 5, refs: [{index: 10000, before: -1, count: 2}]}
+    expected: >-
+      v2 transcript directory validation failed at schema.TranscriptSegmentDirectoryV2.Validate: segment 10000 declares conversationTurns {before: -1, count: 2}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref
+  - name: v2-page-span-past-total-absolute-ordinal
+    classification: must-fail
+    provenance: {source: boundary, ref: "v2 page-two span diagnostic uses the segment ordinal"}
+    mutation: {description: "a span exceeding the total reports its actual segment"}
+    input: {version: v2, page: 2, perPage: 10000, totalTurns: 10002, totalSegments: 10002, totalConversation: 1, refs: [{index: 10000, before: 1, count: 1}]}
+    expected: >-
+      v2 transcript directory validation failed at schema.TranscriptSegmentDirectoryV2.Validate: segment 10000 ends at conversation turn 2, past totalConversationTurns 1; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields
+  - name: v2-page-broken-chain-absolute-ordinals
+    classification: must-fail
+    provenance: {source: boundary, ref: "both v2 page-two segment ordinals are absolute"}
+    mutation: {description: "a discontinuity reports both actual segments"}
+    input: {version: v2, page: 2, perPage: 10000, totalTurns: 10002, totalSegments: 10002, totalConversation: 10, refs: [{index: 10000, before: 0, count: 2}, {index: 10001, before: 3, count: 1}]}
+    expected: >-
+      v2 transcript directory validation failed at schema.TranscriptSegmentDirectoryV2.Validate: segment 10001 declares 3 conversation turns before it, but segment 10000 ends at 2; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields

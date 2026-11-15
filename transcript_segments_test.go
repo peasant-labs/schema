@@ -21,6 +21,9 @@ import (
 //go:embed testdata/transcript_segments.yaml
 var transcriptSegmentsYAML []byte
 
+//go:embed testdata/transcript_directory_v1_exact_diagnostics_manifest.yaml
+var transcriptDirectoryV1ExactDiagnosticsManifestYAML []byte
+
 //go:embed testdata/transcript_sparse_session.yaml
 var transcriptSparseSessionYAML []byte
 
@@ -96,6 +99,7 @@ type transcriptShapeInput struct {
 type transcriptShapeExpected struct {
 	Valid         bool   `yaml:"valid"`
 	ErrorContains string `yaml:"errorContains,omitempty"`
+	ErrorExact    string `yaml:"errorExact,omitempty"`
 }
 
 func (e *transcriptShapeExpected) UnmarshalYAML(value *yaml.Node) error {
@@ -158,11 +162,16 @@ func loadTranscriptSegmentsFixtures(t *testing.T) transcriptSegmentsFixtures {
 		}
 		seen[c.Name] = true
 	}
+	var exactDiagnosticNames []string
 	for _, c := range fixtures.ShapeCases.Cases {
 		if !c.Expected.Valid && c.Expected.ErrorContains == "" && carriesDirectoryPositions(c.Input) {
 			t.Fatalf("transcript segments case %q rejects a directory that carries position fields but states no errorContains; without it the message check and the stripped-payload check are both skipped; add the message fragment the validator must report", c.Name)
 		}
+		if c.Expected.ErrorExact != "" {
+			exactDiagnosticNames = append(exactDiagnosticNames, c.Name)
+		}
 	}
+	assertcase.RequireManifestNames(t, "v1 exact directory diagnostics", transcriptDirectoryV1ExactDiagnosticsManifestYAML, exactDiagnosticNames)
 	for _, name := range fixtures.RequiredNames {
 		if !seen[name] {
 			t.Fatalf("required transcript segment case %q is missing", name)
@@ -210,6 +219,9 @@ func TestTranscriptShapeValidation(t *testing.T) {
 				if decodeErr == nil || !strings.Contains(decodeErr.Error(), c.Expected.ErrorContains) {
 					t.Fatalf("error=%v want containing %q", decodeErr, c.Expected.ErrorContains)
 				}
+			}
+			if c.Expected.ErrorExact != "" && (decodeErr == nil || decodeErr.Error() != c.Expected.ErrorExact) {
+				t.Fatalf("error=%v\nwant exactly %s", decodeErr, c.Expected.ErrorExact)
 			}
 			contract, ok := contracts[c.Input.Schema]
 			if !ok {
