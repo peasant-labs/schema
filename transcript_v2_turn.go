@@ -93,7 +93,7 @@ func (TranscriptV2Turn) JSONSchema() (jsonschema.Schema, error) {
 
 // DecodeTranscriptRecordedIndex reads the recorded index without fabricating a
 // value for an absent or invalid member. The accepted range is the nonnegative
-// JavaScript-safe integer range.
+// JavaScript-safe integer range that the platform's int can also represent.
 func DecodeTranscriptRecordedIndex(turn TranscriptV2Turn) (TranscriptRecordedIndexState, *int) {
 	if err := ScanRawJSONDocument(turn.raw, RawJSONPathPolicy{}); err != nil {
 		return TranscriptRecordedIndexInvalid, nil
