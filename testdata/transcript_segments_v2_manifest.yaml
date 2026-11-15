@@ -1,6 +1,8 @@
 requiredNames:
   - recorded-index-absent-preserves-turn
+  - recorded-index-absent
   - recorded-index-null-preserves-turn
+  - recorded-index-invalid
   - recorded-index-zero-is-present
   - recorded-index-negative-is-invalid
   - recorded-index-above-safe-domain-is-invalid
@@ -26,6 +28,7 @@ requiredNames:
   - segment-v2-nested-duplicate-refused
   - provenance-empty-object-refused-before-cook
   - segment-v2-second-segment-rows-accepted
+  - position-contiguous
   - segment-v2-row-position-off-by-one-refused
   - segment-v2-refuses-rows-out-of-served-order
   - directory-v2-unpaged-total-matches-refs
@@ -44,6 +47,8 @@ requiredNames:
   - ref-v2-turn-range-present
   - ref-v2-turn-range-optional
   - ref-v2-turn-range-half-rejected
+  - ref-v2-turn-range-paired
+  - ref-v2-required-positions
   - transport-local-session
   - transport-village-transcript
   - transport-both-rejected
@@ -67,6 +72,13 @@ requiredNames:
   - row-display-number-pattern
   - row-display-number-absent-means-predating-server
   - row-display-number-never-zero
+  - row-display-number-not-a-recorded-index
+  - history-state-forward-open
+  - manifest-usage-present
+  - manifest-usage-empty
+  - manifest-usage-unknown
+  - directory-carries-no-display-number
+  - segment-carries-no-native-presence
   - segment-v2-member-order-declared
   - segment-v2-plain-marshal-refused
   - row-v2-plain-marshal-refused
@@ -78,3 +90,4 @@ requiredNames:
   - turn-bytes-absent-index-preserved
   - turn-bytes-null-index-preserved
   - segment-v2-omits-absent-optional-members
+  - row-display-number-present-on-every-served-row

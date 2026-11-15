@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
+	"github.com/peasant-labs/schema/openapi"
 	"github.com/peasant-labs/schema/testcase"
 	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
@@ -81,11 +82,17 @@ type v2WireInput struct {
 }
 
 type v2WireExpected struct {
-	ErrorContains       string  `yaml:"errorContains"`
-	CheckContentSession bool    `yaml:"checkContentSession"`
-	ContentSessionID    *string `yaml:"contentSessionId"`
-	CheckHarness        bool    `yaml:"checkHarness"`
-	Harness             *string `yaml:"harness"`
+	ErrorContains       string   `yaml:"errorContains"`
+	CheckContentSession bool     `yaml:"checkContentSession"`
+	ContentSessionID    *string  `yaml:"contentSessionId"`
+	CheckHarness        bool     `yaml:"checkHarness"`
+	Harness             *string  `yaml:"harness"`
+	RecordedIndex       *int     `yaml:"recordedIndex"`
+	DisplayNumber       *string  `yaml:"displayNumber"`
+	RequiredMembers     []string `yaml:"requiredMembers"`
+	ForbiddenMembers    []string `yaml:"forbiddenMembers"`
+	Contains            string   `yaml:"contains"`
+	NotContains         string   `yaml:"notContains"`
 }
 
 type v2RawInput struct {
@@ -98,6 +105,17 @@ type v2RawExpected struct {
 	Members []string `yaml:"members"`
 }
 
+type v2ServedInput struct {
+	Detail  string `yaml:"detail"`
+	Harness string `yaml:"harness"`
+}
+
+type v2ServedRow struct {
+	Position      int    `yaml:"position"`
+	DisplayNumber string `yaml:"displayNumber"`
+	Turn          string `yaml:"turn"`
+}
+
 type segmentV2Cases struct {
 	Turns       testcase.Corpus[v2TurnInput, v2TurnExpected]           `yaml:"turns"`
 	Capture     testcase.Corpus[v2CaptureInput, v2CaptureExpected]     `yaml:"capture"`
@@ -106,6 +124,7 @@ type segmentV2Cases struct {
 	Directories testcase.Corpus[v2DirectoryInput, v2DirectoryExpected] `yaml:"directories"`
 	Wire        testcase.Corpus[v2WireInput, v2WireExpected]           `yaml:"wire"`
 	Raw         testcase.Corpus[v2RawInput, v2RawExpected]             `yaml:"raw"`
+	Served      testcase.Corpus[v2ServedInput, []v2ServedRow]          `yaml:"served"`
 }
 
 func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
@@ -118,6 +137,7 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	caseassert.RequireValid(t, fixture.Directories)
 	caseassert.RequireValid(t, fixture.Wire)
 	caseassert.RequireValid(t, fixture.Raw)
+	caseassert.RequireValid(t, fixture.Served)
 	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases)+len(fixture.Segments.Cases)+len(fixture.Directories.Cases)+len(fixture.Wire.Cases)+len(fixture.Raw.Cases))
 	for _, c := range fixture.Turns.Cases {
 		names = append(names, c.Name)
@@ -140,14 +160,69 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	for _, c := range fixture.Raw.Cases {
 		names = append(names, c.Name)
 	}
+	for _, c := range fixture.Served.Cases {
+		names = append(names, c.Name)
+	}
 	caseassert.RequireManifestNames(t, "v2 segment", transcriptSegmentsV2ManifestYAML, names)
 	return fixture
+}
+
+func TestTranscriptSegmentV2ServesCookedRows(t *testing.T) {
+	for _, c := range loadSegmentV2Cases(t).Served.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			turns, err := schema.NewTranscriptCookTurns(json.RawMessage(c.Input.Detail))
+			if err != nil {
+				t.Fatal(err)
+			}
+			verdicts, err := schema.CookTranscriptRows(turns, schema.Harness(c.Input.Harness))
+			if err != nil {
+				t.Fatal(err)
+			}
+			rows := make([]schema.TranscriptSegmentRow, 0, len(turns))
+			for i, verdict := range verdicts {
+				if !verdict.Keep {
+					continue
+				}
+				turn := turns[i].Raw()
+				state, index := schema.DecodeTranscriptRecordedIndex(turn)
+				rows = append(rows, schema.TranscriptSegmentRow{
+					Position: verdict.ServedPosition, RecordedIndexState: state, RecordedIndex: index,
+					DisplayNumber: verdict.DisplayNumber, Turn: turn,
+				})
+			}
+			sessionID := schema.SessionID("ses_test")
+			segment := schema.TranscriptSegmentV2{
+				Context: schema.TranscriptReadContext{
+					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
+					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+					NativePresence: schema.TranscriptNativeAbsent, TotalTurns: len(rows), TotalSegments: 1,
+				},
+				Partition: schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain}, Rows: rows,
+			}
+			wire, err := schema.MarshalTranscriptSegmentV2(segment)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var read schema.TranscriptSegmentV2
+			if err := json.Unmarshal(wire, &read); err != nil {
+				t.Fatal(err)
+			}
+			got := make([]v2ServedRow, len(read.Rows))
+			for i, row := range read.Rows {
+				got[i] = v2ServedRow{Position: row.Position, DisplayNumber: row.DisplayNumber, Turn: string(row.Turn.Raw())}
+			}
+			if !reflect.DeepEqual(got, c.Expected) {
+				t.Fatalf("served rows = %#v, want %#v", got, c.Expected)
+			}
+		})
+	}
 }
 
 func TestTranscriptV2WireValidation(t *testing.T) {
 	for _, c := range loadSegmentV2Cases(t).Wire.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			var err error
+			var encoded []byte
 			switch c.Input.Subject {
 			case "transport":
 				var transport schema.TranscriptReadTransport
@@ -199,12 +274,79 @@ func TestTranscriptV2WireValidation(t *testing.T) {
 					t.Fatal(err)
 				}
 				err = row.Validate()
+				if c.Expected.RecordedIndex != nil && !reflect.DeepEqual(row.RecordedIndex, c.Expected.RecordedIndex) {
+					t.Fatalf("recordedIndex = %v, want %v", row.RecordedIndex, c.Expected.RecordedIndex)
+				}
+				if c.Expected.DisplayNumber != nil && row.DisplayNumber != *c.Expected.DisplayNumber {
+					t.Fatalf("displayNumber = %q, want %q", row.DisplayNumber, *c.Expected.DisplayNumber)
+				}
+			case "directory":
+				var directory schema.TranscriptSegmentDirectoryV2
+				if err := json.Unmarshal([]byte(c.Input.JSON), &directory); err != nil {
+					t.Fatal(err)
+				}
+				err = directory.Validate()
+				if err == nil {
+					encoded, err = json.Marshal(directory)
+				}
+			case "segment":
+				var segment schema.TranscriptSegmentV2
+				if err := json.Unmarshal([]byte(c.Input.JSON), &segment); err != nil {
+					t.Fatal(err)
+				}
+				encoded, err = schema.MarshalTranscriptSegmentV2(segment)
+			case "ref-schema":
+				spec, buildErr := openapi.BuildTypesSpec()
+				if buildErr != nil {
+					t.Fatal(buildErr)
+				}
+				component := spec.Components.Schemas["TranscriptSegmentRefV2"]
+				if component == nil {
+					t.Fatal("v2 segment ref is absent from the Types catalog")
+				}
+				raw, marshalErr := json.Marshal(component)
+				if marshalErr != nil {
+					t.Fatal(marshalErr)
+				}
+				var shape struct {
+					Required []string `json:"required"`
+				}
+				if err := json.Unmarshal(raw, &shape); err != nil {
+					t.Fatal(err)
+				}
+				required := make(map[string]bool, len(shape.Required))
+				for _, name := range shape.Required {
+					required[name] = true
+				}
+				encoded, err = json.Marshal(required)
 			default:
 				t.Fatalf("unknown fixture subject %q", c.Input.Subject)
 			}
 			if c.Classification == testcase.MustPass {
 				if err != nil {
 					t.Fatal(err)
+				}
+				if len(c.Expected.RequiredMembers)+len(c.Expected.ForbiddenMembers) > 0 {
+					var members map[string]json.RawMessage
+					if err := json.Unmarshal(encoded, &members); err != nil {
+						t.Fatal(err)
+					}
+					for _, name := range c.Expected.RequiredMembers {
+						if _, ok := members[name]; !ok {
+							t.Fatalf("wire has no %q member: %s", name, encoded)
+						}
+					}
+					for _, name := range c.Expected.ForbiddenMembers {
+						if _, ok := members[name]; ok {
+							t.Fatalf("wire unexpectedly carries %q: %s", name, encoded)
+						}
+					}
+				}
+				if c.Expected.Contains != "" && !strings.Contains(string(encoded), c.Expected.Contains) {
+					t.Fatalf("wire %s does not contain %q", encoded, c.Expected.Contains)
+				}
+				if c.Expected.NotContains != "" && strings.Contains(string(encoded), c.Expected.NotContains) {
+					t.Fatalf("wire %s unexpectedly contains %q", encoded, c.Expected.NotContains)
 				}
 				return
 			}

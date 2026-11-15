@@ -6,11 +6,23 @@ turns:
       mutation: {description: "Omit the recorded index from the served turn"}
       input: {raw: '{"role":"assistant","content":"answer"}'}
       expected: {state: absent}
+    - name: recorded-index-absent
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "A missing recorded index stays absent"}
+      input: {raw: '{}'}
+      expected: {state: absent}
     - name: recorded-index-null-preserves-turn
       classification: must-pass
       provenance: *legacy
       mutation: {description: "Preserve an explicit null index from a legacy turn"}
       input: {raw: '{"index": null,  "content":"answer"}'}
+      expected: {state: invalid}
+    - name: recorded-index-invalid
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "A null recorded index is invalid rather than absent or zero"}
+      input: {raw: '{"index":null}'}
       expected: {state: invalid}
     - name: recorded-index-zero-is-present
       classification: must-pass
@@ -166,6 +178,12 @@ evidence:
       expected: "one or more evidence dimensions are missing or outside their closed sets"
 segments:
   cases:
+    - name: position-contiguous
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "Consecutive served positions agree with the directory range"}
+      input: {segment: 0, total: 1, start: 0, count: 3, refFirst: 0, refLast: 2}
+      expected: {segmentValid: true, boundaryValid: true}
     - name: segment-v2-second-segment-rows-accepted
       classification: must-pass
       provenance: *boundary
@@ -282,11 +300,23 @@ directories:
       mutation: *directoryMutation
       input: {totalTurns: 1, totalSegments: 1, refCount: 1, firstTurn: 1}
       expected: {errorContains: "must both be nonnegative or both absent"}
+    - name: ref-v2-turn-range-paired
+      classification: must-fail
+      provenance: *directory
+      mutation: {description: "A last recorded index without the first is not a pair"}
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, lastTurn: 1}
+      expected: {errorContains: "must both be nonnegative or both absent"}
 wire:
   cases:
-    - name: transport-local-session
+    - name: ref-v2-required-positions
       classification: must-pass
       provenance: &wireRequirement {source: requirement, ref: "The route identity belongs to the transport"}
+      mutation: {description: "The Types contract requires both served-position boundaries"}
+      input: {subject: ref-schema, json: "{}"}
+      expected: {requiredMembers: [sourceFirstPosition, sourceLastPosition]}
+    - name: transport-local-session
+      classification: must-pass
+      provenance: *wireRequirement
       mutation: &wireMutation {description: "Decode and validate the supplied wire object"}
       input: {subject: transport, json: '{"kind":"local_session","sessionId":"ses_test"}'}
       expected: {}
@@ -422,6 +452,48 @@ wire:
       mutation: *wireMutation
       input: {subject: row, json: '{"position":0,"recordedIndexState":"absent","displayNumber":"0","turn":{}}'}
       expected: {errorContains: "displayNumber is malformed"}
+    - name: row-display-number-not-a-recorded-index
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "The displayed number and recorded turn identity remain independent"}
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"present","recordedIndex":42,"displayNumber":"27aa","turn":{"index":42}}'}
+      expected: {recordedIndex: 42, displayNumber: "27aa"}
+    - name: history-state-forward-open
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A future history section state remains an open string"}
+      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"history":[{"index":0,"state":"future-state","totalTurns":0,"usagePresent":"unknown"}],"usagePresent":"unknown","segments":[]}'}
+      expected: {contains: '"state":"future-state"'}
+    - name: manifest-usage-present
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "The directory can report observed usage evidence"}
+      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"present","segments":[]}'}
+      expected: {requiredMembers: [usagePresent], contains: '"usagePresent":"present"'}
+    - name: manifest-usage-empty
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Known empty usage is distinct from unknown"}
+      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"empty","segments":[]}'}
+      expected: {requiredMembers: [usagePresent], contains: '"usagePresent":"empty"'}
+    - name: manifest-usage-unknown
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Unknown usage is not a claim that no usage exists"}
+      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {requiredMembers: [usagePresent], contains: '"usagePresent":"unknown"'}
+    - name: directory-carries-no-display-number
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Display numbers belong to rows rather than directories or refs"}
+      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[{"index":0,"sourceFirstPosition":0,"sourceLastPosition":0,"byteLength":1}]}'}
+      expected: {forbiddenMembers: [displayNumber], notContains: '"displayNumber"'}
+    - name: segment-carries-no-native-presence
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Native presence belongs to the repeated context, not the segment root"}
+      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {forbiddenMembers: [nativePresence], contains: '"nativePresence":"present"'}
 raw:
   cases:
     - name: segment-v2-member-order-declared
@@ -490,3 +562,16 @@ raw:
       mutation: *rawMutation
       input: {mode: omissions, row: 3}
       expected: {}
+served:
+  cases:
+    - name: row-display-number-present-on-every-served-row
+      classification: must-pass
+      provenance: {source: requirement, ref: "Cooked rows carry final partition-wide numbers"}
+      mutation: {description: "Filter a banner and a duplicate before writing the numbered rows"}
+      input:
+        harness: codex
+        detail: '{"turns":[{"role":"system","content":"short"},{"role":"user","content":"one"},{"role":"assistant","content":"answer"},{"role":"assistant","content":"answer"},{"role":"user","content":"two"}]}'
+      expected:
+        - {position: 0, displayNumber: "1", turn: '{"role":"user","content":"one"}'}
+        - {position: 1, displayNumber: "1a", turn: '{"role":"assistant","content":"answer"}'}
+        - {position: 2, displayNumber: "2", turn: '{"role":"user","content":"two"}'}
