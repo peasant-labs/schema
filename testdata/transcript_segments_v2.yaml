@@ -1,0 +1,136 @@
+turns:
+  cases:
+    - name: recorded-index-absent-preserves-turn
+      classification: must-pass
+      provenance: &legacy {source: manual, ref: "Non-strict legacy envelope with an absent recorded index"}
+      mutation: {description: "Omit the recorded index from the served turn"}
+      input: {raw: '{"role":"assistant","content":"answer"}'}
+      expected: {state: absent}
+    - name: recorded-index-null-preserves-turn
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "Preserve an explicit null index from a legacy turn"}
+      input: {raw: '{"index": null,  "content":"answer"}'}
+      expected: {state: invalid}
+    - name: recorded-index-zero-is-present
+      classification: must-pass
+      provenance: &boundary {source: boundary, ref: "Recorded indexes are safe nonnegative JSON integers"}
+      mutation: {description: "Retain zero as a recorded value"}
+      input: {raw: '{"index":0}'}
+      expected: {state: present, index: 0}
+    - name: recorded-index-negative-is-invalid
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "A negative recorded index is not an address"}
+      input: {raw: '{"index":-1}'}
+      expected: {state: invalid}
+    - name: recorded-index-above-safe-domain-is-invalid
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "An integer above the browser safe range is not an address"}
+      input: {raw: '{"index":9007199254740992}'}
+      expected: {state: invalid}
+    - name: recorded-index-safe-maximum
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "The greatest safe integer remains an address"}
+      input: {raw: '{"index":9007199254740991}'}
+      expected: {state: present, index: 9007199254740991}
+    - name: recorded-index-fractional-refused
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "A fractional index is invalid at the row decoder"}
+      input: {raw: '{"index":1.5}'}
+      expected: {state: invalid}
+    - name: recorded-index-bool-refused
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "A boolean index is invalid at the row decoder"}
+      input: {raw: '{"index":true}'}
+      expected: {state: invalid}
+    - name: recorded-index-duplicate-key-refused
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "Duplicate index keys cannot select an address"}
+      input: {raw: '{"index":1,"index":2}'}
+      expected: {state: invalid}
+    - name: turn-bytes-preserved-verbatim
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "Keep whitespace, escapes and member order"}
+      input: {raw: '{ "z":1e3, "s":"\u00e9", "index": null }'}
+      expected: {state: invalid}
+    - name: turn-unknown-member-preserved
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "Keep an unknown object member"}
+      input: {raw: '{"index":7,"future":{"x":1}}'}
+      expected: {state: present, index: 7}
+    - name: turn-bytes-duplicate-key-preserved
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "The opaque constructor preserves duplicate keys for refusal by the document boundary"}
+      input: {raw: '{"x":1,"x":2}'}
+      expected: {state: invalid}
+    - name: turn-object-required
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A null turn is not a JSON object"}
+      input: {raw: 'null'}
+      expected: {}
+    - name: turn-array-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "An array is not a JSON object"}
+      input: {raw: '[]'}
+      expected: {}
+    - name: turn-invalid-utf8-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "Invalid UTF-8 cannot be retained as JSON text"}
+      input: {rawHex: "7b2278223a22ff227d"}
+      expected: {}
+capture:
+  cases:
+    - name: segment-v2-captures-exact-turn-bytes
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "Capture each turn from the served detail without re-encoding it"}
+      input:
+        detail: '{"turns":[{"a": 1, "index":null},{"s":"<a>","n":1e3}]}'
+        want: 2
+      expected:
+        turns: ['{"a": 1, "index":null}', '{"s":"<a>","n":1e3}']
+    - name: segment-v2-rows-pair-with-stored-turns
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "Refuse a mismatch between the typed count and captured turns"}
+      input:
+        detail: '{"turns":[{"index":1}]}'
+        want: 2
+      expected:
+        errorContains: "contains 1 turns but the typed read contains 2"
+    - name: segment-v2-empty-turns-absent
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "An absent turn array is empty only when the typed count is zero"}
+      input: {detail: '{}', want: 0}
+      expected: {turns: []}
+    - name: segment-v2-empty-turns-null
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "A null turn array is empty only when the typed count is zero"}
+      input: {detail: '{"turns":null}', want: 0}
+      expected: {turns: []}
+    - name: segment-v2-missing-turns-count-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "Missing turns cannot account for a nonzero typed count"}
+      input: {detail: '{}', want: 1}
+      expected: {errorContains: "contains 0 turns but the typed read contains 1"}
+    - name: segment-v2-detail-not-object-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "The capture boundary requires a session detail object"}
+      input: {detail: '[]', want: 0}
+      expected: {errorContains: "not one valid UTF-8 JSON object"}

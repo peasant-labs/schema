@@ -1,0 +1,22 @@
+requiredNames:
+  - recorded-index-absent-preserves-turn
+  - recorded-index-null-preserves-turn
+  - recorded-index-zero-is-present
+  - recorded-index-negative-is-invalid
+  - recorded-index-above-safe-domain-is-invalid
+  - recorded-index-safe-maximum
+  - recorded-index-fractional-refused
+  - recorded-index-bool-refused
+  - recorded-index-duplicate-key-refused
+  - turn-bytes-preserved-verbatim
+  - turn-unknown-member-preserved
+  - turn-bytes-duplicate-key-preserved
+  - turn-object-required
+  - turn-array-refused
+  - turn-invalid-utf8-refused
+  - segment-v2-captures-exact-turn-bytes
+  - segment-v2-rows-pair-with-stored-turns
+  - segment-v2-empty-turns-absent
+  - segment-v2-empty-turns-null
+  - segment-v2-missing-turns-count-refused
+  - segment-v2-detail-not-object-refused
