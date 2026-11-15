@@ -24,3 +24,19 @@ requiredNames:
   - segment-v2-second-segment-rows-accepted
   - segment-v2-row-position-off-by-one-refused
   - segment-v2-refuses-rows-out-of-served-order
+  - directory-v2-unpaged-total-matches-refs
+  - directory-v2-unpaged-total-mismatch-refused
+  - directory-v2-page-first-accepted
+  - directory-v2-page-middle-accepted
+  - directory-v2-page-full-cap-accepted
+  - directory-v2-page-half-specified-refused
+  - directory-v2-page-nonpositive-refused
+  - directory-v2-page-per-page-not-cap-refused
+  - directory-v2-page-under-cap-refused
+  - directory-v2-total-outside-ref-chain-rejected
+  - directory-v2-total-negative-rejected
+  - ref-v2-positions-contiguous
+  - ref-v2-range-nonmonotonic-accepted
+  - ref-v2-turn-range-present
+  - ref-v2-turn-range-optional
+  - ref-v2-turn-range-half-rejected

@@ -162,3 +162,101 @@ segments:
       mutation: {description: "A gap between positions is not a contiguous segment"}
       input: {segment: 1, total: 2, start: 50, count: 2, gapAt: 1, refFirst: 50, refLast: 51}
       expected: {segmentValid: false, boundaryValid: false, errorContains: "row 1"}
+directories:
+  cases:
+    - name: directory-v2-unpaged-total-matches-refs
+      classification: must-pass
+      provenance: &directory {source: requirement, ref: "A whole directory covers the served partition"}
+      mutation: &directoryMutation {description: "Validate the supplied directory and ref coordinates"}
+      input: {totalTurns: 2, totalSegments: 2, refCount: 2}
+      expected: {}
+    - name: directory-v2-unpaged-total-mismatch-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 2, totalSegments: 2, refCount: 1}
+      expected: {errorContains: "totalSegments differs from the ref count"}
+    - name: directory-v2-page-first-accepted
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 1, perPage: 10000, refCount: 2}
+      expected: {}
+    - name: directory-v2-page-middle-accepted
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 2, perPage: 10000, refCount: 2, refStart: 10000, positionStart: 10000}
+      expected: {}
+    - name: directory-v2-page-full-cap-accepted
+      classification: must-pass
+      provenance: *boundary
+      mutation: *directoryMutation
+      input: {totalTurns: 10001, totalSegments: 10001, page: 1, perPage: 10000, refCount: 10000}
+      expected: {}
+    - name: directory-v2-page-half-specified-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 1, refCount: 1}
+      expected: {errorContains: "must be set together"}
+    - name: directory-v2-page-nonpositive-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 0, perPage: 10000, refCount: 1}
+      expected: {errorContains: "page number, size, or total is invalid"}
+    - name: directory-v2-page-per-page-not-cap-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 1, perPage: 9999, refCount: 1}
+      expected: {errorContains: "page number, size, or total is invalid"}
+    - name: directory-v2-page-under-cap-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, page: 1, perPage: 10000, refCount: 1}
+      expected: {errorContains: "page number, size, or total is invalid"}
+    - name: directory-v2-total-outside-ref-chain-rejected
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, totalConversation: 1, spanBefore: 1, spanCount: 1}
+      expected: {errorContains: "past totalConversationTurns"}
+    - name: directory-v2-total-negative-rejected
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 0, totalSegments: 0, refCount: 0, totalConversation: -1}
+      expected: {errorContains: "total is negative"}
+    - name: ref-v2-positions-contiguous
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 2, totalSegments: 2, refCount: 2, breakPosition: 1}
+      expected: {errorContains: "does not begin immediately after"}
+    - name: ref-v2-range-nonmonotonic-accepted
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, firstTurn: 2, lastTurn: 1}
+      expected: {}
+    - name: ref-v2-turn-range-present
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, firstTurn: 1, lastTurn: 2}
+      expected: {}
+    - name: ref-v2-turn-range-optional
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1}
+      expected: {}
+    - name: ref-v2-turn-range-half-rejected
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, firstTurn: 1}
+      expected: {errorContains: "must both be nonnegative or both absent"}

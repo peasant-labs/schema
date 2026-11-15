@@ -55,11 +55,32 @@ type v2SegmentExpected struct {
 	ErrorContains string `yaml:"errorContains"`
 }
 
+type v2DirectoryInput struct {
+	TotalTurns        int  `yaml:"totalTurns"`
+	TotalSegments     int  `yaml:"totalSegments"`
+	Page              *int `yaml:"page"`
+	PerPage           *int `yaml:"perPage"`
+	RefCount          int  `yaml:"refCount"`
+	RefStart          int  `yaml:"refStart"`
+	PositionStart     int  `yaml:"positionStart"`
+	BreakPosition     *int `yaml:"breakPosition"`
+	FirstTurn         *int `yaml:"firstTurn"`
+	LastTurn          *int `yaml:"lastTurn"`
+	TotalConversation *int `yaml:"totalConversation"`
+	SpanBefore        *int `yaml:"spanBefore"`
+	SpanCount         *int `yaml:"spanCount"`
+}
+
+type v2DirectoryExpected struct {
+	ErrorContains string `yaml:"errorContains"`
+}
+
 type segmentV2Cases struct {
-	Turns    testcase.Corpus[v2TurnInput, v2TurnExpected]       `yaml:"turns"`
-	Capture  testcase.Corpus[v2CaptureInput, v2CaptureExpected] `yaml:"capture"`
-	Evidence testcase.Corpus[string, string]                    `yaml:"evidence"`
-	Segments testcase.Corpus[v2SegmentInput, v2SegmentExpected] `yaml:"segments"`
+	Turns       testcase.Corpus[v2TurnInput, v2TurnExpected]           `yaml:"turns"`
+	Capture     testcase.Corpus[v2CaptureInput, v2CaptureExpected]     `yaml:"capture"`
+	Evidence    testcase.Corpus[string, string]                        `yaml:"evidence"`
+	Segments    testcase.Corpus[v2SegmentInput, v2SegmentExpected]     `yaml:"segments"`
+	Directories testcase.Corpus[v2DirectoryInput, v2DirectoryExpected] `yaml:"directories"`
 }
 
 func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
@@ -69,7 +90,8 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	caseassert.RequireValid(t, fixture.Capture)
 	caseassert.RequireValid(t, fixture.Evidence)
 	caseassert.RequireValid(t, fixture.Segments)
-	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases)+len(fixture.Segments.Cases))
+	caseassert.RequireValid(t, fixture.Directories)
+	names := make([]string, 0, len(fixture.Turns.Cases)+len(fixture.Capture.Cases)+len(fixture.Evidence.Cases)+len(fixture.Segments.Cases)+len(fixture.Directories.Cases))
 	for _, c := range fixture.Turns.Cases {
 		names = append(names, c.Name)
 	}
@@ -82,8 +104,56 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	for _, c := range fixture.Segments.Cases {
 		names = append(names, c.Name)
 	}
+	for _, c := range fixture.Directories.Cases {
+		names = append(names, c.Name)
+	}
 	caseassert.RequireManifestNames(t, "v2 segment", transcriptSegmentsV2ManifestYAML, names)
 	return fixture
+}
+
+func TestTranscriptSegmentDirectoryV2(t *testing.T) {
+	for _, c := range loadSegmentV2Cases(t).Directories.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			sessionID := schema.SessionID("ses_test")
+			refs := make([]schema.TranscriptSegmentRefV2, c.Input.RefCount)
+			for i := range refs {
+				position := c.Input.PositionStart + i
+				if c.Input.BreakPosition != nil && i == *c.Input.BreakPosition {
+					position++
+				}
+				refs[i] = schema.TranscriptSegmentRefV2{
+					Index: c.Input.RefStart + i, SourceFirstPosition: position, SourceLastPosition: position,
+				}
+			}
+			if len(refs) > 0 {
+				refs[0].FirstTurn, refs[0].LastTurn = c.Input.FirstTurn, c.Input.LastTurn
+				if c.Input.SpanBefore != nil && c.Input.SpanCount != nil {
+					refs[0].ConversationTurns = &schema.ConversationTurnSpan{Before: *c.Input.SpanBefore, Count: *c.Input.SpanCount}
+				}
+			}
+			dir := schema.TranscriptSegmentDirectoryV2{
+				Context: schema.TranscriptReadContext{
+					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
+					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+					NativePresence: schema.TranscriptNativeAbsent, TotalTurns: c.Input.TotalTurns,
+					TotalSegments: c.Input.TotalSegments, TotalConversationTurns: c.Input.TotalConversation,
+				},
+				Partition:    schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain},
+				UsagePresent: schema.TranscriptUsageUnknown, Segments: refs,
+				DirectoryPage: c.Input.Page, DirectoryPerPage: c.Input.PerPage,
+			}
+			err := dir.Validate()
+			if c.Classification == testcase.MustPass {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+				t.Fatalf("directory validation = %v, want error containing %q", err, c.Expected.ErrorContains)
+			}
+		})
+	}
 }
 
 func TestTranscriptSegmentV2Boundaries(t *testing.T) {
