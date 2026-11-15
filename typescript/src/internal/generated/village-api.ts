@@ -1306,7 +1306,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. V2 is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared v2 resolver snaps the recorded identity to a user row. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. */
+        /** @description Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. V2 is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared v2 resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the v2 route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. */
         get: operations["getTranscriptWindow"];
         put?: never;
         post?: never;
@@ -7464,9 +7464,9 @@ export interface operations {
     };
     getTranscriptWindow: {
         parameters: {
-            query?: {
-                /** @description Turn identity to centre the window on. Required for v1; omitted selects the default window in v2. */
-                anchor?: number;
+            query: {
+                /** @description Turn identity to centre the window on */
+                anchor: number;
                 /** @description Assistant turns collected on each side, 1..10; omitted defaults to 10 */
                 span?: number;
                 /** @description Revision to read; omitted serves the current revision */

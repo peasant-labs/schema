@@ -506,10 +506,8 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		segmentedV2Query
 	})
 	transcriptWindowQuery := new(struct {
-		ID       schema.TranscriptID `path:"id" description:"Transcript identifier"`
-		Anchor   int                 `query:"anchor" description:"Turn identity to centre the window on. Required for v1; omitted selects the default window in v2." minimum:"0"`
-		Span     int                 `query:"span" description:"Assistant turns collected on each side, 1..10; omitted defaults to 10" default:"10" minimum:"1" maximum:"10"`
-		Revision string              `query:"revision" description:"Revision to read; omitted serves the current revision"`
+		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
+		transcriptWindowParams
 		segmentedV2Query
 	})
 	transcriptListQuery := new(struct {
@@ -609,7 +607,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/window", id: "getTranscriptWindow", tag: "transcripts",
-			description: "Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. V2 is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared v2 resolver snaps the recorded identity to a user row. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
+			description: "Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. V2 is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared v2 resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the v2 route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
 			requests:    []interface{}{transcriptWindowQuery}, responseAlternatives: []interface{}{new(schema.TranscriptWindow), new(schema.TranscriptWindowV2)},
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
 		},

@@ -18,7 +18,9 @@ type transcriptSegmentParams struct {
 	Revision string `query:"revision" description:"Revision to read; omitted serves the current revision"`
 }
 
-// transcriptWindowParams are the parameters of the window read.
+// transcriptWindowParams are the shared v1 window parameters. OpenAPI cannot
+// express version-dependent requiredness on one operation: Village's v2 route
+// also accepts an omitted anchor for its default window.
 type transcriptWindowParams struct {
 	Anchor   int    `query:"anchor" required:"true" description:"Turn identity to centre the window on" minimum:"0"`
 	Span     int    `query:"span" description:"Assistant turns collected on each side, 1..10; omitted defaults to 10" default:"10" minimum:"1" maximum:"10"`

@@ -603,6 +603,15 @@ func TestTranscriptWindowSpanConstantsMatchTheDeclaredRange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	type queryParameter struct {
+		Name        string         `json:"name"`
+		In          string         `json:"in"`
+		Description string         `json:"description"`
+		Required    bool           `json:"required"`
+		Schema      map[string]any `json:"schema"`
+	}
+	shared := map[string]queryParameter{}
+	commonNames := []string{"anchor", "span", "revision"}
 	for _, read := range []struct {
 		name string
 		spec any
@@ -617,17 +626,29 @@ func TestTranscriptWindowSpanConstantsMatchTheDeclaredRange(t *testing.T) {
 		}
 		var document struct {
 			Paths map[string]map[string]struct {
-				Parameters []struct {
-					Name   string         `json:"name"`
-					Schema map[string]any `json:"schema"`
-				} `json:"parameters"`
+				Parameters []queryParameter `json:"parameters"`
 			} `json:"paths"`
 		}
 		if err := json.Unmarshal(raw, &document); err != nil {
 			t.Fatal(err)
 		}
 		found := false
+		seen := map[string]bool{}
 		for _, parameter := range document.Paths[read.path]["get"].Parameters {
+			if parameter.In == "query" && slices.Contains(commonNames, parameter.Name) {
+				if seen[parameter.Name] {
+					t.Fatalf("%s window repeats %s", read.name, parameter.Name)
+				}
+				seen[parameter.Name] = true
+				if read.name == "local" {
+					shared[parameter.Name] = parameter
+				} else if !reflect.DeepEqual(parameter, shared[parameter.Name]) {
+					t.Fatalf("%s window parameter %s = %+v, want shared Local declaration %+v", read.name, parameter.Name, parameter, shared[parameter.Name])
+				}
+				if parameter.Required != (parameter.Name == "anchor") {
+					t.Fatalf("%s window parameter %s required=%v, want anchor alone required", read.name, parameter.Name, parameter.Required)
+				}
+			}
 			if parameter.Name != "span" {
 				continue
 			}
@@ -645,6 +666,11 @@ func TestTranscriptWindowSpanConstantsMatchTheDeclaredRange(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("%s spec declares no span parameter on GET %s", read.name, read.path)
+		}
+		for _, name := range commonNames {
+			if !seen[name] {
+				t.Fatalf("%s spec declares no shared %s query parameter", read.name, name)
+			}
 		}
 	}
 }

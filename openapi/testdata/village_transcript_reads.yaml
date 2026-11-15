@@ -44,7 +44,7 @@ routes:
     input: {path: "/api/v1/transcripts/{id}/window", operationId: getTranscriptWindow}
     expected:
       tag: transcripts
-      parameters: [{name: anchor, in: query, type: integer, minimum: 0}, {name: span, in: query, type: integer, minimum: 1, maximum: 10}, {name: revision, in: query, type: string}, {name: v, in: query, type: integer}, {name: partition, in: query, type: string}, {name: section, in: query, type: integer, minimum: 0}, {name: representation, in: query, type: string}, {name: id, in: path, type: string, required: true}]
+      parameters: [{name: anchor, in: query, type: integer, minimum: 0, required: true}, {name: span, in: query, type: integer, minimum: 1, maximum: 10}, {name: revision, in: query, type: string}, {name: v, in: query, type: integer}, {name: partition, in: query, type: string}, {name: section, in: query, type: integer, minimum: 0}, {name: representation, in: query, type: string}, {name: id, in: path, type: string, required: true}]
       responseRef: "#/components/schemas/SchemaTranscriptWindow"
       v2ResponseRef: "#/components/schemas/SchemaTranscriptWindowV2"
       v2RequiredRoot: [context, partition, anchorPosition, anchorSegment, span, firstPosition, lastPosition, segments, hasOlder, hasNewer]
