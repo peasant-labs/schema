@@ -9,7 +9,7 @@ export { reconcileVillageContributionAttempt, villageContributionAttemptActor, t
 export { normalizeCollectiveObservationScope, encodeContributionTraversalRevision, parseContributionTraversalRevision, validateContributionHistoryQuery, type ContributionTraversalIdentity, type LocalContributionHistoryQuery } from "./collective-validation.js";
 export { collectiveFetchHTTPStatus } from "./collective-status.js";
 export { isConversationTurn } from "./conversation-turn.js";
-export { isTranscriptDirectoryPositionsValid } from "./transcript-directory-positions.js";
+export { isTranscriptDirectoryPositionsValid, isTranscriptDirectoryV2PositionsValid } from "./transcript-directory-positions.js";
 export { readTranscriptV2Turn, type TranscriptV2Turn } from "./transcript-v2-turn.js";
 import { requiredContentCapabilities, KnownContentCapability } from "./internal/generated/content-capabilities.gen.js";
 

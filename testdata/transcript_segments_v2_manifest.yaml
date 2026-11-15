@@ -40,6 +40,7 @@ requiredNames:
   - directory-v2-page-nonpositive-refused
   - directory-v2-page-per-page-not-cap-refused
   - directory-v2-page-under-cap-refused
+  - directory-v2-total-at-ref-end-accepted
   - directory-v2-total-outside-ref-chain-rejected
   - directory-v2-total-negative-rejected
   - ref-v2-positions-contiguous

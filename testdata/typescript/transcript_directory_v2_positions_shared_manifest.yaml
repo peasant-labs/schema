@@ -1,0 +1,4 @@
+requiredNames:
+  - directory-v2-total-at-ref-end-accepted
+  - directory-v2-total-outside-ref-chain-rejected
+  - directory-v2-total-negative-rejected

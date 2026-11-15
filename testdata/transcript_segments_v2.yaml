@@ -258,6 +258,12 @@ directories:
       mutation: *directoryMutation
       input: {totalTurns: 1, totalSegments: 1, page: 1, perPage: 10000, refCount: 1}
       expected: {errorContains: "page number, size, or total is invalid"}
+    - name: directory-v2-total-at-ref-end-accepted
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, totalConversation: 1, spanBefore: 0, spanCount: 1}
+      expected: {}
     - name: directory-v2-total-outside-ref-chain-rejected
       classification: must-fail
       provenance: *directory

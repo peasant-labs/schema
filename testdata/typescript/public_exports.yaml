@@ -94,6 +94,9 @@ functions:
   - name: isTranscriptDirectoryPositionsValid
     target: runtime-predicate:TranscriptDirectoryPositions
     surfaces: [root]
+  - name: isTranscriptDirectoryV2PositionsValid
+    target: runtime-predicate:TranscriptDirectoryV2Positions
+    surfaces: [root]
   - name: readTranscriptV2Turn
     target: runtime-reader:TranscriptV2Turn
     surfaces: [root]

@@ -1,0 +1,18 @@
+requiredNames:
+  - v2-directory-null
+  - v2-directory-context-missing
+  - v2-directory-context-not-object
+  - v2-directory-segments-not-array
+  - v2-directory-empty-segments
+  - v2-directory-total-absent
+  - v2-directory-total-null
+  - v2-directory-total-negative
+  - v2-directory-total-fractional
+  - v2-directory-total-string
+  - v2-directory-total-above-safe-domain
+  - v2-directory-span-ends-past-total
+  - v2-directory-span-at-total
+  - v2-directory-span-chain-not-continuous
+  - v2-directory-omitted-span-breaks-chain
+  - v2-directory-top-level-total-ignored
+  - v2-directory-required-field-invalid-with-valid-positions
