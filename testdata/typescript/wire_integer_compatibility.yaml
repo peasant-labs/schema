@@ -101,6 +101,18 @@ cases:
     mutation: {description: "Reject the first unsafe source position"}
     input: {target: retained, json: '{"kind":"unknown","namespace":"record","payload":"{}","pointer":"","position":9007199254740992,"recordIndex":0,"sourceRef":"s"}'}
     expected: {valid: false}
+  - name: durable-read-unsafe-turn-integers-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A typed served detail may contain Go int values beyond JavaScript's safe range"}
+    mutation: {description: "Retain unsafe turn index, depth and session tokens through the durable read"}
+    input: {target: durable, json: '{"id":"s","harness":"codex","startTime":"0001-01-01T00:00:00Z","endTime":"0001-01-01T00:00:00Z","durationMins":0,"totalTokens":9007199254740992,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"turns":[{"index":9007199254740992,"role":"assistant","content":"x","timestamp":"0001-01-01T00:00:00Z","depth":9007199254740992}]}'}
+    expected: {valid: true}
+  - name: durable-read-fractional-turn-index-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Unformatted durable integers remain integers"}
+    mutation: {description: "Replace the recorded turn index with a fraction"}
+    input: {target: durable, json: '{"id":"s","harness":"codex","startTime":"0001-01-01T00:00:00Z","endTime":"0001-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"turns":[{"index":1.5,"role":"assistant","content":"x","timestamp":"0001-01-01T00:00:00Z","depth":0}]}'}
+    expected: {valid: false}
   - name: header-count-omitted-accepted
     classification: must-pass
     provenance: {source: requirement, ref: "An absent served count is omitted"}

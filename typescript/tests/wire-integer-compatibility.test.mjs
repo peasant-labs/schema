@@ -6,9 +6,12 @@ import { parse } from "yaml";
 
 import {
   TypesVersion,
+  parseSessionDetailPayloadText,
+  parseTranscriptContentText,
   zAuthoritativePublishRequest,
   zPublishRequest,
   zRetainedUnknownRecord,
+  zSessionDetailPayload,
   zTimestampInfo,
   zTranscriptSessionHeader,
   zVillageAvailableRepository,
@@ -38,6 +41,7 @@ const schemas = Object.freeze({
   repository: zVillageAvailableRepository,
   retained: zRetainedUnknownRecord,
   header: zTranscriptSessionHeader,
+  durable: zSessionDetailPayload,
 });
 
 test("generated integer validators retain formatted compatibility and served-header parity", async (t) => {
@@ -64,6 +68,16 @@ test("generated integer validators retain formatted compatibility and served-hea
       const result = schema.safeParse(input);
       assert.equal(row.classification, row.expected.valid ? Classification.MustPass : Classification.MustFail);
       assert.equal(result.success, row.expected.valid, result.success ? "" : result.error.issues.map((issue) => issue.message).join("; "));
+      if (row.input.target === "durable") {
+        const envelope = `{"contractVersion":"0.1.1","kind":"session_detail","sessionDetail":${row.input.json}}`;
+        if (row.expected.valid) {
+          assert.deepEqual(parseSessionDetailPayloadText(row.input.json), result.data);
+          assert.deepEqual(parseTranscriptContentText(envelope).sessionDetail, result.data);
+        } else {
+          assert.throws(() => parseSessionDetailPayloadText(row.input.json));
+          assert.throws(() => parseTranscriptContentText(envelope));
+        }
+      }
       if (result.success && row.expected.start !== undefined) {
         const timestamp = row.input.target === "publish" ? result.data.timestamp : result.data;
         assert.equal(typeof timestamp.start, "bigint");

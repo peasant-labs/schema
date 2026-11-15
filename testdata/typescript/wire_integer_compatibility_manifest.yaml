@@ -16,6 +16,8 @@ requiredNames:
   - int32-negative-count-refused
   - retained-unknown-keeps-safe-number
   - retained-unknown-unsafe-number-refused
+  - durable-read-unsafe-turn-integers-accepted
+  - durable-read-fractional-turn-index-refused
   - header-count-omitted-accepted
   - header-count-null-refused
   - header-count-zero-accepted

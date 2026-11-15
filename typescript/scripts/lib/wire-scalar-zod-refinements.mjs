@@ -1,6 +1,9 @@
-// The generator's integer and date-time defaults are narrower than the JSON
-// schemas. Apply only rules declared by the spec, and fail if its emitted
-// property markers change. Evidence timestamps have their own UTC refinement.
+// The generator's integer and date-time defaults are narrower than served
+// values. Preserve declared safe bounds and constrain wider integer numbers to
+// the represented int64 domain; fail if emitted property markers change.
+// Scope and JSON.parse rounding limits:
+// https://github.com/peasant-labs/polyrepo/01a1e142-ecff-7b0d-a31c-f18383c2a13f
+// Evidence timestamps have their own UTC refinement.
 // Existing publication schemas and their referenced components retain their
 // prior validators; the caller identifies those roots from the canonical spec.
 export function applyWireScalarZodRefinements(source, spec, { preserveComponentsReachableFrom = [] } = {}) {
