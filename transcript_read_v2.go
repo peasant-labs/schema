@@ -304,20 +304,11 @@ func (d TranscriptSegmentDirectoryV2) Validate() error {
 	if d.Context.TotalTurns < len(d.Segments) {
 		return fmt.Errorf("%stotalTurns is smaller than the served ref count; each segment contains a row; emit the partition total", where)
 	}
+	if err := validateTranscriptRefChain(d.Segments, start, total, where, transcriptRefChainDirectory, !paged); err != nil {
+		return err
+	}
 	spans := make([]transcriptDirectoryConversationRef, len(d.Segments))
 	for i, ref := range d.Segments {
-		if err := ref.Validate(); err != nil {
-			return err
-		}
-		if ref.Index != start+i || ref.Index >= total {
-			return fmt.Errorf("%sref %d has ordinal %d; refs must be consecutive from page ordinal %d and below totalSegments %d; rebuild the directory", where, i, ref.Index, start, total)
-		}
-		if i == 0 && !paged && ref.SourceFirstPosition != 0 {
-			return fmt.Errorf("%sthe first unpaged ref starts after position zero; the served partition would have a gap; rebuild the directory", where)
-		}
-		if i > 0 && ref.SourceFirstPosition-d.Segments[i-1].SourceLastPosition != 1 {
-			return fmt.Errorf("%sref %d does not begin immediately after the preceding served range; rows would be skipped or repeated; rebuild the directory", where, ref.Index)
-		}
 		spans[i] = transcriptDirectoryConversationRef{ordinal: ref.Index, span: ref.ConversationTurns}
 	}
 	return validateDirectoryConversationTurns(d.Context.TotalConversationTurns, spans, where)

@@ -216,6 +216,12 @@ directories:
       mutation: *directoryMutation
       input: {totalTurns: 2, totalSegments: 2, refCount: 1}
       expected: {errorContains: "totalSegments differs from the ref count"}
+    - name: directory-v2-total-turns-smaller-than-ref-count-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: {description: "The partition has fewer rows than its nonempty segments"}
+      input: {totalTurns: 1, totalSegments: 3, refCount: 3}
+      expected: {errorContains: "totalTurns is smaller than the served ref count"}
     - name: directory-v2-page-first-accepted
       classification: must-pass
       provenance: *directory

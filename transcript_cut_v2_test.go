@@ -125,6 +125,19 @@ func TestResolveTranscriptWindowV2(t *testing.T) {
 					got.Segments = []int{0, 2}
 				case "incorrect-newer":
 					got.HasNewer = !got.HasNewer
+				case "requested-outside-run":
+					found := false
+					for _, ref := range refs {
+						if ref.Index < got.Segments[0] || ref.Index > got.Segments[len(got.Segments)-1] {
+							position := ref.SourceFirstPosition
+							got.RequestedPosition = &position
+							found = true
+							break
+						}
+					}
+					if !found || got.RequestedAnchor == nil {
+						t.Fatal("fixture needs an anchored window and a ref outside its resolved run")
+					}
 				default:
 					t.Fatalf("unknown fixture window mutation %q", c.Input.Mutation)
 				}

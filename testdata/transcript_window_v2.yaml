@@ -230,6 +230,12 @@ cases:
     mutation: *exercise
     input: {<<: *base, windowMutation: noncontiguous}
     expected: {errorContains: "not consecutive"}
+  - name: window-uncovered-run-refused-by-resolver
+    classification: must-fail
+    provenance: *boundary
+    mutation: {description: "Move the requested position into a supplied ref outside the resolved run"}
+    input: {<<: *base, windowMutation: requested-outside-run}
+    expected: {errorContains: "requested position is not covered by the widened run"}
   - name: window-coverage-validator-checks-edge-flags
     classification: must-fail
     provenance: *boundary

@@ -27,6 +27,7 @@ requiredNames:
   - window-history-partition-resolves
   - window-history-section-required
   - window-coverage-rejects-non-contiguous-run
+  - window-uncovered-run-refused-by-resolver
   - window-coverage-validator-checks-edge-flags
   - window-refs-must-ascend-consecutively
   - window-ref-outside-context-total-refused

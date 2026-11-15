@@ -169,21 +169,44 @@ func validateTranscriptV2Refs(refs []TranscriptSegmentRefV2, total int, where st
 	if total < 1 {
 		return fmt.Errorf("%sthe partition has rows but the context says no segments; the directory cannot be placed; emit the partition's true segment count", where)
 	}
+	return validateTranscriptRefChain(refs, refs[0].Index, total, where, transcriptRefChainWindow, false)
+}
+
+type transcriptRefChainContext uint8
+
+const (
+	transcriptRefChainDirectory transcriptRefChainContext = iota
+	transcriptRefChainWindow
+)
+
+// validateTranscriptRefChain is the one adjacency rule for directory pages and
+// resolver intervals. Their diagnostics differ because a page has a prescribed
+// starting ordinal while a resolver can accept any adjacent page interval.
+func validateTranscriptRefChain(refs []TranscriptSegmentRefV2, firstOrdinal, total int, where string, context transcriptRefChainContext, requirePartitionStart bool) error {
 	for i, ref := range refs {
 		if err := ref.Validate(); err != nil {
 			return err
 		}
-		if ref.Index >= total {
-			return fmt.Errorf("%ssegment %d is outside totalSegments %d; the ref names an ordinal the partition does not have; rebuild the directory", where, ref.Index, total)
+		if ref.Index >= total || ref.Index != firstOrdinal+i {
+			if context == transcriptRefChainDirectory {
+				return fmt.Errorf("%sref %d has ordinal %d; refs must be consecutive from page ordinal %d and below totalSegments %d; rebuild the directory", where, i, ref.Index, firstOrdinal, total)
+			}
+			if ref.Index >= total {
+				return fmt.Errorf("%ssegment %d is outside totalSegments %d; the ref names an ordinal the partition does not have; rebuild the directory", where, ref.Index, total)
+			}
+			return fmt.Errorf("%ssegment ordinals %d and %d are not consecutive; a host may have concatenated non-adjacent or reordered pages; pass adjacent pages in ordinal order", where, refs[i-1].Index, ref.Index)
 		}
 		if i == 0 {
+			if requirePartitionStart && ref.SourceFirstPosition != 0 {
+				return fmt.Errorf("%sthe first unpaged ref starts after position zero; the served partition would have a gap; rebuild the directory", where)
+			}
 			continue
 		}
 		prev := refs[i-1]
-		if ref.Index-prev.Index != 1 {
-			return fmt.Errorf("%ssegment ordinals %d and %d are not consecutive; a host may have concatenated non-adjacent or reordered pages; pass adjacent pages in ordinal order", where, prev.Index, ref.Index)
-		}
 		if ref.SourceFirstPosition-prev.SourceLastPosition != 1 {
+			if context == transcriptRefChainDirectory {
+				return fmt.Errorf("%sref %d does not begin immediately after the preceding served range; rows would be skipped or repeated; rebuild the directory", where, ref.Index)
+			}
 			return fmt.Errorf("%ssegment %d starts at position %d, not after segment %d ending at %d; the refs and rows disagree; rebuild the directory from the rows this window was resolved on", where, ref.Index, ref.SourceFirstPosition, prev.Index, prev.SourceLastPosition)
 		}
 	}
@@ -228,6 +251,12 @@ func transcriptWindowCoveringRun(in TranscriptWindowV2Input, first, last int) ([
 
 // Validate checks the window's own coordinates and edge flags.
 func (w TranscriptWindowV2) Validate() error {
+	return w.validateWindowShape(true)
+}
+
+// validateWindowShape validates the requested position numerically for the
+// standalone wire check. Coverage instead checks its corresponding ref.
+func (w TranscriptWindowV2) validateWindowShape(checkRequestedBounds bool) error {
 	const where = "v2 transcript window validation failed at schema.TranscriptWindowV2.Validate: "
 	if err := w.Context.Validate(); err != nil {
 		return err
@@ -238,7 +267,8 @@ func (w TranscriptWindowV2) Validate() error {
 	if w.Span < TranscriptWindowSpanMinimum || w.Span > TranscriptWindowSpanMaximum ||
 		w.FirstPosition < 0 || w.AnchorPosition < w.FirstPosition || w.LastPosition < w.AnchorPosition ||
 		(w.RequestedAnchor != nil && *w.RequestedAnchor < 0) || (w.AnchorTurn != nil && *w.AnchorTurn < 0) ||
-		(w.RequestedPosition != nil && (w.RequestedAnchor == nil || *w.RequestedPosition < w.FirstPosition || *w.RequestedPosition > w.LastPosition)) {
+		(w.RequestedPosition != nil && (w.RequestedAnchor == nil ||
+			(checkRequestedBounds && (*w.RequestedPosition < w.FirstPosition || *w.RequestedPosition > w.LastPosition)))) {
 		return fmt.Errorf("%sspan, anchor, requested position, or range is invalid; the window cannot be placed; emit a supported span and positions inside the run", where)
 	}
 	if len(w.Segments) == 0 {
@@ -262,7 +292,7 @@ func (w TranscriptWindowV2) Validate() error {
 // resolved on, including the anchor and an optional requested-position widening.
 func ValidateTranscriptWindowV2Coverage(window TranscriptWindowV2, refs []TranscriptSegmentRefV2) error {
 	const where = "v2 transcript window coverage failed at schema.ValidateTranscriptWindowV2Coverage: "
-	if err := window.Validate(); err != nil {
+	if err := window.validateWindowShape(false); err != nil {
 		return err
 	}
 	if err := validateTranscriptV2Refs(refs, window.Context.TotalSegments, where); err != nil {
