@@ -250,147 +250,147 @@ versions:
       - name: cook-role-case-variant-keeps-and-suffixes
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: &rawOracle {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
-        mutation: &rawMutation {description: "Cook the raw served turns without folding member names"}
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"same"},{"Role":"assistant","content":"same"}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}]
       - name: cook-role-case-variant-does-not-open-task
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"same"},{"Role":"assistant","content":"same"},{"Role":"user","content":"third"}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}, {position: 2, keep: true, servedPosition: 2, displayNumber: "1b"}]
       - name: cook-role-both-spellings-present-canonical-wins
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"first"},{"role":"user","Role":"assistant","content":"second"}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "2"}]
       - name: cook-role-both-spellings-reversed-canonical-wins
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"first"},{"Role":"assistant","role":"user","content":"second"}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "2"}]
       - name: cook-role-null-distinct-from-absent
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":null,"content":"same"},{"content":"same"},{"content":"same"}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}, {position: 2, keep: false, servedPosition: -1, displayNumber: ""}]
       - name: cook-escaped-key-spelling-is-the-canonical-key
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"\u0072ole":"assistant","content":"same"},{"role":"assistant","content":"same"}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: false, servedPosition: -1, displayNumber: ""}]
       - name: cook-protected-member-case-variant-does-not-protect
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"one"},{"role":"assistant","content":"one","Usage":{}},{"role":"assistant","content":"two"},{"role":"assistant","content":"two","SourceEntryRef":"x"},{"role":"assistant","content":"three"},{"role":"assistant","content":"three","ControlKind":"mode"},{"role":"assistant","content":"four"},{"role":"assistant","content":"four","ToolCalls":[{"name":"read"}]}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: false, servedPosition: -1, displayNumber: ""}, {position: 2, keep: true, servedPosition: 1, displayNumber: "1a"}, {position: 3, keep: false, servedPosition: -1, displayNumber: ""}, {position: 4, keep: true, servedPosition: 2, displayNumber: "1b"}, {position: 5, keep: false, servedPosition: -1, displayNumber: ""}, {position: 6, keep: true, servedPosition: 3, displayNumber: "1c"}, {position: 7, keep: false, servedPosition: -1, displayNumber: ""}]
       - name: cook-depth-case-variant-is-absent
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"user","content":"first","depth":0},{"role":"assistant","content":"answer"},{"role":"user","content":"second","depth":1},{"role":"user","content":"third","Depth":1}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}, {position: 2, keep: true, servedPosition: 2, displayNumber: "1b"}, {position: 3, keep: true, servedPosition: 3, displayNumber: "2"}]
       - name: cook-content-case-variant-is-not-equal
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"same"},{"role":"assistant","Content":"same","toolCalls":[{"name":"read"}]}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}]
       - name: cook-content-parts-case-variant-is-not-an-image
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"user","content":"","ContentParts":[{"type":"image","image":{}}]},{"role":"user","content":"","contentParts":[{"Type":"image","image":{}}]}]'}
         expected: [{position: 0, keep: false, servedPosition: -1, displayNumber: ""}, {position: 1, keep: false, servedPosition: -1, displayNumber: ""}]
       - name: cook-unknown-member-is-ignored
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"same","Note":1},{"role":"assistant","content":"same","note":2}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: false, servedPosition: -1, displayNumber: ""}]
       - name: cook-duplicate-member-refused
         expect: {outcome: refused, stage: constructor, errorContains: ["turn 0", "duplicate object key", "role"]}
         classification: must-fail
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"user","role":"assistant","content":"same"}]'}
         expected: []
       - name: cook-escaped-duplicate-member-refused
         expect: {outcome: refused, stage: constructor, errorContains: ["turn 0", "duplicate object key", "role"]}
         classification: must-fail
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"user","\u0072ole":"assistant","content":"same"}]'}
         expected: []
       - name: cook-absent-content-adjacent-duplicate-refused
         expect: {outcome: refused, stage: cook}
         classification: must-fail
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","toolCalls":[{"name":"read"}]},{"role":"assistant","toolCalls":[{"name":"read"}]}]'}
         expected: []
       - name: cook-null-content-adjacent-duplicate-refused
         expect: {outcome: refused, stage: cook}
         classification: must-fail
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","content":null,"toolCalls":[{"name":"read"}]},{"role":"assistant","content":null,"toolCalls":[{"name":"read"}]}]'}
         expected: []
       - name: cook-invalid-provenance-refused
         expect: {outcome: refused, stage: cook}
         classification: must-fail
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","provenance":{}}]'}
         expected: []
       - name: cook-valid-provenance-empty-submission-kept
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"system","content":"","provenance":{"origin":"system_control","actor":"harness","delivery":"system_lifecycle","ownership":"uncertain","evidence":"unknown","inputModality":"none","submissionRef":""}}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}]
       - name: cook-provenance-unknown-member-refused
         expect: {outcome: refused, stage: cook, errorContains: ["turn 0"]}
         classification: must-fail
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","provenance":{"origin":"system_control","Origin":"system_control","actor":"harness","delivery":"system_lifecycle","ownership":"uncertain","evidence":"unknown","inputModality":"none"}}]'}
         expected: []
       - name: cook-pi-skips-evidence-validation
         expect: {outcome: cooked}
         classification: must-pass
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: pi, turnsJSON: '[{"role":"assistant","content":"row","provenance":{}}]'}
         expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}]
       - name: cook-null-provenance-refused
         expect: {outcome: refused, stage: cook}
         classification: must-fail
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","provenance":null}]'}
         expected: []
       - name: cook-refusal-is-not-a-verdict
         expect: {outcome: refused, stage: cook, errorContains: ["turn 7"]}
         classification: must-fail
-        provenance: *rawOracle
-        mutation: *rawMutation
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
         input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"one"},{"role":"assistant","content":"two"},{"role":"assistant","content":"three"},{"role":"assistant","content":"four"},{"role":"assistant","content":"five"},{"role":"assistant","content":"six"},{"role":"assistant","content":"seven"},{"role":"assistant","provenance":{}}]'}
         expected: []
