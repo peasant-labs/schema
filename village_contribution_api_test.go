@@ -61,7 +61,7 @@ func loadContributionFixtures(t *testing.T) contributionFixtures {
 	assertcase.RequireValid(t, f.ErrorCodes)
 	assertcase.RequireMin(t, f.Bounds, 3)
 	assertcase.RequireValid(t, f.Bounds)
-	assertcase.RequireMin(t, f.Shapes, 15)
+	assertcase.RequireMin(t, f.Shapes, 16)
 	assertcase.RequireValid(t, f.Shapes)
 	requireNames(t, "contributable view", f.RequiredNames.Views, namesOf(f.Views))
 	requireNames(t, "contribution error code", f.RequiredNames.ErrorCodes, namesOf(f.ErrorCodes))

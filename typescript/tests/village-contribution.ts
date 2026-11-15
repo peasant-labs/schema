@@ -31,7 +31,6 @@ export function describeErrorCode(code: VillageContributionErrorCode): string {
   switch (code) {
     case "moved":
     case "missing":
-    case "live":
     case "private_unapproved":
     case "conflict":
       return "transcript";

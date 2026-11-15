@@ -474,7 +474,6 @@ enums:
     members:
       - {name: Moved, value: "moved"}
       - {name: Missing, value: "missing"}
-      - {name: Live, value: "live"}
       - {name: PrivateUnapproved, value: "private_unapproved"}
       - {name: Conflict, value: "conflict"}
       - {name: Policy, value: "policy"}
@@ -482,7 +481,7 @@ enums:
       - {name: StaleSelection, value: "stale_selection"}
       - {name: SnapshotTimeout, value: "snapshot_timeout"}
       - {name: SnapshotBusy, value: "snapshot_busy"}
-    all_values: ["moved", "missing", "live", "private_unapproved", "conflict", "policy", "membership", "stale_selection", "snapshot_timeout", "snapshot_busy"]
+    all_values: ["moved", "missing", "private_unapproved", "conflict", "policy", "membership", "stale_selection", "snapshot_timeout", "snapshot_busy"]
   - name: VillageProjectNameSource
     all_name: AllVillageProjectNameSources
     members:

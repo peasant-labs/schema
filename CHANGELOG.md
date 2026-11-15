@@ -17,7 +17,15 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   families: `limit` counts ROOT sessions (1 to 500, default 500), where a root
   is a session with no `parent_session_id` or whose parent is not among the
   owner's published transcripts, and each item carries its root and its helper
-  family, so a page can hold more transcripts than `limit`. A family belongs to
+  family, so a page can hold more transcripts than `limit`. A session whose
+  chain of parents loops back on itself (for example a session that names
+  itself as its parent) is listed as a root with no helpers taken from the
+  loop, so every session of the library is listed exactly once. Families are
+  ordered by the last activity of the ROOT session, newest first, where last
+  activity is the root's `session_end`, or its `session_start` when that is
+  unknown, or its `published_at` when both are unknown; families with the same
+  last activity are ordered by the root's transcript id ascending, and helpers
+  never affect the position of their family. A family belongs to
   its root's project; a helper may be in another project and carries its own
   `project_hash`. `view=snapshot` returns the compact record of every session in
   the matching families of one project (id, visibility, latest contribution
@@ -32,7 +40,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   helpers, and live helpers stay locked. Refusals carry the closed
   `VillageContributionErrorCode` in `code` and per-transcript `details` beside
   the existing `error` text. Contributable rows gain optional `session_start`,
-  `parent_transcript_id` and `latest_status`. Field descriptions state the unit
+  `session_end` (when the session's last turn happened), `parent_transcript_id`
+  and `latest_status`. Field descriptions state the unit
   of every count: only a page size counts anything but sessions (roots in the
   paged view, projects in the picker), every other count is in sessions, and
   every count is an integer from 0 to 9007199254740991. The
@@ -41,7 +50,17 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `view=grouped`, whose responses are unchanged. `view=snapshot` without
   `project_hash` is a 400, and the 413 applies only when `view` is omitted. The
   selection write offers exactly the listed `transcript_ids`; `project_hash` is
-  the project of the selected roots and helpers are not checked against it. The
+  the project of the selected roots and helpers are not checked against it. Its
+  refusals carry the status that names their kind: 400 is a body that violates
+  the contract (no code); 403 carries `membership` (the caller may not
+  contribute to the collective) or `policy` (the collective's policy refuses
+  the request as a whole); 409 carries `moved`, `missing`,
+  `private_unapproved`, `conflict` or `stale_selection` and refuses the WHOLE
+  request with nothing written, its details listing every offending
+  transcript; 413 is a body over 1 MiB. A transcript that is already live in
+  the collective, or becomes live before the write commits, is not a refusal:
+  it is returned under `already_shared` and the rest are shared, so the closed
+  code menu has no `live` member. The write declares no 422. The
   optional fields these views add are absent when they have no value and are
   never null.
 

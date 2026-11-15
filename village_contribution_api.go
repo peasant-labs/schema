@@ -7,9 +7,19 @@ import (
 // The paged contribution view bounds one page by the number of root sessions,
 // never by the number of transcripts. A root is a session with no
 // parent_session_id, or whose parent is not among the owner's published
-// transcripts. A page carries each of its roots together with the whole family
+// transcripts. A session whose chain of parents loops back on itself (for
+// example a session that names itself as its parent) is listed as a root with
+// no helpers taken from the loop, so every session of the library is listed
+// exactly once. A page carries each of its roots together with the whole family
 // of helpers that descend from them, so a page can hold far more transcripts
 // than its limit.
+//
+// Families are listed most recently active first. A family is ordered by the
+// last activity of its ROOT session, newest first, where last activity is the
+// root's session_end, or its session_start when session_end is unknown, or its
+// published_at when both are unknown. Families with the same last activity are
+// ordered by the root's transcript id ascending. Helpers never affect the
+// position of their family.
 const (
 	// VillageContributionPageLimitDefault is the number of roots a page holds
 	// when the caller names no limit.
@@ -67,8 +77,6 @@ const (
 	// VillageContributionErrorMissing: the transcript is not among the caller's
 	// published transcripts.
 	VillageContributionErrorMissing VillageContributionErrorCode = "missing"
-	// VillageContributionErrorLive: the transcript is already live in the collective.
-	VillageContributionErrorLive VillageContributionErrorCode = "live"
 	// VillageContributionErrorPrivateUnapproved: a private transcript was
 	// selected without a matching private approval.
 	VillageContributionErrorPrivateUnapproved VillageContributionErrorCode = "private_unapproved"
@@ -94,7 +102,6 @@ const (
 var AllVillageContributionErrorCodes = []VillageContributionErrorCode{
 	VillageContributionErrorMoved,
 	VillageContributionErrorMissing,
-	VillageContributionErrorLive,
 	VillageContributionErrorPrivateUnapproved,
 	VillageContributionErrorConflict,
 	VillageContributionErrorPolicy,
@@ -143,17 +150,23 @@ type VillageContributionFamilyMember struct {
 // VillageContributionPageItem is one family: a root session and every helper
 // that descends from it. The family belongs to its root's project, whatever
 // project each helper is in. Selecting the root selects its helpers by default.
+// A session whose chain of parents loops back on itself is a root with no
+// helpers taken from the loop.
 type VillageContributionPageItem struct {
-	Root    VillageContributionFamilyMember   `json:"root" description:"The root session of the family. The family belongs to the project of the root."`
+	Root    VillageContributionFamilyMember   `json:"root" description:"The root session of the family. The family belongs to the project of the root. A session whose chain of parents loops back on itself is a root with no helpers taken from the loop."`
 	Helpers []VillageContributionFamilyMember `json:"helpers" nullable:"false" description:"Every helper session that descends from the root. Each helper keeps its own project, which may differ from the project of the root."`
 }
 
 // VillageContributionPageResponse is one page of families. Its size is counted
 // in root sessions. The page carries no global counts; the project picker is
-// the count authority.
+// the count authority. Items are ordered by the last activity of each family's
+// root session, newest first: the root's session_end, or its session_start
+// when that is unknown, or its published_at when both are unknown. Items with
+// the same last activity are ordered by the root's transcript id ascending.
+// Helpers never affect the position of their family.
 type VillageContributionPageResponse struct {
 	GroupID VillageUUID                   `json:"group_id"`
-	Items   []VillageContributionPageItem `json:"items" nullable:"false"`
+	Items   []VillageContributionPageItem `json:"items" nullable:"false" description:"The families of this page, most recently active first. A family is ordered by the last activity of its root session, newest first, where last activity is the root's session_end, or its session_start when that is unknown, or its published_at when both are unknown. Families with the same last activity are ordered by the root's transcript id ascending. Helpers do not affect the position of their family."`
 	// NextCursor is the opaque cursor of the following page. It is absent on
 	// the last page.
 	NextCursor *string `json:"next_cursor,omitempty" nullable:"false" description:"The opaque cursor of the following page. Absent on the last page."`

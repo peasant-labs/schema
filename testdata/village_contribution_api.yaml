@@ -1,8 +1,8 @@
 required_names:
   views: [view-grouped, view-paged, view-snapshot, view-empty-is-not-a-token, view-flat-is-not-a-token, view-capitalised, view-padded, view-unknown]
-  error_codes: [code-moved, code-missing, code-live, code-private-unapproved, code-conflict, code-policy, code-membership, code-stale-selection, code-snapshot-timeout, code-snapshot-busy, code-snapshot-too-large-retired, code-empty, code-capitalised, code-unknown]
+  error_codes: [code-moved, code-missing, code-private-unapproved, code-conflict, code-policy, code-membership, code-stale-selection, code-snapshot-timeout, code-snapshot-busy, code-snapshot-too-large-retired, code-live-retired, code-empty, code-capitalised, code-unknown]
   bounds: [page-limit-default, page-limit-minimum, page-limit-maximum]
-  shapes: [page-response-family, page-response-empty-helpers, page-response-matched-absent, page-response-retired-snapshot-limit, snapshot-response-compact, snapshot-record-no-parent, snapshot-record-retired-title, snapshot-response-retired-truncated, project-page-counts, project-page-retired-project-q, error-response-moved, error-response-policy-without-transcript, error-response-legacy-text-only, selection-request, selection-request-retired-expand-helpers]
+  shapes: [page-response-family, page-response-empty-helpers, page-response-matched-absent, page-response-session-end, page-response-retired-snapshot-limit, snapshot-response-compact, snapshot-record-no-parent, snapshot-record-retired-title, snapshot-response-retired-truncated, project-page-counts, project-page-retired-project-q, error-response-moved, error-response-policy-without-transcript, error-response-legacy-text-only, selection-request, selection-request-retired-expand-helpers]
 views:
   cases:
     - name: view-grouped
@@ -67,12 +67,6 @@ error_codes:
       classification: must-pass
       provenance: *codes
       mutation: {description: a transcript outside the library is a member}
-    - name: code-live
-      input: {raw: live}
-      expected: {valid: true}
-      classification: must-pass
-      provenance: *codes
-      mutation: {description: an already live transcript is a member}
     - name: code-private-unapproved
       input: {raw: private_unapproved}
       expected: {valid: true}
@@ -121,6 +115,12 @@ error_codes:
       classification: must-fail
       provenance: {source: requirement, ref: snapshot-has-no-cap}
       mutation: {description: the snapshot has no record or byte cap, so no code reports one}
+    - name: code-live-retired
+      input: {raw: live}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: live-transcript-is-not-a-refusal}
+      mutation: {description: a transcript already live is returned under already_shared and is never refused, so no code reports it}
     - name: code-empty
       input: {raw: ""}
       expected: {valid: false}
@@ -200,6 +200,20 @@ shapes:
       classification: must-pass
       provenance: *shapes
       mutation: {description: a request without q carries no matched flag}
+    - name: page-response-session-end
+      input:
+        target: page
+        json:
+          group_id: 11111111-1111-4111-8111-111111111111
+          items:
+            - root: {transcript: {id: root-a, session_start: "2026-01-01T09:00:00Z", session_end: "2026-01-01T10:30:00Z"}}
+              helpers:
+                - {transcript: {id: helper-a}}
+          has_more: false
+      expected: {valid: true, nested_present: [items.0.root.transcript.session_start, items.0.root.transcript.session_end], nested_absent: [items.0.helpers.0.transcript.session_start, items.0.helpers.0.transcript.session_end]}
+      classification: must-pass
+      provenance: *shapes
+      mutation: {description: a row carries the time of its last turn as session_end when known and omits both times when unknown, never null}
     - name: page-response-retired-snapshot-limit
       input:
         target: page

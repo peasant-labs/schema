@@ -144,7 +144,7 @@ const (
 	// closed paged and snapshot views, the families of root sessions with their
 	// helpers, the project picker and the exact selection write, the optional
 	// machine-readable refusal code and details, and the optional session_start,
-	// parent_transcript_id and latest_status on the contributable row
+	// session_end, parent_transcript_id and latest_status on the contributable row
 	// (additive = minor bump).
 	VillageAPIVersion = "0.41.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
