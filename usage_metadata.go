@@ -726,7 +726,13 @@ func validateMetadataMatrix(m NativeMetadataRecord, turns map[int]*TurnDetail) e
 }
 
 func DecodeSessionDetailPayloadRaw(raw []byte) (SessionDetailPayload, error) {
-	if err := ScanRawJSONDocument(raw, sessionDetailRawPolicy()); err != nil {
+	return DecodeSessionDetailPayloadRawWithPolicy(raw, TranscriptSourceDetailReadPolicy)
+}
+
+// DecodeSessionDetailPayloadRawWithPolicy scans a bare detail under policy
+// before applying the same shape and semantic validation as the source reader.
+func DecodeSessionDetailPayloadRawWithPolicy(raw []byte, policy TranscriptContentReadPolicy) (SessionDetailPayload, error) {
+	if err := ScanRawJSONDocument(raw, policy); err != nil {
 		return SessionDetailPayload{}, err
 	}
 	if err := validateSessionDetailRawShape(raw); err != nil {
@@ -739,7 +745,13 @@ func DecodeSessionDetailPayloadRaw(raw []byte) (SessionDetailPayload, error) {
 	return v, ValidateSessionDetailPayload(v)
 }
 func DecodeTranscriptContentRaw(raw []byte) (TranscriptContent, error) {
-	if err := ScanRawJSONDocument(raw, transcriptRawPolicy()); err != nil {
+	return DecodeTranscriptContentRawWithPolicy(raw, TranscriptSourceReadPolicy)
+}
+
+// DecodeTranscriptContentRawWithPolicy scans an envelope under policy before
+// applying the same shape and semantic validation as the source reader.
+func DecodeTranscriptContentRawWithPolicy(raw []byte, policy TranscriptContentReadPolicy) (TranscriptContent, error) {
+	if err := ScanRawJSONDocument(raw, policy); err != nil {
 		return TranscriptContent{}, err
 	}
 	var envelope map[string]json.RawMessage

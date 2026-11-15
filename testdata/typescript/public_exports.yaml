@@ -24,6 +24,9 @@ constants:
   - name: LocalKickstartDroppedLabelsMax
     value: "3"
     surfaces: [root, local]
+  - {name: TranscriptSourceReadPolicy, value: "[object Object]", surfaces: [root]}
+  - {name: TranscriptSourceDetailReadPolicy, value: "[object Object]", surfaces: [root]}
+  - {name: TranscriptDownloadPolicy, value: "[object Object]", surfaces: [root]}
 functions:
   - {name: normalizeCollectiveObservationScope, target: runtime-scope-normalizer, surfaces: [root]}
   - {name: encodeContributionTraversalRevision, target: runtime-selected-category-token-encoder, surfaces: [root]}
@@ -75,6 +78,10 @@ functions:
   - name: parseTranscriptContentText
     target: runtime-parser:TranscriptContent
     surfaces: [root]
+  - {name: parseSessionDetailPayloadTextWithPolicy, target: runtime-policy-parser:SessionDetailPayload, surfaces: [root]}
+  - {name: parseTranscriptContentTextWithPolicy, target: runtime-policy-parser:TranscriptContent, surfaces: [root]}
+  - {name: transcriptContentIsStrict, target: runtime-strictness:TranscriptContent, surfaces: [root]}
+  - {name: parseTranscriptDownloadText, target: runtime-download-parser:TranscriptContent, surfaces: [root]}
   - name: parseNativeMetadataRecordsText
     target: runtime-parser:NativeMetadataRecords
     surfaces: [root]

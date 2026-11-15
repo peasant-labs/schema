@@ -23,6 +23,9 @@ types:
   - {go_name: TranscriptEntryMatch, disposition: catalog, component: TranscriptEntryMatch, reason: served entry location without reference}
   - {go_name: TranscriptEntryScanRow, disposition: runtime-only, reason: captured producer scan input}
   - {go_name: TranscriptEntryHit, disposition: runtime-only, reason: producer scan finding}
+  - {go_name: TranscriptContentReadPolicy, disposition: runtime-only, reason: raw scanner policy alias}
+  - {go_name: TranscriptDownloadKind, disposition: runtime-only, reason: download parser dispatch}
+  - {go_name: TranscriptDownloadRead, disposition: runtime-only, reason: download parser result}
   - {go_name: TranscriptFlaggedTurn, disposition: catalog, component: TranscriptFlaggedTurn, reason: served position and recorded index of a flag}
   - {go_name: TranscriptV2Turn, disposition: catalog, component: TranscriptV2Turn, reason: open legacy turn object in a segment row}
   - {go_name: TranscriptSessionHeader, disposition: catalog, component: TranscriptSessionHeader, reason: bounded served session metadata}
