@@ -1,6 +1,6 @@
 module github.com/peasant-labs/schema
 
-go 1.25.5
+go 1.26.0
 
 require (
 	github.com/dayvidpham/bestiary v0.4.0
