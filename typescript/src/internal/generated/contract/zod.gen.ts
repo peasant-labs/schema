@@ -4682,9 +4682,9 @@ export const zVillageBatchShareRequest = z.object({
 export type VillageBatchShareRequest = z.infer<typeof zVillageBatchShareRequest>;
 
 export const zVillageBatchShareSelectionRequest = z.object({
-    private_approvals: z.array(zTranscriptID),
+    private_approvals: z.array(zTranscriptID).max(1000),
     project_hash: zProjectHash,
-    transcript_ids: z.array(zTranscriptID).min(1)
+    transcript_ids: z.array(zTranscriptID).min(1).max(1000)
 });
 
 export type VillageBatchShareSelectionRequest = z.infer<typeof zVillageBatchShareSelectionRequest>;
@@ -4814,7 +4814,8 @@ export const zVillageContributionErrorCode = z.enum([
     'membership',
     'stale_selection',
     'snapshot_timeout',
-    'snapshot_busy'
+    'snapshot_busy',
+    'snapshot_too_large'
 ]);
 
 export type VillageContributionErrorCode = z.infer<typeof zVillageContributionErrorCode>;
@@ -5899,6 +5900,9 @@ export const zVillageContributionPageResponse = z.object({
 
 export type VillageContributionPageResponse = z.infer<typeof zVillageContributionPageResponse>;
 
+/**
+ * The compact record of every session in the matching families of one project, in one document. The document is limited to 8 MiB (8388608 bytes) of response body and there is no record-count cap. A snapshot that would exceed the limit is refused whole with a 413 whose code is snapshot_too_large, and nothing partial is returned; narrow the search with q or provider and read the snapshot again. The limit is a contract constant, so no limit parameter or field exists.
+ */
 export const zVillageContributionSnapshotResponse = z.object({
     count: z.int().gte(0).lte(9007199254740991),
     group_id: zVillageUUID,

@@ -986,8 +986,9 @@ export const VillageContributionErrorCode = Object.freeze({
   StaleSelection: zVillageContributionErrorCode.parse("stale_selection"),
   SnapshotTimeout: zVillageContributionErrorCode.parse("snapshot_timeout"),
   SnapshotBusy: zVillageContributionErrorCode.parse("snapshot_busy"),
+  SnapshotTooLarge: zVillageContributionErrorCode.parse("snapshot_too_large"),
 } as const);
-export const AllVillageContributionErrorCodes = Object.freeze([VillageContributionErrorCode.Moved, VillageContributionErrorCode.Missing, VillageContributionErrorCode.PrivateUnapproved, VillageContributionErrorCode.Conflict, VillageContributionErrorCode.Policy, VillageContributionErrorCode.Membership, VillageContributionErrorCode.StaleSelection, VillageContributionErrorCode.SnapshotTimeout, VillageContributionErrorCode.SnapshotBusy]) as readonly VillageContributionErrorCode[];
+export const AllVillageContributionErrorCodes = Object.freeze([VillageContributionErrorCode.Moved, VillageContributionErrorCode.Missing, VillageContributionErrorCode.PrivateUnapproved, VillageContributionErrorCode.Conflict, VillageContributionErrorCode.Policy, VillageContributionErrorCode.Membership, VillageContributionErrorCode.StaleSelection, VillageContributionErrorCode.SnapshotTimeout, VillageContributionErrorCode.SnapshotBusy, VillageContributionErrorCode.SnapshotTooLarge]) as readonly VillageContributionErrorCode[];
 export function isVillageContributionErrorCode(value: unknown): value is VillageContributionErrorCode {
   return zVillageContributionErrorCode.safeParse(value).success;
 }

@@ -10016,18 +10016,23 @@ components:
     VillageBatchShareSelectionRequest:
       properties:
         private_approvals:
+          description: The private transcripts among transcript_ids whose owner approved
+            their visibility, at most 1000 in one request.
           items:
             $ref: '#/components/schemas/TranscriptID'
+          maxItems: 1000
           type: array
         project_hash:
           $ref: '#/components/schemas/ProjectHash'
           description: The project of the selected roots. Helpers may belong to other
             projects and are not checked against it.
         transcript_ids:
-          description: Exactly the sessions to offer, roots and helpers alike. The
-            server never expands a root into its helpers.
+          description: Exactly the sessions to offer, roots and helpers alike, at
+            most 1000 in one request; a client with a larger selection sends it as
+            several requests. The server never expands a root into its helpers.
           items:
             $ref: '#/components/schemas/TranscriptID'
+          maxItems: 1000
           minItems: 1
           type: array
       required:
@@ -11103,6 +11108,7 @@ components:
       - stale_selection
       - snapshot_timeout
       - snapshot_busy
+      - snapshot_too_large
       examples:
       - moved
       - missing
@@ -11113,6 +11119,7 @@ components:
       - stale_selection
       - snapshot_timeout
       - snapshot_busy
+      - snapshot_too_large
       title: Village Contribution Error Code
       type: string
     VillageContributionErrorDetail:
@@ -11285,6 +11292,13 @@ components:
       - project_hash
       type: object
     VillageContributionSnapshotResponse:
+      description: The compact record of every session in the matching families of
+        one project, in one document. The document is limited to 8 MiB (8388608 bytes)
+        of response body and there is no record-count cap. A snapshot that would exceed
+        the limit is refused whole with a 413 whose code is snapshot_too_large, and
+        nothing partial is returned; narrow the search with q or provider and read
+        the snapshot again. The limit is a contract constant, so no limit parameter
+        or field exists.
       properties:
         count:
           description: The number of records, counted in sessions, not roots. Equals
