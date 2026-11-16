@@ -10,7 +10,7 @@ cases:
     provenance: {source: requirement, ref: "The positioned protocol is a separate version"}
     mutation: {description: "Build the positioned protocol catalog"}
     input: {version: "0.2.0"}
-    expected: {roots: [PositionedDirectory, PositionedSegmentRef, PositionedSegment, PositionedWindow, TranscriptReadContext], absent: [TranscriptSegmentDirectory]}
+    expected: {roots: [PositionedDirectory, PositionedSegmentRef, PositionedSegment, PositionedWindow, TranscriptReadContext], absent: [TranscriptSegmentDirectory], protocolVersionDescription: "selected positioned read protocol version"}
   - name: segmented-spec-unknown-version-refused
     classification: must-fail
     provenance: {source: boundary, ref: "Only declared protocol versions have documents"}

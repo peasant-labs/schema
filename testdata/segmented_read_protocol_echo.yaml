@@ -5,12 +5,12 @@ cases:
     mutation: {description: "Supply the current version"}
     input: {version: "0.2.0"}
     expected: {}
-  - name: protocol-echo-minimum-declared-accepted
-    classification: must-pass
-    provenance: {source: requirement, ref: "Validation accepts exact declared-set membership"}
-    mutation: {description: "Supply the other declared token"}
+  - name: protocol-echo-minimum-declared-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "A positioned shape must echo its selected protocol"}
+    mutation: {description: "Supply the shipped protocol token for a positioned body"}
     input: {version: "0.1.0"}
-    expected: {}
+    expected: {errorContains: "protocolVersion"}
   - name: protocol-echo-absent-refused
     classification: must-fail
     provenance: {source: requirement, ref: "Read bodies must identify their protocol"}

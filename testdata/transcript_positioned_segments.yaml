@@ -482,6 +482,12 @@ wire:
       mutation: {description: "Omit the version from the valid directory"}
       input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
       expected: {errorContains: protocolVersion}
+    - name: directory-protocol-echo-minimum-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "A positioned directory cannot claim the shipped protocol"}
+      mutation: {description: "Supply the shipped protocol version on the positioned directory"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.1.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {errorContains: protocolVersion}
     - name: directory-protocol-echo-unknown
       classification: must-fail
       provenance: {source: requirement, ref: "A directory with an undeclared protocol echo is refused"}
@@ -500,6 +506,12 @@ wire:
       mutation: {description: "Omit the version from the valid segment"}
       input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
       expected: {errorContains: protocolVersion}
+    - name: segment-protocol-echo-minimum-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "A positioned segment cannot claim the shipped protocol"}
+      mutation: {description: "Supply the shipped protocol version to the positioned segment writer"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.1.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
     - name: segment-protocol-echo-unknown
       classification: must-fail
       provenance: {source: requirement, ref: "The segment writer refuses an undeclared echo"}
@@ -517,6 +529,12 @@ wire:
       provenance: {source: requirement, ref: "A window without its protocol echo is refused"}
       mutation: {description: "Omit the version from the valid window"}
       input: {subject: window, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: window-protocol-echo-minimum-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "A positioned window cannot claim the shipped protocol"}
+      mutation: {description: "Supply the shipped protocol version on the positioned window"}
+      input: {subject: window, json: '{"context":{"protocolVersion":"0.1.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
       expected: {errorContains: protocolVersion}
     - name: window-protocol-echo-unknown
       classification: must-fail

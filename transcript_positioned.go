@@ -115,8 +115,9 @@ func (TranscriptUsagePresence) JSONSchema() (jsonschema.Schema, error) {
 // TranscriptReadContext carries the authorized facts repeated on each read.
 type TranscriptReadContext struct {
 	// ProtocolVersion identifies the declared protocol that produced this
-	// body. A reader must refuse a missing or unknown echo.
-	ProtocolVersion        string                   `json:"protocolVersion" minLength:"1"`
+	// body. It must match the selected positioned protocol, not merely any
+	// version the host declares. A reader must refuse a mismatched echo.
+	ProtocolVersion        string                   `json:"protocolVersion" minLength:"1" description:"Required echo of the selected positioned read protocol version. A reader must refuse a mismatch with the requested generation before installing rows."`
 	Transport              TranscriptReadTransport  `json:"transport"`
 	ContentSessionID       *string                  `json:"contentSessionId,omitempty"`
 	Revision               string                   `json:"revision"`
@@ -139,8 +140,9 @@ func (c TranscriptReadContext) Validate() error {
 	if err := c.Transport.Validate(); err != nil {
 		return err
 	}
-	if !inSet(c.ProtocolVersion, AllSegmentedReadVersions) {
-		return fmt.Errorf("%sprotocolVersion is empty or not a declared segmented read version; the body cannot be interpreted safely; emit a version from AllSegmentedReadVersions", where)
+	positionedVersion, supported := SegmentedReadProtocolVersion(positionedReadGeneration)
+	if !supported || c.ProtocolVersion != positionedVersion {
+		return fmt.Errorf("%sprotocolVersion %q does not match the positioned read version %q; the body cannot be interpreted safely; emit the version selected for the positioned protocol", where, c.ProtocolVersion, positionedVersion)
 	}
 	if !isDecimalRevision(c.Revision) || c.Representation == "" {
 		return fmt.Errorf("%srevision must be decimal and representation must be present; responses cannot be joined across generations otherwise; emit both identities", where)

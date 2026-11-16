@@ -16,10 +16,10 @@ cases:
     provenance: {source: requirement, ref: "A partial window cannot establish safe support"}
     mutation: {description: "Omit the minimum"}
     input: {current: "0.2.0", min: ""}
-    expected: {outcome: refused}
+    expected: {outcome: refused, errorContains: "minSegmentedReadVersion is absent"}
   - name: advertisement-minimum-only-refused
     classification: must-fail
     provenance: {source: requirement, ref: "A partial window cannot establish safe support"}
     mutation: {description: "Omit the current version"}
     input: {current: "", min: "0.1.0"}
-    expected: {outcome: refused}
+    expected: {outcome: refused, errorContains: "segmentedReadVersion is absent"}

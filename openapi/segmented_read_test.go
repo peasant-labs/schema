@@ -28,14 +28,21 @@ var segmentedReadRenameGoldenYAML []byte
 //go:embed testdata/segmented_read_rename_golden_manifest.yaml
 var segmentedReadRenameGoldenManifestYAML []byte
 
+//go:embed testdata/segmented_read_discovery.yaml
+var segmentedReadDiscoveryYAML []byte
+
+//go:embed testdata/segmented_read_discovery_manifest.yaml
+var segmentedReadDiscoveryManifestYAML []byte
+
 type segmentedReadSpecInput struct {
 	Version string `yaml:"version"`
 }
 
 type segmentedReadSpecExpected struct {
-	Roots         []string `yaml:"roots"`
-	Absent        []string `yaml:"absent"`
-	ErrorContains string   `yaml:"errorContains"`
+	Roots                      []string `yaml:"roots"`
+	Absent                     []string `yaml:"absent"`
+	ErrorContains              string   `yaml:"errorContains"`
+	ProtocolVersionDescription string   `yaml:"protocolVersionDescription"`
 }
 
 func TestSegmentedReadSpec(t *testing.T) {
@@ -82,6 +89,24 @@ func TestSegmentedReadSpec(t *testing.T) {
 				t.Fatal(err)
 			}
 			components := doc["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+			if c.Expected.ProtocolVersionDescription != "" {
+				context, ok := components["TranscriptReadContext"].(map[string]interface{})
+				if !ok {
+					t.Fatal("positioned read context component is missing")
+				}
+				properties, ok := context["properties"].(map[string]interface{})
+				if !ok {
+					t.Fatal("positioned read context properties are missing")
+				}
+				echo, ok := properties["protocolVersion"].(map[string]interface{})
+				if !ok {
+					t.Fatal("positioned read protocol echo is missing")
+				}
+				description, _ := echo["description"].(string)
+				if !strings.Contains(description, c.Expected.ProtocolVersionDescription) {
+					t.Errorf("protocol echo description %q does not contain %q", description, c.Expected.ProtocolVersionDescription)
+				}
+			}
 			var visit func(interface{})
 			visit = func(value interface{}) {
 				switch node := value.(type) {
@@ -170,6 +195,41 @@ func TestSegmentedReadHostGenerationParametersMatch(t *testing.T) {
 			}
 			if !found {
 				t.Fatal("the host route has no generation selector")
+			}
+		})
+	}
+}
+
+func TestSegmentedReadDiscoveryOperation(t *testing.T) {
+	type input struct {
+		Path string `yaml:"path"`
+	}
+	type expected struct {
+		Contains []string `yaml:"contains"`
+	}
+	corpus, err := testcase.LoadCorpus[input, expected](segmentedReadDiscoveryYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := make([]string, 0, len(corpus.Cases))
+	for _, c := range corpus.Cases {
+		names = append(names, c.Name)
+	}
+	caseassert.RequireManifestNames(t, "segmented read discovery operation", segmentedReadDiscoveryManifestYAML, names)
+	spec, err := openapi.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range corpus.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			item, ok := spec.Paths.MapOfPathItemValues[c.Input.Path]
+			if !ok || item.Get == nil || item.Get.Description == nil {
+				t.Fatalf("GET %s or its description is missing", c.Input.Path)
+			}
+			for _, text := range c.Expected.Contains {
+				if !strings.Contains(*item.Get.Description, text) {
+					t.Errorf("GET %s description does not contain %q", c.Input.Path, text)
+				}
 			}
 		})
 	}

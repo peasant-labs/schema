@@ -385,9 +385,10 @@ const (
 	TypesVersion = "0.51.0"
 
 	// SegmentedReadAPIVersion identifies the newest declared segmented read
-	// protocol. Version 0.1.0 is still served when v is omitted or v=1.
-	// Version 0.2.0 adds the positioned protocol at v=2 (breaking-class
-	// change expressed as a minor bump before 1.0).
+	// protocol. Version 0.1.0 (additive) first declares the already-shipped
+	// reads and is still served when v is omitted or v=1.
+	// Version 0.2.0 (breaking) adds the positioned protocol at v=2; this is
+	// a breaking-class change expressed as a minor bump before 1.0.
 	//
 	// Patch bumps describe documentation only. A declaration, member, bound,
 	// default, pattern, refusal or closed-set change needs a minor bump; before
@@ -413,11 +414,13 @@ type segmentedReadGeneration struct {
 	version    string
 }
 
+const positionedReadGeneration = 2
+
 // The omitted selector decodes to zero; one is its explicit equivalent.
 var segmentedReadGenerations = [...]segmentedReadGeneration{
 	{generation: 0, version: SegmentedReadMinVersion},
 	{generation: 1, version: SegmentedReadMinVersion},
-	{generation: 2, version: SegmentedReadAPIVersion},
+	{generation: positionedReadGeneration, version: SegmentedReadAPIVersion},
 }
 
 // SegmentedReadProtocolVersion resolves the integer generation to an exact

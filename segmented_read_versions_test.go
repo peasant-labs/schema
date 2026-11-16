@@ -4,6 +4,11 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -25,6 +30,15 @@ var segmentedReadAdvertisementYAML []byte
 //go:embed testdata/segmented_read_advertisement_manifest.yaml
 var segmentedReadAdvertisementManifestYAML []byte
 
+//go:embed testdata/segmented_read_advertisement_decode.yaml
+var segmentedReadAdvertisementDecodeYAML []byte
+
+//go:embed testdata/segmented_read_advertisement_decode_manifest.yaml
+var segmentedReadAdvertisementDecodeManifestYAML []byte
+
+//go:embed versions.go
+var versionsSource []byte
+
 //go:embed testdata/segmented_read_protocol_echo.yaml
 var segmentedReadProtocolEchoYAML []byte
 
@@ -42,23 +56,59 @@ func TestSegmentedReadProtocolVersion(t *testing.T) {
 		Generation int `yaml:"generation"`
 	}
 	type expected struct {
-		Version   string `yaml:"version"`
-		Supported bool   `yaml:"supported"`
+		Version     string `yaml:"version"`
+		Supported   bool   `yaml:"supported"`
+		ChangeClass string `yaml:"changeClass"`
 	}
 	corpus, err := testcase.LoadCorpus[input, expected](segmentedReadGenerationsYAML)
 	if err != nil {
 		t.Fatal(err)
 	}
+	caseassert.RequireValid(t, corpus)
 	names := make([]string, 0, len(corpus.Cases))
 	for _, c := range corpus.Cases {
 		names = append(names, c.Name)
 	}
 	caseassert.RequireManifestNames(t, "segmented read generation", segmentedReadGenerationsManifestYAML, names)
+	source, err := parser.ParseFile(token.NewFileSet(), "versions.go", versionsSource, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var versionDoc string
+	ast.Inspect(source, func(node ast.Node) bool {
+		value, ok := node.(*ast.ValueSpec)
+		if !ok || value.Doc == nil {
+			return true
+		}
+		for _, name := range value.Names {
+			if name.Name == "SegmentedReadAPIVersion" {
+				versionDoc = value.Doc.Text()
+			}
+		}
+		return true
+	})
+	if versionDoc == "" {
+		t.Fatal("segmented read version declaration has no change-class documentation")
+	}
 	for _, c := range corpus.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			version, ok := schema.SegmentedReadProtocolVersion(c.Input.Generation)
 			if version != c.Expected.Version || ok != c.Expected.Supported {
 				t.Fatalf("generation %d = (%q, %t), want (%q, %t)", c.Input.Generation, version, ok, c.Expected.Version, c.Expected.Supported)
+			}
+			if (c.Classification == testcase.MustPass) != ok {
+				t.Fatalf("generation %d supported=%t contradicts fixture classification %q", c.Input.Generation, ok, c.Classification)
+			}
+			if ok {
+				if c.Expected.ChangeClass != "additive" && c.Expected.ChangeClass != "breaking" {
+					t.Fatalf("generation %d has invalid change class %q", c.Input.Generation, c.Expected.ChangeClass)
+				}
+				entry := fmt.Sprintf("%s (%s)", version, c.Expected.ChangeClass)
+				if !strings.Contains(versionDoc, entry) {
+					t.Fatalf("version declaration does not document change class %q", entry)
+				}
+			} else if c.Expected.ChangeClass != "" {
+				t.Fatal("unsupported generation must not have a change class")
 			}
 		})
 	}
@@ -70,12 +120,14 @@ func TestSegmentedReadAdvertisementProducer(t *testing.T) {
 		Min     string `yaml:"min"`
 	}
 	type expected struct {
-		Outcome string `yaml:"outcome"`
+		Outcome       string `yaml:"outcome"`
+		ErrorContains string `yaml:"errorContains"`
 	}
 	corpus, err := testcase.LoadCorpus[input, expected](segmentedReadAdvertisementYAML)
 	if err != nil {
 		t.Fatal(err)
 	}
+	caseassert.RequireValid(t, corpus)
 	names := make([]string, 0, len(corpus.Cases))
 	for _, c := range corpus.Cases {
 		names = append(names, c.Name)
@@ -86,9 +138,12 @@ func TestSegmentedReadAdvertisementProducer(t *testing.T) {
 			wire, err := json.Marshal(schema.SchemaVersionResponse{
 				SegmentedReadVersion: c.Input.Current, MinSegmentedReadVersion: c.Input.Min,
 			})
+			if (c.Classification == testcase.MustFail) != (c.Expected.Outcome == "refused") {
+				t.Fatalf("fixture classification %q contradicts outcome %q", c.Classification, c.Expected.Outcome)
+			}
 			if c.Expected.Outcome == "refused" {
-				if err == nil {
-					t.Fatal("producer emitted an incomplete version window")
+				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+					t.Fatalf("producer error = %v, want the missing-member error %q", err, c.Expected.ErrorContains)
 				}
 				return
 			}
@@ -107,6 +162,47 @@ func TestSegmentedReadAdvertisementProducer(t *testing.T) {
 				}
 			} else if !hasCurrent || !hasMinimum || current != c.Input.Current || minimum != c.Input.Min {
 				t.Fatalf("pair not emitted exactly: %s", wire)
+			}
+		})
+	}
+}
+
+func TestSegmentedReadAdvertisementDecoder(t *testing.T) {
+	type input struct {
+		JSON string `yaml:"json"`
+	}
+	type expected struct {
+		Current       string `yaml:"current"`
+		Min           string `yaml:"min"`
+		ErrorContains string `yaml:"errorContains"`
+	}
+	corpus, err := testcase.LoadCorpus[input, expected](segmentedReadAdvertisementDecodeYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	caseassert.RequireValid(t, corpus)
+	names := make([]string, 0, len(corpus.Cases))
+	for _, c := range corpus.Cases {
+		names = append(names, c.Name)
+	}
+	caseassert.RequireManifestNames(t, "segmented read advertisement decoder", segmentedReadAdvertisementDecodeManifestYAML, names)
+	for _, c := range corpus.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			before := schema.SchemaVersionResponse{AnnotationSchemaVersion: "keep on failure"}
+			got := before
+			err := json.Unmarshal([]byte(c.Input.JSON), &got)
+			if c.Classification == testcase.MustFail {
+				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) ||
+					!strings.Contains(err.Error(), "stay on 0.1.0") {
+					t.Fatalf("decoder error = %v, want %q and safe fallback guidance", err, c.Expected.ErrorContains)
+				}
+				if !reflect.DeepEqual(got, before) {
+					t.Fatalf("failed decode changed receiver: %#v", got)
+				}
+				return
+			}
+			if err != nil || got.SegmentedReadVersion != c.Expected.Current || got.MinSegmentedReadVersion != c.Expected.Min {
+				t.Fatalf("decoded window = (%q, %q), error=%v, want (%q, %q)", got.SegmentedReadVersion, got.MinSegmentedReadVersion, err, c.Expected.Current, c.Expected.Min)
 			}
 		})
 	}

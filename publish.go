@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
@@ -270,11 +271,22 @@ type SchemaVersionResponse struct {
 
 // MarshalJSON prevents a producer from emitting an incomplete read window.
 func (r SchemaVersionResponse) MarshalJSON() ([]byte, error) {
-	if (r.SegmentedReadVersion == "") != (r.MinSegmentedReadVersion == "") {
-		return nil, fmt.Errorf("schema version response encoding failed at schema.SchemaVersionResponse.MarshalJSON during discovery: segmentedReadVersion and minSegmentedReadVersion must be emitted together; readers cannot safely establish the served window from one member; provide both values or omit both")
+	if err := validateSegmentedReadVersionPair(r.SegmentedReadVersion, r.MinSegmentedReadVersion, "encoding", "MarshalJSON"); err != nil {
+		return nil, err
 	}
 	type plain SchemaVersionResponse
 	return json.Marshal(plain(r))
+}
+
+func validateSegmentedReadVersionPair(current, minimum, operation, method string) error {
+	if (current == "") == (minimum == "") {
+		return nil
+	}
+	missing := "segmentedReadVersion"
+	if current != "" {
+		missing = "minSegmentedReadVersion"
+	}
+	return fmt.Errorf("schema version response %s failed at schema.SchemaVersionResponse.%s during segmented read discovery: %s is absent; segmentedReadVersion and minSegmentedReadVersion must be emitted together; the served window is unusable and readers must stay on 0.1.0; provide both strings or omit both", operation, method, missing)
 }
 
 func (r *SchemaVersionResponse) UnmarshalJSON(data []byte) error {
@@ -286,8 +298,29 @@ func (r *SchemaVersionResponse) UnmarshalJSON(data []byte) error {
 	if raw, present := fields["contentCapabilities"]; present && bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
 		return fmt.Errorf("schema version response decoding failed at schema.SchemaVersionResponse.UnmarshalJSON during capability discovery: contentCapabilities is null, but only omission or an array has defined support semantics; the caller cannot make a safe upload decision; emit [] for no support or a string-token array")
 	}
+	// encoding/json matches struct field names case-insensitively. Apply the
+	// same boundary to every matching key, including null which otherwise
+	// silently decodes into the zero value of a string.
+	for name, raw := range fields {
+		var canonical string
+		switch {
+		case strings.EqualFold(name, "segmentedReadVersion"):
+			canonical = "segmentedReadVersion"
+		case strings.EqualFold(name, "minSegmentedReadVersion"):
+			canonical = "minSegmentedReadVersion"
+		default:
+			continue
+		}
+		var value string
+		if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) || json.Unmarshal(raw, &value) != nil {
+			return fmt.Errorf("schema version response decoding failed at schema.SchemaVersionResponse.UnmarshalJSON during segmented read discovery: %s is not a string; the served window cannot be established and readers must stay on 0.1.0; provide both version strings or omit both", canonical)
+		}
+	}
 	var decoded plain
 	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	if err := validateSegmentedReadVersionPair(decoded.SegmentedReadVersion, decoded.MinSegmentedReadVersion, "decoding", "UnmarshalJSON"); err != nil {
 		return err
 	}
 	*r = SchemaVersionResponse(decoded)
