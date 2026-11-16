@@ -14,4 +14,5 @@ requiredNames:
   - version-advertisement-duplicate-member
   - version-advertisement-not-object
   - version-advertisement-capability-independent
+  - version-advertisement-combined-capabilities
   - version-advertisement-ignores-capability-shape

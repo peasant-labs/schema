@@ -26,7 +26,11 @@ test("segmented read advertisement parses its independent opaque window", async 
         const actual = parseSegmentedReadVersionAdvertisement(row.input.json);
         assert.deepEqual(actual, row.expected.outcome === "absent" ? null : {current: row.expected.current, min: row.expected.min});
         if (row.expected.capabilities !== undefined) {
-          assert.deepEqual(parseSchemaVersionAdvertisement(row.input.json), row.expected.capabilities);
+          const capabilities = parseSchemaVersionAdvertisement(row.input.json);
+          assert.deepEqual(capabilities, row.expected.capabilities);
+          if (row.input.capabilityBaseline !== undefined) {
+            assert.deepEqual(capabilities, parseSchemaVersionAdvertisement(row.input.capabilityBaseline));
+          }
         }
       }
     });
