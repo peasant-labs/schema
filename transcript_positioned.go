@@ -117,7 +117,7 @@ type TranscriptReadContext struct {
 	// ProtocolVersion identifies the declared protocol that produced this
 	// body. It must match the selected positioned protocol, not merely any
 	// version the host declares. A reader must refuse a mismatched echo.
-	ProtocolVersion        string                   `json:"protocolVersion" minLength:"1" description:"Required echo of the selected positioned read protocol version. A reader must refuse a mismatch with the requested generation before installing rows."`
+	ProtocolVersion        string                   `json:"protocolVersion" minLength:"1" description:"Required echo of the selected positioned read protocol version. The 0.2.0 protocol carries 0.2.0. A reader must refuse a mismatch with the requested generation before installing rows."`
 	Transport              TranscriptReadTransport  `json:"transport"`
 	ContentSessionID       *string                  `json:"contentSessionId,omitempty"`
 	Revision               string                   `json:"revision"`

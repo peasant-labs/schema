@@ -499,7 +499,7 @@
             "$ref": "#/components/schemas/TranscriptNativePresence"
           },
           "protocolVersion": {
-            "description": "Required echo of the selected positioned read protocol version. A reader must refuse a mismatch with the requested generation before installing rows.",
+            "description": "Required echo of the selected positioned read protocol version. The 0.2.0 protocol carries 0.2.0. A reader must refuse a mismatch with the requested generation before installing rows.",
             "minLength": 1,
             "type": "string"
           },
