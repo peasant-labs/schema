@@ -6611,7 +6611,7 @@
         "tags": [
           "transcripts"
         ],
-        "description": "Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. V2 serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
+        "description": "Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. The positioned protocol serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
         "operationId": "getTranscriptSegments",
         "parameters": [
           {
@@ -6645,10 +6645,10 @@
           {
             "name": "partition",
             "in": "query",
-            "description": "V2 partition: main or history; omitted selects main.",
+            "description": "Positioned partition: main or history; omitted selects main.",
             "schema": {
               "$ref": "#/components/schemas/SchemaTranscriptSegmentPartitionKind",
-              "description": "V2 partition: main or history; omitted selects main."
+              "description": "Positioned partition: main or history; omitted selects main."
             }
           },
           {
@@ -6664,9 +6664,9 @@
           {
             "name": "representation",
             "in": "query",
-            "description": "Optional v2 representation to revalidate; a mismatch requires reload.",
+            "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
             "schema": {
-              "description": "Optional v2 representation to revalidate; a mismatch requires reload.",
+              "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
               "type": "string"
             }
           },
@@ -6708,7 +6708,7 @@
                       "$ref": "#/components/schemas/SchemaTranscriptSegmentDirectory"
                     },
                     {
-                      "$ref": "#/components/schemas/SchemaTranscriptSegmentDirectoryV2"
+                      "$ref": "#/components/schemas/SchemaPositionedDirectory"
                     }
                   ]
                 }
@@ -7056,7 +7056,7 @@
         "tags": [
           "transcripts"
         ],
-        "description": "Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. V2 carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
+        "description": "Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
         "operationId": "getTranscriptSegment",
         "parameters": [
           {
@@ -7080,10 +7080,10 @@
           {
             "name": "partition",
             "in": "query",
-            "description": "V2 partition: main or history; omitted selects main.",
+            "description": "Positioned partition: main or history; omitted selects main.",
             "schema": {
               "$ref": "#/components/schemas/SchemaTranscriptSegmentPartitionKind",
-              "description": "V2 partition: main or history; omitted selects main."
+              "description": "Positioned partition: main or history; omitted selects main."
             }
           },
           {
@@ -7099,9 +7099,9 @@
           {
             "name": "representation",
             "in": "query",
-            "description": "Optional v2 representation to revalidate; a mismatch requires reload.",
+            "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
             "schema": {
-              "description": "Optional v2 representation to revalidate; a mismatch requires reload.",
+              "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
               "type": "string"
             }
           },
@@ -7154,7 +7154,7 @@
                       "$ref": "#/components/schemas/SchemaTranscriptSegment"
                     },
                     {
-                      "$ref": "#/components/schemas/SchemaTranscriptSegmentV2"
+                      "$ref": "#/components/schemas/SchemaPositionedSegment"
                     }
                   ]
                 }
@@ -7498,7 +7498,7 @@
         "tags": [
           "transcripts"
         ],
-        "description": "Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. V2 is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared v2 resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the v2 route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
+        "description": "Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. The positioned protocol is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared positioned resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the positioned route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
         "operationId": "getTranscriptWindow",
         "parameters": [
           {
@@ -7545,10 +7545,10 @@
           {
             "name": "partition",
             "in": "query",
-            "description": "V2 partition: main or history; omitted selects main.",
+            "description": "Positioned partition: main or history; omitted selects main.",
             "schema": {
               "$ref": "#/components/schemas/SchemaTranscriptSegmentPartitionKind",
-              "description": "V2 partition: main or history; omitted selects main."
+              "description": "Positioned partition: main or history; omitted selects main."
             }
           },
           {
@@ -7564,9 +7564,9 @@
           {
             "name": "representation",
             "in": "query",
-            "description": "Optional v2 representation to revalidate; a mismatch requires reload.",
+            "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
             "schema": {
-              "description": "Optional v2 representation to revalidate; a mismatch requires reload.",
+              "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
               "type": "string"
             }
           },
@@ -7608,7 +7608,7 @@
                       "$ref": "#/components/schemas/SchemaTranscriptWindow"
                     },
                     {
-                      "$ref": "#/components/schemas/SchemaTranscriptWindowV2"
+                      "$ref": "#/components/schemas/SchemaPositionedWindow"
                     }
                   ]
                 }
@@ -11532,6 +11532,217 @@
         "title": "Page Size",
         "type": "integer"
       },
+      "SchemaPositionedDirectory": {
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/SchemaTranscriptReadContext"
+          },
+          "directoryPage": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "directoryPerPage": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaTranscriptHistorySection"
+            },
+            "type": "array"
+          },
+          "partition": {
+            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartition"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaPositionedSegmentRef"
+            },
+            "type": "array"
+          },
+          "usagePresent": {
+            "$ref": "#/components/schemas/SchemaTranscriptUsagePresence"
+          }
+        },
+        "required": [
+          "context",
+          "partition",
+          "usagePresent",
+          "segments"
+        ],
+        "type": "object"
+      },
+      "SchemaPositionedSegment": {
+        "properties": {
+          "byteLength": {
+            "type": "integer"
+          },
+          "context": {
+            "$ref": "#/components/schemas/SchemaTranscriptReadContext"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaNativeMetadataRecord"
+            },
+            "type": "array"
+          },
+          "partition": {
+            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartition"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaTranscriptSegmentRow"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "context",
+          "partition",
+          "index",
+          "rows",
+          "byteLength",
+          "hasOlder",
+          "hasNewer"
+        ],
+        "type": "object"
+      },
+      "SchemaPositionedSegmentRef": {
+        "properties": {
+          "byteLength": {
+            "type": "integer"
+          },
+          "conversationTurns": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaConversationTurnSpan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstTurn": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "lastTurn": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sourceFirstPosition": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sourceLastPosition": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "sourceFirstPosition",
+          "sourceLastPosition",
+          "byteLength"
+        ],
+        "type": "object"
+      },
+      "SchemaPositionedWindow": {
+        "properties": {
+          "anchorPosition": {
+            "type": "integer"
+          },
+          "anchorSegment": {
+            "type": "integer"
+          },
+          "anchorTurn": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "context": {
+            "$ref": "#/components/schemas/SchemaTranscriptReadContext"
+          },
+          "firstPosition": {
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "lastPosition": {
+            "type": "integer"
+          },
+          "partition": {
+            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartition"
+          },
+          "requestedAnchor": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "requestedPosition": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "segments": {
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "span": {
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "context",
+          "partition",
+          "anchorPosition",
+          "anchorSegment",
+          "span",
+          "firstPosition",
+          "lastPosition",
+          "segments",
+          "hasOlder",
+          "hasNewer"
+        ],
+        "type": "object"
+      },
       "SchemaProjectHash": {
         "description": "SHA-256 hex digest of the project's origin URL or local path",
         "examples": [
@@ -13731,64 +13942,6 @@
         ],
         "type": "object"
       },
-      "SchemaTranscriptSegmentDirectoryV2": {
-        "properties": {
-          "context": {
-            "$ref": "#/components/schemas/SchemaTranscriptReadContext"
-          },
-          "directoryPage": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "directoryPerPage": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "history": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaTranscriptHistorySection"
-            },
-            "type": "array"
-          },
-          "partition": {
-            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartition"
-          },
-          "segments": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaTranscriptSegmentRefV2"
-            },
-            "type": "array"
-          },
-          "usagePresent": {
-            "$ref": "#/components/schemas/SchemaTranscriptUsagePresence"
-          }
-        },
-        "required": [
-          "context",
-          "partition",
-          "usagePresent",
-          "segments"
-        ],
-        "type": "object"
-      },
       "SchemaTranscriptSegmentPartition": {
         "properties": {
           "kind": {
@@ -13860,49 +14013,6 @@
         ],
         "type": "object"
       },
-      "SchemaTranscriptSegmentRefV2": {
-        "properties": {
-          "byteLength": {
-            "type": "integer"
-          },
-          "conversationTurns": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaConversationTurnSpan"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "firstTurn": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "index": {
-            "type": "integer"
-          },
-          "lastTurn": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "sourceFirstPosition": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "sourceLastPosition": {
-            "minimum": 0,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "index",
-          "sourceFirstPosition",
-          "sourceLastPosition",
-          "byteLength"
-        ],
-        "type": "object"
-      },
       "SchemaTranscriptSegmentRow": {
         "properties": {
           "displayNumber": {
@@ -13923,7 +14033,7 @@
             "$ref": "#/components/schemas/SchemaTranscriptRecordedIndexState"
           },
           "turn": {
-            "$ref": "#/components/schemas/SchemaTranscriptV2Turn"
+            "$ref": "#/components/schemas/SchemaTranscriptServedTurn"
           }
         },
         "required": [
@@ -13933,49 +14043,7 @@
         ],
         "type": "object"
       },
-      "SchemaTranscriptSegmentV2": {
-        "properties": {
-          "byteLength": {
-            "type": "integer"
-          },
-          "context": {
-            "$ref": "#/components/schemas/SchemaTranscriptReadContext"
-          },
-          "hasNewer": {
-            "type": "boolean"
-          },
-          "hasOlder": {
-            "type": "boolean"
-          },
-          "index": {
-            "type": "integer"
-          },
-          "nativeMetadata": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaNativeMetadataRecord"
-            },
-            "type": "array"
-          },
-          "partition": {
-            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartition"
-          },
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaTranscriptSegmentRow"
-            },
-            "minItems": 1,
-            "type": "array"
-          }
-        },
-        "required": [
-          "context",
-          "partition",
-          "index",
-          "rows",
-          "byteLength",
-          "hasOlder",
-          "hasNewer"
-        ],
+      "SchemaTranscriptServedTurn": {
         "type": "object"
       },
       "SchemaTranscriptSessionHeader": {
@@ -14212,9 +14280,6 @@
         "title": "Transcript Usage Presence",
         "type": "string"
       },
-      "SchemaTranscriptV2Turn": {
-        "type": "object"
-      },
       "SchemaTranscriptWindow": {
         "properties": {
           "anchorTurn": {
@@ -14270,71 +14335,6 @@
           "span",
           "firstTurn",
           "lastTurn",
-          "segments",
-          "hasOlder",
-          "hasNewer"
-        ],
-        "type": "object"
-      },
-      "SchemaTranscriptWindowV2": {
-        "properties": {
-          "anchorPosition": {
-            "type": "integer"
-          },
-          "anchorSegment": {
-            "type": "integer"
-          },
-          "anchorTurn": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "context": {
-            "$ref": "#/components/schemas/SchemaTranscriptReadContext"
-          },
-          "firstPosition": {
-            "type": "integer"
-          },
-          "hasNewer": {
-            "type": "boolean"
-          },
-          "hasOlder": {
-            "type": "boolean"
-          },
-          "lastPosition": {
-            "type": "integer"
-          },
-          "partition": {
-            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartition"
-          },
-          "requestedAnchor": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "requestedPosition": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "segments": {
-            "items": {
-              "type": "integer"
-            },
-            "minItems": 1,
-            "type": "array"
-          },
-          "span": {
-            "maximum": 10,
-            "minimum": 1,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "context",
-          "partition",
-          "anchorPosition",
-          "anchorSegment",
-          "span",
-          "firstPosition",
-          "lastPosition",
           "segments",
           "hasOlder",
           "hasNewer"

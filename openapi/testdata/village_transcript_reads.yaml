@@ -13,8 +13,8 @@ routes:
       tag: transcripts
       parameters: [{name: page, in: query, type: integer, minimum: 1}, {name: revision, in: query, type: string}, {name: v, in: query, type: integer}, {name: partition, in: query, type: string}, {name: section, in: query, type: integer, minimum: 0}, {name: representation, in: query, type: string}, {name: id, in: path, type: string, required: true}]
       responseRef: "#/components/schemas/SchemaTranscriptSegmentDirectory"
-      v2ResponseRef: "#/components/schemas/SchemaTranscriptSegmentDirectoryV2"
-      v2RequiredRoot: [context, partition, usagePresent, segments]
+      positionedResponseRef: "#/components/schemas/SchemaPositionedDirectory"
+      positionedRequiredRoot: [context, partition, usagePresent, segments]
       requiredRoot: [sessionId, revision, totalTurns, totalSegments, segments, totalConversationTurns]
       nonnullArrays: [segments]
       forbiddenRoot: [turns]
@@ -30,8 +30,8 @@ routes:
       tag: transcripts
       parameters: [{name: revision, in: query, type: string}, {name: v, in: query, type: integer}, {name: partition, in: query, type: string}, {name: section, in: query, type: integer, minimum: 0}, {name: representation, in: query, type: string}, {name: id, in: path, type: string, required: true}, {name: index, in: path, type: integer, minimum: 0, required: true}]
       responseRef: "#/components/schemas/SchemaTranscriptSegment"
-      v2ResponseRef: "#/components/schemas/SchemaTranscriptSegmentV2"
-      v2RequiredRoot: [context, partition, index, rows, byteLength, hasOlder, hasNewer]
+      positionedResponseRef: "#/components/schemas/SchemaPositionedSegment"
+      positionedRequiredRoot: [context, partition, index, rows, byteLength, hasOlder, hasNewer]
       requiredRoot: [index, revision, firstTurn, lastTurn, byteLength, hasOlder, hasNewer, turns]
       nonnullArrays: [turns]
       reachableComponents: [TranscriptTurn, TurnContentPart, ImagePart, ToolCallDetail, UsageDetail, Role, EntryType]
@@ -46,8 +46,8 @@ routes:
       tag: transcripts
       parameters: [{name: anchor, in: query, type: integer, minimum: 0, required: true}, {name: span, in: query, type: integer, minimum: 1, maximum: 10}, {name: revision, in: query, type: string}, {name: v, in: query, type: integer}, {name: partition, in: query, type: string}, {name: section, in: query, type: integer, minimum: 0}, {name: representation, in: query, type: string}, {name: id, in: path, type: string, required: true}]
       responseRef: "#/components/schemas/SchemaTranscriptWindow"
-      v2ResponseRef: "#/components/schemas/SchemaTranscriptWindowV2"
-      v2RequiredRoot: [context, partition, anchorPosition, anchorSegment, span, firstPosition, lastPosition, segments, hasOlder, hasNewer]
+      positionedResponseRef: "#/components/schemas/SchemaPositionedWindow"
+      positionedRequiredRoot: [context, partition, anchorPosition, anchorSegment, span, firstPosition, lastPosition, segments, hasOlder, hasNewer]
       requiredRoot: [sessionId, revision, requestedAnchor, anchorTurn, span, firstTurn, lastTurn, segments, hasOlder, hasNewer]
       nonnullArrays: [segments]
       forbiddenRoot: [turns, content, toolCalls]

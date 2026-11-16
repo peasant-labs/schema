@@ -488,27 +488,27 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		IfNoneMatch    string              `header:"If-None-Match" description:"Optional entity tag of the previously authorized header."`
 	})
 	// The Village operations retain the Local API's v1 parameters and shapes;
-	// v2 is an opt-in addition on these Village paths only.
-	type segmentedV2Query struct {
+	// The positioned protocol is an opt-in addition on these Village paths only.
+	type positionedQuery struct {
 		Version        int                                   `query:"v" description:"Omitted selects v1; set to 2 to request the positioned read protocol."`
-		Partition      schema.TranscriptSegmentPartitionKind `query:"partition" description:"V2 partition: main or history; omitted selects main."`
+		Partition      schema.TranscriptSegmentPartitionKind `query:"partition" description:"Positioned partition: main or history; omitted selects main."`
 		Section        *int                                  `query:"section" minimum:"0" nullable:"false" description:"History section index. Required for history and omitted for main."`
-		Representation string                                `query:"representation" description:"Optional v2 representation to revalidate; a mismatch requires reload."`
+		Representation string                                `query:"representation" description:"Optional positioned representation to revalidate; a mismatch requires reload."`
 	}
 	transcriptSegmentsQuery := new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 		transcriptSegmentsParams
-		segmentedV2Query
+		positionedQuery
 	})
 	transcriptSegmentQuery := new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 		transcriptSegmentParams
-		segmentedV2Query
+		positionedQuery
 	})
 	transcriptWindowQuery := new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 		transcriptWindowParams
-		segmentedV2Query
+		positionedQuery
 	})
 	transcriptListQuery := new(struct {
 		View     villageGroupedView   `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the flat response."`
@@ -589,8 +589,8 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/segments", id: "getTranscriptSegments", tag: "transcripts",
-			description: "Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. V2 serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
-			requests:    []interface{}{transcriptSegmentsQuery}, responseAlternatives: []interface{}{new(schema.TranscriptSegmentDirectory), new(schema.TranscriptSegmentDirectoryV2)},
+			description: "Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. The positioned protocol serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
+			requests:    []interface{}{transcriptSegmentsQuery}, responseAlternatives: []interface{}{new(schema.TranscriptSegmentDirectory), new(schema.PositionedDirectory)},
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
 		},
 		{
@@ -601,14 +601,14 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/segments/{index}", id: "getTranscriptSegment", tag: "transcripts",
-			description: "Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. V2 carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
-			requests:    []interface{}{transcriptSegmentQuery}, responseAlternatives: []interface{}{new(schema.TranscriptSegment), new(schema.TranscriptSegmentV2)},
+			description: "Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
+			requests:    []interface{}{transcriptSegmentQuery}, responseAlternatives: []interface{}{new(schema.TranscriptSegment), new(schema.PositionedSegment)},
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/window", id: "getTranscriptWindow", tag: "transcripts",
-			description: "Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. V2 is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared v2 resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the v2 route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
-			requests:    []interface{}{transcriptWindowQuery}, responseAlternatives: []interface{}{new(schema.TranscriptWindow), new(schema.TranscriptWindowV2)},
+			description: "Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. The positioned protocol is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared positioned resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the positioned route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.",
+			requests:    []interface{}{transcriptWindowQuery}, responseAlternatives: []interface{}{new(schema.TranscriptWindow), new(schema.PositionedWindow)},
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
 		},
 		{
@@ -1063,13 +1063,13 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		return err
 	}
 	for _, variant := range []struct {
-		path, v1, v2 string
+		path, v1, positioned string
 	}{
-		{"/api/v1/transcripts/{id}/segments", "SchemaTranscriptSegmentDirectory", "SchemaTranscriptSegmentDirectoryV2"},
-		{"/api/v1/transcripts/{id}/segments/{index}", "SchemaTranscriptSegment", "SchemaTranscriptSegmentV2"},
-		{"/api/v1/transcripts/{id}/window", "SchemaTranscriptWindow", "SchemaTranscriptWindowV2"},
+		{"/api/v1/transcripts/{id}/segments", "SchemaTranscriptSegmentDirectory", "SchemaPositionedDirectory"},
+		{"/api/v1/transcripts/{id}/segments/{index}", "SchemaTranscriptSegment", "SchemaPositionedSegment"},
+		{"/api/v1/transcripts/{id}/window", "SchemaTranscriptWindow", "SchemaPositionedWindow"},
 	} {
-		if err := setVillageAlternativeResponse(r.Spec, variant.path, map[string]interface{}{"$ref": "#/components/schemas/" + variant.v1}, variant.v2); err != nil {
+		if err := setVillageAlternativeResponse(r.Spec, variant.path, map[string]interface{}{"$ref": "#/components/schemas/" + variant.v1}, variant.positioned); err != nil {
 			return err
 		}
 		if err := setTranscriptReadHeaders(r.Spec, variant.path); err != nil {

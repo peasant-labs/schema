@@ -35,7 +35,7 @@ func TestRecordedIndexNativeArchitecture(t *testing.T) {
 	caseassert.RequireManifestNames(t, "recorded index architecture", architectureManifestYAML, names)
 	for _, c := range corpus.Cases {
 		t.Run(c.Name, func(t *testing.T) {
-			turn, err := schema.NewTranscriptV2Turn([]byte(c.Input))
+			turn, err := schema.NewTranscriptServedTurn([]byte(c.Input))
 			if err != nil {
 				t.Fatal(err)
 			}

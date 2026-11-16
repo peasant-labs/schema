@@ -1,7 +1,9 @@
 package openapi_test
 
 import (
+	"crypto/sha256"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -18,6 +20,12 @@ var segmentedReadSpecYAML []byte
 
 //go:embed testdata/segmented_read_spec_manifest.yaml
 var segmentedReadSpecManifestYAML []byte
+
+//go:embed testdata/segmented_read_rename_golden.yaml
+var segmentedReadRenameGoldenYAML []byte
+
+//go:embed testdata/segmented_read_rename_golden_manifest.yaml
+var segmentedReadRenameGoldenManifestYAML []byte
 
 type segmentedReadSpecInput struct {
 	Version string `yaml:"version"`
@@ -86,5 +94,58 @@ func TestSegmentedReadSpec_GenerationTableMatches(t *testing.T) {
 		if !strings.Contains(*spec.Info.Description, fmt.Sprintf("%s %s (%s)", member.Method(), member.Pattern(), member.OperationID())) {
 			t.Errorf("host route %s missing", member.OperationID())
 		}
+	}
+}
+
+// TestSegmentedReadRenamePreservesProtocol compares the entire document to
+// the pre-rename capture after its component names and references were
+// normalized. The later required protocol echo is separately tested and is
+// removed here so this test continues to isolate the mechanical rename.
+func TestSegmentedReadRenamePreservesProtocol(t *testing.T) {
+	type expected struct {
+		SHA256 string `yaml:"sha256"`
+	}
+	corpus, err := testcase.LoadCorpus[segmentedReadSpecInput, expected](segmentedReadRenameGoldenYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := make([]string, 0, len(corpus.Cases))
+	for _, c := range corpus.Cases {
+		names = append(names, c.Name)
+	}
+	caseassert.RequireManifestNames(t, "segmented read rename", segmentedReadRenameGoldenManifestYAML, names)
+	for _, c := range corpus.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			spec, err := openapi.BuildSegmentedReadSpec(c.Input.Version)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wire, err := spec.MarshalJSON()
+			if err != nil {
+				t.Fatal(err)
+			}
+			var doc map[string]interface{}
+			if err := json.Unmarshal(wire, &doc); err != nil {
+				t.Fatal(err)
+			}
+			context := doc["components"].(map[string]interface{})["schemas"].(map[string]interface{})["TranscriptReadContext"].(map[string]interface{})
+			delete(context["properties"].(map[string]interface{}), "protocolVersion")
+			if required, ok := context["required"].([]interface{}); ok {
+				filtered := required[:0]
+				for _, field := range required {
+					if field != "protocolVersion" {
+						filtered = append(filtered, field)
+					}
+				}
+				context["required"] = filtered
+			}
+			canonical, err := json.Marshal(doc)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := fmt.Sprintf("%x", sha256.Sum256(canonical)); got != c.Expected.SHA256 {
+				t.Fatalf("rename changed more than component names or references: canonical document sha256 %s, want %s", got, c.Expected.SHA256)
+			}
+		})
 	}
 }

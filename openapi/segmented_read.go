@@ -17,7 +17,7 @@ func BuildSegmentedReadSpec(version string) (*openapi31.Spec, error) {
 	case schema.SegmentedReadMinVersion:
 		roots = []string{"TranscriptSegmentDirectory", "TranscriptSegment", "TranscriptWindow"}
 	case schema.SegmentedReadAPIVersion:
-		roots = []string{"TranscriptSegmentDirectoryV2", "TranscriptSegmentV2", "TranscriptWindowV2"}
+		roots = []string{"PositionedDirectory", "PositionedSegment", "PositionedWindow"}
 	default:
 		return nil, fmt.Errorf("segmented read spec generation failed at openapi.BuildSegmentedReadSpec: version %q is not declared; no protocol document can be generated; use %q or %q from versions.go", version, schema.SegmentedReadMinVersion, schema.SegmentedReadAPIVersion)
 	}

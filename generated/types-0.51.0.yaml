@@ -5883,6 +5883,148 @@ components:
             - number
           - type: "null"
       type: object
+    PositionedDirectory:
+      properties:
+        context:
+          $ref: '#/components/schemas/TranscriptReadContext'
+        directoryPage:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        directoryPerPage:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        history:
+          items:
+            $ref: '#/components/schemas/TranscriptHistorySection'
+          type: array
+        partition:
+          $ref: '#/components/schemas/TranscriptSegmentPartition'
+        segments:
+          items:
+            $ref: '#/components/schemas/PositionedSegmentRef'
+          type: array
+        usagePresent:
+          $ref: '#/components/schemas/TranscriptUsagePresence'
+      required:
+      - context
+      - partition
+      - usagePresent
+      - segments
+      type: object
+    PositionedSegment:
+      properties:
+        byteLength:
+          type: integer
+        context:
+          $ref: '#/components/schemas/TranscriptReadContext'
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        index:
+          type: integer
+        nativeMetadata:
+          items:
+            $ref: '#/components/schemas/NativeMetadataRecord'
+          type: array
+        partition:
+          $ref: '#/components/schemas/TranscriptSegmentPartition'
+        rows:
+          items:
+            $ref: '#/components/schemas/TranscriptSegmentRow'
+          minItems: 1
+          type: array
+      required:
+      - context
+      - partition
+      - index
+      - rows
+      - byteLength
+      - hasOlder
+      - hasNewer
+      type: object
+    PositionedSegmentRef:
+      properties:
+        byteLength:
+          type: integer
+        conversationTurns:
+          anyOf:
+          - $ref: '#/components/schemas/ConversationTurnSpan'
+          - type: "null"
+        firstTurn:
+          minimum: 0
+          type: integer
+        index:
+          type: integer
+        lastTurn:
+          minimum: 0
+          type: integer
+        sourceFirstPosition:
+          minimum: 0
+          type: integer
+        sourceLastPosition:
+          minimum: 0
+          type: integer
+      required:
+      - index
+      - sourceFirstPosition
+      - sourceLastPosition
+      - byteLength
+      type: object
+    PositionedWindow:
+      properties:
+        anchorPosition:
+          type: integer
+        anchorSegment:
+          type: integer
+        anchorTurn:
+          minimum: 0
+          type: integer
+        context:
+          $ref: '#/components/schemas/TranscriptReadContext'
+        firstPosition:
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        lastPosition:
+          type: integer
+        partition:
+          $ref: '#/components/schemas/TranscriptSegmentPartition'
+        requestedAnchor:
+          minimum: 0
+          type: integer
+        requestedPosition:
+          minimum: 0
+          type: integer
+        segments:
+          items:
+            type: integer
+          minItems: 1
+          type: array
+        span:
+          maximum: 10
+          minimum: 1
+          type: integer
+      required:
+      - context
+      - partition
+      - anchorPosition
+      - anchorSegment
+      - span
+      - firstPosition
+      - lastPosition
+      - segments
+      - hasOlder
+      - hasNewer
+      type: object
     ProjectAnalytics:
       properties:
         avgDurationPerActiveWeek:
@@ -9586,40 +9728,6 @@ components:
       - totalSegments
       - segments
       type: object
-    TranscriptSegmentDirectoryV2:
-      properties:
-        context:
-          $ref: '#/components/schemas/TranscriptReadContext'
-        directoryPage:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
-        directoryPerPage:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
-        history:
-          items:
-            $ref: '#/components/schemas/TranscriptHistorySection'
-          type: array
-        partition:
-          $ref: '#/components/schemas/TranscriptSegmentPartition'
-        segments:
-          items:
-            $ref: '#/components/schemas/TranscriptSegmentRefV2'
-          type: array
-        usagePresent:
-          $ref: '#/components/schemas/TranscriptUsagePresence'
-      required:
-      - context
-      - partition
-      - usagePresent
-      - segments
-      type: object
     TranscriptSegmentPartition:
       properties:
         kind:
@@ -9669,34 +9777,6 @@ components:
       - lastTurn
       - byteLength
       type: object
-    TranscriptSegmentRefV2:
-      properties:
-        byteLength:
-          type: integer
-        conversationTurns:
-          anyOf:
-          - $ref: '#/components/schemas/ConversationTurnSpan'
-          - type: "null"
-        firstTurn:
-          minimum: 0
-          type: integer
-        index:
-          type: integer
-        lastTurn:
-          minimum: 0
-          type: integer
-        sourceFirstPosition:
-          minimum: 0
-          type: integer
-        sourceLastPosition:
-          minimum: 0
-          type: integer
-      required:
-      - index
-      - sourceFirstPosition
-      - sourceLastPosition
-      - byteLength
-      type: object
     TranscriptSegmentRow:
       properties:
         displayNumber:
@@ -9713,43 +9793,13 @@ components:
         recordedIndexState:
           $ref: '#/components/schemas/TranscriptRecordedIndexState'
         turn:
-          $ref: '#/components/schemas/TranscriptV2Turn'
+          $ref: '#/components/schemas/TranscriptServedTurn'
       required:
       - position
       - recordedIndexState
       - turn
       type: object
-    TranscriptSegmentV2:
-      properties:
-        byteLength:
-          type: integer
-        context:
-          $ref: '#/components/schemas/TranscriptReadContext'
-        hasNewer:
-          type: boolean
-        hasOlder:
-          type: boolean
-        index:
-          type: integer
-        nativeMetadata:
-          items:
-            $ref: '#/components/schemas/NativeMetadataRecord'
-          type: array
-        partition:
-          $ref: '#/components/schemas/TranscriptSegmentPartition'
-        rows:
-          items:
-            $ref: '#/components/schemas/TranscriptSegmentRow'
-          minItems: 1
-          type: array
-      required:
-      - context
-      - partition
-      - index
-      - rows
-      - byteLength
-      - hasOlder
-      - hasNewer
+    TranscriptServedTurn:
       type: object
     TranscriptSessionHeader:
       properties:
@@ -9944,8 +9994,6 @@ components:
       - unknown
       title: Transcript Usage Presence
       type: string
-    TranscriptV2Turn:
-      type: object
     TranscriptViewerProjection:
       description: Closed session graph value
       enum:
@@ -9999,54 +10047,6 @@ components:
       - span
       - firstTurn
       - lastTurn
-      - segments
-      - hasOlder
-      - hasNewer
-      type: object
-    TranscriptWindowV2:
-      properties:
-        anchorPosition:
-          type: integer
-        anchorSegment:
-          type: integer
-        anchorTurn:
-          minimum: 0
-          type: integer
-        context:
-          $ref: '#/components/schemas/TranscriptReadContext'
-        firstPosition:
-          type: integer
-        hasNewer:
-          type: boolean
-        hasOlder:
-          type: boolean
-        lastPosition:
-          type: integer
-        partition:
-          $ref: '#/components/schemas/TranscriptSegmentPartition'
-        requestedAnchor:
-          minimum: 0
-          type: integer
-        requestedPosition:
-          minimum: 0
-          type: integer
-        segments:
-          items:
-            type: integer
-          minItems: 1
-          type: array
-        span:
-          maximum: 10
-          minimum: 1
-          type: integer
-      required:
-      - context
-      - partition
-      - anchorPosition
-      - anchorSegment
-      - span
-      - firstPosition
-      - lastPosition
       - segments
       - hasOlder
       - hasNewer

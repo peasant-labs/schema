@@ -37,40 +37,40 @@ func (TranscriptRecordedIndexState) JSONSchema() (jsonschema.Schema, error) {
 	return enumSchema("Transcript Recorded Index State", AllTranscriptRecordedIndexStates)
 }
 
-// TranscriptV2Turn holds one served turn's JSON object without interpreting or
-// rewriting it. The row's recorded-index state and value are the only v2
+// TranscriptServedTurn holds one served turn's JSON object without interpreting or
+// rewriting it. The row's recorded-index state and value are the only
 // statement of its recorded index.
-type TranscriptV2Turn struct {
+type TranscriptServedTurn struct {
 	raw []byte
 }
 
-// NewTranscriptV2Turn copies one complete, valid UTF-8 JSON object. Other JSON
+// NewTranscriptServedTurn copies one complete, valid UTF-8 JSON object. Other JSON
 // values are refused because a segment row must carry a turn object.
-func NewTranscriptV2Turn(raw []byte) (TranscriptV2Turn, error) {
-	const where = "v2 turn validation failed at schema.NewTranscriptV2Turn: "
+func NewTranscriptServedTurn(raw []byte) (TranscriptServedTurn, error) {
+	const where = "served turn validation failed at schema.NewTranscriptServedTurn: "
 	trimmed := bytes.TrimSpace(raw)
 	if !utf8.Valid(raw) {
-		return TranscriptV2Turn{}, fmt.Errorf("%sthe turn contains invalid UTF-8; its bytes cannot be served as JSON; encode the turn as valid UTF-8", where)
+		return TranscriptServedTurn{}, fmt.Errorf("%sthe turn contains invalid UTF-8; its bytes cannot be served as JSON; encode the turn as valid UTF-8", where)
 	}
 	if len(trimmed) == 0 || trimmed[0] != '{' || !json.Valid(trimmed) {
-		return TranscriptV2Turn{}, fmt.Errorf("%sthe turn is not one complete JSON object; a row cannot carry it; provide a valid turn object", where)
+		return TranscriptServedTurn{}, fmt.Errorf("%sthe turn is not one complete JSON object; a row cannot carry it; provide a valid turn object", where)
 	}
-	return TranscriptV2Turn{raw: bytes.Clone(raw)}, nil
+	return TranscriptServedTurn{raw: bytes.Clone(raw)}, nil
 }
 
-// MarshalJSON returns a copy of the stored bytes when called directly. A v2
-// segment must use MarshalTranscriptSegmentV2: encoding/json compacts nested
+// MarshalJSON returns a copy of the stored bytes when called directly. A positioned
+// segment must use MarshalPositionedSegment: encoding/json compacts nested
 // marshaler output and does not preserve those bytes.
-func (t TranscriptV2Turn) MarshalJSON() ([]byte, error) {
+func (t TranscriptServedTurn) MarshalJSON() ([]byte, error) {
 	if len(t.raw) == 0 {
-		return nil, fmt.Errorf("v2 turn encoding failed at schema.TranscriptV2Turn.MarshalJSON: the turn is empty; no JSON object can be emitted; construct it with schema.NewTranscriptV2Turn")
+		return nil, fmt.Errorf("served turn encoding failed at schema.TranscriptServedTurn.MarshalJSON: the turn is empty; no JSON object can be emitted; construct it with schema.NewTranscriptServedTurn")
 	}
 	return bytes.Clone(t.raw), nil
 }
 
 // UnmarshalJSON copies the bytes of one turn object.
-func (t *TranscriptV2Turn) UnmarshalJSON(raw []byte) error {
-	turn, err := NewTranscriptV2Turn(raw)
+func (t *TranscriptServedTurn) UnmarshalJSON(raw []byte) error {
+	turn, err := NewTranscriptServedTurn(raw)
 	if err != nil {
 		return err
 	}
@@ -79,13 +79,13 @@ func (t *TranscriptV2Turn) UnmarshalJSON(raw []byte) error {
 }
 
 // Raw returns a copy of the retained turn bytes.
-func (t TranscriptV2Turn) Raw() []byte {
+func (t TranscriptServedTurn) Raw() []byte {
 	return bytes.Clone(t.raw)
 }
 
 // JSONSchema publishes an open object. Its index can be absent or invalid on a
 // legacy turn, so it cannot use TurnDetail's required integer schema.
-func (TranscriptV2Turn) JSONSchema() (jsonschema.Schema, error) {
+func (TranscriptServedTurn) JSONSchema() (jsonschema.Schema, error) {
 	var s jsonschema.Schema
 	s.AddType(jsonschema.Object)
 	return s, nil
@@ -94,7 +94,7 @@ func (TranscriptV2Turn) JSONSchema() (jsonschema.Schema, error) {
 // DecodeTranscriptRecordedIndex reads the recorded index without fabricating a
 // value for an absent or invalid member. The accepted range is the nonnegative
 // JavaScript-safe integer range that the platform's int can also represent.
-func DecodeTranscriptRecordedIndex(turn TranscriptV2Turn) (TranscriptRecordedIndexState, *int) {
+func DecodeTranscriptRecordedIndex(turn TranscriptServedTurn) (TranscriptRecordedIndexState, *int) {
 	if err := ScanRawJSONDocument(turn.raw, RawJSONPathPolicy{}); err != nil {
 		return TranscriptRecordedIndexInvalid, nil
 	}

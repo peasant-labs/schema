@@ -4,11 +4,11 @@ import test from "node:test";
 
 import { parse } from "yaml";
 
-import { readTranscriptV2Turn } from "../dist/index.js";
+import { readTranscriptServedTurn } from "../dist/index.js";
 import { Classification, loadCorpus } from "../dist/testcase.js";
 
-const source = await readFile(new URL("../../testdata/typescript/transcript_v2_turn.yaml", import.meta.url), "utf8");
-const manifest = parse(await readFile(new URL("../../testdata/typescript/transcript_v2_turn_manifest.yaml", import.meta.url), "utf8"), { uniqueKeys: true });
+const source = await readFile(new URL("../../testdata/typescript/transcript_served_turn.yaml", import.meta.url), "utf8");
+const manifest = parse(await readFile(new URL("../../testdata/typescript/transcript_served_turn_manifest.yaml", import.meta.url), "utf8"), { uniqueKeys: true });
 const corpus = loadCorpus(source, {
   decodeInput(value, path) {
     if (typeof value !== "object" || value === null || Array.isArray(value) || typeof value.json !== "string" || Object.keys(value).some((key) => key !== "json")) throw new TypeError(`${path}: expected only a JSON text string`);
@@ -25,11 +25,11 @@ assert.ok(Array.isArray(manifest.requiredNames) && manifest.requiredNames.length
 assert.equal(new Set(manifest.requiredNames).size, manifest.requiredNames.length);
 assert.deepEqual(corpus.cases.map((row) => row.name).sort(), [...manifest.requiredNames].sort());
 
-test("v2 turn reader retains served values without asserting the legacy shape", async (t) => {
+test("positioned turn reader retains served values without asserting the legacy shape", async (t) => {
   for (const row of corpus.cases) {
     await t.test(row.name, () => {
       const input = JSON.parse(row.input.json);
-      const result = readTranscriptV2Turn(input);
+      const result = readTranscriptServedTurn(input);
       assert.equal(row.classification, row.expected.accepted ? Classification.MustPass : Classification.MustFail);
       if (!row.expected.accepted) {
         assert.equal(result, undefined);

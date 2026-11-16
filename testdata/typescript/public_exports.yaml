@@ -112,11 +112,11 @@ functions:
   - name: isTranscriptDirectoryPositionsValid
     target: runtime-predicate:TranscriptDirectoryPositions
     surfaces: [root]
-  - name: isTranscriptDirectoryV2PositionsValid
-    target: runtime-predicate:TranscriptDirectoryV2Positions
+  - name: isPositionedDirectoryPositionsValid
+    target: runtime-predicate:PositionedDirectoryPositions
     surfaces: [root]
-  - name: readTranscriptV2Turn
-    target: runtime-reader:TranscriptV2Turn
+  - name: readTranscriptServedTurn
+    target: runtime-reader:TranscriptServedTurn
     surfaces: [root]
 forbidden:
   - Provider

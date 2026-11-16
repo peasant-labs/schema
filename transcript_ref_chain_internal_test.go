@@ -51,9 +51,9 @@ func TestTranscriptRefChainFirstOrdinal(t *testing.T) {
 			default:
 				t.Fatalf("fixture names unknown ref-chain context %q", c.Input.Context)
 			}
-			refs := make([]TranscriptSegmentRefV2, len(c.Input.Refs))
+			refs := make([]PositionedSegmentRef, len(c.Input.Refs))
 			for i, ref := range c.Input.Refs {
-				refs[i] = TranscriptSegmentRefV2{Index: ref.Index, SourceFirstPosition: ref.First, SourceLastPosition: ref.Last}
+				refs[i] = PositionedSegmentRef{Index: ref.Index, SourceFirstPosition: ref.First, SourceLastPosition: ref.Last}
 			}
 			err := validateTranscriptRefChain(refs, c.Input.FirstOrdinal, c.Input.Total, "ref-chain test: ", context, false)
 			if c.Classification == testcase.MustFail {

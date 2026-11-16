@@ -11,24 +11,24 @@ import (
 	schema "github.com/peasant-labs/schema"
 )
 
-//go:embed testdata/transcript_segment_v2_raw_golden.json
-var transcriptSegmentV2RawGolden []byte
+//go:embed testdata/transcript_positioned_segment_raw_golden.json
+var transcriptPositionedRawGolden []byte
 
-func TestTranscriptSegmentV2RawGolden(t *testing.T) {
+func TestPositionedSegmentRawGolden(t *testing.T) {
 	// The fixture's final newline is a file terminator, not a response byte.
-	want := bytes.TrimSuffix(transcriptSegmentV2RawGolden, []byte("\n"))
-	var segment schema.TranscriptSegmentV2
+	want := bytes.TrimSuffix(transcriptPositionedRawGolden, []byte("\n"))
+	var segment schema.PositionedSegment
 	if err := json.Unmarshal(want, &segment); err != nil {
 		t.Fatal(err)
 	}
-	got, err := schema.MarshalTranscriptSegmentV2(segment)
+	got, err := schema.MarshalPositionedSegment(segment)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("segment bytes differ from the stored-turn golden:\ngot  %s\nwant %s", got, want)
 	}
-	var decoded schema.TranscriptSegmentV2
+	var decoded schema.PositionedSegment
 	if err := json.Unmarshal(got, &decoded); err != nil {
 		t.Fatal(err)
 	}
@@ -37,28 +37,28 @@ func TestTranscriptSegmentV2RawGolden(t *testing.T) {
 			t.Fatalf("turn %d changed during segment round trip", i)
 		}
 	}
-	if _, err := json.Marshal(segment); !errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+	if _, err := json.Marshal(segment); !errors.Is(err, schema.ErrPositionedSegmentNotEncodable) {
 		t.Fatalf("plain segment marshal error = %v", err)
 	}
-	if err := json.NewEncoder(new(bytes.Buffer)).Encode(segment); !errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+	if err := json.NewEncoder(new(bytes.Buffer)).Encode(segment); !errors.Is(err, schema.ErrPositionedSegmentNotEncodable) {
 		t.Fatalf("plain segment encoder error = %v", err)
 	}
-	if _, err := json.Marshal(segment.Rows[0]); !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+	if _, err := json.Marshal(segment.Rows[0]); !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrPositionedSegmentNotEncodable) {
 		t.Fatalf("plain row marshal error = %v", err)
 	}
-	if err := json.NewEncoder(new(bytes.Buffer)).Encode(segment.Rows[0]); !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+	if err := json.NewEncoder(new(bytes.Buffer)).Encode(segment.Rows[0]); !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrPositionedSegmentNotEncodable) {
 		t.Fatalf("plain row encoder error = %v", err)
 	}
 }
 
-func TestTranscriptSegmentV2RawFixture(t *testing.T) {
-	for _, c := range loadSegmentV2Cases(t).Raw.Cases {
+func TestPositionedSegmentRawFixture(t *testing.T) {
+	for _, c := range loadPositionedSegmentCases(t).Raw.Cases {
 		t.Run(c.Name, func(t *testing.T) {
-			var segment schema.TranscriptSegmentV2
-			if err := json.Unmarshal(bytes.TrimSuffix(transcriptSegmentV2RawGolden, []byte("\n")), &segment); err != nil {
+			var segment schema.PositionedSegment
+			if err := json.Unmarshal(bytes.TrimSuffix(transcriptPositionedRawGolden, []byte("\n")), &segment); err != nil {
 				t.Fatal(err)
 			}
-			encoded, err := schema.MarshalTranscriptSegmentV2(segment)
+			encoded, err := schema.MarshalPositionedSegment(segment)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -85,25 +85,25 @@ func TestTranscriptSegmentV2RawFixture(t *testing.T) {
 				}
 			case "segment-refusal":
 				_, err := json.Marshal(segment)
-				if !errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+				if !errors.Is(err, schema.ErrPositionedSegmentNotEncodable) {
 					t.Fatalf("segment marshal error = %v", err)
 				}
 				err = json.NewEncoder(new(bytes.Buffer)).Encode(segment)
-				if !errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+				if !errors.Is(err, schema.ErrPositionedSegmentNotEncodable) {
 					t.Fatalf("segment encoder error = %v", err)
 				}
 			case "row-refusal":
 				row := segment.Rows[0]
 				_, err := json.Marshal(row)
-				if !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+				if !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrPositionedSegmentNotEncodable) {
 					t.Fatalf("row marshal error = %v", err)
 				}
 				err = json.NewEncoder(new(bytes.Buffer)).Encode(row)
-				if !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrTranscriptSegmentV2NotEncodable) {
+				if !errors.Is(err, schema.ErrTranscriptSegmentRowNotEncodable) || errors.Is(err, schema.ErrPositionedSegmentNotEncodable) {
 					t.Fatalf("row encoder error = %v", err)
 				}
 			case "round-trip":
-				var decoded schema.TranscriptSegmentV2
+				var decoded schema.PositionedSegment
 				if err := json.Unmarshal(encoded, &decoded); err != nil {
 					t.Fatal(err)
 				}
@@ -111,7 +111,7 @@ func TestTranscriptSegmentV2RawFixture(t *testing.T) {
 					t.Fatal("the assembled segment did not round-trip every member and raw turn")
 				}
 			case "turn":
-				var decoded schema.TranscriptSegmentV2
+				var decoded schema.PositionedSegment
 				if err := json.Unmarshal(encoded, &decoded); err != nil {
 					t.Fatal(err)
 				}

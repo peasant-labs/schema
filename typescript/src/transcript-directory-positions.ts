@@ -65,8 +65,8 @@ export function isTranscriptDirectoryPositionsValid(directory: unknown): boolean
   return true;
 }
 
-/** Project a v2 context and refs into the shared conversation-position rule. */
-export function isTranscriptDirectoryV2PositionsValid(directory: unknown): boolean {
+/** Project a positioned context and refs into the shared conversation-position rule. */
+export function isPositionedDirectoryPositionsValid(directory: unknown): boolean {
   if (!isRecord(directory)) return false;
   const context = directory.context;
   if (!isRecord(context)) return false;

@@ -9,8 +9,8 @@ export { reconcileVillageContributionAttempt, villageContributionAttemptActor, t
 export { normalizeCollectiveObservationScope, encodeContributionTraversalRevision, parseContributionTraversalRevision, validateContributionHistoryQuery, type ContributionTraversalIdentity, type LocalContributionHistoryQuery } from "./collective-validation.js";
 export { collectiveFetchHTTPStatus } from "./collective-status.js";
 export { isConversationTurn } from "./conversation-turn.js";
-export { isTranscriptDirectoryPositionsValid, isTranscriptDirectoryV2PositionsValid } from "./transcript-directory-positions.js";
-export { readTranscriptV2Turn, type TranscriptV2Turn } from "./transcript-v2-turn.js";
+export { isTranscriptDirectoryPositionsValid, isPositionedDirectoryPositionsValid } from "./transcript-directory-positions.js";
+export { readTranscriptServedTurn, type TranscriptServedTurn } from "./transcript-served-turn.js";
 import { requiredContentCapabilities, KnownContentCapability } from "./internal/generated/content-capabilities.gen.js";
 
 import { zHarness, zObservedModelID, zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";

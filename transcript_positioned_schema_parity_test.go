@@ -12,27 +12,27 @@ import (
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-//go:embed testdata/typescript/transcript_v2_generated_shapes.yaml
-var generatedV2ShapesYAML []byte
+//go:embed testdata/typescript/transcript_positioned_generated_shapes.yaml
+var generatedPositionedShapesYAML []byte
 
-//go:embed testdata/typescript/transcript_v2_generated_shapes_manifest.yaml
-var generatedV2ShapesManifestYAML []byte
+//go:embed testdata/typescript/transcript_positioned_generated_shapes_manifest.yaml
+var generatedPositionedShapesManifestYAML []byte
 
-type generatedV2ShapeInput struct {
+type generatedPositionedShapeInput struct {
 	Schema string `yaml:"schema"`
 	JSON   string `yaml:"json"`
 }
 
-// TestTranscriptV2PublishedShapeParity exercises the actual Types document on
+// TestPositionedPublishedShapeParity exercises the actual Types document on
 // the same cases the generated browser schemas replay.
-func TestTranscriptV2PublishedShapeParity(t *testing.T) {
-	fixture := decodeStrictYAML[testcase.Corpus[generatedV2ShapeInput, bool]](t, generatedV2ShapesYAML, "v2 generated shapes")
+func TestPositionedPublishedShapeParity(t *testing.T) {
+	fixture := decodeStrictYAML[testcase.Corpus[generatedPositionedShapeInput, bool]](t, generatedPositionedShapesYAML, "positioned generated shapes")
 	caseassert.RequireValid(t, fixture)
 	names := make([]string, 0, len(fixture.Cases))
 	for _, c := range fixture.Cases {
 		names = append(names, c.Name)
 	}
-	caseassert.RequireManifestNames(t, "v2 generated shapes", generatedV2ShapesManifestYAML, names)
+	caseassert.RequireManifestNames(t, "positioned generated shapes", generatedPositionedShapesManifestYAML, names)
 	spec, err := openapi.BuildTypesSpec()
 	if err != nil {
 		t.Fatal(err)
@@ -46,10 +46,10 @@ func TestTranscriptV2PublishedShapeParity(t *testing.T) {
 		t.Fatal(err)
 	}
 	components := map[string]string{
-		"directory": "TranscriptSegmentDirectoryV2",
-		"segment":   "TranscriptSegmentV2",
+		"directory": "PositionedDirectory",
+		"segment":   "PositionedSegment",
 		"row":       "TranscriptSegmentRow",
-		"window":    "TranscriptWindowV2",
+		"window":    "PositionedWindow",
 	}
 	compiled := make(map[string]*jsonschema.Schema, len(components))
 	for key, component := range components {

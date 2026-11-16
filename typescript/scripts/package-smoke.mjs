@@ -51,15 +51,15 @@ const packedPositionCases = packedPositionProbes.map((probe) => {
   assert.ok(statesPositionFields(decoded), `packed position probe case ${probe.name} must carry the total or a ref's conversationTurns; the probe would otherwise exercise only the container guards`);
   return { name: probe.name, verdict: probe.verdict, json: row.input.json };
 });
-const directoryV2PositionCorpus = parse(await readFile(new URL("../../testdata/typescript/transcript_directory_v2_positions.yaml", import.meta.url), "utf8"));
-assert.ok(Array.isArray(directoryV2PositionCorpus.cases), "the v2 position corpus must contain cases");
-const packedV2PositionProbes = [
+const positionedDirectoryPositionCorpus = parse(await readFile(new URL("../../testdata/typescript/transcript_positioned_directory_positions.yaml", import.meta.url), "utf8"));
+assert.ok(Array.isArray(positionedDirectoryPositionCorpus.cases), "the positioned position corpus must contain cases");
+const packedPositionedProbes = [
   { name: "v2-directory-span-at-total", verdict: true },
   { name: "v2-directory-span-ends-past-total", verdict: false },
 ];
-const packedV2PositionCases = packedV2PositionProbes.map((probe) => {
-  const row = directoryV2PositionCorpus.cases.find((candidate) => candidate.name === probe.name);
-  assert.notEqual(row, undefined, `the v2 position corpus must hold ${probe.name}`);
+const packedPositionedCases = packedPositionedProbes.map((probe) => {
+  const row = positionedDirectoryPositionCorpus.cases.find((candidate) => candidate.name === probe.name);
+  assert.notEqual(row, undefined, `the positioned position corpus must hold ${probe.name}`);
   assert.equal(typeof row.input?.json, "string");
   assert.equal(row.expected, probe.verdict);
   const decoded = JSON.parse(row.input.json);
@@ -134,8 +134,8 @@ try {
     `import * as publicSchema from ${JSON.stringify(packageManifest.name)};`,
     `if (typeof publicSchema.isTranscriptDirectoryPositionsValid !== "function") throw new TypeError("packed ${packageManifest.name} does not export isTranscriptDirectoryPositionsValid");`,
     ...packedPositionCases.map((probe) => `if (publicSchema.isTranscriptDirectoryPositionsValid(JSON.parse(${JSON.stringify(probe.json)})) !== ${probe.verdict}) throw new TypeError(${JSON.stringify(`packed directory position verdict differs for ${probe.name}`)});`),
-    `if (typeof publicSchema.isTranscriptDirectoryV2PositionsValid !== "function") throw new TypeError("packed ${packageManifest.name} does not export isTranscriptDirectoryV2PositionsValid");`,
-    ...packedV2PositionCases.map((probe) => `if (publicSchema.isTranscriptDirectoryV2PositionsValid(JSON.parse(${JSON.stringify(probe.json)})) !== ${probe.verdict}) throw new TypeError(${JSON.stringify(`packed v2 directory position verdict differs for ${probe.name}`)});`),
+    `if (typeof publicSchema.isPositionedDirectoryPositionsValid !== "function") throw new TypeError("packed ${packageManifest.name} does not export isPositionedDirectoryPositionsValid");`,
+    ...packedPositionedCases.map((probe) => `if (publicSchema.isPositionedDirectoryPositionsValid(JSON.parse(${JSON.stringify(probe.json)})) !== ${probe.verdict}) throw new TypeError(${JSON.stringify(`packed positioned directory position verdict differs for ${probe.name}`)});`),
     ...retainedCollectiveAliases.aliases.map(row => `if (publicSchema.z${row.name} !== publicSchema.z${row.canonical}) throw new Error("packed legacy validator ${row.name} lost canonical identity");`),
     ...retainedCollectiveAliases.aliases.filter(row => row.all_name !== undefined).map(row => `if (publicSchema.${row.name} !== publicSchema.${row.canonical} || publicSchema.${row.all_name} !== publicSchema.${row.canonical_all_name} || publicSchema.is${row.name} !== publicSchema.is${row.canonical}) throw new Error("packed legacy enum ${row.name} changed");`),
     `import { sessionGraphFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph")};`,

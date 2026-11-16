@@ -2043,6 +2043,18 @@ export const zPersonalMedians = z.object({
 
 export type PersonalMedians = z.infer<typeof zPersonalMedians>;
 
+export const zPositionedSegmentRef = z.object({
+    byteLength: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    conversationTurns: zConversationTurnSpan.nullish(),
+    firstTurn: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    index: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    lastTurn: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
+    sourceFirstPosition: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    sourceLastPosition: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
+});
+
+export type PositionedSegmentRef = z.infer<typeof zPositionedSegmentRef>;
+
 /**
  * Project Hash
  *
@@ -4207,17 +4219,19 @@ export const zTranscriptSegmentDirectory = z.object({
 
 export type TranscriptSegmentDirectory = z.infer<typeof zTranscriptSegmentDirectory>;
 
-export const zTranscriptSegmentRefV2 = z.object({
-    byteLength: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
-    conversationTurns: zConversationTurnSpan.nullish(),
-    firstTurn: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
-    index: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
-    lastTurn: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
-    sourceFirstPosition: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
-    sourceLastPosition: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
+export const zTranscriptServedTurn = z.record(z.string(), z.unknown());
+
+export type TranscriptServedTurn = z.infer<typeof zTranscriptServedTurn>;
+
+export const zTranscriptSegmentRow = z.object({
+    displayNumber: z.string().min(1).regex(/^[1-9][0-9]*[a-z]*$/).optional(),
+    position: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    recordedIndex: z.int().gte(0).lte(9007199254740991).optional(),
+    recordedIndexState: zTranscriptRecordedIndexState,
+    turn: zTranscriptServedTurn
 });
 
-export type TranscriptSegmentRefV2 = z.infer<typeof zTranscriptSegmentRefV2>;
+export type TranscriptSegmentRow = z.infer<typeof zTranscriptSegmentRow>;
 
 export const zTranscriptSessionHeader = z.object({
     conversationTurnCount: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
@@ -4351,20 +4365,6 @@ export const zTranscriptHistorySection = z.object({
 });
 
 export type TranscriptHistorySection = z.infer<typeof zTranscriptHistorySection>;
-
-export const zTranscriptV2Turn = z.record(z.string(), z.unknown());
-
-export type TranscriptV2Turn = z.infer<typeof zTranscriptV2Turn>;
-
-export const zTranscriptSegmentRow = z.object({
-    displayNumber: z.string().min(1).regex(/^[1-9][0-9]*[a-z]*$/).optional(),
-    position: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
-    recordedIndex: z.int().gte(0).lte(9007199254740991).optional(),
-    recordedIndexState: zTranscriptRecordedIndexState,
-    turn: zTranscriptV2Turn
-});
-
-export type TranscriptSegmentRow = z.infer<typeof zTranscriptSegmentRow>;
 
 /**
  * Transcript Viewer Projection
@@ -5901,29 +5901,19 @@ export const zTranscriptReadContext = z.object({
 
 export type TranscriptReadContext = z.infer<typeof zTranscriptReadContext>;
 
-export const zTranscriptEntryMatch = z.object({
-    context: zTranscriptReadContext,
-    kind: zTranscriptEntryReferenceKind,
-    position: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
-    recordedIndex: z.int().gte(0).lte(9007199254740991).optional(),
-    segmentOrdinal: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
-});
-
-export type TranscriptEntryMatch = z.infer<typeof zTranscriptEntryMatch>;
-
-export const zTranscriptSegmentDirectoryV2 = z.object({
+export const zPositionedDirectory = z.object({
     context: zTranscriptReadContext,
     directoryPage: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     directoryPerPage: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     history: z.array(zTranscriptHistorySection).optional(),
     partition: zTranscriptSegmentPartition,
-    segments: z.array(zTranscriptSegmentRefV2),
+    segments: z.array(zPositionedSegmentRef),
     usagePresent: zTranscriptUsagePresence
 });
 
-export type TranscriptSegmentDirectoryV2 = z.infer<typeof zTranscriptSegmentDirectoryV2>;
+export type PositionedDirectory = z.infer<typeof zPositionedDirectory>;
 
-export const zTranscriptSegmentV2 = z.object({
+export const zPositionedSegment = z.object({
     byteLength: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     context: zTranscriptReadContext,
     hasNewer: z.boolean(),
@@ -5934,9 +5924,9 @@ export const zTranscriptSegmentV2 = z.object({
     rows: z.array(zTranscriptSegmentRow).min(1)
 });
 
-export type TranscriptSegmentV2 = z.infer<typeof zTranscriptSegmentV2>;
+export type PositionedSegment = z.infer<typeof zPositionedSegment>;
 
-export const zTranscriptWindowV2 = z.object({
+export const zPositionedWindow = z.object({
     anchorPosition: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     anchorSegment: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
     anchorTurn: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808).optional(),
@@ -5952,7 +5942,17 @@ export const zTranscriptWindowV2 = z.object({
     span: z.int().gte(1).lte(10)
 });
 
-export type TranscriptWindowV2 = z.infer<typeof zTranscriptWindowV2>;
+export type PositionedWindow = z.infer<typeof zPositionedWindow>;
+
+export const zTranscriptEntryMatch = z.object({
+    context: zTranscriptReadContext,
+    kind: zTranscriptEntryReferenceKind,
+    position: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    recordedIndex: z.int().gte(0).lte(9007199254740991).optional(),
+    segmentOrdinal: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808)
+});
+
+export type TranscriptEntryMatch = z.infer<typeof zTranscriptEntryMatch>;
 
 export const zVillageCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,

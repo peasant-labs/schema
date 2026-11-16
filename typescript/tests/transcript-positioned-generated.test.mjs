@@ -5,11 +5,11 @@ import test from "node:test";
 import { parse } from "yaml";
 import {
   zSessionDetailPayload,
-  zTranscriptSegmentDirectoryV2,
+  zPositionedDirectory,
   zTranscriptSegmentRow,
-  zTranscriptSegmentV2,
+  zPositionedSegment,
   zTranscriptSessionHeader,
-  zTranscriptWindowV2,
+  zPositionedWindow,
   zTurnDetail,
 } from "../dist/index.js";
 import { Classification, loadCorpus } from "../dist/testcase.js";
@@ -56,15 +56,15 @@ async function corpus(name, keys) {
   return loaded.cases;
 }
 
-const shapes = await corpus("transcript_v2_generated_shapes", ["schema", "json"]);
+const shapes = await corpus("transcript_positioned_generated_shapes", ["schema", "json"]);
 const schemas = Object.freeze({
-  directory: zTranscriptSegmentDirectoryV2,
+  directory: zPositionedDirectory,
   row: zTranscriptSegmentRow,
-  segment: zTranscriptSegmentV2,
-  window: zTranscriptWindowV2,
+  segment: zPositionedSegment,
+  window: zPositionedWindow,
 });
 
-test("generated v2 shapes preserve required arrays and optional identity", async (t) => {
+test("generated positioned shapes preserve required arrays and optional identity", async (t) => {
   for (const row of shapes) {
     await t.test(row.name, () => {
       const schema = schemas[row.input.schema];

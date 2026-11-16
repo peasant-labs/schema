@@ -19,7 +19,7 @@ type transcriptSegmentParams struct {
 }
 
 // transcriptWindowParams are the shared v1 window parameters. OpenAPI cannot
-// express version-dependent requiredness on one operation: Village's v2 route
+// express version-dependent requiredness on one operation: Village's positioned route
 // also accepts an omitted anchor for its default window.
 type transcriptWindowParams struct {
 	Anchor   int    `query:"anchor" required:"true" description:"Turn identity to centre the window on" minimum:"0"`

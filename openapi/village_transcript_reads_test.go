@@ -30,12 +30,12 @@ type villageTranscriptReadExpected struct {
 		Minimum  *int   `yaml:"minimum"`
 		Maximum  *int   `yaml:"maximum"`
 	} `yaml:"parameters"`
-	ResponseRef    string   `yaml:"responseRef"`
-	V2ResponseRef  string   `yaml:"v2ResponseRef"`
-	V2RequiredRoot []string `yaml:"v2RequiredRoot"`
-	RequiredRoot   []string `yaml:"requiredRoot"`
-	ForbiddenRoot  []string `yaml:"forbiddenRoot"`
-	NonnullArrays  []string `yaml:"nonnullArrays"`
+	ResponseRef            string   `yaml:"responseRef"`
+	PositionedResponseRef  string   `yaml:"positionedResponseRef"`
+	PositionedRequiredRoot []string `yaml:"positionedRequiredRoot"`
+	RequiredRoot           []string `yaml:"requiredRoot"`
+	ForbiddenRoot          []string `yaml:"forbiddenRoot"`
+	NonnullArrays          []string `yaml:"nonnullArrays"`
 	// ReachableComponents are nested components, named without the Schema
 	// prefix, that the Village-to-Local comparison must reach from the
 	// response component. It is a required subset, not the whole closure.
@@ -157,9 +157,9 @@ func TestVillageTranscriptReadsAreDeclared(t *testing.T) {
 					body := content["application/json"].(map[string]any)["schema"].(map[string]any)
 					alternatives, ok := body["oneOf"].([]any)
 					if !ok || len(alternatives) != 2 {
-						t.Fatalf("status 200 schema = %v; want v1 and v2 alternatives", body)
+						t.Fatalf("status 200 schema = %v; want v1 and positioned alternatives", body)
 					}
-					for i, want := range []string{c.Expected.ResponseRef, c.Expected.V2ResponseRef} {
+					for i, want := range []string{c.Expected.ResponseRef, c.Expected.PositionedResponseRef} {
 						if got := alternatives[i].(map[string]any)["$ref"]; got != want {
 							t.Fatalf("status 200 alternative %d = %v, want %s", i, got, want)
 						}
@@ -197,15 +197,15 @@ func TestVillageTranscriptReadsAreDeclared(t *testing.T) {
 					t.Fatalf("%s is not a non-null array", root)
 				}
 			}
-			v2Name := strings.TrimPrefix(c.Expected.V2ResponseRef, "#/components/schemas/")
-			v2, ok := components[v2Name].(map[string]any)
+			positionedName := strings.TrimPrefix(c.Expected.PositionedResponseRef, "#/components/schemas/")
+			positioned, ok := components[positionedName].(map[string]any)
 			if !ok {
-				t.Fatalf("v2 response ref %q does not resolve", c.Expected.V2ResponseRef)
+				t.Fatalf("positioned response ref %q does not resolve", c.Expected.PositionedResponseRef)
 			}
-			v2Properties := v2["properties"].(map[string]any)
-			for _, root := range c.Expected.V2RequiredRoot {
-				if _, ok := v2Properties[root]; !ok {
-					t.Fatalf("v2 response component is missing %q", root)
+			positionedProperties := positioned["properties"].(map[string]any)
+			for _, root := range c.Expected.PositionedRequiredRoot {
+				if _, ok := positionedProperties[root]; !ok {
+					t.Fatalf("positioned response component is missing %q", root)
 				}
 			}
 			// Nested components are only references inside the response

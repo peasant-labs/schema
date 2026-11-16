@@ -4,13 +4,13 @@ cases:
     provenance: {source: requirement, ref: "The shipped protocol remains declared and served"}
     mutation: {description: "Build the frozen protocol catalog"}
     input: {version: "0.1.0"}
-    expected: {roots: [TranscriptSegmentDirectory, TranscriptSegmentRef, TranscriptSegment, TranscriptWindow, ConversationTurnSpan], absent: [TranscriptSegmentDirectoryV2]}
+    expected: {roots: [TranscriptSegmentDirectory, TranscriptSegmentRef, TranscriptSegment, TranscriptWindow, ConversationTurnSpan], absent: [PositionedDirectory]}
   - name: segmented-spec-positioned-protocol
     classification: must-pass
     provenance: {source: requirement, ref: "The positioned protocol is a separate version"}
     mutation: {description: "Build the positioned protocol catalog"}
     input: {version: "0.2.0"}
-    expected: {roots: [TranscriptSegmentDirectoryV2, TranscriptSegmentRefV2, TranscriptSegmentV2, TranscriptWindowV2, TranscriptReadContext], absent: [TranscriptSegmentDirectory]}
+    expected: {roots: [PositionedDirectory, PositionedSegmentRef, PositionedSegment, PositionedWindow, TranscriptReadContext], absent: [TranscriptSegmentDirectory]}
   - name: segmented-spec-unknown-version-refused
     classification: must-fail
     provenance: {source: boundary, ref: "Only declared protocol versions have documents"}

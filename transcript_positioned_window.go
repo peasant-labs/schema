@@ -5,25 +5,25 @@ import (
 	"fmt"
 )
 
-// TranscriptWindowTurnV2 is the identity and role of one served row. A nil
+// PositionedWindowTurn is the identity and role of one served row. A nil
 // recorded index means the row has no comparable recorded identity.
-type TranscriptWindowTurnV2 struct {
+type PositionedWindowTurn struct {
 	Position      int
 	Role          Role
 	Depth         int
 	RecordedIndex *int
 }
 
-// TranscriptWindowV2Input supplies one partition's served rows and a
+// PositionedWindowInput supplies one partition's served rows and a
 // contiguous ascending interval of absolute segment ordinals. A server may
 // supply its whole directory or adjacent pages concatenated in ordinal order.
-type TranscriptWindowV2Input struct {
+type PositionedWindowInput struct {
 	Context         TranscriptReadContext
 	Partition       TranscriptSegmentPartition
 	RequestedAnchor *int
 	Span            int
-	Turns           []TranscriptWindowTurnV2
-	Refs            []TranscriptSegmentRefV2
+	Turns           []PositionedWindowTurn
+	Refs            []PositionedSegmentRef
 }
 
 // ErrTranscriptWindowAnchorUnresolvable reports that user rows exist but none
@@ -33,35 +33,35 @@ var ErrTranscriptWindowAnchorUnresolvable = errors.New("the transcript has no us
 // ErrTranscriptWindowEmptyPartition reports that a partition has no rows to anchor.
 var ErrTranscriptWindowEmptyPartition = errors.New("the transcript partition contains no served rows")
 
-// ResolveTranscriptWindowV2 resolves one partition's window in served order.
+// ResolvePositionedWindow resolves one partition's window in served order.
 // Recorded indexes are comparison keys only; positions and ordinals locate the
 // resulting run. The resolver never reads turn content.
-func ResolveTranscriptWindowV2(in TranscriptWindowV2Input) (TranscriptWindowV2, error) {
-	const where = "transcript window resolution failed at schema.ResolveTranscriptWindowV2: "
+func ResolvePositionedWindow(in PositionedWindowInput) (PositionedWindow, error) {
+	const where = "transcript window resolution failed at schema.ResolvePositionedWindow: "
 	span := in.Span
 	if span == 0 {
 		span = TranscriptWindowSpanDefault
 	}
 	if span < TranscriptWindowSpanMinimum || span > TranscriptWindowSpanMaximum {
-		return TranscriptWindowV2{}, fmt.Errorf("%sspan %d is outside %d..%d; the window cannot be resolved; request a supported assistant-turn span", where, span, TranscriptWindowSpanMinimum, TranscriptWindowSpanMaximum)
+		return PositionedWindow{}, fmt.Errorf("%sspan %d is outside %d..%d; the window cannot be resolved; request a supported assistant-turn span", where, span, TranscriptWindowSpanMinimum, TranscriptWindowSpanMaximum)
 	}
 	if len(in.Turns) == 0 {
-		return TranscriptWindowV2{}, fmt.Errorf("%sthe partition has no served rows; a window cannot be anchored; open a nonempty partition: %w", where, ErrTranscriptWindowEmptyPartition)
+		return PositionedWindow{}, fmt.Errorf("%sthe partition has no served rows; a window cannot be anchored; open a nonempty partition: %w", where, ErrTranscriptWindowEmptyPartition)
 	}
-	if err := validateTranscriptV2Refs(in.Refs, in.Context.TotalSegments, where); err != nil {
-		return TranscriptWindowV2{}, err
+	if err := validatePositionedRefs(in.Refs, in.Context.TotalSegments, where); err != nil {
+		return PositionedWindow{}, err
 	}
 	for i, turn := range in.Turns {
 		if turn.Position != i {
-			return TranscriptWindowV2{}, fmt.Errorf("%srow %d carries position %d; served positions must be consecutive from zero; pass the ordered partition rows", where, i, turn.Position)
+			return PositionedWindow{}, fmt.Errorf("%srow %d carries position %d; served positions must be consecutive from zero; pass the ordered partition rows", where, i, turn.Position)
 		}
 	}
 	if in.RequestedAnchor != nil && *in.RequestedAnchor < 0 {
-		return TranscriptWindowV2{}, fmt.Errorf("%sthe requested anchor is negative; recorded indexes are nonnegative; request a valid recorded index", where)
+		return PositionedWindow{}, fmt.Errorf("%sthe requested anchor is negative; recorded indexes are nonnegative; request a valid recorded index", where)
 	}
-	anchor, err := transcriptWindowV2Anchor(in.Turns, in.RequestedAnchor)
+	anchor, err := positionedWindowAnchor(in.Turns, in.RequestedAnchor)
 	if err != nil {
-		return TranscriptWindowV2{}, fmt.Errorf("%s%w", where, err)
+		return PositionedWindow{}, fmt.Errorf("%s%w", where, err)
 	}
 	first, last := assistantSpanBounds(func(i int) Role { return in.Turns[i].Role }, len(in.Turns), anchor, span)
 	var requested *int
@@ -82,15 +82,15 @@ func ResolveTranscriptWindowV2(in TranscriptWindowV2Input) (TranscriptWindowV2, 
 	}
 	run, firstOrdinal, lastOrdinal, err := transcriptWindowCoveringRun(in, first, last)
 	if err != nil {
-		return TranscriptWindowV2{}, err
+		return PositionedWindow{}, err
 	}
 	anchorRef, ok := transcriptRefContaining(in.Refs, anchor)
 	if !ok {
-		return TranscriptWindowV2{}, fmt.Errorf("%sno supplied ref covers the anchor position; the directory disagrees with the rows; pass the directory built from this partition", where)
+		return PositionedWindow{}, fmt.Errorf("%sno supplied ref covers the anchor position; the directory disagrees with the rows; pass the directory built from this partition", where)
 	}
 	firstRef, _ := transcriptRefByOrdinal(in.Refs, firstOrdinal)
 	lastRef, _ := transcriptRefByOrdinal(in.Refs, lastOrdinal)
-	window := TranscriptWindowV2{
+	window := PositionedWindow{
 		Context:           in.Context,
 		Partition:         in.Partition,
 		RequestedAnchor:   in.RequestedAnchor,
@@ -105,13 +105,13 @@ func ResolveTranscriptWindowV2(in TranscriptWindowV2Input) (TranscriptWindowV2, 
 		HasOlder:          firstOrdinal > 0,
 		HasNewer:          lastOrdinal < in.Context.TotalSegments-1,
 	}
-	if err := ValidateTranscriptWindowV2Coverage(window, in.Refs); err != nil {
-		return TranscriptWindowV2{}, err
+	if err := ValidatePositionedWindowCoverage(window, in.Refs); err != nil {
+		return PositionedWindow{}, err
 	}
 	return window, nil
 }
 
-func transcriptWindowV2Anchor(turns []TranscriptWindowTurnV2, requested *int) (int, error) {
+func positionedWindowAnchor(turns []PositionedWindowTurn, requested *int) (int, error) {
 	firstUser, firstRoot := -1, -1
 	if requested == nil {
 		for i, turn := range turns {
@@ -162,7 +162,7 @@ func transcriptWindowV2Anchor(turns []TranscriptWindowTurnV2, requested *int) (i
 	return 0, ErrTranscriptWindowAnchorUnresolvable
 }
 
-func validateTranscriptV2Refs(refs []TranscriptSegmentRefV2, total int, where string) error {
+func validatePositionedRefs(refs []PositionedSegmentRef, total int, where string) error {
 	if len(refs) == 0 {
 		return fmt.Errorf("%sno refs were supplied; a window cannot be resolved; pass the partition's directory", where)
 	}
@@ -182,7 +182,7 @@ const (
 // validateTranscriptRefChain is the one adjacency rule for directory pages and
 // resolver intervals. Their diagnostics differ because a page has a prescribed
 // starting ordinal while a resolver can accept any adjacent page interval.
-func validateTranscriptRefChain(refs []TranscriptSegmentRefV2, firstOrdinal, total int, where string, context transcriptRefChainContext, requirePartitionStart bool) error {
+func validateTranscriptRefChain(refs []PositionedSegmentRef, firstOrdinal, total int, where string, context transcriptRefChainContext, requirePartitionStart bool) error {
 	for i, ref := range refs {
 		if err := ref.Validate(); err != nil {
 			return err
@@ -216,26 +216,26 @@ func validateTranscriptRefChain(refs []TranscriptSegmentRefV2, firstOrdinal, tot
 	return nil
 }
 
-func transcriptRefByOrdinal(refs []TranscriptSegmentRefV2, ordinal int) (TranscriptSegmentRefV2, bool) {
+func transcriptRefByOrdinal(refs []PositionedSegmentRef, ordinal int) (PositionedSegmentRef, bool) {
 	for i := range refs {
 		if refs[i].Index == ordinal {
 			return refs[i], true
 		}
 	}
-	return TranscriptSegmentRefV2{}, false
+	return PositionedSegmentRef{}, false
 }
 
-func transcriptRefContaining(refs []TranscriptSegmentRefV2, position int) (TranscriptSegmentRefV2, bool) {
+func transcriptRefContaining(refs []PositionedSegmentRef, position int) (PositionedSegmentRef, bool) {
 	for i := range refs {
 		if refs[i].SourceFirstPosition <= position && position <= refs[i].SourceLastPosition {
 			return refs[i], true
 		}
 	}
-	return TranscriptSegmentRefV2{}, false
+	return PositionedSegmentRef{}, false
 }
 
-func transcriptWindowCoveringRun(in TranscriptWindowV2Input, first, last int) ([]int, int, int, error) {
-	const where = "transcript window resolution failed at schema.ResolveTranscriptWindowV2: "
+func transcriptWindowCoveringRun(in PositionedWindowInput, first, last int) ([]int, int, int, error) {
+	const where = "transcript window resolution failed at schema.ResolvePositionedWindow: "
 	firstRef, ok := transcriptRefContaining(in.Refs, first)
 	if !ok {
 		return nil, 0, 0, fmt.Errorf("%sthe supplied refs hold no segment covering position %d, the window's first edge (supplied interval: ordinals %d..%d of %d segments); pass the partition's whole directory, or the adjacent pages that contain it; the window was not resolved", where, first, in.Refs[0].Index, in.Refs[len(in.Refs)-1].Index, in.Context.TotalSegments)
@@ -253,14 +253,14 @@ func transcriptWindowCoveringRun(in TranscriptWindowV2Input, first, last int) ([
 }
 
 // Validate checks the window's own coordinates and edge flags.
-func (w TranscriptWindowV2) Validate() error {
+func (w PositionedWindow) Validate() error {
 	return w.validateWindowShape(true)
 }
 
 // validateWindowShape validates the requested position numerically for the
 // standalone wire check. Coverage instead checks its corresponding ref.
-func (w TranscriptWindowV2) validateWindowShape(checkRequestedBounds bool) error {
-	const where = "v2 transcript window validation failed at schema.TranscriptWindowV2.Validate: "
+func (w PositionedWindow) validateWindowShape(checkRequestedBounds bool) error {
+	const where = "positioned transcript window validation failed at schema.PositionedWindow.Validate: "
 	if err := w.Context.Validate(); err != nil {
 		return err
 	}
@@ -291,15 +291,15 @@ func (w TranscriptWindowV2) validateWindowShape(checkRequestedBounds bool) error
 	return nil
 }
 
-// ValidateTranscriptWindowV2Coverage checks the window against the refs it was
+// ValidatePositionedWindowCoverage checks the window against the refs it was
 // resolved on, including the anchor and an optional requested-position widening.
-func ValidateTranscriptWindowV2Coverage(window TranscriptWindowV2, refs []TranscriptSegmentRefV2) error {
-	const where = "v2 transcript window coverage failed at schema.ValidateTranscriptWindowV2Coverage: "
+func ValidatePositionedWindowCoverage(window PositionedWindow, refs []PositionedSegmentRef) error {
+	const where = "positioned transcript window coverage failed at schema.ValidatePositionedWindowCoverage: "
 	// Skip numeric requested bounds: the containing-ref check pins them after matching the ref edges.
 	if err := window.validateWindowShape(false); err != nil {
 		return err
 	}
-	if err := validateTranscriptV2Refs(refs, window.Context.TotalSegments, where); err != nil {
+	if err := validatePositionedRefs(refs, window.Context.TotalSegments, where); err != nil {
 		return err
 	}
 	first, firstOK := transcriptRefContaining(refs, window.FirstPosition)

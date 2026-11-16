@@ -61,15 +61,15 @@ func TestTranscriptDirectoryPositionDiagnostics(t *testing.T) {
 					DirectoryPerPage: &in.PerPage, Segments: refs,
 				}).Validate()
 			case "v2":
-				refs := make([]schema.TranscriptSegmentRefV2, 0, len(in.Refs))
+				refs := make([]schema.PositionedSegmentRef, 0, len(in.Refs))
 				for _, ref := range in.Refs {
-					refs = append(refs, schema.TranscriptSegmentRefV2{
+					refs = append(refs, schema.PositionedSegmentRef{
 						Index: ref.Index, SourceFirstPosition: ref.Index, SourceLastPosition: ref.Index,
 						ConversationTurns: &schema.ConversationTurnSpan{Before: ref.Before, Count: ref.Count},
 					})
 				}
 				session := schema.SessionID("ses_test")
-				err = (schema.TranscriptSegmentDirectoryV2{
+				err = (schema.PositionedDirectory{
 					Context: schema.TranscriptReadContext{
 						Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &session},
 						Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,

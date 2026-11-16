@@ -11,13 +11,13 @@ import (
 	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
 
-//go:embed testdata/transcript_window_v2.yaml
-var transcriptWindowV2YAML []byte
+//go:embed testdata/transcript_positioned_window.yaml
+var transcriptPositionedWindowYAML []byte
 
-//go:embed testdata/transcript_window_v2_manifest.yaml
-var transcriptWindowV2ManifestYAML []byte
+//go:embed testdata/transcript_positioned_window_manifest.yaml
+var transcriptPositionedWindowManifestYAML []byte
 
-type windowTurnV2Spec struct {
+type windowPositionedTurnSpec struct {
 	Position int    `yaml:"position"`
 	Role     string `yaml:"role"`
 	Depth    int    `yaml:"depth"`
@@ -25,28 +25,28 @@ type windowTurnV2Spec struct {
 	Content  string `yaml:"content"`
 }
 
-type windowRefV2Spec struct {
+type windowPositionedRefSpec struct {
 	Index int `yaml:"index"`
 	First int `yaml:"first"`
 	Last  int `yaml:"last"`
 }
 
-type windowV2Input struct {
-	TotalSegments int                `yaml:"totalSegments"`
-	TurnCount     int                `yaml:"turnCount"`
-	Span          int                `yaml:"span"`
-	Anchor        *int               `yaml:"anchor"`
-	Partition     string             `yaml:"partition"`
-	Section       *int               `yaml:"section"`
-	Mutation      string             `yaml:"windowMutation"`
-	Cook          bool               `yaml:"cook"`
-	CompareOffset int                `yaml:"compareOffset"`
-	CompareCount  int                `yaml:"compareCount"`
-	Turns         []windowTurnV2Spec `yaml:"turns"`
-	Refs          []windowRefV2Spec  `yaml:"refs"`
+type windowPositionedInput struct {
+	TotalSegments int                        `yaml:"totalSegments"`
+	TurnCount     int                        `yaml:"turnCount"`
+	Span          int                        `yaml:"span"`
+	Anchor        *int                       `yaml:"anchor"`
+	Partition     string                     `yaml:"partition"`
+	Section       *int                       `yaml:"section"`
+	Mutation      string                     `yaml:"windowMutation"`
+	Cook          bool                       `yaml:"cook"`
+	CompareOffset int                        `yaml:"compareOffset"`
+	CompareCount  int                        `yaml:"compareCount"`
+	Turns         []windowPositionedTurnSpec `yaml:"turns"`
+	Refs          []windowPositionedRefSpec  `yaml:"refs"`
 }
 
-type windowV2Expected struct {
+type windowPositionedExpected struct {
 	AnchorPosition    int      `yaml:"anchorPosition"`
 	AnchorTurn        *int     `yaml:"anchorTurn"`
 	RequestedPosition *int     `yaml:"requestedPosition"`
@@ -61,26 +61,26 @@ type windowV2Expected struct {
 	Span              *int     `yaml:"span"`
 }
 
-func TestResolveTranscriptWindowV2(t *testing.T) {
-	corpus := decodeStrictYAML[testcase.Corpus[windowV2Input, windowV2Expected]](t, transcriptWindowV2YAML, "v2 window fixture")
+func TestResolvePositionedWindow(t *testing.T) {
+	corpus := decodeStrictYAML[testcase.Corpus[windowPositionedInput, windowPositionedExpected]](t, transcriptPositionedWindowYAML, "positioned window fixture")
 	caseassert.RequireValid(t, corpus)
 	names := make([]string, len(corpus.Cases))
 	for i, c := range corpus.Cases {
 		names[i] = c.Name
 	}
-	caseassert.RequireManifestNames(t, "v2 window", transcriptWindowV2ManifestYAML, names)
+	caseassert.RequireManifestNames(t, "positioned window", transcriptPositionedWindowManifestYAML, names)
 	for _, c := range corpus.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			sessionID := schema.SessionID("ses_test")
-			turns := make([]schema.TranscriptWindowTurnV2, c.Input.TurnCount)
+			turns := make([]schema.PositionedWindowTurn, c.Input.TurnCount)
 			for i := range turns {
-				turns[i] = schema.TranscriptWindowTurnV2{Position: i, Role: schema.RoleSystem}
+				turns[i] = schema.PositionedWindowTurn{Position: i, Role: schema.RoleSystem}
 			}
 			for _, row := range c.Input.Turns {
 				if row.Position < 0 || row.Position >= len(turns) {
 					t.Fatalf("fixture position %d is outside the row array", row.Position)
 				}
-				turns[row.Position] = schema.TranscriptWindowTurnV2{Position: row.Position, Role: schema.Role(row.Role), Depth: row.Depth, RecordedIndex: row.Index}
+				turns[row.Position] = schema.PositionedWindowTurn{Position: row.Position, Role: schema.Role(row.Role), Depth: row.Depth, RecordedIndex: row.Index}
 			}
 			if c.Input.Cook {
 				source := make([]schema.TurnDetail, len(turns))
@@ -88,7 +88,7 @@ func TestResolveTranscriptWindowV2(t *testing.T) {
 					source[row.Position] = schema.TurnDetail{Role: schema.Role(row.Role), Depth: row.Depth, Content: row.Content}
 				}
 				verdict := cookFixtureTurns(t, source)
-				served := make([]schema.TranscriptWindowTurnV2, 0, len(turns))
+				served := make([]schema.PositionedWindowTurn, 0, len(turns))
 				for i, row := range turns {
 					if verdict[i].Keep {
 						row.Position = verdict[i].ServedPosition
@@ -97,16 +97,16 @@ func TestResolveTranscriptWindowV2(t *testing.T) {
 				}
 				turns = served
 			}
-			refs := make([]schema.TranscriptSegmentRefV2, len(c.Input.Refs))
+			refs := make([]schema.PositionedSegmentRef, len(c.Input.Refs))
 			for i, ref := range c.Input.Refs {
-				refs[i] = schema.TranscriptSegmentRefV2{Index: ref.Index, SourceFirstPosition: ref.First, SourceLastPosition: ref.Last}
+				refs[i] = schema.PositionedSegmentRef{Index: ref.Index, SourceFirstPosition: ref.First, SourceLastPosition: ref.Last}
 			}
 			partition := schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain}
 			if c.Input.Partition != "" {
 				partition.Kind = schema.TranscriptSegmentPartitionKind(c.Input.Partition)
 				partition.SectionIndex = c.Input.Section
 			}
-			input := schema.TranscriptWindowV2Input{
+			input := schema.PositionedWindowInput{
 				Context: schema.TranscriptReadContext{
 					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
 					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
@@ -115,7 +115,7 @@ func TestResolveTranscriptWindowV2(t *testing.T) {
 				Partition:       partition,
 				RequestedAnchor: c.Input.Anchor, Span: c.Input.Span, Turns: turns, Refs: refs,
 			}
-			got, err := schema.ResolveTranscriptWindowV2(input)
+			got, err := schema.ResolvePositionedWindow(input)
 			if c.Input.Mutation != "" {
 				if err != nil {
 					t.Fatalf("resolve before window mutation: %v", err)
@@ -141,7 +141,7 @@ func TestResolveTranscriptWindowV2(t *testing.T) {
 				default:
 					t.Fatalf("unknown fixture window mutation %q", c.Input.Mutation)
 				}
-				err = schema.ValidateTranscriptWindowV2Coverage(got, refs)
+				err = schema.ValidatePositionedWindowCoverage(got, refs)
 			}
 			if c.Classification == testcase.MustFail {
 				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
@@ -167,7 +167,7 @@ func TestResolveTranscriptWindowV2(t *testing.T) {
 				!reflect.DeepEqual(got.Segments, want.Segments) || got.HasOlder != want.HasOlder || got.HasNewer != want.HasNewer {
 				t.Fatalf("window = %+v, want %+v", got, want)
 			}
-			if err := schema.ValidateTranscriptWindowV2Coverage(got, refs); err != nil {
+			if err := schema.ValidatePositionedWindowCoverage(got, refs); err != nil {
 				t.Fatalf("resolved window fails coverage: %v", err)
 			}
 			if c.Input.CompareCount > 0 {
@@ -176,7 +176,7 @@ func TestResolveTranscriptWindowV2(t *testing.T) {
 					t.Fatal("fixture's comparison interval is outside the refs")
 				}
 				input.Refs = refs[start:end]
-				fromPage, err := schema.ResolveTranscriptWindowV2(input)
+				fromPage, err := schema.ResolvePositionedWindow(input)
 				if err != nil || !reflect.DeepEqual(fromPage, got) {
 					t.Fatalf("page window = %+v, error %v; want whole-directory window %+v", fromPage, err, got)
 				}

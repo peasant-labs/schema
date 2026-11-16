@@ -1,7 +1,7 @@
-import { readTranscriptV2Turn, type TranscriptV2Turn, type TurnDetail } from "@peasant-labs/schema";
+import { readTranscriptServedTurn, type TranscriptServedTurn, type TurnDetail } from "@peasant-labs/schema";
 
 declare const source: unknown;
-const turn = readTranscriptV2Turn(source);
+const turn = readTranscriptServedTurn(source);
 if (turn !== undefined) {
   const strictView: Omit<TurnDetail, "index"> = turn;
   const maybeIndex: unknown = turn.index;
@@ -11,5 +11,5 @@ if (turn !== undefined) {
   void [strictView, maybeIndex, recordedIndex];
 }
 
-const read: (value: unknown) => TranscriptV2Turn | undefined = readTranscriptV2Turn;
+const read: (value: unknown) => TranscriptServedTurn | undefined = readTranscriptServedTurn;
 void read;

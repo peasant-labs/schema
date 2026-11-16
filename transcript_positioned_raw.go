@@ -8,31 +8,31 @@ import (
 	"strconv"
 )
 
-// ErrTranscriptSegmentV2NotEncodable identifies an attempt to encode a segment
+// ErrPositionedSegmentNotEncodable identifies an attempt to encode a segment
 // through encoding/json, which would rewrite its turns' preserved bytes.
-var ErrTranscriptSegmentV2NotEncodable = errors.New("a v2 segment must be written by schema.MarshalTranscriptSegmentV2")
+var ErrPositionedSegmentNotEncodable = errors.New("a positioned segment must be written by schema.MarshalPositionedSegment")
 
 // ErrTranscriptSegmentRowNotEncodable identifies an attempt to encode a row
 // outside its segment, which would rewrite the row's preserved turn bytes.
-var ErrTranscriptSegmentRowNotEncodable = errors.New("a v2 segment row must be written by schema.writeTranscriptSegmentRow")
+var ErrTranscriptSegmentRowNotEncodable = errors.New("a positioned segment row must be written by schema.writeTranscriptSegmentRow")
 
-func (TranscriptSegmentV2) MarshalJSON() ([]byte, error) {
-	return nil, ErrTranscriptSegmentV2NotEncodable
+func (PositionedSegment) MarshalJSON() ([]byte, error) {
+	return nil, ErrPositionedSegmentNotEncodable
 }
 
 func (TranscriptSegmentRow) MarshalJSON() ([]byte, error) {
 	return nil, ErrTranscriptSegmentRowNotEncodable
 }
 
-var transcriptSegmentV2Members = []string{
+var positionedSegmentMembers = []string{
 	"context", "partition", "index", "rows", "byteLength", "hasOlder", "hasNewer", "nativeMetadata",
 }
 
-// ValidateTranscriptSegmentV2Boundaries compares the segment's served rows
+// ValidatePositionedSegmentBoundaries compares the segment's served rows
 // with the directory ref it was cut from. Validate checks the segment alone;
 // this function checks the independent directory coordinates.
-func ValidateTranscriptSegmentV2Boundaries(seg TranscriptSegmentV2, ref TranscriptSegmentRefV2) error {
-	const where = "v2 segment boundary validation failed at schema.ValidateTranscriptSegmentV2Boundaries: "
+func ValidatePositionedSegmentBoundaries(seg PositionedSegment, ref PositionedSegmentRef) error {
+	const where = "positioned segment boundary validation failed at schema.ValidatePositionedSegmentBoundaries: "
 	if ref.Index != seg.Index {
 		return fmt.Errorf("%ssegment ordinal %d differs from ref ordinal %d; the rows cannot be placed under this ref; use the ref the segment was cut from", where, seg.Index, ref.Index)
 	}
@@ -48,11 +48,11 @@ func ValidateTranscriptSegmentV2Boundaries(seg TranscriptSegmentV2, ref Transcri
 	return nil
 }
 
-// MarshalTranscriptSegmentV2 validates and writes one complete response. The
+// MarshalPositionedSegment validates and writes one complete response. The
 // turn objects are written directly, retaining their original served bytes.
 // The caller writes the returned bytes as the entire JSON response body.
-func MarshalTranscriptSegmentV2(seg TranscriptSegmentV2) ([]byte, error) {
-	const where = "v2 segment encoding failed at schema.MarshalTranscriptSegmentV2: "
+func MarshalPositionedSegment(seg PositionedSegment) ([]byte, error) {
+	const where = "positioned segment encoding failed at schema.MarshalPositionedSegment: "
 	if err := seg.Validate(); err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func MarshalTranscriptSegmentV2(seg TranscriptSegmentV2) ([]byte, error) {
 }
 
 func writeTranscriptSegmentRow(buf *bytes.Buffer, row TranscriptSegmentRow) error {
-	const where = "v2 segment row encoding failed at schema.writeTranscriptSegmentRow: "
+	const where = "positioned segment row encoding failed at schema.writeTranscriptSegmentRow: "
 	buf.WriteString(`{"position":`)
 	buf.WriteString(strconv.Itoa(row.Position))
 	buf.WriteString(`,"recordedIndexState":`)

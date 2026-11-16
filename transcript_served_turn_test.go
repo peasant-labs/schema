@@ -15,32 +15,32 @@ import (
 	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
 
-//go:embed testdata/transcript_segments_v2.yaml
-var transcriptSegmentsV2YAML []byte
+//go:embed testdata/transcript_positioned_segments.yaml
+var transcriptPositionedSegmentsYAML []byte
 
-//go:embed testdata/transcript_segments_v2_manifest.yaml
-var transcriptSegmentsV2ManifestYAML []byte
+//go:embed testdata/transcript_positioned_segments_manifest.yaml
+var transcriptPositionedSegmentsManifestYAML []byte
 
-type v2TurnInput struct {
+type positionedTurnInput struct {
 	Raw    string `yaml:"raw"`
 	RawHex string `yaml:"rawHex"`
 }
 
-type v2TurnExpected struct {
+type positionedTurnExpected struct {
 	State string `yaml:"state"`
 	Index *int   `yaml:"index"`
 }
 
-type v2CaptureInput struct {
+type positionedCaptureInput struct {
 	Detail string `yaml:"detail"`
 }
 
-type v2CaptureExpected struct {
+type positionedCaptureExpected struct {
 	Turns         []string `yaml:"turns"`
 	ErrorContains string   `yaml:"errorContains"`
 }
 
-type v2SegmentInput struct {
+type positionedSegmentInput struct {
 	Segment  int `yaml:"segment"`
 	Total    int `yaml:"total"`
 	Start    int `yaml:"start"`
@@ -50,13 +50,13 @@ type v2SegmentInput struct {
 	RefLast  int `yaml:"refLast"`
 }
 
-type v2SegmentExpected struct {
+type positionedSegmentExpected struct {
 	SegmentValid  bool   `yaml:"segmentValid"`
 	BoundaryValid bool   `yaml:"boundaryValid"`
 	ErrorContains string `yaml:"errorContains"`
 }
 
-type v2DirectoryInput struct {
+type positionedDirectoryInput struct {
 	TotalTurns        int  `yaml:"totalTurns"`
 	TotalSegments     int  `yaml:"totalSegments"`
 	Page              *int `yaml:"page"`
@@ -72,16 +72,16 @@ type v2DirectoryInput struct {
 	SpanCount         *int `yaml:"spanCount"`
 }
 
-type v2DirectoryExpected struct {
+type positionedDirectoryExpected struct {
 	ErrorContains string `yaml:"errorContains"`
 }
 
-type v2WireInput struct {
+type positionedWireInput struct {
 	Subject string `yaml:"subject"`
 	JSON    string `yaml:"json"`
 }
 
-type v2WireExpected struct {
+type positionedWireExpected struct {
 	ErrorContains       string   `yaml:"errorContains"`
 	CheckContentSession bool     `yaml:"checkContentSession"`
 	ContentSessionID    *string  `yaml:"contentSessionId"`
@@ -95,41 +95,41 @@ type v2WireExpected struct {
 	NotContains         string   `yaml:"notContains"`
 }
 
-type v2RawInput struct {
+type positionedRawInput struct {
 	Mode string `yaml:"mode"`
 	Row  int    `yaml:"row"`
 }
 
-type v2RawExpected struct {
+type positionedRawExpected struct {
 	Raw     string   `yaml:"raw"`
 	Members []string `yaml:"members"`
 }
 
-type v2ServedInput struct {
+type positionedServedInput struct {
 	Detail  string `yaml:"detail"`
 	Harness string `yaml:"harness"`
 }
 
-type v2ServedRow struct {
+type positionedServedRow struct {
 	Position      int    `yaml:"position"`
 	DisplayNumber string `yaml:"displayNumber"`
 	Turn          string `yaml:"turn"`
 }
 
-type segmentV2Cases struct {
-	Turns       testcase.Corpus[v2TurnInput, v2TurnExpected]           `yaml:"turns"`
-	Capture     testcase.Corpus[v2CaptureInput, v2CaptureExpected]     `yaml:"capture"`
-	Evidence    testcase.Corpus[string, string]                        `yaml:"evidence"`
-	Segments    testcase.Corpus[v2SegmentInput, v2SegmentExpected]     `yaml:"segments"`
-	Directories testcase.Corpus[v2DirectoryInput, v2DirectoryExpected] `yaml:"directories"`
-	Wire        testcase.Corpus[v2WireInput, v2WireExpected]           `yaml:"wire"`
-	Raw         testcase.Corpus[v2RawInput, v2RawExpected]             `yaml:"raw"`
-	Served      testcase.Corpus[v2ServedInput, []v2ServedRow]          `yaml:"served"`
+type positionedSegmentCases struct {
+	Turns       testcase.Corpus[positionedTurnInput, positionedTurnExpected]           `yaml:"turns"`
+	Capture     testcase.Corpus[positionedCaptureInput, positionedCaptureExpected]     `yaml:"capture"`
+	Evidence    testcase.Corpus[string, string]                                        `yaml:"evidence"`
+	Segments    testcase.Corpus[positionedSegmentInput, positionedSegmentExpected]     `yaml:"segments"`
+	Directories testcase.Corpus[positionedDirectoryInput, positionedDirectoryExpected] `yaml:"directories"`
+	Wire        testcase.Corpus[positionedWireInput, positionedWireExpected]           `yaml:"wire"`
+	Raw         testcase.Corpus[positionedRawInput, positionedRawExpected]             `yaml:"raw"`
+	Served      testcase.Corpus[positionedServedInput, []positionedServedRow]          `yaml:"served"`
 }
 
-func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
+func loadPositionedSegmentCases(t *testing.T) positionedSegmentCases {
 	t.Helper()
-	fixture := decodeStrictYAML[segmentV2Cases](t, transcriptSegmentsV2YAML, "v2 segment fixture")
+	fixture := decodeStrictYAML[positionedSegmentCases](t, transcriptPositionedSegmentsYAML, "positioned segment fixture")
 	caseassert.RequireValid(t, fixture.Turns)
 	caseassert.RequireValid(t, fixture.Capture)
 	caseassert.RequireValid(t, fixture.Evidence)
@@ -163,12 +163,12 @@ func loadSegmentV2Cases(t *testing.T) segmentV2Cases {
 	for _, c := range fixture.Served.Cases {
 		names = append(names, c.Name)
 	}
-	caseassert.RequireManifestNames(t, "v2 segment", transcriptSegmentsV2ManifestYAML, names)
+	caseassert.RequireManifestNames(t, "positioned segment", transcriptPositionedSegmentsManifestYAML, names)
 	return fixture
 }
 
-func TestTranscriptSegmentV2ServesCookedRows(t *testing.T) {
-	for _, c := range loadSegmentV2Cases(t).Served.Cases {
+func TestPositionedSegmentServesCookedRows(t *testing.T) {
+	for _, c := range loadPositionedSegmentCases(t).Served.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			turns, err := schema.NewTranscriptCookTurns(json.RawMessage(c.Input.Detail))
 			if err != nil {
@@ -191,7 +191,7 @@ func TestTranscriptSegmentV2ServesCookedRows(t *testing.T) {
 				})
 			}
 			sessionID := schema.SessionID("ses_test")
-			segment := schema.TranscriptSegmentV2{
+			segment := schema.PositionedSegment{
 				Context: schema.TranscriptReadContext{
 					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
 					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
@@ -199,17 +199,17 @@ func TestTranscriptSegmentV2ServesCookedRows(t *testing.T) {
 				},
 				Partition: schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain}, Rows: rows,
 			}
-			wire, err := schema.MarshalTranscriptSegmentV2(segment)
+			wire, err := schema.MarshalPositionedSegment(segment)
 			if err != nil {
 				t.Fatal(err)
 			}
-			var read schema.TranscriptSegmentV2
+			var read schema.PositionedSegment
 			if err := json.Unmarshal(wire, &read); err != nil {
 				t.Fatal(err)
 			}
-			got := make([]v2ServedRow, len(read.Rows))
+			got := make([]positionedServedRow, len(read.Rows))
 			for i, row := range read.Rows {
-				got[i] = v2ServedRow{Position: row.Position, DisplayNumber: row.DisplayNumber, Turn: string(row.Turn.Raw())}
+				got[i] = positionedServedRow{Position: row.Position, DisplayNumber: row.DisplayNumber, Turn: string(row.Turn.Raw())}
 			}
 			if !reflect.DeepEqual(got, c.Expected) {
 				t.Fatalf("served rows = %#v, want %#v", got, c.Expected)
@@ -218,8 +218,8 @@ func TestTranscriptSegmentV2ServesCookedRows(t *testing.T) {
 	}
 }
 
-func TestTranscriptV2WireValidation(t *testing.T) {
-	for _, c := range loadSegmentV2Cases(t).Wire.Cases {
+func TestPositionedSegmentWireValidation(t *testing.T) {
+	for _, c := range loadPositionedSegmentCases(t).Wire.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			var err error
 			var encoded []byte
@@ -281,7 +281,7 @@ func TestTranscriptV2WireValidation(t *testing.T) {
 					t.Fatalf("displayNumber = %q, want %q", row.DisplayNumber, *c.Expected.DisplayNumber)
 				}
 			case "directory":
-				var directory schema.TranscriptSegmentDirectoryV2
+				var directory schema.PositionedDirectory
 				if err := json.Unmarshal([]byte(c.Input.JSON), &directory); err != nil {
 					t.Fatal(err)
 				}
@@ -290,19 +290,19 @@ func TestTranscriptV2WireValidation(t *testing.T) {
 					encoded, err = json.Marshal(directory)
 				}
 			case "segment":
-				var segment schema.TranscriptSegmentV2
+				var segment schema.PositionedSegment
 				if err := json.Unmarshal([]byte(c.Input.JSON), &segment); err != nil {
 					t.Fatal(err)
 				}
-				encoded, err = schema.MarshalTranscriptSegmentV2(segment)
+				encoded, err = schema.MarshalPositionedSegment(segment)
 			case "ref-schema":
 				spec, buildErr := openapi.BuildTypesSpec()
 				if buildErr != nil {
 					t.Fatal(buildErr)
 				}
-				component := spec.Components.Schemas["TranscriptSegmentRefV2"]
+				component := spec.Components.Schemas["PositionedSegmentRef"]
 				if component == nil {
-					t.Fatal("v2 segment ref is absent from the Types catalog")
+					t.Fatal("positioned segment ref is absent from the Types catalog")
 				}
 				raw, marshalErr := json.Marshal(component)
 				if marshalErr != nil {
@@ -357,17 +357,17 @@ func TestTranscriptV2WireValidation(t *testing.T) {
 	}
 }
 
-func TestTranscriptSegmentDirectoryV2(t *testing.T) {
-	for _, c := range loadSegmentV2Cases(t).Directories.Cases {
+func TestPositionedDirectory(t *testing.T) {
+	for _, c := range loadPositionedSegmentCases(t).Directories.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			sessionID := schema.SessionID("ses_test")
-			refs := make([]schema.TranscriptSegmentRefV2, c.Input.RefCount)
+			refs := make([]schema.PositionedSegmentRef, c.Input.RefCount)
 			for i := range refs {
 				position := c.Input.PositionStart + i
 				if c.Input.BreakPosition != nil && i == *c.Input.BreakPosition {
 					position++
 				}
-				refs[i] = schema.TranscriptSegmentRefV2{
+				refs[i] = schema.PositionedSegmentRef{
 					Index: c.Input.RefStart + i, SourceFirstPosition: position, SourceLastPosition: position,
 				}
 			}
@@ -377,7 +377,7 @@ func TestTranscriptSegmentDirectoryV2(t *testing.T) {
 					refs[0].ConversationTurns = &schema.ConversationTurnSpan{Before: *c.Input.SpanBefore, Count: *c.Input.SpanCount}
 				}
 			}
-			dir := schema.TranscriptSegmentDirectoryV2{
+			dir := schema.PositionedDirectory{
 				Context: schema.TranscriptReadContext{
 					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
 					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
@@ -402,11 +402,11 @@ func TestTranscriptSegmentDirectoryV2(t *testing.T) {
 	}
 }
 
-func TestTranscriptSegmentV2Boundaries(t *testing.T) {
-	for _, c := range loadSegmentV2Cases(t).Segments.Cases {
+func TestPositionedSegmentBoundaries(t *testing.T) {
+	for _, c := range loadPositionedSegmentCases(t).Segments.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			sessionID := schema.SessionID("ses_test")
-			turn, err := schema.NewTranscriptV2Turn([]byte(`{"index":0}`))
+			turn, err := schema.NewTranscriptServedTurn([]byte(`{"index":0}`))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -419,7 +419,7 @@ func TestTranscriptSegmentV2Boundaries(t *testing.T) {
 				index := 0
 				rows[i] = schema.TranscriptSegmentRow{Position: position, RecordedIndexState: schema.TranscriptRecordedIndexPresent, RecordedIndex: &index, Turn: turn}
 			}
-			segment := schema.TranscriptSegmentV2{
+			segment := schema.PositionedSegment{
 				Context: schema.TranscriptReadContext{
 					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
 					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
@@ -428,9 +428,9 @@ func TestTranscriptSegmentV2Boundaries(t *testing.T) {
 				Partition: schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain},
 				Index:     c.Input.Segment, Rows: rows, HasOlder: c.Input.Segment > 0, HasNewer: c.Input.Segment < c.Input.Total-1,
 			}
-			ref := schema.TranscriptSegmentRefV2{Index: c.Input.Segment, SourceFirstPosition: c.Input.RefFirst, SourceLastPosition: c.Input.RefLast}
+			ref := schema.PositionedSegmentRef{Index: c.Input.Segment, SourceFirstPosition: c.Input.RefFirst, SourceLastPosition: c.Input.RefLast}
 			segmentErr := segment.Validate()
-			boundaryErr := schema.ValidateTranscriptSegmentV2Boundaries(segment, ref)
+			boundaryErr := schema.ValidatePositionedSegmentBoundaries(segment, ref)
 			if (segmentErr == nil) != c.Expected.SegmentValid || (boundaryErr == nil) != c.Expected.BoundaryValid {
 				t.Fatalf("segment error = %v, boundary error = %v, want %+v", segmentErr, boundaryErr, c.Expected)
 			}
@@ -444,7 +444,7 @@ func TestTranscriptSegmentV2Boundaries(t *testing.T) {
 				}
 			}
 			if c.Expected.SegmentValid && c.Expected.BoundaryValid {
-				if _, err := schema.MarshalTranscriptSegmentV2(segment); err != nil {
+				if _, err := schema.MarshalPositionedSegment(segment); err != nil {
 					t.Fatalf("write valid segment: %v", err)
 				}
 			}
@@ -452,8 +452,8 @@ func TestTranscriptSegmentV2Boundaries(t *testing.T) {
 	}
 }
 
-func TestTranscriptV2TurnEvidence(t *testing.T) {
-	for _, c := range loadSegmentV2Cases(t).Evidence.Cases {
+func TestTranscriptServedTurnEvidence(t *testing.T) {
+	for _, c := range loadPositionedSegmentCases(t).Evidence.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			var turn schema.TurnDetail
 			if err := json.Unmarshal([]byte(c.Input), &turn); err != nil {
@@ -470,8 +470,8 @@ func TestTranscriptV2TurnEvidence(t *testing.T) {
 	}
 }
 
-func TestTranscriptV2Turn(t *testing.T) {
-	fixture := loadSegmentV2Cases(t)
+func TestTranscriptServedTurn(t *testing.T) {
+	fixture := loadPositionedSegmentCases(t)
 	for _, c := range fixture.Turns.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			raw := []byte(c.Input.Raw)
@@ -482,7 +482,7 @@ func TestTranscriptV2Turn(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			turn, err := schema.NewTranscriptV2Turn(raw)
+			turn, err := schema.NewTranscriptServedTurn(raw)
 			if c.Classification == testcase.MustFail {
 				if err == nil {
 					t.Fatal("invalid turn was accepted")
@@ -504,7 +504,7 @@ func TestTranscriptV2Turn(t *testing.T) {
 			if err != nil || !bytes.Equal(encoded, want) {
 				t.Fatalf("direct MarshalJSON = %q, %v; want %q", encoded, err, want)
 			}
-			var decoded schema.TranscriptV2Turn
+			var decoded schema.TranscriptServedTurn
 			if err := json.Unmarshal(want, &decoded); err != nil || !bytes.Equal(decoded.Raw(), want) {
 				t.Fatalf("UnmarshalJSON = %q, %v; want %q", decoded.Raw(), err, want)
 			}
@@ -518,7 +518,7 @@ func TestTranscriptV2Turn(t *testing.T) {
 			// Exercise the transport writer even for a syntactically valid turn
 			// that the document boundary would reject, such as duplicate keys.
 			sessionID := schema.SessionID("ses_test")
-			segment := schema.TranscriptSegmentV2{
+			segment := schema.PositionedSegment{
 				Context: schema.TranscriptReadContext{
 					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
 					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
@@ -527,11 +527,11 @@ func TestTranscriptV2Turn(t *testing.T) {
 				Partition: schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain},
 				Rows:      []schema.TranscriptSegmentRow{{Position: 0, RecordedIndexState: state, RecordedIndex: index, Turn: turn}},
 			}
-			body, err := schema.MarshalTranscriptSegmentV2(segment)
+			body, err := schema.MarshalPositionedSegment(segment)
 			if err != nil {
 				t.Fatalf("write preserved turn: %v", err)
 			}
-			var served schema.TranscriptSegmentV2
+			var served schema.PositionedSegment
 			if err := json.Unmarshal(body, &served); err != nil {
 				t.Fatal(err)
 			}
@@ -543,7 +543,7 @@ func TestTranscriptV2Turn(t *testing.T) {
 }
 
 func TestTranscriptCookTurns(t *testing.T) {
-	for _, c := range loadSegmentV2Cases(t).Capture.Cases {
+	for _, c := range loadPositionedSegmentCases(t).Capture.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			turns, err := schema.NewTranscriptCookTurns(json.RawMessage(c.Input.Detail))
 			if c.Classification == testcase.MustFail {

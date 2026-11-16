@@ -13,11 +13,11 @@ types:
   - {go_name: TranscriptSegmentPartitionKind, disposition: catalog, component: TranscriptSegmentPartitionKind, reason: segmented read partition kind}
   - {go_name: TranscriptSegmentPartition, disposition: catalog, component: TranscriptSegmentPartition, reason: segmented read partition identity}
   - {go_name: TranscriptHistorySection, disposition: catalog, component: TranscriptHistorySection, reason: earlier history section manifest}
-  - {go_name: TranscriptSegmentRefV2, disposition: catalog, component: TranscriptSegmentRefV2, reason: positioned segment reference}
+  - {go_name: PositionedSegmentRef, disposition: catalog, component: PositionedSegmentRef, reason: positioned segment reference}
   - {go_name: TranscriptSegmentRow, disposition: catalog, component: TranscriptSegmentRow, reason: positioned served row}
-  - {go_name: TranscriptSegmentDirectoryV2, disposition: catalog, component: TranscriptSegmentDirectoryV2, reason: positioned segment directory}
-  - {go_name: TranscriptSegmentV2, disposition: catalog, component: TranscriptSegmentV2, reason: positioned segment body}
-  - {go_name: TranscriptWindowV2, disposition: catalog, component: TranscriptWindowV2, reason: positioned window descriptor}
+  - {go_name: PositionedDirectory, disposition: catalog, component: PositionedDirectory, reason: positioned segment directory}
+  - {go_name: PositionedSegment, disposition: catalog, component: PositionedSegment, reason: positioned segment body}
+  - {go_name: PositionedWindow, disposition: catalog, component: PositionedWindow, reason: positioned window descriptor}
   - {go_name: TranscriptEntryReferenceKind, disposition: catalog, component: TranscriptEntryReferenceKind, reason: located entry member}
   - {go_name: TranscriptEntryLocateRequest, disposition: catalog, component: TranscriptEntryLocateRequest, reason: reference and expected read epoch}
   - {go_name: TranscriptEntryMatch, disposition: catalog, component: TranscriptEntryMatch, reason: served entry location without reference}
@@ -27,7 +27,7 @@ types:
   - {go_name: TranscriptDownloadKind, disposition: runtime-only, reason: download parser dispatch}
   - {go_name: TranscriptDownloadRead, disposition: runtime-only, reason: download parser result}
   - {go_name: TranscriptFlaggedTurn, disposition: catalog, component: TranscriptFlaggedTurn, reason: served position and recorded index of a flag}
-  - {go_name: TranscriptV2Turn, disposition: catalog, component: TranscriptV2Turn, reason: open legacy turn object in a segment row}
+  - {go_name: TranscriptServedTurn, disposition: catalog, component: TranscriptServedTurn, reason: open legacy turn object in a segment row}
   - {go_name: TranscriptSessionHeader, disposition: catalog, component: TranscriptSessionHeader, reason: bounded served session metadata}
   - {go_name: TranscriptContentHeader, disposition: catalog, component: TranscriptContentHeader, reason: bounded content header envelope}
   - {go_name: TranscriptRetainedState, disposition: catalog, component: TranscriptRetainedState, reason: retained evidence availability}
@@ -38,8 +38,8 @@ types:
   - {go_name: TranscriptRetainedOwnerVisibility, disposition: runtime-only, reason: producer input for header validation identity}
   - {go_name: TranscriptCookTurn, disposition: runtime-only, reason: paired raw and decoded producer input}
   - {go_name: CookedTurn, disposition: runtime-only, reason: producer cooking verdict}
-  - {go_name: TranscriptWindowTurnV2, disposition: runtime-only, reason: producer window resolver input}
-  - {go_name: TranscriptWindowV2Input, disposition: runtime-only, reason: producer window resolver input}
+  - {go_name: PositionedWindowTurn, disposition: runtime-only, reason: producer window resolver input}
+  - {go_name: PositionedWindowInput, disposition: runtime-only, reason: producer window resolver input}
   - {go_name: VillageDeprecatedGroupedContributableResponse, disposition: catalog, component: VillageDeprecatedGroupedContributableResponse, reason: released grouped envelope during deprecated resource route window}
   - {go_name: VillageOrganizationCollective, disposition: catalog, component: VillageOrganizationCollective, reason: existing viewer-permitted organization collective projection}
   - {go_name: VillageOrganizationCollectivesResponse, disposition: catalog, component: VillageOrganizationCollectivesResponse, reason: narrow complete disclosed organization collective set}

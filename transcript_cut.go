@@ -24,7 +24,7 @@ import (
 const TranscriptSegmentBudgetBytes = 1 << 20
 
 // CutVersion names the producer rules for the turn byte measure, segment cut,
-// ResolveTranscriptWindow, ResolveTranscriptWindowV2, cooking, numbering, and
+// ResolveTranscriptWindow, ResolvePositionedWindow, cooking, numbering, and
 // TranscriptSegmentBudgetBytes.
 // Changing served rows, segment boundaries, or display numbers changes this
 // identity and adds a new version's cut and numbering fixture expectations.

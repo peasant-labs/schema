@@ -12,13 +12,13 @@ import (
 // decoded value. The cooking rule uses the exact-name member view, not detail.
 // Construct turns with NewTranscriptCookTurns; the zero value is not a turn.
 type TranscriptCookTurn struct {
-	raw     TranscriptV2Turn
+	raw     TranscriptServedTurn
 	members map[string]json.RawMessage
 	detail  TurnDetail
 }
 
 // Raw returns the preserved turn object for the segment writer.
-func (t TranscriptCookTurn) Raw() TranscriptV2Turn { return t.raw }
+func (t TranscriptCookTurn) Raw() TranscriptServedTurn { return t.raw }
 
 // Detail returns the value decoded from the same turn bytes for a host index.
 func (t TranscriptCookTurn) Detail() TurnDetail { return t.detail }
@@ -57,7 +57,7 @@ func NewTranscriptCookTurns(sessionDetail json.RawMessage) ([]TranscriptCookTurn
 		if err != nil {
 			return nil, fmt.Errorf("%sturn %d is not one JSON object: %w; repair the stored turn before retrying", where, i, err)
 		}
-		turn, err := NewTranscriptV2Turn(rawTurn)
+		turn, err := NewTranscriptServedTurn(rawTurn)
 		if err != nil {
 			return nil, fmt.Errorf("%sturn %d cannot be captured: %w", where, i, err)
 		}

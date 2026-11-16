@@ -199,9 +199,9 @@ type TranscriptHistorySection struct {
 	UsagePresent           TranscriptUsagePresence `json:"usagePresent"`
 }
 
-// TranscriptSegmentRefV2 bounds one segment in the partition's served order.
+// PositionedSegmentRef bounds one segment in the partition's served order.
 // FirstTurn and LastTurn are recorded-index facts and are both present or absent.
-type TranscriptSegmentRefV2 struct {
+type PositionedSegmentRef struct {
 	Index               int                   `json:"index"`
 	SourceFirstPosition int                   `json:"sourceFirstPosition" minimum:"0"`
 	SourceLastPosition  int                   `json:"sourceLastPosition" minimum:"0"`
@@ -211,8 +211,8 @@ type TranscriptSegmentRefV2 struct {
 	ConversationTurns   *ConversationTurnSpan `json:"conversationTurns,omitempty"`
 }
 
-func (r TranscriptSegmentRefV2) Validate() error {
-	const where = "v2 transcript ref validation failed at schema.TranscriptSegmentRefV2.Validate: "
+func (r PositionedSegmentRef) Validate() error {
+	const where = "positioned transcript ref validation failed at schema.PositionedSegmentRef.Validate: "
 	if r.Index < 0 || r.SourceFirstPosition < 0 || r.SourceLastPosition < r.SourceFirstPosition || r.ByteLength < 0 {
 		return fmt.Errorf("%sthe ordinal, served-position range, or byte length is invalid; the segment cannot be located; emit nonnegative ascending bounds and byte length", where)
 	}
@@ -232,11 +232,11 @@ type TranscriptSegmentRow struct {
 	RecordedIndexState TranscriptRecordedIndexState `json:"recordedIndexState"`
 	RecordedIndex      *int                         `json:"recordedIndex,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	DisplayNumber      string                       `json:"displayNumber,omitempty" minLength:"1" pattern:"^[1-9][0-9]*[a-z]*$"`
-	Turn               TranscriptV2Turn             `json:"turn"`
+	Turn               TranscriptServedTurn         `json:"turn"`
 }
 
 func (r TranscriptSegmentRow) Validate() error {
-	const where = "v2 transcript row validation failed at schema.TranscriptSegmentRow.Validate: "
+	const where = "positioned transcript row validation failed at schema.TranscriptSegmentRow.Validate: "
 	if r.Position < 0 || !r.RecordedIndexState.IsValid() ||
 		(r.RecordedIndex != nil) != (r.RecordedIndexState == TranscriptRecordedIndexPresent) {
 		return fmt.Errorf("%sposition or recorded-index state/value is invalid; the row cannot be addressed safely; emit a nonnegative position and pair a present state with its recorded index", where)
@@ -253,20 +253,20 @@ func (r TranscriptSegmentRow) Validate() error {
 	return nil
 }
 
-// TranscriptSegmentDirectoryV2 is one partition's bounded directory page.
-type TranscriptSegmentDirectoryV2 struct {
+// PositionedDirectory is one partition's bounded directory page.
+type PositionedDirectory struct {
 	Context          TranscriptReadContext      `json:"context"`
 	Partition        TranscriptSegmentPartition `json:"partition"`
 	History          []TranscriptHistorySection `json:"history,omitempty"`
 	UsagePresent     TranscriptUsagePresence    `json:"usagePresent"`
-	Segments         []TranscriptSegmentRefV2   `json:"segments" nullable:"false"`
+	Segments         []PositionedSegmentRef     `json:"segments" nullable:"false"`
 	DirectoryPage    *int                       `json:"directoryPage,omitempty"`
 	DirectoryPerPage *int                       `json:"directoryPerPage,omitempty"`
 }
 
 // Validate checks page bounds, contiguous served positions, and conversation spans.
-func (d TranscriptSegmentDirectoryV2) Validate() error {
-	const where = "v2 transcript directory validation failed at schema.TranscriptSegmentDirectoryV2.Validate: "
+func (d PositionedDirectory) Validate() error {
+	const where = "positioned transcript directory validation failed at schema.PositionedDirectory.Validate: "
 	if err := d.Context.Validate(); err != nil {
 		return err
 	}
@@ -314,9 +314,9 @@ func (d TranscriptSegmentDirectoryV2) Validate() error {
 	return validateDirectoryConversationTurns(d.Context.TotalConversationTurns, spans, where)
 }
 
-// TranscriptSegmentV2 is the segment transport unit. Encode it only with
-// MarshalTranscriptSegmentV2 to preserve each turn's served bytes.
-type TranscriptSegmentV2 struct {
+// PositionedSegment is the segment transport unit. Encode it only with
+// MarshalPositionedSegment to preserve each turn's served bytes.
+type PositionedSegment struct {
 	Context        TranscriptReadContext      `json:"context"`
 	Partition      TranscriptSegmentPartition `json:"partition"`
 	Index          int                        `json:"index"`
@@ -328,8 +328,8 @@ type TranscriptSegmentV2 struct {
 }
 
 // Validate checks the segment's own facts and the contiguous served rows.
-func (s TranscriptSegmentV2) Validate() error {
-	const where = "v2 transcript segment validation failed at schema.TranscriptSegmentV2.Validate: "
+func (s PositionedSegment) Validate() error {
+	const where = "positioned transcript segment validation failed at schema.PositionedSegment.Validate: "
 	if err := s.Context.Validate(); err != nil {
 		return err
 	}
@@ -362,8 +362,8 @@ func (s TranscriptSegmentV2) Validate() error {
 	return nil
 }
 
-// TranscriptWindowV2 describes a contiguous segment run without turn content.
-type TranscriptWindowV2 struct {
+// PositionedWindow describes a contiguous segment run without turn content.
+type PositionedWindow struct {
 	Context           TranscriptReadContext      `json:"context"`
 	Partition         TranscriptSegmentPartition `json:"partition"`
 	RequestedAnchor   *int                       `json:"requestedAnchor,omitempty" minimum:"0" nullable:"false"`

@@ -1221,7 +1221,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. V2 serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. */
+        /** @description Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. The positioned protocol serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. */
         get: operations["getTranscriptSegments"];
         put?: never;
         post?: never;
@@ -1255,7 +1255,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. V2 carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. */
+        /** @description Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. */
         get: operations["getTranscriptSegment"];
         put?: never;
         post?: never;
@@ -1306,7 +1306,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. V2 is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared v2 resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the v2 route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. */
+        /** @description Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. The positioned protocol is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared positioned resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the positioned route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. */
         get: operations["getTranscriptWindow"];
         put?: never;
         post?: never;
@@ -1805,6 +1805,10 @@ export interface components {
          * @enum {integer}
          */
         SchemaPageSize: Schema.PageSize;
+        SchemaPositionedDirectory: Schema.PositionedDirectory;
+        SchemaPositionedSegment: Schema.PositionedSegment;
+        SchemaPositionedSegmentRef: Schema.PositionedSegmentRef;
+        SchemaPositionedWindow: Schema.PositionedWindow;
         /**
          * Project Hash
          * @description SHA-256 hex digest of the project's origin URL or local path
@@ -2085,7 +2089,6 @@ export interface components {
         SchemaTranscriptRetainedState: Schema.TranscriptRetainedState;
         SchemaTranscriptSegment: Schema.TranscriptSegment;
         SchemaTranscriptSegmentDirectory: Schema.TranscriptSegmentDirectory;
-        SchemaTranscriptSegmentDirectoryV2: Schema.TranscriptSegmentDirectoryV2;
         SchemaTranscriptSegmentPartition: Schema.TranscriptSegmentPartition;
         /**
          * Transcript Segment Partition Kind
@@ -2096,9 +2099,8 @@ export interface components {
          */
         SchemaTranscriptSegmentPartitionKind: Schema.TranscriptSegmentPartitionKind;
         SchemaTranscriptSegmentRef: Schema.TranscriptSegmentRef;
-        SchemaTranscriptSegmentRefV2: Schema.TranscriptSegmentRefV2;
         SchemaTranscriptSegmentRow: Schema.TranscriptSegmentRow;
-        SchemaTranscriptSegmentV2: Schema.TranscriptSegmentV2;
+        SchemaTranscriptServedTurn: Schema.TranscriptServedTurn;
         SchemaTranscriptSessionHeader: Schema.TranscriptSessionHeader;
         SchemaTranscriptTurn: Schema.TranscriptTurn;
         /**
@@ -2118,9 +2120,7 @@ export interface components {
          * @enum {string}
          */
         SchemaTranscriptUsagePresence: Schema.TranscriptUsagePresence;
-        SchemaTranscriptV2Turn: Schema.TranscriptV2Turn;
         SchemaTranscriptWindow: Schema.TranscriptWindow;
-        SchemaTranscriptWindowV2: Schema.TranscriptWindowV2;
         SchemaTurnContentPart: Schema.TurnContentPart;
         SchemaTurnDetail: Schema.TurnDetail;
         /**
@@ -7017,11 +7017,11 @@ export interface operations {
                 revision?: string;
                 /** @description Omitted selects v1; set to 2 to request the positioned read protocol. */
                 v?: number;
-                /** @description V2 partition: main or history; omitted selects main. */
+                /** @description Positioned partition: main or history; omitted selects main. */
                 partition?: components["schemas"]["SchemaTranscriptSegmentPartitionKind"];
                 /** @description History section index. Required for history and omitted for main. */
                 section?: number;
-                /** @description Optional v2 representation to revalidate; a mismatch requires reload. */
+                /** @description Optional positioned representation to revalidate; a mismatch requires reload. */
                 representation?: string;
             };
             header?: never;
@@ -7043,7 +7043,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptSegmentDirectory"] | components["schemas"]["SchemaTranscriptSegmentDirectoryV2"];
+                    "application/json": components["schemas"]["SchemaTranscriptSegmentDirectory"] | components["schemas"]["SchemaPositionedDirectory"];
                 };
             };
             /** @description Bad Request */
@@ -7220,11 +7220,11 @@ export interface operations {
                 revision?: string;
                 /** @description Omitted selects v1; set to 2 to request the positioned read protocol. */
                 v?: number;
-                /** @description V2 partition: main or history; omitted selects main. */
+                /** @description Positioned partition: main or history; omitted selects main. */
                 partition?: components["schemas"]["SchemaTranscriptSegmentPartitionKind"];
                 /** @description History section index. Required for history and omitted for main. */
                 section?: number;
-                /** @description Optional v2 representation to revalidate; a mismatch requires reload. */
+                /** @description Optional positioned representation to revalidate; a mismatch requires reload. */
                 representation?: string;
             };
             header?: never;
@@ -7248,7 +7248,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptSegment"] | components["schemas"]["SchemaTranscriptSegmentV2"];
+                    "application/json": components["schemas"]["SchemaTranscriptSegment"] | components["schemas"]["SchemaPositionedSegment"];
                 };
             };
             /** @description Bad Request */
@@ -7473,11 +7473,11 @@ export interface operations {
                 revision?: string;
                 /** @description Omitted selects v1; set to 2 to request the positioned read protocol. */
                 v?: number;
-                /** @description V2 partition: main or history; omitted selects main. */
+                /** @description Positioned partition: main or history; omitted selects main. */
                 partition?: components["schemas"]["SchemaTranscriptSegmentPartitionKind"];
                 /** @description History section index. Required for history and omitted for main. */
                 section?: number;
-                /** @description Optional v2 representation to revalidate; a mismatch requires reload. */
+                /** @description Optional positioned representation to revalidate; a mismatch requires reload. */
                 representation?: string;
             };
             header?: never;
@@ -7499,7 +7499,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptWindow"] | components["schemas"]["SchemaTranscriptWindowV2"];
+                    "application/json": components["schemas"]["SchemaTranscriptWindow"] | components["schemas"]["SchemaPositionedWindow"];
                 };
             };
             /** @description Bad Request */

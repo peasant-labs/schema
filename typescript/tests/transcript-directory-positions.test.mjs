@@ -4,7 +4,7 @@ import test from "node:test";
 
 import { parse, parseAllDocuments } from "yaml";
 
-import { isTranscriptDirectoryPositionsValid, isTranscriptDirectoryV2PositionsValid } from "../dist/index.js";
+import { isTranscriptDirectoryPositionsValid, isPositionedDirectoryPositionsValid } from "../dist/index.js";
 import { Classification, loadCorpus } from "../dist/testcase.js";
 
 // isTranscriptDirectoryPositionsValid is the browser mirror of Go's
@@ -46,22 +46,22 @@ const cutManifest = loadRequiredNamesManifest(cutManifestSource, "transcript cut
 const cutCases = cutCorpus?.versions?.c1;
 assert.ok(Array.isArray(cutCases) && cutCases.length > 0, "testdata/transcript_cut.yaml must hold the original c1 cases");
 
-const v2CorpusSource = await readFile(new URL("../../testdata/typescript/transcript_directory_v2_positions.yaml", import.meta.url), "utf8");
-const v2ManifestSource = await readFile(new URL("../../testdata/typescript/transcript_directory_v2_positions_manifest.yaml", import.meta.url), "utf8");
-const v2Corpus = loadBrowserCorpus(v2CorpusSource);
-const v2Manifest = loadRequiredNamesManifest(v2ManifestSource, "browser v2 directory position manifest");
-assertRequiredNames(v2Corpus.cases, v2Manifest, "browser v2 directory position corpus");
+const positionedCorpusSource = await readFile(new URL("../../testdata/typescript/transcript_positioned_directory_positions.yaml", import.meta.url), "utf8");
+const positionedManifestSource = await readFile(new URL("../../testdata/typescript/transcript_positioned_directory_positions_manifest.yaml", import.meta.url), "utf8");
+const positionedCorpus = loadBrowserCorpus(positionedCorpusSource);
+const positionedManifest = loadRequiredNamesManifest(positionedManifestSource, "browser positioned directory position manifest");
+assertRequiredNames(positionedCorpus.cases, positionedManifest, "browser positioned directory position corpus");
 
-const sharedV2Source = await readFile(new URL("../../testdata/transcript_segments_v2.yaml", import.meta.url), "utf8");
-const sharedV2ManifestSource = await readFile(new URL("../../testdata/typescript/transcript_directory_v2_positions_shared_manifest.yaml", import.meta.url), "utf8");
-const sharedV2Manifest = loadRequiredNamesManifest(sharedV2ManifestSource, "shared v2 directory position manifest");
-const sharedV2Cases = parse(sharedV2Source, {uniqueKeys: true})?.directories?.cases;
-assert.ok(Array.isArray(sharedV2Cases), "the v2 corpus must hold directory cases");
-const sharedV2Positions = sharedV2Cases.filter((item) => Object.hasOwn(item.input, "totalConversation"));
-assertRequiredNames(sharedV2Positions, sharedV2Manifest, "shared v2 directory position selection");
+const sharedPositionedSource = await readFile(new URL("../../testdata/transcript_positioned_segments.yaml", import.meta.url), "utf8");
+const sharedPositionedManifestSource = await readFile(new URL("../../testdata/typescript/transcript_positioned_directory_positions_shared_manifest.yaml", import.meta.url), "utf8");
+const sharedPositionedManifest = loadRequiredNamesManifest(sharedPositionedManifestSource, "shared positioned directory position manifest");
+const sharedPositionedCases = parse(sharedPositionedSource, {uniqueKeys: true})?.directories?.cases;
+assert.ok(Array.isArray(sharedPositionedCases), "the positioned corpus must hold directory cases");
+const sharedPositionedPositions = sharedPositionedCases.filter((item) => Object.hasOwn(item.input, "totalConversation"));
+assertRequiredNames(sharedPositionedPositions, sharedPositionedManifest, "shared positioned directory position selection");
 
-test("v2 browser-only positions project context and preserve input", async (t) => {
-  for (const testCase of v2Corpus.cases) {
+test("positioned browser-only positions project context and preserve input", async (t) => {
+  for (const testCase of positionedCorpus.cases) {
     await t.test(testCase.name, () => {
       const decoded = JSON.parse(testCase.input.json);
       const snapshot = structuredClone(decoded);
@@ -69,14 +69,14 @@ test("v2 browser-only positions project context and preserve input", async (t) =
       for (const claim of testCase.input.numbers) {
         assert.equal(Number.isSafeInteger(resolvePointer(decoded, claim.pointer)), claim.safeInteger);
       }
-      assert.equal(isTranscriptDirectoryV2PositionsValid(decoded), testCase.expected);
+      assert.equal(isPositionedDirectoryPositionsValid(decoded), testCase.expected);
       assert.deepEqual(decoded, snapshot);
     });
   }
 });
 
-test("v2 shared position cases match the Go directory validator", async (t) => {
-  for (const testCase of sharedV2Positions) {
+test("positioned shared position cases match the Go directory validator", async (t) => {
+  for (const testCase of sharedPositionedPositions) {
     await t.test(testCase.name, () => {
       // Reconstruct the same position-bearing inputs as the Go directory test.
       // Other required members are irrelevant to this narrow predicate.
@@ -86,7 +86,7 @@ test("v2 shared position cases match the Go directory validator", async (t) => {
         segments[0].conversationTurns = {before: spanBefore, count: spanCount};
       }
       const directory = {context: {totalConversationTurns: totalConversation}, segments};
-      assert.equal(isTranscriptDirectoryV2PositionsValid(directory), testCase.classification === Classification.MustPass);
+      assert.equal(isPositionedDirectoryPositionsValid(directory), testCase.classification === Classification.MustPass);
     });
   }
 });
