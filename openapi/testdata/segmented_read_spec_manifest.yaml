@@ -1,0 +1,4 @@
+requiredNames:
+  - segmented-spec-shipped-protocol
+  - segmented-spec-positioned-protocol
+  - segmented-spec-unknown-version-refused

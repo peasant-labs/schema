@@ -1,0 +1,18 @@
+requiredNames:
+  - represent-baseline
+  - represent-revision-change
+  - represent-cut-version-change
+  - represent-version-change
+  - represent-validation-change
+  - represent-harness-change
+  - represent-model-provider-change
+  - represent-contract-version-change
+  - represent-viewer-class-change
+  - represent-withholding-flip
+  - represent-native-present-change
+  - represent-native-absent-vs-withheld
+  - represent-field-boundary-collision
+  - represent-utf8-length-is-bytes
+  - represent-empty-vs-absent
+  - represent-declaration-order-pinned
+  - represent-viewer-projection-closed-set

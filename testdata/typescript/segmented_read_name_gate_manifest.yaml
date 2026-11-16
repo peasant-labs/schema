@@ -1,0 +1,20 @@
+requiredNames:
+  - name-gate-retired-type
+  - name-gate-retired-zod
+  - name-gate-retired-schema
+  - name-gate-retired-schema-suffix
+  - name-gate-retired-function
+  - name-gate-old-lowercase-identifier
+  - name-gate-old-embedded-identifier
+  - name-gate-old-lowercase-prose
+  - name-gate-old-separated-prose
+  - name-gate-old-trailing-prose
+  - name-gate-hash-not-name
+  - name-gate-unrelated-dependency
+  - name-gate-fixture-key
+  - name-gate-fixture-retired-declaration
+  - name-gate-fixture-positional-identifier
+  - name-gate-fixture-prose-excluded
+  - name-gate-control-file-mutation
+  - name-gate-inventory-entry-excluded
+  - name-gate-positioned-name

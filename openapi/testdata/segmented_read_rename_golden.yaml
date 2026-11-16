@@ -1,0 +1,8 @@
+cases:
+  - name: positioned-protocol-mechanical-rename
+    classification: must-pass
+    provenance: {source: requirement, ref: "The role rename changes only component names and reference targets"}
+    mutation: {description: "Compare the canonical document against the pre-rename capture"}
+    input: {version: "0.2.0"}
+    expected:
+      sha256: fc3e6b19d2581bf7b0223982480e9cafcfbe0e2c4b0e50c5dc7048794f61a72b

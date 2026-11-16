@@ -75,6 +75,19 @@ window reads, equal to the Go constants. Do not add a TypeScript cut, measure or
 window resolver; if a browser ever needs one, that is a contract change with its
 own recorded decision.
 
+**Recorded exception:** `transcript_numbering.go` holds the cooking and
+numbering rule for the same reason as the cut: every server that serves the
+partitioned reads must decide membership and assign the same display number.
+Its JavaScript counterpart is the browser rule that already exists, because a
+whole-document render or Markdown export has no server-numbered row. The
+counterpart is pinned by one shared fixture, is never consulted for a
+server-numbered row, and fails that fixture on divergence. The rule against a
+TypeScript cut, measure, or window resolver above is unchanged.
+
+**Recorded exception:** `transcript_entry_locate.go` holds the exact-member
+scan over served rows. Both servers use the same rule to locate an existing
+relationship entry; copying it per host would make link targets drift.
+
 **Recorded exception:** Kickstart response and view components are closed as well as
 request bodies. Adding a response property is a breaking change to pinned consumers;
 this choice is specific to the kickstart contract and is not a general precedent.
@@ -148,12 +161,27 @@ must not create or push public release tags directly.
 ## Spec versioning: bump, do not mutate
 
 A released spec version is immutable. To change a surface, bump its version stamp
-in `versions.go` (the current versions are stamped there as `VillageAPIVersion`,
-`PeasantLocalAPIVersion`, and `TypesVersion`) and regenerate; do not edit a
-version already released. Retired versions are byte-frozen and guarded by
-`cmd/schema-gen/retired_specs_test.go`, which fails on both an in-place edit and a
-deletion. An intentional stamp bump is exempt from the exported-Go-API advisory
-gate; every other incompatible change is reported.
+in `versions.go` (`VillageAPIVersion`, `PeasantLocalAPIVersion`, `TypesVersion`,
+or `SegmentedReadAPIVersion`) and regenerate; do not edit a version already
+released. `SegmentedReadMinVersion` names the oldest segmented-read protocol the
+module still declares and hosts still serve; it moves only when support ends.
+Record each segmented-read bump as additive or breaking, including a breaking
+change expressed by a pre-1.0 minor bump.
+
+An older version has one of two freeze states:
+
+- **Frozen while served:** it remains generated and declared, but its committed
+  and regenerated JSON and YAML bytes are pinned in
+  `cmd/schema-gen/testdata/frozen_specs.yaml` and checked by
+  `cmd/schema-gen/frozen_specs_test.go`. Changes to shared declarations must not
+  silently change that document.
+- **Retired:** it is no longer generated or served. Move its pins to
+  `cmd/schema-gen/testdata/retired_specs.yaml`, where
+  `cmd/schema-gen/retired_specs_test.go` rejects edits and deletions.
+
+Keep the corresponding required-name manifests in step with an intentional
+state transition. An intentional stamp bump is exempt from the exported-Go-API
+advisory gate; every other incompatible change is reported.
 
 ## Leaf purity
 

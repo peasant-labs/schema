@@ -65,6 +65,17 @@ export function isTranscriptDirectoryPositionsValid(directory: unknown): boolean
   return true;
 }
 
+/** Project a positioned context and refs into the shared conversation-position rule. */
+export function isPositionedDirectoryPositionsValid(directory: unknown): boolean {
+  if (!isRecord(directory)) return false;
+  const context = directory.context;
+  if (!isRecord(context)) return false;
+  return isTranscriptDirectoryPositionsValid({
+    totalConversationTurns: context.totalConversationTurns,
+    segments: directory.segments,
+  });
+}
+
 // before + count can pass Number.MAX_SAFE_INTEGER and round, so compare by an
 // exact difference instead of the sum. Both operands are safe integers, so
 // total - count is exact.

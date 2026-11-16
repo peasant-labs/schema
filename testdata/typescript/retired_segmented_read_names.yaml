@@ -1,0 +1,16 @@
+names:
+  - TranscriptSegmentDirectoryV2
+  - TranscriptSegmentRefV2
+  - TranscriptSegmentV2
+  - TranscriptWindowV2
+  - TranscriptWindowV2Input
+  - TranscriptWindowTurnV2
+  - TranscriptV2Turn
+  - NewTranscriptV2Turn
+  - ErrTranscriptSegmentV2NotEncodable
+  - MarshalTranscriptSegmentV2
+  - ResolveTranscriptWindowV2
+  - ValidateTranscriptWindowV2Coverage
+  - ValidateTranscriptSegmentV2Boundaries
+  - isTranscriptDirectoryV2PositionsValid
+  - readTranscriptV2Turn

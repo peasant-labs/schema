@@ -20,6 +20,7 @@ import { applyThinkingLevelZodRefinements } from "./lib/thinking-level-zod-refin
 import { applyPublicOwnerZodRefinements, applyLegacyPullZodRefinements } from "./lib/public-owner-zod-refinements.mjs";
 import { applyContributionAttemptZodRefinements } from "./lib/contribution-attempt-zod-refinements.mjs";
 import { applyCollectiveZodRefinements } from "./lib/collective-zod-refinements.mjs";
+import { applyWireScalarZodRefinements } from "./lib/wire-scalar-zod-refinements.mjs";
 import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
 import { normalizeAutoPublishTargetZod, applyAutoPublishTargetZodRefinements } from "./lib/auto-publish-target-zod-refinements.mjs";
 import { applySessionTeammateZodRefinements } from "./lib/session-teammate-zod-refinements.mjs";
@@ -42,6 +43,8 @@ const versions = {
   VillageAPIVersion: requiredMatch(versionsSource, /VillageAPIVersion\s*=\s*"([^"]+)"/, "VillageAPIVersion", "versions.go"),
   PeasantLocalAPIVersion: requiredMatch(versionsSource, /PeasantLocalAPIVersion\s*=\s*"([^"]+)"/, "PeasantLocalAPIVersion", "versions.go"),
   TypesVersion: requiredMatch(versionsSource, /TypesVersion\s*=\s*"([^"]+)"/, "TypesVersion", "versions.go"),
+  SegmentedReadAPIVersion: requiredMatch(versionsSource, /SegmentedReadAPIVersion\s*=\s*"([^"]+)"/, "SegmentedReadAPIVersion", "versions.go"),
+  SegmentedReadMinVersion: requiredMatch(versionsSource, /SegmentedReadMinVersion\s*=\s*"([^"]+)"/, "SegmentedReadMinVersion", "versions.go"),
   MetadataSchemaVersion: Number(requiredMatch(metadataSource, /MetadataSchemaVersion\s*=\s*(\d+)/, "MetadataSchemaVersion", "metadata.go")),
 };
 
@@ -89,7 +92,9 @@ async function refineRootZodContract() {
   const generatedSource = await readGeneratorOutput(zodPath, "the root Zod contract");
   const retainedSource = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(generatedSource));
   const attemptSource = applyContributionAttemptZodRefinements(retainedSource);
-  const source = applyCollectiveZodRefinements(attemptSource, spec);
+  const source = applyWireScalarZodRefinements(applyCollectiveZodRefinements(attemptSource, spec), spec, {
+    preserveComponentsReachableFrom: ["PublishRequest", "AuthoritativePublishRequest"],
+  });
   const refined = applySessionTeammateZodRefinements(applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))), sessionTeammateBound);
   const contentPartsRefined = applyContentPartsZodRefinements(refined);
   await writeFile(zodPath, applyUnverifiedPullRequestZodRefinements(applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(contentPartsRefined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username)));
@@ -115,7 +120,7 @@ async function readGeneratorOutput(path, label) {
 }
 
 function renderVersions(values) {
-  return `${header()}export const VillageAPIVersion = ${JSON.stringify(values.VillageAPIVersion)} as const;\nexport const PeasantLocalAPIVersion = ${JSON.stringify(values.PeasantLocalAPIVersion)} as const;\nexport const TypesVersion = ${JSON.stringify(values.TypesVersion)} as const;\nexport const MetadataSchemaVersion = ${values.MetadataSchemaVersion} as const;\n`;
+  return `${header()}export const VillageAPIVersion = ${JSON.stringify(values.VillageAPIVersion)} as const;\nexport const PeasantLocalAPIVersion = ${JSON.stringify(values.PeasantLocalAPIVersion)} as const;\nexport const TypesVersion = ${JSON.stringify(values.TypesVersion)} as const;\nexport const SegmentedReadAPIVersion = ${JSON.stringify(values.SegmentedReadAPIVersion)} as const;\nexport const SegmentedReadMinVersion = ${JSON.stringify(values.SegmentedReadMinVersion)} as const;\nexport const MetadataSchemaVersion = ${values.MetadataSchemaVersion} as const;\n`;
 }
 
 // Derive exact known keys from the same canonical schemas as the public types.

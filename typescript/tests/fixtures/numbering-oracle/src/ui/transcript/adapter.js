@@ -1,0 +1,1141 @@
+// @ts-check
+/* ───────────────────────────────────────────────────────────────────────────
+   adapter — adaptTranscript(): the ONE fairtrade transcript projection
+   ─────────────────────────────────────────────────────────────────────────
+   `adaptTranscript` is the SOLE code that touches the canonical wire and the
+   SOLE legacy-compatibility boundary. It maps a `SessionDetailPayload` (folded turns)
+   ONCE into the cooked `TranscriptViewModel` every dumb component renders. It:
+
+     • parses each tool call's JSON-string `arguments` / `result` exactly once
+       (via the leaf `adapter.parse.js`, the one JSON.parse site) into
+       `toolCallsById`;
+     • normalises BOTH git wire shapes — the canonical flat `gitBranch` /
+       `gitRemote` / `workingDirectory` fields and the retired nested
+       `gitContext` shape — into the optional cooked
+       `session.git`, so NO component ever references a git wire field;
+     • cooks turns (labels, thinking, accents, per-turn annotations), diffs,
+       files, tasks, highlights, and the filter index;
+     • embeds the shared single-session analytics (phases / scorecard bands /
+       pattern annotations / task groups) — accepting a precomputed block or
+       computing it on demand (analytics.js).
+
+   It imports only the leaf parse primitives (`adapter.parse.js`) and the shared
+   analytics util (`analytics.js`); neither imports back, so there is no cycle.
+   Pure-render derivations (previews, diff hunks) live here; genuine analytics
+   live in analytics.js.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+import { parseArgs, parseResult, extractPath, callDiff, diffLines } from './adapter.parse.js'
+import { computeAnalytics, computeTurnLabels, computeTaskGroups } from './analytics.js'
+import { zObservedModelID, zContentProvenance, zSourceEntryRef, zSessionRelationshipNavigation, parseSessionDetailPayloadValue } from '@peasant-labs/schema'
+import { aggregateUsage } from './usage.js'
+import { isKnownTime } from './time.js'
+import { unwrapUserQuery, userQueryLeadLength, USER_QUERY_OPEN_TAG, USER_QUERY_CLOSE_TAG } from './title.js'
+import { EarlierHistoryState, UnknownEarlierHistoryState, parseEarlierHistoryState } from './earlier-history-state.js'
+
+/** @typedef {import('./wire-types.js').TranscriptWireInput} TranscriptWireInput */
+/** @typedef {import('./wire-types.js').SessionDetailPayload} SessionDetailPayload */
+/** @typedef {import('./wire-types.js').TurnDetail} TurnDetail */
+/** @typedef {import('./wire-types.js').ToolCallDetail} ToolCallDetail */
+/** @typedef {import('./wire-types.js').AnnotationSummary} AnnotationSummary */
+/** @typedef {import('./wire-types.js').CommitInfo} CommitInfo */
+/** @typedef {import('./wire-types.js').LegacyCommit} LegacyCommit */
+/** @typedef {import('./wire-types.js').LegacyGitContext} LegacyGitContext */
+/** @typedef {import('./view-model.js').TranscriptViewModel} TranscriptViewModel */
+/** @typedef {import('./view-model.js').TranscriptAnalyticsVM} TranscriptAnalyticsVM */
+/** @typedef {import('./view-model.js').SessionVM} SessionVM */
+/** @typedef {import('./view-model.js').SessionGitVM} SessionGitVM */
+/** @typedef {import('./view-model.js').CommitVM} CommitVM */
+/** @typedef {import('./view-model.js').TurnVM} TurnVM */
+/** @typedef {import('./view-model.js').TaskGroupVM} TaskGroupVM */
+/** @typedef {import('./view-model.js').ToolCallVM} ToolCallVM */
+/** @typedef {import('./view-model.js').ToolGroup} ToolGroup */
+/** @typedef {import('./view-model.js').DiffLineVM} DiffLineVM */
+/** @typedef {import('./view-model.js').DiffHunkVM} DiffHunkVM */
+/** @typedef {import('./view-model.js').DiffEntryVM} DiffEntryVM */
+/** @typedef {import('./view-model.js').FileEntryVM} FileEntryVM */
+/** @typedef {import('./view-model.js').AnnotationVM} AnnotationVM */
+/** @typedef {import('./view-model.js').HighlightVM} HighlightVM */
+/** @typedef {import('./view-model.js').FilterIndexVM} FilterIndexVM */
+/** @typedef {import('./view-model.js').PhaseVM} PhaseVM */
+
+/* ── Small pure string helpers (no wire parsing) ─────────────────────────────── */
+
+/** Collapse whitespace and bound a string for one-line previews. @param {string | undefined} s @param {number} [max] @returns {string} */
+function preview(s, max = 80) {
+  if (!s) return ''
+  const oneLine = s.replace(/\s+/g, ' ').trim()
+  return oneLine.length > max ? oneLine.slice(0, max - 1) + '…' : oneLine
+}
+
+/** Basename of a path. @param {string | undefined} path @returns {string} */
+function basename(path) {
+  if (!path) return ''
+  const noTrail = path.replace(/\/+$/, '')
+  const idx = noTrail.lastIndexOf('/')
+  return idx === -1 ? noTrail : noTrail.slice(idx + 1)
+}
+
+/** Word count for a thinking toggle badge. @param {string} s @returns {number} */
+function wordCount(s) {
+  const m = s.trim().match(/\S+/g)
+  return m ? m.length : 0
+}
+
+/**
+ * The time a standalone thinking entry took. A harness records a thinking entry when the thinking
+ * ends, so it is the gap from the end of the event before it: the previous turn at the same depth,
+ * plus the tools that turn ran, whose results come back after it. The wire records each tool's
+ * duration but not when it started, so the tools' durations are summed: when they ran in parallel
+ * this undercounts the thinking or leaves it out, and never reports more time than it took.
+ * Undefined when either time is unknown or the gap is not positive.
+ * @param {TurnDetail | undefined} previous
+ * @param {TurnDetail} turn
+ * @returns {number | undefined}
+ */
+export function thinkingDurationMs(previous, turn) {
+  if (!previous || !isKnownTime(previous.timestamp) || !isKnownTime(turn.timestamp)) return undefined
+  const tools = (previous.toolCalls ?? []).reduce((sum, call) => {
+    const ms = call?.durationMs
+    return sum + (typeof ms === 'number' && Number.isFinite(ms) && ms > 0 ? ms : 0)
+  }, 0)
+  const ms = Date.parse(turn.timestamp) - (Date.parse(previous.timestamp) + tools)
+  return ms > 0 ? ms : undefined
+}
+
+/** Compact token count, e.g. 1700 → "1.7k". @param {number} n @returns {string} */
+function formatTokens(n) {
+  if (!n || n <= 0) return '0'
+  if (n < 1000) return String(n)
+  const k = n / 1000
+  return (k >= 10 ? Math.round(k) : Math.round(k * 10) / 10) + 'k'
+}
+
+/** Narrow an arbitrary parsed value to a string-keyed record. @param {unknown} v @returns {Record<string, unknown> | undefined} */
+function recordOf(v) {
+  return v !== null && typeof v === 'object' && !Array.isArray(v) ? /** @type {Record<string, unknown>} */ (v) : undefined
+}
+
+/* ── Turn prefilter (noise filter + consecutive dedup) ───────────────────────── */
+
+/** @param {object} value @param {string} key */
+const present = (value, key) => Object.prototype.hasOwnProperty.call(value, key)
+
+/** Evidence presence is independent of author, role, eligibility, or text. @param {TurnDetail} turn */
+function protectedTurn(turn) {
+  return !!turn.sourceEntryRef || present(turn, 'provenance') || !!turn.usage ||
+    !!turn.toolCalls?.some(tool => tool.callEntryRef || tool.resultEntryRef || tool.usage ||
+      present(tool, 'callProvenance') || present(tool, 'resultProvenance'))
+}
+
+/**
+ * The text a user turn shows in place of its recorded content, or undefined when it shows the
+ * content itself. Cursor sends every prompt as <user_query>…</user_query>, sometimes after its own
+ * context tags; that wrapper is the harness's transport, not the developer's words, so a cursor user
+ * turn SHOWS what the wrapper holds (`unwrapUserQuery`). This is display only: the turn's `content`
+ * stays exactly as recorded, so evidence, search, copy and export keep the recorded text. Other
+ * harnesses and other roles show their content unchanged.
+ * @param {import('./wire-types.js').Role} role
+ * @param {string} content
+ * @param {string | undefined} harness
+ * @returns {string | undefined}
+ */
+function displayedPrompt(role, content, harness) {
+  if (harness !== 'cursor' || role !== 'user') return undefined
+  const shown = unwrapUserQuery(content)
+  return shown === content ? undefined : shown
+}
+
+/**
+ * Task groups carrying the shown prompt of the turn that opens each one, where it differs from the
+ * recorded prompt (the trace outline lists it).
+ * @param {TaskGroupVM[]} tasks
+ * @param {TurnVM[]} turnVMs
+ * @returns {TaskGroupVM[]}
+ */
+function withDisplayedPrompts(tasks, turnVMs) {
+  const shownByIndex = new Map(turnVMs.filter((t) => t.displayContent !== undefined).map((t) => [t.index, t.displayContent]))
+  if (shownByIndex.size === 0) return tasks
+  return tasks.map((task) => {
+    const shown = shownByIndex.get(task.turnIndices?.[0])
+    return shown === undefined ? task : { ...task, displayPrompt: shown }
+  })
+}
+
+/** Detect malformed PRESENT evidence too, before any destructive legacy filtering. @param {TurnDetail} turn */
+function hasTurnEvidence(turn) {
+  return (present(turn, 'sourceEntryRef') && turn.sourceEntryRef !== '') || present(turn, 'provenance') || present(turn, 'usage') ||
+    !!turn.toolCalls?.some(tool => (present(tool, 'callEntryRef') && tool.callEntryRef !== '') ||
+      (present(tool, 'resultEntryRef') && tool.resultEntryRef !== '') ||
+      ['callProvenance', 'resultProvenance', 'usage', 'namespace'].some(key => present(tool, key)))
+}
+
+/** Empty optional submission refs have canonical absence semantics. @param {unknown} value */
+function validateProvenanceEvidence(value) {
+  const record = recordOf(value)
+  if (record?.submissionRef === '') {
+    const { submissionRef: _absent, ...withoutEmptyRef } = record
+    zContentProvenance.parse(withoutEmptyRef)
+  } else zContentProvenance.parse(value)
+}
+
+/** The public array helper validates relevant fields using canonical schemas, not a replacement wire model.
+ * Full cross-partition/attachment validation is performed by adaptTranscript before invoking it.
+ * @param {TurnDetail[]} turns
+ */
+function validateTurnEvidence(turns) {
+  turns.forEach((turn, position) => {
+    try {
+      if (present(turn, 'sourceEntryRef') && turn.sourceEntryRef !== '') zSourceEntryRef.parse(turn.sourceEntryRef)
+      if (present(turn, 'provenance')) validateProvenanceEvidence(turn.provenance)
+      for (const tool of turn.toolCalls ?? []) {
+        if (present(tool, 'callEntryRef') && tool.callEntryRef !== '') zSourceEntryRef.parse(tool.callEntryRef)
+        if (present(tool, 'resultEntryRef') && tool.resultEntryRef !== '') zSourceEntryRef.parse(tool.resultEntryRef)
+        if (present(tool, 'callProvenance')) validateProvenanceEvidence(tool.callProvenance)
+        if (present(tool, 'resultProvenance')) validateProvenanceEvidence(tool.resultProvenance)
+      }
+    } catch (cause) {
+      throw Object.assign(new TypeError(`Fairtrade prefilterTurns refused turn at position ${position} during evidence validation: a source reference or provenance field is malformed. No turns were filtered. Correct the producer using the canonical schema and retry.`), { cause })
+    }
+  })
+}
+
+/**
+ * A turn whose timestamp is unknown (missing, zero, epoch or Go zero-time) carries none at all,
+ * so no relative time, date or duration is ever derived from it. Fails closed: the turn is kept,
+ * its time is dropped.
+ * @param {TurnDetail} turn
+ * @returns {TurnDetail}
+ */
+function withKnownTime(turn) {
+  if (turn.timestamp === undefined || turn.timestamp === null || isKnownTime(turn.timestamp)) return turn
+  const { timestamp: _unknown, ...rest } = turn
+  return /** @type {TurnDetail} */ (rest)
+}
+
+/**
+ * A turn carrying an ordered image block is content of its own, even when its text is empty:
+ * an image-only prompt keeps its carrier turn (the producer retains it) instead of being
+ * dropped as a legacy empty banner.
+ * @param {TurnDetail} turn
+ */
+function hasImageBlock(turn) {
+  return (turn.contentParts ?? []).some((part) => part?.type === 'image' && !!part.image)
+}
+
+/**
+ * The producer's ordered content parts, copied into the cooked shape. Only the two kinds this
+ * contract renders survive; an unknown future part kind is dropped rather than guessed at, and
+ * the text fallback (`content`) still carries the words for anything the producer folded there.
+ * @param {TurnDetail} turn
+ * @returns {import('./view-model.js').ContentPartVM[] | undefined}
+ */
+function contentPartsOf(turn) {
+  const parts = Array.isArray(turn.contentParts) ? turn.contentParts : []
+  /** @type {import('./view-model.js').ContentPartVM[]} */
+  const cooked = []
+  for (const part of parts) {
+    if (part?.type === 'text' && typeof part.text === 'string') cooked.push({ type: 'text', text: part.text })
+    else if (part?.type === 'image' && part.image) cooked.push({ type: 'image', image: part.image })
+  }
+  return cooked.length > 0 ? cooked : undefined
+}
+
+/**
+ * Strip a harness's `<user_query>` wrapper from an ORDERED part list without flattening it.
+ *
+ * `unwrapUserQuery` normalizes a whole prompt string, but a turn whose text and images are
+ * separate blocks must keep its blocks in source order: replacing every text block with the
+ * normalized prompt would move an image relative to the words around it. Instead the same
+ * wrapper tokens are removed from the blocks they sit in — the leading wrapper from the first
+ * text block, the closing tag (and the prelude it implies) from the block that holds it — so a
+ * cursor prompt's displayed words are the user's, in the order they were recorded.
+ *
+ * @param {import('./view-model.js').ContentPartVM[]} [parts]
+ * @returns {import('./view-model.js').ContentPartVM[] | undefined}
+ */
+function stripUserQueryParts(parts) {
+  if (!parts) return parts
+  let opened = false
+  let closed = false
+  let changed = false
+  const stripped = parts.map((part) => {
+    if (part.type !== 'text' || closed) return part
+    let text = part.text
+    if (!opened) {
+      const lead = userQueryLeadLength(text)
+      if (lead === 0) return part
+      text = text.slice(lead)
+      opened = true
+    }
+    const end = text.indexOf(USER_QUERY_CLOSE_TAG)
+    if (end !== -1) {
+      const after = text.slice(end + USER_QUERY_CLOSE_TAG.length)
+      const rest = after.trim()
+      text = text.slice(0, end) + (rest !== '' && !rest.startsWith(USER_QUERY_OPEN_TAG) ? after : '')
+      closed = true
+    }
+    if (text === part.text) return part
+    changed = true
+    return { ...part, text }
+  })
+  return changed ? stripped : parts
+}
+
+/**
+ * Default turn prefilter the adapter applies independently per partition:
+ * preserve normalized evidence, including unknown provenance and folded refs.
+ * Only truly legacy rows lose empty/short banners or collapse equal adjacent
+ * content, preferring the tool-bearing copy. Pure, order-preserving. Exported
+ * so a host that pre-scopes turns can run the SAME filter.
+ * @param {TurnDetail[]} turns
+ * @returns {TurnDetail[]}
+ */
+export function prefilterTurns(turns) {
+  validateTurnEvidence(turns)
+  const filtered = turns.filter((t) => {
+    if (protectedTurn(t)) return true
+    // A producer-classified control record is a record the server chose to serve.
+    // The short-banner heuristic is for unlabelled legacy rows only; a control
+    // record with a short value is not a stray banner.
+    if (t.controlKind) return true
+    // An image is content: an image-only prompt has empty text but is not a banner.
+    if (hasImageBlock(t)) return true
+    const hasContent = !!t.content?.trim()
+    const hasTools = (t.toolCalls?.length ?? 0) > 0
+    if (!hasContent && !hasTools) return false
+    if (t.role === 'system' && !hasTools && (!t.content || t.content.trim().length < 8)) return false
+    return true
+  })
+  /** @type {TurnDetail[]} */
+  const deduped = []
+  for (const curr of filtered) {
+    const prev = deduped[deduped.length - 1]
+    if (prev && !protectedTurn(prev) && !protectedTurn(curr) && !hasImageBlock(prev) && !hasImageBlock(curr) && prev.role === curr.role && prev.content === curr.content && prev.content.trim() !== '') {
+      const prevHasTools = (prev.toolCalls?.length ?? 0) > 0
+      const currHasTools = (curr.toolCalls?.length ?? 0) > 0
+      if (currHasTools && !prevHasTools) deduped[deduped.length - 1] = curr
+      continue
+    }
+    deduped.push(curr)
+  }
+  return deduped
+}
+
+/* ── Sticky model resolution (complete wire, before projection/filtering) ────── */
+
+/**
+ * A canonical observation is exact source evidence: accepted bytes are preserved,
+ * while empty/edge-whitespace values and observations on non-assistant output are
+ * ignored defensively. Producer validation remains the primary enforcement seam.
+ * @param {TurnDetail} turn
+ * @returns {string | undefined}
+ */
+function validObservedModel(turn) {
+  if (turn.role !== 'assistant') return undefined
+  const parsed = zObservedModelID.safeParse(turn.observedModel)
+  return parsed.success ? parsed.data : undefined
+}
+
+/**
+ * Resolve effective sticky model state over the COMPLETE canonical turn order.
+ * Root assistant observations update root state. Inline subagent observations
+ * attribute their own turn only and never carry into the root session.
+ * @param {TurnDetail[]} turns
+ * @param {string | undefined} seed
+ * @returns {Map<number, { effectiveModel?: string, modelChangedFrom?: string }>}
+ */
+function resolveStickyModels(turns, seed) {
+  /** @type {Map<number, { effectiveModel?: string, modelChangedFrom?: string }>} */
+  const resolved = new Map()
+  let activeRoot = typeof seed === 'string' && seed.length > 0 ? seed : undefined
+
+  for (const turn of turns) {
+    const depth = turn.depth ?? 0
+    const observed = validObservedModel(turn)
+    if (turn.role !== 'assistant') {
+      resolved.set(turn.index, {})
+      continue
+    }
+    if (depth > 0) {
+      resolved.set(turn.index, observed === undefined ? {} : { effectiveModel: observed })
+      continue
+    }
+
+    const before = activeRoot
+    if (observed !== undefined) activeRoot = observed
+    /** @type {{ effectiveModel?: string, modelChangedFrom?: string }} */
+    const model = activeRoot === undefined ? {} : { effectiveModel: activeRoot }
+    if (observed !== undefined && before !== undefined && observed !== before) model.modelChangedFrom = before
+    resolved.set(turn.index, model)
+  }
+  return resolved
+}
+
+/**
+ * @typedef {object} AdaptTranscriptOptions
+ * @property {readonly number[]} [visibleTurnIndices] post-resolution projection by canonical turn index
+ * @property {import('@peasant-labs/schema').SessionRelationshipNavigation[]} [relationshipNavigation] separately authorized read metadata; never durable content
+ * @property {'local' | 'published'} [payloadMode] published requires a detail already validated by schema's published envelope parser; defaults to local
+ */
+
+/* ── Tool-call cooking ───────────────────────────────────────────────────────── */
+
+/**
+ * Classify a tool call into its ACP-aligned `ToolCallKind`, preferring the wire
+ * `toolKind` and falling back to name heuristics.
+ * @param {ToolCallDetail} call
+ * @returns {import('./wire-types.js').ToolCallKind}
+ */
+function classifyKind(call) {
+  if (call.toolKind) return call.toolKind
+  const n = call.name.toLowerCase()
+  if (n === 'read' || n === 'notebookread') return 'read'
+  if (n === 'edit' || n === 'multiedit' || n === 'notebookedit' || n === 'write') return 'edit'
+  if (n === 'bash' || n === 'runcommand' || n === 'run_command' || n === 'shell') return 'execute'
+  if (n === 'grep' || n === 'glob' || n === 'globsearch' || n === 'websearch' || n === 'web_search') return 'search'
+  if (n === 'webfetch' || n === 'web_fetch' || n === 'fetch' || n === 'readwebsite') return 'fetch'
+  if (n === 'delete' || n === 'remove') return 'delete'
+  if (n === 'move' || n === 'rename') return 'move'
+  return 'other'
+}
+
+/**
+ * Classify a tool call into its filters-rail `ToolGroup`.
+ * @param {ToolCallDetail} call
+ * @returns {ToolGroup}
+ */
+function groupFor(call) {
+  const n = call.name.toLowerCase()
+  if (n === 'read' || n === 'notebookread') return 'read'
+  if (n === 'edit' || n === 'multiedit' || n === 'notebookedit' || n === 'write') return 'edits'
+  if (n === 'bash' || n === 'runcommand' || n === 'run_command' || n === 'shell') return 'bash'
+  if (n === 'grep' || n === 'glob' || n === 'globsearch' || n === 'websearch' || n === 'web_search') return 'search'
+  if (n === 'webfetch' || n === 'web_fetch' || n === 'fetch' || n === 'readwebsite') return 'fetch'
+  if (n === 'task' || n === 'taskcreate' || n === 'taskupdate' || n === 'task_create' || n === 'task_update' || n === 'todowrite' || n === 'agent') return 'tasks'
+  switch (call.toolKind) {
+    case 'read': return 'read'
+    case 'edit': return 'edits'
+    case 'execute': return 'bash'
+    case 'search': return 'search'
+    case 'fetch': return 'fetch'
+    default: return 'other'
+  }
+}
+
+/**
+ * One-line collapsed summary of a tool call's arguments — the shortest
+ * meaningful field, by precedence.
+ * @param {ToolCallDetail} call
+ * @returns {string}
+ */
+function makePreview(call) {
+  const a = recordOf(parseArgs(call.arguments))
+  // file-oriented tools → the located path. The wire carries the full path, so the head shows it
+  // (the canonical reference shows the located file, not just its leaf — the leaf alone loses the dir).
+  const filePath = call.filePath ?? (a && typeof a.file_path === 'string' ? a.file_path : undefined)
+  if (filePath) return filePath
+  if (!a) return preview(call.arguments, 80)
+  if (typeof a.command === 'string') return preview(a.command, 100)
+  // search / grep → "pattern, scope, N matches": scope is in the wire args, the count comes off the
+  // wire result. All three are real wire signals a consumer wants surfaced (not just the bare pattern).
+  if (typeof a.pattern === 'string') {
+    const scope = typeof a.path === 'string' ? a.path : typeof a.glob === 'string' ? a.glob : undefined
+    const out = parseResult(call.result)
+    const n = Array.isArray(out)
+      ? out.length
+      : typeof out === 'string' && out.trim() !== ''
+        ? out.split('\n').filter((l) => l.trim() !== '').length
+        : undefined
+    return [a.pattern, scope, n != null ? `${n} ${n === 1 ? 'match' : 'matches'}` : undefined]
+      .filter(Boolean)
+      .join(', ')
+  }
+  if (typeof a.url === 'string') return a.url
+  if (typeof a.query === 'string') return preview(a.query, 100)
+  // task / subagent → "agent, description" (both are wire args)
+  const agent =
+    typeof a.subagent_type === 'string' ? a.subagent_type
+      : typeof a.subagent === 'string' ? a.subagent
+        : typeof a.agent === 'string' ? a.agent : undefined
+  if (agent && typeof a.description === 'string') return `${agent}, ${a.description}`
+  if (typeof a.description === 'string') return preview(a.description, 100)
+  if (typeof a.subject === 'string') return preview(a.subject, 100)
+  if (typeof a.prompt === 'string') return preview(a.prompt, 100)
+  return preview(call.arguments, 80)
+}
+
+export { diffLines }
+
+/**
+ * Compute the cooked diff hunks + churn for an edit-family / write tool call, or
+ * undefined for any other kind. The churn is the hunks' own + and − lines (see `callDiff`), so the
+ * header always agrees with the diff it heads.
+ * @param {ToolCallDetail} call
+ * @returns {{ hunks: DiffHunkVM[], adds: number, dels: number } | undefined}
+ */
+function buildDiffHunks(call) {
+  const diff = callDiff(call)
+  if (!diff) return undefined
+  return { hunks: diff.spans.map((lines) => ({ lines })), adds: diff.adds, dels: diff.dels }
+}
+
+/**
+ * Cook a wire tool call into a fully render-ready `ToolCallVM`: parsed args /
+ * output (once), preview, kind / group classification, and (for edits / writes)
+ * diff hunks + churn.
+ * @param {ToolCallDetail} call
+ * @returns {ToolCallVM}
+ */
+function buildToolCallVM(call) {
+  /** @type {ToolCallVM} */
+  const vm = { id: call.id, name: call.name, kind: classifyKind(call), group: groupFor(call), preview: makePreview(call) }
+  if (call.namespace !== undefined) vm.namespace = call.namespace
+  const args = parseArgs(call.arguments)
+  if (args !== undefined) vm.args = args
+  const parsedOutput = parseResult(call.result)
+  const output = parsedOutput === undefined && call.result !== '' ? call.result : parsedOutput
+  if (output !== undefined) vm.output = output
+  const filePath = extractPath(call)
+  if (filePath) vm.filePath = filePath
+  if (call.durationMs != null) vm.durationMs = call.durationMs
+  if (call.exitCode != null) vm.exitCode = call.exitCode
+  if (call.isError) vm.isError = true
+  if (call.usage) vm.usage = call.usage
+  if (call.callEntryRef) vm.callEntryRef = call.callEntryRef
+  if (call.resultEntryRef) vm.resultEntryRef = call.resultEntryRef
+  if (call.callProvenance) vm.callProvenance = call.callProvenance
+  if (call.resultProvenance) vm.resultProvenance = call.resultProvenance
+  if (call.callEntryRef && !call.resultEntryRef) vm.pending = true
+  const diff = buildDiffHunks(call)
+  if (diff) {
+    vm.diff = diff.hunks
+    vm.adds = diff.adds
+    vm.dels = diff.dels
+  }
+  return vm
+}
+
+/* ── Git normalisation (the single legacy-compatibility point) ──────────────── */
+
+/** @param {CommitInfo | LegacyCommit} c @returns {CommitVM} */
+function cookCommit(c) {
+  const hash = c.hash
+  const firstLine = c.message.split('\n')[0]
+  /** @type {CommitVM} */
+  const vm = { hash, shortHash: hash.slice(0, 7), message: firstLine }
+  if ('authorName' in c) vm.author = c.authorName
+  // CommitInfo.commitTime is the schema's wire int64 (bigint); Date.parse
+  // returns a plain number. Normalize to number here — vm.commitTime is
+  // matched against Date.parse-derived turn timestamps below, and commit
+  // times never approach Number.MAX_SAFE_INTEGER.
+  const commitTime = 'commitTime' in c ? Number(c.commitTime) : Date.parse(c.timestamp)
+  if (Number.isFinite(commitTime)) vm.commitTime = commitTime
+  if ('session' in c && c.session === true) vm.session = true
+  // Per-commit churn is available only on the retired nested shape. The
+  // canonical CommitInfo still contributes identity, author, and timestamps.
+  if ('insertions' in c) vm.adds = c.insertions
+  if ('deletions' in c) vm.dels = c.deletions
+  if ('filesChanged' in c) vm.files = c.filesChanged
+  return vm
+}
+
+/**
+ * Join each cooked commit to the turn it attaches to, by matching its `commitTime` to the
+ * nearest turn at/before that time (a commit follows the turn that produced it). Client-side:
+ * the anchor is NOT on the wire, so it is derived once here off the cooked turn timestamps,
+ * keeping the CheckpointMarker dumb. Turns without a parseable timestamp are skipped; a commit
+ * that matches nothing stays unanchored and the viewer clusters it at the stream end.
+ * @param {CommitVM[]} commits
+ * @param {TurnVM[]} turnVMs
+ */
+function anchorCommitsToTurns(commits, turnVMs) {
+  const stamped = turnVMs
+    .map((t) => ({ index: t.index, ms: t.timestamp ? Date.parse(t.timestamp) : NaN }))
+    .filter((x) => Number.isFinite(x.ms))
+    .sort((a, b) => a.ms - b.ms)
+  if (stamped.length === 0) return
+  for (const c of commits) {
+    if (typeof c.commitTime !== 'number') continue
+    let anchor = stamped[0].index
+    for (const s of stamped) {
+      if (s.ms <= c.commitTime) anchor = s.index
+      else break
+    }
+    c.turn = anchor
+  }
+}
+
+/**
+ * Normalise whichever git wire shape is present into the optional cooked
+ * `session.git`, summing per-commit churn from the retired nested shape. Returns
+ * undefined when no git signal exists at all (the chips degrade cleanly).
+ * @param {TranscriptWireInput} payload
+ * @returns {SessionGitVM | undefined}
+ */
+function cookGit(payload) {
+  const gc = payload.gitContext
+  const branch = payload.gitBranch ?? gc?.branch ?? undefined
+  const remote = payload.gitRemote ?? gc?.remote ?? undefined
+  const author = gc?.user
+  const rawCommits = Array.isArray(gc?.commits) ? gc.commits : []
+
+  /** @type {CommitVM[]} */
+  const commits = []
+  let filesChanged = 0
+  let insertions = 0
+  let deletions = 0
+  for (const raw of rawCommits) {
+    commits.push(cookCommit(raw))
+    if ('filesChanged' in raw) filesChanged += raw.filesChanged
+    if ('insertions' in raw) insertions += raw.insertions
+    if ('deletions' in raw) deletions += raw.deletions
+  }
+
+  /** @type {SessionGitVM} */
+  const git = {}
+  if (branch) git.branch = branch
+  if (remote) git.remote = remote
+  if (author) git.author = author
+  if (commits.length) git.commits = commits
+  if (filesChanged > 0) git.filesChanged = filesChanged
+  if (insertions > 0) git.insertions = insertions
+  if (deletions > 0) git.deletions = deletions
+  return Object.keys(git).length > 0 ? git : undefined
+}
+
+/**
+ * Cook the session header / meta / outcome / scorecard, plus optional git.
+ * @param {TranscriptWireInput} payload
+ * @param {SessionGitVM | undefined} git
+ * @returns {SessionVM}
+ */
+function cookSession(payload, git) {
+  /** @type {SessionVM} */
+  const session = {
+    id: payload.id,
+    harness: payload.harness,
+    // an unknown session time (zero, epoch, Go zero-time) is empty, never a date
+    startTime: isKnownTime(payload.startTime) ? payload.startTime : '',
+    endTime: isKnownTime(payload.endTime) ? payload.endTime : '',
+    durationMins: payload.durationMins,
+    totalTokens: payload.totalTokens,
+    tokensIn: payload.tokensIn,
+    tokensOut: payload.tokensOut,
+    turnCount: payload.turnCount,
+    toolCallCount: payload.toolCallCount,
+  }
+  if (payload.project) session.project = payload.project
+  if (payload.model) session.model = payload.model
+  if (payload.conversationTurnCount !== undefined) session.conversationTurnCount = payload.conversationTurnCount
+  if (payload.inputSubmissionCount !== undefined) session.inputSubmissionCount = payload.inputSubmissionCount
+  if (payload.purpose) session.purpose = payload.purpose
+  if (payload.rootSessionId) session.rootSessionId = payload.rootSessionId
+  if (hasNormalizedEvidence(payload)) session.hasNormalizedEvidence = true
+  const workingDirectory = payload.workingDirectory ?? payload.gitContext?.workingDirectory
+  if (workingDirectory) session.workingDirectory = workingDirectory
+  if (payload.outcome) session.outcome = payload.outcome
+  if (payload.scorecard !== undefined) session.scorecard = payload.scorecard
+  if (git) session.git = git
+  return session
+}
+
+/* ── Annotations (pattern + fetched entry labels), keyed by wire turn index ──── */
+
+/**
+ * Map separately-fetched entry annotations onto cooked `AnnotationVM`s keyed by
+ * the targeted wire entry index.
+ * @param {AnnotationSummary[]} annotations
+ * @returns {AnnotationVM[]}
+ */
+function mapEntryAnnotations(annotations) {
+  /** @type {AnnotationVM[]} */
+  const out = []
+  for (const a of annotations) {
+    if (a.targetEntryIndex == null) continue
+    /** @type {AnnotationVM} */
+    const vm = { id: a.id, kind: a.typeName, turn: a.targetEntryIndex, label: a.value || a.typeName }
+    if (a.isPrimary) vm.isPrimary = true
+    out.push(vm)
+  }
+  return out
+}
+
+/**
+ * Index annotations (auto-detected patterns + fetched entry labels) by wire turn
+ * index for O(1) per-turn lookup.
+ * @param {AnnotationVM[]} patternAnns
+ * @param {AnnotationVM[]} entryAnns
+ * @returns {Record<number, AnnotationVM[]>}
+ */
+function indexAnnotations(patternAnns, entryAnns) {
+  /** @type {Record<number, AnnotationVM[]>} */
+  const byTurn = {}
+  for (const a of patternAnns) {
+    const list = byTurn[a.turn] ?? []
+    list.push(a)
+    byTurn[a.turn] = list
+  }
+  for (const a of entryAnns) {
+    const list = byTurn[a.turn] ?? []
+    list.push(a)
+    byTurn[a.turn] = list
+  }
+  return byTurn
+}
+
+/* ── Diffs, files, highlights, filter index (from cooked turns) ──────────────── */
+
+/** @param {TurnVM[]} turnVMs @returns {DiffEntryVM[]} */
+function buildDiffs(turnVMs) {
+  /** @type {DiffEntryVM[]} */
+  const out = []
+  for (const turn of turnVMs) {
+    for (const tc of turn.toolCalls) {
+      if (!tc.diff) continue
+      const path = tc.filePath ?? '(unknown)'
+      /** @type {DiffEntryVM} */
+      const entry = { path, leaf: basename(path) || path, adds: tc.adds ?? 0, dels: tc.dels ?? 0, hunks: tc.diff, turn: turn.index, toolCallId: tc.id }
+      out.push(entry)
+    }
+  }
+  return out
+}
+
+/** @param {TurnVM[]} turnVMs @returns {FileEntryVM[]} */
+/**
+ * Aggregate the per-file read/edit/write counts and churn from cooked turns. Shared
+ * by the whole-transcript view model and a segmented viewer's loaded regions, so the
+ * Files tab has one derivation.
+ * @param {TurnVM[]} turnVMs
+ * @returns {FileEntryVM[]}
+ */
+export function buildFiles(turnVMs) {
+  /** @type {Map<string, FileEntryVM>} */
+  const map = new Map()
+  for (const turn of turnVMs) {
+    for (const tc of turn.toolCalls ?? []) {
+      const path = tc.filePath
+      if (!path) continue
+      let e = map.get(path)
+      if (!e) {
+        e = { path, leaf: basename(path) || path, reads: 0, writes: 0, edits: 0, deletes: 0, adds: 0, dels: 0, edited: false, turn: turn.index }
+        map.set(path, e)
+      }
+      const n = tc.name.toLowerCase()
+      if (n === 'read' || n === 'notebookread') e.reads++
+      else if (n === 'edit' || n === 'multiedit' || n === 'notebookedit') {
+        e.edits++
+        e.adds += tc.adds ?? 0
+        e.dels += tc.dels ?? 0
+      } else if (n === 'write') {
+        e.writes++
+        e.adds += tc.adds ?? 0
+      } else if (n === 'delete' || n === 'remove') e.deletes++
+    }
+  }
+  const files = Array.from(map.values())
+  for (const e of files) e.edited = e.writes + e.edits > 0
+  return files
+}
+
+/**
+ * Curated key-moment highlights backing the HIGHLIGHTS tab: initial request,
+ * phase transitions, up to three errors, commit checkpoints, and the final
+ * response. Every `turn` is a wire index so the tab can jump into the trace.
+ * @param {TurnVM[]} turnVMs
+ * @param {PhaseVM[]} phases
+ * @param {SessionGitVM | undefined} git
+ * @returns {HighlightVM[]}
+ */
+function buildHighlights(turnVMs, phases, git) {
+  /** @type {HighlightVM[]} */
+  const out = []
+
+  const firstUser = turnVMs.find((t) => t.role === 'user' && t.content.trim() !== '')
+  if (firstUser) {
+    out.push({ id: 'hl-request', kind: 'request', turn: firstUser.index, icon: 'request', title: 'initial request', sub: preview(firstUser.displayContent ?? firstUser.content, 160) })
+  }
+
+  phases.slice(1).forEach((p, i) => {
+    const t = turnVMs.find((x) => x.index === p.from)
+    /** @type {HighlightVM} */
+    const h = { id: `hl-phase-${i}`, kind: 'phase', turn: p.from, icon: 'phase', title: `${p.label} begins`, tag: p.label }
+    const sub = preview(t ? (t.displayContent ?? t.content) : '', 200)
+    if (sub) h.sub = sub
+    out.push(h)
+  })
+
+  let errCount = 0
+  for (const t of turnVMs) {
+    if (errCount >= 3) break
+    const errCall = t.toolCalls.find((c) => c.isError)
+    if (!t.isError && !errCall) continue
+    /** @type {HighlightVM} */
+    const h = { id: `hl-error-${t.index}`, kind: 'error', turn: t.index, icon: 'error', title: errCall ? `${errCall.name} failed` : 'Error', err: true }
+    const body = errCall && typeof errCall.output === 'string' ? errCall.output : t.content
+    const sub = preview(body, 200)
+    if (sub) h.sub = sub
+    out.push(h)
+    errCount++
+  }
+
+  const lastTurn = turnVMs[turnVMs.length - 1]
+  const anchor = lastTurn ? lastTurn.index : 0
+  for (const c of git?.commits ?? []) {
+    out.push({ id: `hl-commit-${c.hash}`, kind: 'checkpoint', turn: anchor, icon: 'commit', title: c.shortHash || c.hash || 'checkpoint', sub: c.message })
+  }
+
+  const lastAssistant = [...turnVMs].reverse().find((t) => t.role === 'assistant' && t.depth === 0 && t.content.trim() !== '')
+  if (lastAssistant) {
+    /** @type {HighlightVM} */
+    const h = { id: 'hl-final', kind: 'final', turn: lastAssistant.index, icon: 'final', title: 'final response', sub: preview(lastAssistant.content, 200) }
+    if (lastAssistant.tokens) h.tokens = formatTokens(lastAssistant.tokens.in + lastAssistant.tokens.out)
+    out.push(h)
+  }
+
+  return out
+}
+
+/** Map a pattern/tag annotation kind onto its filters-rail tag id. @param {string} kind @returns {string | undefined} */
+function tagForKind(kind) {
+  if (kind === 'error') return 'errors'
+  if (kind === 'retry') return 'retries'
+  if (kind === 'revert') return 're-edit'
+  if (kind === 'subagent') return 'subagent'
+  return undefined
+}
+
+/**
+ * Tool-group counts for a set of cooked turns. Shared by the full filter index and a
+ * segmented viewer's loaded regions.
+ * @param {TurnVM[]} turnVMs
+ * @returns {Record<ToolGroup, number>}
+ */
+export function buildToolGroupCounts(turnVMs) {
+  /** @type {Record<ToolGroup, number>} */
+  const toolGroupCounts = { edits: 0, bash: 0, read: 0, search: 0, fetch: 0, tasks: 0, other: 0 }
+  for (const turn of turnVMs) for (const tc of turn.toolCalls ?? []) toolGroupCounts[tc.group]++
+  return toolGroupCounts
+}
+
+/**
+ * @param {TurnVM[]} turnVMs
+ * @param {Record<number, AnnotationVM[]>} annotationsByTurn
+ * @returns {FilterIndexVM}
+ */
+function buildFilterIndex(turnVMs, annotationsByTurn) {
+  const toolGroupCounts = buildToolGroupCounts(turnVMs)
+
+  /** @type {Record<string, number>} */
+  const tagCounts = {}
+  for (const key of Object.keys(annotationsByTurn)) {
+    const anns = annotationsByTurn[/** @type {number} */ (/** @type {unknown} */ (key))] ?? []
+    /** @type {Set<string>} */
+    const tagsHere = new Set()
+    for (const a of anns) {
+      const tag = tagForKind(a.kind)
+      if (tag) tagsHere.add(tag)
+    }
+    for (const tag of tagsHere) tagCounts[tag] = (tagCounts[tag] ?? 0) + 1
+  }
+
+  return { toolGroupCounts, annotationsByTurn, tags: Object.keys(tagCounts), tagCounts, totalTurns: turnVMs.length }
+}
+
+/* ── The adapter ─────────────────────────────────────────────────────────────── */
+
+/**
+ * Project the canonical wire payload (folded turns) into the cooked
+ * `TranscriptViewModel` every dumb transcript component renders. The SOLE
+ * wire-parse + legacy-git normalisation site.
+ *
+ * @param {TranscriptWireInput} payload          canonical wire plus legacy git compatibility
+ * @param {AnnotationSummary[]} [annotations]     separately-fetched entry annotations
+ * @param {TranscriptAnalyticsVM} [analytics]     precomputed analytics; else derived on demand
+ * @param {AdaptTranscriptOptions} [options]      payload mode, authorized navigation, and visible-turn projection
+ * @returns {TranscriptViewModel}
+ */
+export function adaptTranscript(payload, annotations, analytics, options) {
+  const payloadMode = options?.payloadMode ?? 'local'
+  if (payloadMode !== 'local' && payloadMode !== 'published') {
+    throw new TypeError('Fairtrade adaptTranscript refused payloadMode: select local or published; use published only after validating the envelope with parseTranscriptContentText.')
+  }
+  const hasEvidence = hasNormalizedEvidence(payload)
+  // A future string state is preserved, while canonical validation still checks
+  // every other field and every cross-partition evidence invariant.
+  const originalHistory = payload.earlierHistory
+  const historyStates = Array.isArray(originalHistory) ? originalHistory.map(section => parseEarlierHistoryState(section?.state)) : []
+  // Validate the ORIGINAL complete durable value, including all earlier sections,
+  // before filtering. Never project away an invalid duplicate owner or attachment.
+  if (hasEvidence && payloadMode === 'local') {
+    try {
+      // Cook the canonical normalized value, not the original evidence object.
+      // Only the explicitly supported legacy git extension stays outside schema.
+      const validationPayload = Array.isArray(originalHistory) ? {
+        ...payload,
+        earlierHistory: originalHistory.map((section, index) => section && historyStates[index] instanceof UnknownEarlierHistoryState && typeof section.state === 'string' && section.state.length > 0
+          ? { ...section, state: EarlierHistoryState.Migrated.wire } : section),
+      } : payload
+      payload = {
+        ...parseSessionDetailPayloadValue(validationPayload),
+        ...(payload.gitContext === undefined ? {} : { gitContext: payload.gitContext }),
+      }
+    } catch (cause) {
+      throw Object.assign(new TypeError(`Fairtrade adaptTranscript refused the durable payload during main/earlier evidence validation: ${cause instanceof Error ? cause.message : 'canonical validation failed'}. No transcript was cooked. Correct the producer using the canonical schema and retry.`), { cause })
+    }
+  }
+  const completeTurns = payload.turns ?? []
+  const main = cookPartition(payload, completeTurns, payload.nativeMetadata, 'main', annotations, analytics, options?.visibleTurnIndices)
+  const { turns: turnVMs, toolCallsById, analytics: an, annotationsByTurn, filteredTurns: turns } = main
+  const git = cookGit(payload)
+  if (git?.commits) anchorCommitsToTurns(git.commits, turnVMs)
+  const phases = an.phases ?? []
+  /** @type {TranscriptViewModel} */
+  const vm = {
+    session: cookSession(payload, git),
+    turns: turnVMs,
+    toolCallsById,
+    diffs: buildDiffs(turnVMs),
+    files: buildFiles(turnVMs),
+    tasks: withDisplayedPrompts(an.taskGroups ?? computeTaskGroups(turns), turnVMs),
+    highlights: buildHighlights(turnVMs, phases, git),
+    filterIndex: buildFilterIndex(turnVMs, annotationsByTurn),
+    analytics: an,
+  }
+  if (payload.nativeMetadata) vm.nativeMetadata = payload.nativeMetadata
+  if (hasEvidence) vm.usageScopes = aggregateUsage(completeTurns)
+  vm.relationships = cookRelationships(payload.relationships ?? [], options?.relationshipNavigation)
+  vm.earlierHistory = (payload.earlierHistory ?? []).map((section, index) => {
+    const id = `earlier-${index}`
+    const earlier = cookPartition(payload, section.turns, section.nativeMetadata, id)
+    return {
+      id, state: historyStates[index],
+      turns: earlier.turns,
+      nativeMetadata: section.nativeMetadata,
+      usageScopes: aggregateUsage(section.turns),
+    }
+  })
+  return vm
+}
+
+/** @param {TranscriptWireInput} payload */
+function hasNormalizedEvidence(payload) {
+  return payload.harness === 'pi' || ['nativeMetadata', 'inputSubmissionCount', 'rootSessionId', 'purpose', 'relationships', 'earlierHistory'].some(key => present(payload, key)) ||
+    !!payload.turns?.some(hasTurnEvidence)
+}
+
+/**
+ * Navigation is read-only host authority. Durable native targets alone never
+ * produce a route; an exact anchor is used only when authorized read evidence
+ * confirms the same saved public revision and entry.
+ * @param {import('@peasant-labs/schema').SessionRelationship[]} relationships
+ * @param {import('@peasant-labs/schema').SessionRelationshipNavigation[]} [navigation]
+ * @returns {import('./view-model.js').RelationshipVM[]}
+ */
+function cookRelationships(relationships, navigation) {
+  /** @type {import('@peasant-labs/schema').SessionRelationshipNavigation[]} */
+  let nav
+  try {
+    nav = zSessionRelationshipNavigation.array().parse(navigation === undefined ? [] : navigation)
+  } catch (cause) {
+    throw Object.assign(new TypeError(`Fairtrade adaptTranscript refused relationshipNavigation during read-metadata validation: ${cause instanceof Error ? cause.message : 'canonical validation failed'}. No source links were cooked. Return schema-valid authorized read metadata separately from the durable payload and retry.`), { cause })
+  }
+  if (new Set(nav.map(item => item.kind)).size !== nav.length) {
+    throw new TypeError('Fairtrade adaptTranscript refused relationship navigation during cooking: duplicate relationship kinds make the authorized target ambiguous. No links were produced. Return one schema-valid read result per relationship kind and retry.')
+  }
+  const context = relationships.find(item => item.kind === 'context_from')
+  const starter = relationships.find(item => item.kind === 'started_by')
+  const rows = [context, starter].filter(item => item !== undefined).filter(item => item.targetState !== 'explicit_none').map(relation => {
+    const item = nav.find(candidate => candidate.kind === relation.kind)
+    const known = relation.targetState === 'target_known' || relation.targetState === 'target_known_retained'
+    const resolved = item && (item.status === 'resolved' || item.status === 'general_link_only')
+    const targetCount = Number(!!item?.localId) + Number(!!item?.transcriptId)
+    const usable = known && resolved && targetCount === 1 && (!item.localId || item.localId === relation.targetLocalId)
+    /** @type {import('./view-model.js').RelationshipVM} */
+    const row = {
+      kind: relation.kind,
+      label: relation.kind === 'context_from' ? 'context inherited from' : 'started by',
+      statusLabel: relation.targetState === 'conflicting_current_native_evidence' || item?.status === 'conflicting' ? 'conflicting source evidence'
+        : !known || item?.status === 'unknown' ? 'unknown source'
+          : item?.status === 'inaccessible' ? 'source inaccessible'
+            : 'source unavailable',
+    }
+    if (usable && item) {
+      row.statusLabel = 'current session'
+      const saved = relation.anchor
+      const verified = item.anchor
+      const exact = relation.kind === 'context_from' && item.status === 'resolved' && saved && verified &&
+        saved.kind !== 'general_source_session' && saved.kind === verified.kind &&
+        saved.sourceEntryRef === verified.sourceEntryRef && saved.sourceRevisionRef === verified.sourceRevisionRef
+      row.navigation = { kind: item.kind, status: exact ? 'resolved' : 'general_link_only',
+        ...(item.localId ? { localId: item.localId } : { transcriptId: item.transcriptId }),
+        ...(exact ? { anchor: verified } : {}) }
+      if (relation.kind === 'context_from') row.note = exact
+        ? 'opens the current source at the recorded branch point. captured child history stays unchanged.'
+        : 'opens the current source. the earlier source state is not verified; captured child history stays unchanged.'
+    }
+    return row
+  })
+  if (context?.targetLocalId && context.targetLocalId === starter?.targetLocalId && rows.length === 2 &&
+      rows[0].statusLabel === rows[1].statusLabel &&
+      rows[0].navigation?.localId === rows[1].navigation?.localId &&
+      rows[0].navigation?.transcriptId === rows[1].navigation?.transcriptId) {
+    rows[0].label = 'context inherited from and started by'
+    return [rows[0]]
+  }
+  return rows
+}
+
+/**
+ * Cook each index domain independently; earlier records never inherit main model,
+ * annotation, filter-selection, task, or tool state.
+ * @param {TranscriptWireInput} payload
+ * @param {TurnDetail[]} completeTurns
+ * @param {import('@peasant-labs/schema').NativeMetadataRecord[] | undefined} nativeMetadata
+ * @param {string} partition
+ * @param {AnnotationSummary[]} [annotations]
+ * @param {TranscriptAnalyticsVM} [analytics]
+ * @param {readonly number[]} [visibleIndices]
+ */
+function cookPartition(payload, completeTurns, nativeMetadata, partition, annotations, analytics, visibleIndices) {
+  const indexCounts = new Map()
+  const idCounts = new Map()
+  for (const turn of completeTurns) {
+    indexCounts.set(turn.index, (indexCounts.get(turn.index) ?? 0) + 1)
+    for (const call of turn.toolCalls ?? []) if (call.id) idCounts.set(call.id, (idCounts.get(call.id) ?? 0) + 1)
+  }
+  const stickyModels = resolveStickyModels(completeTurns, payload.model)
+  /* a main turn's place in payload.turns, taken before any filter or copy and carried across
+     withKnownTime's copy, so a served position still finds a turn whose time was dropped */
+  /** @type {Map<TurnDetail, number>} */
+  const sourcePositions = new Map()
+  if (partition === 'main') completeTurns.forEach((turn, i) => sourcePositions.set(turn, i))
+  // an unknown time is no time at all
+  const filteredTurns = (payload.harness === 'pi' ? completeTurns : prefilterTurns(completeTurns))
+    .map((turn) => {
+      const copy = withKnownTime(turn)
+      const position = sourcePositions.get(turn)
+      if (copy !== turn && position !== undefined) sourcePositions.set(copy, position)
+      return copy
+    })
+  const visibleTurnIndices = visibleIndices === undefined ? null : new Set(visibleIndices)
+  const turns = visibleTurnIndices === null ? filteredTurns : filteredTurns.filter((turn) => visibleTurnIndices.has(turn.index))
+  const labels = computeTurnLabels(turns)
+  const provider = payload.harness
+
+  // Genuine analytics — accepted precomputed, else derived once and reused below.
+  const an = analytics ?? computeAnalytics(turns, { scorecard: payload.scorecard ?? undefined })
+
+  const patternAnns = an.patternAnnotations ?? []
+  const entryAnns = mapEntryAnnotations(annotations ?? [])
+  const annotationsByTurn = indexAnnotations(patternAnns, entryAnns)
+
+  // Last top-level assistant turn carries the `isFinal` marker.
+  let finalPos = -1
+  for (let p = 0; p < turns.length; p++) {
+    const t = turns[p]
+    if (t.role === 'assistant' && (t.depth ?? 0) === 0 && t.content?.trim()) finalPos = p
+  }
+
+  /** @type {Map<string, ToolCallVM>} */
+  const toolCallsById = new Map()
+  /** @type {TurnVM[]} */
+  const turnVMs = []
+  /* every turn's place among all known turns, including any a host hid, so a thinking entry's
+     time is measured from the event that really came before it */
+  const positionOf = new Map(filteredTurns.map((turn, i) => [turn, i]))
+  for (let p = 0; p < turns.length; p++) {
+    const t = turns[p]
+    const toolCalls = (t.toolCalls ?? []).map((call, sourceIndex) => ({ ...buildToolCallVM(call), sourceIndex, sourceIdUnique: !call.id || idCounts.get(call.id) === 1 }))
+    for (const tc of toolCalls) {
+      tc.partition = partition
+      const records = nativeMetadata?.filter(record => record.attachment?.turnIndex === t.index && record.attachment?.toolCallId === tc.id)
+      if (records?.length) tc.nativeMetadata = records
+    }
+    for (const tc of toolCalls) toolCallsById.set(tc.id, tc)
+
+    // a user prompt shows without a harness's <user_query> wrapper (display only; the wire keeps it)
+    let content = t.content ?? ''
+    /** @type {import('./view-model.js').ThinkingVM | undefined} */
+    let thinking
+    if (t.entryType === 'thinking' && (protectedTurn(t) || content.trim() !== '')) {
+      // STANDALONE thinking entry: the whole turn IS the thinking. This path is LIVE on the real wire —
+      // peasant emits a standalone entryType=thinking turn — so a real consumer renders it today.
+      thinking = { text: content, words: wordCount(content) }
+      const at = positionOf.get(t) ?? -1
+      let previous
+      for (let q = at - 1; q >= 0 && !previous; q--) if ((filteredTurns[q].depth ?? 0) === (t.depth ?? 0)) previous = filteredTurns[q]
+      const durationMs = thinkingDurationMs(previous, t)
+      if (durationMs !== undefined) thinking.durationMs = durationMs
+      content = ''
+    } else if (!protectedTurn(t)) {
+      // TOOL-SIBLING (inline) thinking, folded into the parent turn's content as a leading
+      // <thinking>…</thinking> block: extract it into ThinkingVM (render-when-present) and leave the
+      // response as content. RENDER-WHEN-PRESENT, pending a backend follow-up: peasant does NOT currently
+      // fold tool-sibling thinking into content this way — it suppresses the redundant tool-sibling
+      // thinking entry (transcript.go:154,164) and the text lives in the parent's ContentPreview / a
+      // separate field, so this block is absent on today's wire (no regression; the transcript browser never rendered inline
+      // thinking either). It lights up when peasant emits thinking in content (or the adapter is extended
+      // to read ContentPreview) — same deferral pattern as the commit-churn binding.
+      const m = content.match(/^\s*<thinking>([\s\S]*?)<\/thinking>\s*/)
+      if (m) {
+        const text = m[1].trim()
+        if (text !== '') {
+          thinking = { text, words: wordCount(text) }
+          content = content.slice(m[0].length)
+        }
+      }
+    }
+
+    const depth = t.depth ?? 0
+    const isError = t.entryType === 'error' || toolCalls.some((c) => c.isError)
+    /** @type {TurnVM} */
+    const turnVM = {
+      index: t.index,
+      sourceIndexUnique: indexCounts.get(t.index) === 1,
+      identity: `${partition}:${t.sourceEntryRef || t.index}`,
+      partition,
+      role: t.role,
+      label: labels[p] ?? String(p + 1),
+      content,
+      depth,
+      toolCalls,
+      annotations: annotationsByTurn[t.index] ?? [],
+    }
+    if (sourcePositions.has(t)) turnVM.sourcePosition = sourcePositions.get(t)
+    if (depth === 0 && t.role === 'assistant') turnVM.provider = provider
+    if (t.agentName) turnVM.agentName = t.agentName
+    if (t.controlKind) {
+      turnVM.controlKind = t.controlKind
+      turnVM.isControl = true
+    }
+    if (thinking) turnVM.thinking = thinking
+    /* A cursor prompt's <user_query> wrapper is display chrome, and it must leave a turn's ordered
+       blocks too: the same normalization that produces `displayContent` is applied per block, so
+       the words shown are the reader's and an image keeps the place it was recorded in. */
+    const shown = displayedPrompt(t.role, content, provider)
+    const parts = contentPartsOf(t)
+    const contentParts = shown !== undefined ? stripUserQueryParts(parts) : parts
+    if (contentParts) turnVM.contentParts = contentParts
+    if (shown !== undefined) turnVM.displayContent = shown
+    if (t.usage) turnVM.usage = t.usage
+    const served = /** @type {{truncated?: boolean, byteLength?: number}} */ (t)
+    if (served.truncated === true) turnVM.truncated = true
+    if (typeof served.byteLength === 'number' && served.byteLength >= 0) turnVM.byteLength = served.byteLength
+    if (t.sourceEntryRef) turnVM.sourceEntryRef = t.sourceEntryRef
+    if (t.provenance) turnVM.provenance = t.provenance
+    if (t.entryType) turnVM.entryType = t.entryType
+    if (t.stopReason !== undefined && t.stopReason !== null) turnVM.stopReason = t.stopReason
+    if (isError) turnVM.isError = true
+    if (p === finalPos) turnVM.isFinal = true
+    if (!t.usage && (t.tokensIn != null || t.tokensOut != null)) turnVM.tokens = { in: t.tokensIn ?? 0, out: t.tokensOut ?? 0 }
+    if (t.timestamp) turnVM.timestamp = t.timestamp
+    const model = stickyModels.get(t.index)
+    if (model?.effectiveModel !== undefined) turnVM.effectiveModel = model.effectiveModel
+    if (model?.modelChangedFrom !== undefined) turnVM.modelChangedFrom = model.modelChangedFrom
+    turnVMs.push(turnVM)
+  }
+
+  return { turns: turnVMs, toolCallsById, analytics: an, annotationsByTurn, filteredTurns: turns }
+}

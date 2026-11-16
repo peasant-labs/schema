@@ -1,0 +1,16 @@
+localDocumentSHA256: 198cdb18265efc5f5d38b4ab1ca93adc3f964e2ea82852ecd3c7eaa9dfcc9c63
+refMembers: [index, firstTurn, lastTurn, byteLength, conversationTurns]
+turnMembers: [index, role, content, contentParts, toolCalls, timestamp, depth, parentIndex, agentName, observedModel, thinkingLevel, thinkingLevelRaw, sourceEntryRef, provenance, usage, command, controlKind, entryType, hasThinking, stopReason, tokensIn, tokensOut]
+cases:
+  - name: ref-v1-wire-golden
+    classification: must-pass
+    provenance: {source: requirement, ref: "The existing segment ref's wire bytes remain unchanged"}
+    mutation: {description: "Decode and re-encode a ref with its conversation span"}
+    input: {kind: ref, json: '{"index":0,"firstTurn":7,"lastTurn":9,"byteLength":123,"conversationTurns":{"before":0,"count":2}}'}
+    expected: {golden: transcript_segment_ref_v1_golden.json}
+  - name: village-directory-v1-wire-golden
+    classification: must-pass
+    provenance: {source: requirement, ref: "The existing directory wire bytes remain unchanged"}
+    mutation: {description: "Decode and re-encode a Village directory with one ref"}
+    input: {kind: directory, json: '{"sessionId":"ses_test","revision":"1","totalTurns":3,"totalConversationTurns":2,"totalSegments":1,"segments":[{"index":0,"firstTurn":7,"lastTurn":9,"byteLength":123,"conversationTurns":{"before":0,"count":2}}]}'}
+    expected: {golden: village_directory_v1_golden.json}

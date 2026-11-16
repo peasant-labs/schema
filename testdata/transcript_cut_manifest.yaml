@@ -17,3 +17,7 @@ requiredNames:
   - byte-length-image-part
   - byte-length-tool-arguments-and-result
   - cut-boundary-follows-escaped-size
+  - cut-version-matches-pinned-fixture
+  - cut-version-bump-required-on-boundary-change
+  - cut-budget-is-contract-constant
+  - cut-runs-on-kept-rows

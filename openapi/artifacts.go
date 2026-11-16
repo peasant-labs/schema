@@ -36,6 +36,10 @@ const (
 	PeasantLocalAPIVersion = schema.PeasantLocalAPIVersion
 	// TypesVersion is the info.version of the types spec.
 	TypesVersion = schema.TypesVersion
+	// SegmentedReadAPIVersion identifies the newest segmented read protocol.
+	SegmentedReadAPIVersion = schema.SegmentedReadAPIVersion
+	// SegmentedReadMinVersion identifies the oldest served read protocol.
+	SegmentedReadMinVersion = schema.SegmentedReadMinVersion
 )
 
 // SpecArtifacts is the set of generated OpenAPI spec files, keyed by filename
@@ -77,6 +81,8 @@ func GenerateSpecArtifacts() (SpecArtifacts, error) {
 		{"village-api-" + VillageAPIVersion, BuildVillageAPISpec},
 		{"peasantlocal-api-" + PeasantLocalAPIVersion, BuildPeasantLocalAPISpec},
 		{"types-" + TypesVersion, BuildTypesSpec},
+		{"segmented-read-" + SegmentedReadMinVersion, func() (*openapi31.Spec, error) { return BuildSegmentedReadSpec(SegmentedReadMinVersion) }},
+		{"segmented-read-" + SegmentedReadAPIVersion, func() (*openapi31.Spec, error) { return BuildSegmentedReadSpec(SegmentedReadAPIVersion) }},
 	}
 	for _, s := range specs {
 		spec, err := s.build()

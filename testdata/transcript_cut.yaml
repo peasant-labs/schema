@@ -13,7 +13,11 @@
 # schema.TranscriptSegmentBudgetBytes equal to it. It is a contract value:
 # changing it moves the segment boundaries of every transcript on every server.
 contractBudgetBytes: 1048576
-cases:
+# The selected producer version is pinned separately from its expected refs.
+cutVersion: c1
+# The anchor retains the original case list; versions select the immutable
+# expectations associated with a producer rule.
+cases: &cutC1
   # The next turn would push the segment past the budget, so it is deferred to
   # the next segment instead of being appended. JSON size is content bytes + 2.
   - name: cut-defers-crossing-entry
@@ -250,3 +254,30 @@ cases:
         - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 70, conversationTurns: {before: 0, count: 1}}
         - {index: 1, firstTurn: 3, lastTurn: 3, byteLength: 70, conversationTurns: {before: 1, count: 1}}
       crossingTurn: 3
+  - name: cut-version-matches-pinned-fixture
+    budgetBytes: 1048576
+    turns: [{index: 0, role: user, content: "one"}]
+    expected:
+      segments: [{index: 0, firstTurn: 0, lastTurn: 0, byteLength: 5, conversationTurns: {before: 0, count: 1}}]
+  - name: cut-version-bump-required-on-boundary-change
+    budgetBytes: 6
+    turns: [{index: 0, role: user, content: "one"}, {index: 1, role: assistant, content: "two"}]
+    expected:
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 5, conversationTurns: {before: 0, count: 1}}
+        - {index: 1, firstTurn: 1, lastTurn: 1, byteLength: 5, conversationTurns: {before: 1, count: 1}}
+  - name: cut-budget-is-contract-constant
+    budgetBytes: 1048576
+    turns: [{index: 0, role: user, content: "one"}]
+    expected:
+      segments: [{index: 0, firstTurn: 0, lastTurn: 0, byteLength: 5, conversationTurns: {before: 0, count: 1}}]
+  - name: cut-runs-on-kept-rows
+    budgetBytes: 10
+    cook: true
+    turns: [{index: 0, role: system, content: "short"}, {index: 1, role: user, content: "hello"}, {index: 2, role: assistant, content: "xxx"}]
+    expected:
+      segments:
+        - {index: 0, firstTurn: 1, lastTurn: 1, byteLength: 7, conversationTurns: {before: 0, count: 1}}
+        - {index: 1, firstTurn: 2, lastTurn: 2, byteLength: 5, conversationTurns: {before: 1, count: 1}}
+versions:
+  c1: *cutC1

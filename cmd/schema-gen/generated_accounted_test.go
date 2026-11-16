@@ -11,7 +11,8 @@ import (
 
 // TestGeneratedDirFullyAccounted is the PARTITION-COMPLETENESS guard over the
 // committed generated/ spec dir. Every spec file in it MUST be accounted for as
-// exactly one of:
+// generated or retired. A served-frozen version is also generated and has its
+// additional independent hash pin:
 //   - CURRENT-generated — a key of openapi.GenerateSpecArtifacts(), the set the
 //     generator emits today (derived from the version consts in versions.go); or
 //   - RETIRED-registered — a retiredSpecRegistry entry, byte-frozen under
@@ -36,8 +37,9 @@ func TestGeneratedDirFullyAccounted(t *testing.T) {
 		t.Fatalf("GenerateSpecArtifacts: %v", err)
 	}
 	retiredSpecRegistry := loadRetiredSpecRegistry(t, root)
+	frozenServed := loadServedFrozenSpecRegistry(t, root)
 
-	// accounted = current-generated ∪ retired-registered (both keyed by filename).
+	// accounted = generated ∪ served-frozen ∪ retired (all keyed by filename).
 	accounted := make(map[string]bool, len(artifacts)+2*len(retiredSpecRegistry))
 	for filename := range artifacts {
 		accounted[filename] = true
@@ -47,6 +49,10 @@ func TestGeneratedDirFullyAccounted(t *testing.T) {
 		if !rs.JSONOnly {
 			accounted[rs.Name+".yaml"] = true
 		}
+	}
+	for _, spec := range frozenServed {
+		accounted[spec.Name+".json"] = true
+		accounted[spec.Name+".yaml"] = true
 	}
 
 	for _, dir := range committedSpecDirs(root) {

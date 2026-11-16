@@ -817,46 +817,58 @@ func (d TranscriptSegmentDirectory) Validate() error {
 			return fmt.Errorf("%ssegment %d starts at turn %d, not after segment %d ending at %d; segment ranges must ascend without overlap or a turn would be served twice", where, ref.Index, ref.FirstTurn, d.Segments[i-1].Index, d.Segments[i-1].LastTurn)
 		}
 	}
-	if err := validateDirectoryConversationTurns(d, where); err != nil {
+	spans := make([]transcriptDirectoryConversationRef, len(d.Segments))
+	for i, ref := range d.Segments {
+		spans[i] = transcriptDirectoryConversationRef{ordinal: ref.Index, span: ref.ConversationTurns}
+	}
+	if err := validateDirectoryConversationTurns(d.TotalConversationTurns, spans, where); err != nil {
 		return err
 	}
 	return nil
 }
 
-func validateDirectoryConversationTurns(d TranscriptSegmentDirectory, where string) error {
-	if d.TotalConversationTurns != nil && *d.TotalConversationTurns < 0 {
-		return fmt.Errorf("%stotalConversationTurns is %d; a reader would print a negative total beside every position; emit the count of conversation turns or omit the field", where, *d.TotalConversationTurns)
+// transcriptDirectoryConversationRef keeps each span paired with the absolute
+// segment ordinal used in diagnostics, including on a later directory page.
+type transcriptDirectoryConversationRef struct {
+	ordinal int
+	span    *ConversationTurnSpan
+}
+
+func validateDirectoryConversationTurns(total *int, spans []transcriptDirectoryConversationRef, where string) error {
+	if total != nil && *total < 0 {
+		return fmt.Errorf("%stotalConversationTurns is %d; a reader would print a negative total beside every position; emit the count of conversation turns or omit the field", where, *total)
 	}
-	for _, ref := range d.Segments {
-		if ref.ConversationTurns == nil {
+	for _, ref := range spans {
+		span := ref.span
+		if span == nil {
 			continue
 		}
-		span := ref.ConversationTurns
 		if span.Before < 0 || span.Count < 0 {
-			return fmt.Errorf("%ssegment %d declares conversationTurns {before: %d, count: %d}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref", where, ref.Index, span.Before, span.Count)
+			return fmt.Errorf("%ssegment %d declares conversationTurns {before: %d, count: %d}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref", where, ref.ordinal, span.Before, span.Count)
 		}
 	}
-	if d.TotalConversationTurns != nil {
-		total := int64(*d.TotalConversationTurns)
-		for _, ref := range d.Segments {
-			if ref.ConversationTurns == nil {
+	if total != nil {
+		count := int64(*total)
+		for _, ref := range spans {
+			span := ref.span
+			if span == nil {
 				continue
 			}
-			end := int64(ref.ConversationTurns.Before) + int64(ref.ConversationTurns.Count)
-			if end > total {
-				return fmt.Errorf("%ssegment %d ends at conversation turn %d, past totalConversationTurns %d; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields", where, ref.Index, end, total)
+			end := int64(span.Before) + int64(span.Count)
+			if end > count {
+				return fmt.Errorf("%ssegment %d ends at conversation turn %d, past totalConversationTurns %d; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields", where, ref.ordinal, end, count)
 			}
 		}
 	}
-	for i := 1; i < len(d.Segments); i++ {
-		prev := d.Segments[i-1].ConversationTurns
-		curr := d.Segments[i].ConversationTurns
+	for i := 1; i < len(spans); i++ {
+		prev := spans[i-1].span
+		curr := spans[i].span
 		if prev == nil || curr == nil {
 			continue
 		}
 		want := int64(prev.Before) + int64(prev.Count)
 		if int64(curr.Before) != want {
-			return fmt.Errorf("%ssegment %d declares %d conversation turns before it, but segment %d ends at %d; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields", where, d.Segments[i].Index, curr.Before, d.Segments[i-1].Index, want)
+			return fmt.Errorf("%ssegment %d declares %d conversation turns before it, but segment %d ends at %d; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields", where, spans[i].ordinal, curr.Before, spans[i-1].ordinal, want)
 		}
 	}
 	return nil
@@ -1111,6 +1123,56 @@ type SessionDetailHeader struct {
 	Scorecard       *SessionScorecard          `json:"scorecard,omitempty"`
 	RetainedUnknown []RetainedUnknownRecord    `json:"retainedUnknown,omitempty" nullable:"false"`
 	Diagnostics     *InterpretationDiagnostics `json:"diagnostics,omitempty" nullable:"false"`
+}
+
+// Header projects a typed durable payload to the existing local-frame header.
+// Earlier history carries only section states; turns and native records remain
+// in the durable payload. This is not the served-byte projection used by the
+// Village content header.
+func (p SessionDetailPayload) Header() SessionDetailHeader {
+	var history []EarlierHistoryState
+	if len(p.EarlierHistory) > 0 {
+		history = make([]EarlierHistoryState, len(p.EarlierHistory))
+		for i, section := range p.EarlierHistory {
+			history[i] = section.State
+		}
+	}
+	return SessionDetailHeader{
+		SchemaVersion:         p.SchemaVersion,
+		ID:                    p.ID,
+		Harness:               p.Harness,
+		StartTime:             p.StartTime,
+		EndTime:               p.EndTime,
+		DurationMins:          p.DurationMins,
+		TotalTokens:           p.TotalTokens,
+		TokensIn:              p.TokensIn,
+		TokensOut:             p.TokensOut,
+		TurnCount:             p.TurnCount,
+		InputSubmissionCount:  p.InputSubmissionCount,
+		ConversationTurnCount: p.ConversationTurnCount,
+		ToolCallCount:         p.ToolCallCount,
+		Source:                p.Source,
+		Status:                p.Status,
+		Project:               p.Project,
+		Model:                 p.Model,
+		ThinkingLevel:         p.ThinkingLevel,
+		ThinkingLevelRaw:      p.ThinkingLevelRaw,
+		ThinkingLevelHistory:  p.ThinkingLevelHistory,
+		WorkingDirectory:      p.WorkingDirectory,
+		GitBranch:             p.GitBranch,
+		GitRemote:             p.GitRemote,
+		ChildSessions:         p.ChildSessions,
+		ParentSessionID:       p.ParentSessionID,
+		RootSessionID:         p.RootSessionID,
+		Purpose:               p.Purpose,
+		Relationships:         p.Relationships,
+		EarlierHistory:        history,
+		Outcome:               p.Outcome,
+		SessionOrigin:         p.SessionOrigin,
+		Scorecard:             p.Scorecard,
+		RetainedUnknown:       p.RetainedUnknown,
+		Diagnostics:           p.Diagnostics,
+	}
 }
 
 // Validate checks the header's metadata against the same shared rules the

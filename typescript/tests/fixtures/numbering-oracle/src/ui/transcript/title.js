@@ -1,0 +1,283 @@
+// @ts-check
+/* title — session-detail header title helpers, shared between the hero title
+   and the condensed sticky header so the two never diverge. Ported verbatim
+   (behaviour-for-behaviour) from transcript-browser's `lib/title.ts`, itself
+   ported from peasant's `session-detail/v2/lib/title.ts`. Pure, no app
+   coupling. ─────────────────────────────────────────────────────────────────
+
+   Real first-user prompts arrive in three rough shapes:
+     1. Slash commands wrapped as
+          <command-name>/mcp</command-name><command-message>…</command-message>
+     2. XML-ish wrappers followed by the user's actual prose.
+     3. Plain prose — possibly very long, possibly starting with a code block.
+
+   `summarizePrompt` collapses each shape to a single short string suitable for
+   an h1 that will be `truncate`d in CSS. ─────────────────────────────────── */
+
+const PROMPT_SUMMARY_LIMIT = 80
+
+/* Cursor wraps the user's prompt in <user_query>…</user_query>, sometimes after its own context
+   tags (<timestamp>…</timestamp>, <user_info>…</user_info>). The wrapper and that prelude are the
+   harness's, not the user's words, so every place that shows a prompt or a title keeps only what
+   the wrapper holds; the stored content is never changed. The wrapper counts only where it opens
+   the text (after nothing but such tag blocks), so prose that merely mentions <user_query> stays
+   as written. An unclosed wrapper (a prompt cut before its close) keeps everything after it. */
+const USER_QUERY_OPEN = '<user_query>'
+const USER_QUERY_CLOSE = '</user_query>'
+const USER_QUERY_LEAD = /^\s*(?:<([a-z][a-z0-9_-]*)>[\s\S]*?<\/\1>\s*)*<user_query>/
+
+/** The wrapper's tags, for a part-aware caller that removes the wrapper from ordered blocks. */
+export const USER_QUERY_OPEN_TAG = USER_QUERY_OPEN
+export const USER_QUERY_CLOSE_TAG = USER_QUERY_CLOSE
+
+/**
+ * The length of a leading `<user_query>` prefix in one text block, or 0 when the block does not
+ * start with the wrapper. `unwrapUserQuery` applies the same rule to a whole prompt; a turn whose
+ * blocks are kept in order strips the wrapper per block so the text around an image does not move.
+ * @param {string | undefined} text
+ * @returns {number}
+ */
+export function userQueryLeadLength(text) {
+  const lead = USER_QUERY_LEAD.exec(text ?? '')
+  return lead ? lead[0].length : 0
+}
+
+/**
+ * The prompt without a harness's <user_query> wrapper: the user's own text, untouched otherwise.
+ * @param {string | undefined} text
+ * @returns {string}
+ */
+export function unwrapUserQuery(text) {
+  if (!text) return ''
+  const lead = USER_QUERY_LEAD.exec(text)
+  if (!lead) return text
+  const start = lead[0].length
+  const end = text.indexOf(USER_QUERY_CLOSE, start)
+  if (end === -1) return text.slice(start).trim()
+  const query = text.slice(start, end).trim()
+  const rest = text.slice(end + USER_QUERY_CLOSE.length).trim()
+  return rest && !rest.startsWith(USER_QUERY_OPEN) ? `${query}\n\n${rest}` : query
+}
+
+/**
+ * A stored session title, shown as written: the harness's <user_query> wrapper dropped and the
+ * whitespace collapsed, but every word, its case, its dots and an existing trailing "…" kept. For a
+ * title, never `summarizePrompt`, which cuts at the first sentence and recases.
+ * @param {string | undefined} text
+ * @returns {string}
+ */
+export function cleanSessionTitle(text) {
+  return unwrapUserQuery(text).replace(/\s+/g, ' ').trim()
+}
+
+const TRANSCRIPT_TITLE_LIMIT = 160
+
+/**
+ * The transcript page's title, the one rule the viewer's header and the share card both use: a
+ * curated title (an empty one is kept), else, when the session has no normalized evidence, the
+ * first task's prompt or the first user turn's text, else the session id, else "transcript".
+ * Session titles are often a whole first prompt, so the title is bounded to 160 characters: a
+ * longer one is cut to 159 and "…", never through a surrogate pair.
+ * @param {object} parts
+ * @param {string} [parts.title] curated session title
+ * @param {boolean} [parts.hasNormalizedEvidence] true when a title must not be inferred from a prompt
+ * @param {string} [parts.firstTaskPrompt]
+ * @param {string} [parts.firstUserContent]
+ * @param {string} [parts.id] session id
+ * @returns {string}
+ */
+export function transcriptTitle({ title, hasNormalizedEvidence, firstTaskPrompt, firstUserContent, id }) {
+  const raw = String(title ?? (hasNormalizedEvidence ? undefined : firstTaskPrompt ?? firstUserContent) ?? id ?? 'transcript')
+  if (raw.length <= TRANSCRIPT_TITLE_LIMIT) return raw
+  const cut = (raw.codePointAt(TRANSCRIPT_TITLE_LIMIT - 2) ?? 0) > 0xffff ? TRANSCRIPT_TITLE_LIMIT - 2 : TRANSCRIPT_TITLE_LIMIT - 1
+  return raw.slice(0, cut).trimEnd() + '…'
+}
+
+/**
+ * Produce a short, human-readable summary of a raw prompt. Heuristic, in order:
+ *   0. Drop a harness's <user_query> wrapper (cleanSessionTitle's rule).
+ *   1. Strip leading <system-reminder> blocks and leading fenced code blocks.
+ *   2. Pull out a <command-name> (e.g. `/mcp`) if present, keep following prose.
+ *   3. Strip remaining XML-ish tags, collapse whitespace, take the first sentence.
+ *   4. Capitalize the first letter and cap at `limit` chars with `…`.
+ *
+ * @param {string | undefined} raw
+ * @param {number} [limit]
+ * @returns {string}
+ */
+export function summarizePrompt(raw, limit = PROMPT_SUMMARY_LIMIT) {
+  if (!raw) return ''
+
+  let working = stripLeadingNoise(unwrapUserQuery(raw))
+
+  const { slashCommand, rest } = splitCommandWrapper(working)
+  working = rest
+
+  const detagged = working
+    .replace(/<\/?[a-zA-Z][a-zA-Z0-9-]*[^>]*>/g, ' ')
+    .replace(/[ \t\r\f\v]+/g, ' ') // collapse intra-line whitespace, keep \n
+    .trim()
+
+  if (!detagged) {
+    return slashCommand ? cap(slashCommand, limit) : ''
+  }
+
+  const firstSentence = takeFirstSentence(detagged).replace(/\s+/g, ' ').trim()
+  const capitalized = capitalize(firstSentence)
+
+  return cap(capitalized, limit)
+}
+
+/**
+ * Last path segment of a project string. `/Users/x/Projects/phaze` → `phaze`.
+ * Falls back to the whole string if there's no separator. Returns `''` when the
+ * input is empty/undefined.
+ *
+ * @param {string | undefined} project
+ * @returns {string}
+ */
+export function projectLabel(project) {
+  if (!project) return ''
+  const trimmed = project.trim().replace(/[\\/]+$/, '')
+  if (!trimmed) return ''
+  const parts = trimmed.split(/[\\/]/).filter(Boolean)
+  return parts.length > 0 ? parts[parts.length - 1] : trimmed
+}
+
+/**
+ * Compose the session detail h1.
+ *
+ *   • {project}: {Summary}   — project + meaningful prompt
+ *   • {project}, {shortId}  — project, no usable prompt
+ *   • {shortId} — {Summary}  — no project, but a prompt
+ *   • Session {shortId}      — nothing useful at all
+ *
+ * The full prompt text (or composed title) is returned alongside as a tooltip
+ * string so `<h1 title=…>` can expose the raw prompt on hover.
+ *
+ * @param {object} args
+ * @param {string} args.id
+ * @param {string | undefined} args.project
+ * @param {string | undefined} args.promptContent
+ * @param {number} [args.limit]
+ * @returns {{ title: string, tooltip: string }}
+ */
+export function composeSessionTitle(args) {
+  const shortId = args.id.slice(0, 8)
+  const proj = projectLabel(args.project)
+  const summary = summarizePrompt(args.promptContent, args.limit)
+
+  let title
+  if (proj && summary) title = `${proj}: ${summary}`
+  else if (proj) title = `${proj}, ${shortId}`
+  else if (summary) title = `${shortId} — ${summary}`
+  else title = `Session ${shortId}`
+
+  const tooltip = (args.promptContent ?? title).trim() || title
+  return { title, tooltip }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/**
+ * Drop leading <system-reminder> blocks and leading ``` fenced code blocks.
+ * @param {string} raw
+ * @returns {string}
+ */
+function stripLeadingNoise(raw) {
+  let s = raw.replace(/^\s+/, '')
+  while (true) {
+    const m = s.match(/^<system-reminder>[\s\S]*?<\/system-reminder>\s*/i)
+    if (!m) break
+    s = s.slice(m[0].length)
+  }
+  const fence = s.match(/^```[\s\S]*?```\s*/)
+  if (fence) s = s.slice(fence[0].length)
+  return s
+}
+
+/**
+ * If `raw` starts with one or more `<command-*>…</command-*>` wrapper tags,
+ * extract the slash command from `<command-name>` and return the text that
+ * follows the wrappers. Otherwise return the input untouched.
+ *
+ * @param {string} raw
+ * @returns {{ slashCommand: string | null, rest: string }}
+ */
+function splitCommandWrapper(raw) {
+  if (!/^\s*<command-[a-z-]+>/i.test(raw)) {
+    return { slashCommand: null, rest: raw }
+  }
+
+  let slash = /** @type {string | null} */ (null)
+  let message = ''
+  let cursor = raw.replace(/^\s+/, '')
+  const wrapperRe = /^<command-([a-z-]+)>([\s\S]*?)<\/command-\1>\s*/i
+
+  while (true) {
+    const m = cursor.match(wrapperRe)
+    if (!m) break
+    const tag = m[1].toLowerCase()
+    const inner = m[2].trim()
+    if (tag === 'name' && inner) {
+      const name = inner.replace(/^\/+/, '')
+      if (name) slash = `/${name}`
+    } else if (tag === 'args' && inner && slash) {
+      slash = `${slash} ${inner}`
+    } else if (tag === 'message' && inner) {
+      message = message ? `${message} ${inner}` : inner
+    }
+    cursor = cursor.slice(m[0].length)
+  }
+
+  const trailing = cursor.trim()
+  const rest = message ? (trailing ? `${message} ${trailing}` : message) : trailing
+
+  return { slashCommand: slash, rest }
+}
+
+/**
+ * First sentence: terminate on `.`, `?`, `!`, or newline. Keep `?`/`!`.
+ * @param {string} s
+ * @returns {string}
+ */
+function takeFirstSentence(s) {
+  let end = -1
+  let terminator = ''
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]
+    if (c === '\n' || c === '.' || c === '?' || c === '!') {
+      end = i
+      terminator = c
+      break
+    }
+  }
+  if (end === -1) return s
+  const body = s.slice(0, end).trim()
+  if (!body) return s.trim()
+  if (terminator === '?' || terminator === '!') return body + terminator
+  return body
+}
+
+/**
+ * @param {string} s
+ * @returns {string}
+ */
+function capitalize(s) {
+  if (!s) return s
+  const first = s.charAt(0)
+  if (first >= 'a' && first <= 'z') return first.toUpperCase() + s.slice(1)
+  return s
+}
+
+/**
+ * @param {string} s
+ * @param {number} limit
+ * @returns {string}
+ */
+function cap(s, limit) {
+  if (s.length <= limit) return s
+  return s.slice(0, limit - 1).trimEnd() + '…'
+}

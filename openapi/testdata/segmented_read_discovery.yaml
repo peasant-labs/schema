@@ -1,0 +1,14 @@
+cases:
+  - name: version-operation-explains-read-window
+    classification: must-pass
+    provenance: {source: requirement, ref: "Discovery explains the pair and safe fallback"}
+    mutation: {description: "Inspect the served version operation description"}
+    input: {path: "/api/v1/schema/version"}
+    expected:
+      contains:
+        - "segmentedReadVersion and minSegmentedReadVersion"
+        - "emitted together or omitted together"
+        - "a lone member is invalid"
+        - "0.1.0 only"
+        - "null and non-string members are invalid"
+        - "exact token membership"

@@ -4,7 +4,7 @@ import test from "node:test";
 
 import { parse, parseAllDocuments } from "yaml";
 
-import { isTranscriptDirectoryPositionsValid } from "../dist/index.js";
+import { isTranscriptDirectoryPositionsValid, isPositionedDirectoryPositionsValid } from "../dist/index.js";
 import { Classification, loadCorpus } from "../dist/testcase.js";
 
 // isTranscriptDirectoryPositionsValid is the browser mirror of Go's
@@ -43,7 +43,53 @@ const cutCorpusSource = await readFile(new URL("../../testdata/transcript_cut.ya
 const cutManifestSource = await readFile(new URL("../../testdata/transcript_cut_manifest.yaml", import.meta.url), "utf8");
 const cutCorpus = parse(cutCorpusSource, { uniqueKeys: true });
 const cutManifest = loadRequiredNamesManifest(cutManifestSource, "transcript cut manifest");
-assert.ok(Array.isArray(cutCorpus?.cases) && cutCorpus.cases.length > 0, "testdata/transcript_cut.yaml must hold at least one cut case");
+const cutCases = cutCorpus?.versions?.c1;
+assert.ok(Array.isArray(cutCases) && cutCases.length > 0, "testdata/transcript_cut.yaml must hold the original c1 cases");
+
+const positionedCorpusSource = await readFile(new URL("../../testdata/typescript/transcript_positioned_directory_positions.yaml", import.meta.url), "utf8");
+const positionedManifestSource = await readFile(new URL("../../testdata/typescript/transcript_positioned_directory_positions_manifest.yaml", import.meta.url), "utf8");
+const positionedCorpus = loadBrowserCorpus(positionedCorpusSource);
+const positionedManifest = loadRequiredNamesManifest(positionedManifestSource, "browser positioned directory position manifest");
+assertRequiredNames(positionedCorpus.cases, positionedManifest, "browser positioned directory position corpus");
+
+const sharedPositionedSource = await readFile(new URL("../../testdata/transcript_positioned_segments.yaml", import.meta.url), "utf8");
+const sharedPositionedManifestSource = await readFile(new URL("../../testdata/typescript/transcript_positioned_directory_positions_shared_manifest.yaml", import.meta.url), "utf8");
+const sharedPositionedManifest = loadRequiredNamesManifest(sharedPositionedManifestSource, "shared positioned directory position manifest");
+const sharedPositionedCases = parse(sharedPositionedSource, {uniqueKeys: true})?.directories?.cases;
+assert.ok(Array.isArray(sharedPositionedCases), "the positioned corpus must hold directory cases");
+const sharedPositionedPositions = sharedPositionedCases.filter((item) => Object.hasOwn(item.input, "totalConversation"));
+assertRequiredNames(sharedPositionedPositions, sharedPositionedManifest, "shared positioned directory position selection");
+
+test("positioned browser-only positions project context and preserve input", async (t) => {
+  for (const testCase of positionedCorpus.cases) {
+    await t.test(testCase.name, () => {
+      const decoded = JSON.parse(testCase.input.json);
+      const snapshot = structuredClone(decoded);
+      assert.equal(testCase.classification, testCase.expected ? Classification.MustPass : Classification.MustFail);
+      for (const claim of testCase.input.numbers) {
+        assert.equal(Number.isSafeInteger(resolvePointer(decoded, claim.pointer)), claim.safeInteger);
+      }
+      assert.equal(isPositionedDirectoryPositionsValid(decoded), testCase.expected);
+      assert.deepEqual(decoded, snapshot);
+    });
+  }
+});
+
+test("positioned shared position cases match the Go directory validator", async (t) => {
+  for (const testCase of sharedPositionedPositions) {
+    await t.test(testCase.name, () => {
+      // Reconstruct the same position-bearing inputs as the Go directory test.
+      // Other required members are irrelevant to this narrow predicate.
+      const {totalConversation, refCount, spanBefore, spanCount} = testCase.input;
+      const segments = Array.from({length: refCount}, () => ({}));
+      if (segments.length > 0 && spanBefore !== undefined && spanCount !== undefined) {
+        segments[0].conversationTurns = {before: spanBefore, count: spanCount};
+      }
+      const directory = {context: {totalConversationTurns: totalConversation}, segments};
+      assert.equal(isPositionedDirectoryPositionsValid(directory), testCase.classification === Classification.MustPass);
+    });
+  }
+});
 
 test("browser-only position corpus matches the helper verdict and leaves the input unchanged", async (t) => {
   for (const testCase of browserCorpus.cases) {
@@ -90,7 +136,7 @@ test("the cut's recorded spans form a valid position chain", async () => {
   // identity, and this test does not run Go.
   const visited = new Set();
   let statedSpans = 0;
-  for (const cutCase of cutCorpus.cases) {
+  for (const cutCase of cutCases) {
     const segments = cutCase.expected?.segments;
     assert.ok(Array.isArray(segments), `${cutCase.name}: a cut case must record its expected segments`);
     const refs = segments.map((segment) => {
@@ -141,7 +187,7 @@ test("the position manifests are strict inventories", () => {
   );
   assert.deepEqual(
     cutManifest.requiredNames.slice().sort(),
-    cutCorpus.cases.map((cutCase) => cutCase.name).sort(),
+    cutCases.map((cutCase) => cutCase.name).sort(),
     "the cut replay manifest must name exactly the recorded cut cases",
   );
 });
@@ -183,6 +229,12 @@ function loadManifest(source, label) {
 function loadRequiredNamesManifest(source, label) {
   const manifest = requireExactRecord(decodeSingleDocument(source, label), label, ["requiredNames"]);
   return { requiredNames: requireNameList(manifest.requiredNames, label, "requiredNames") };
+}
+
+function assertRequiredNames(cases, manifest, label) {
+  const names = cases.map((item) => item.name);
+  assert.equal(new Set(names).size, names.length, `${label}: duplicate case name`);
+  assert.deepEqual([...names].sort(), [...manifest.requiredNames].sort(), `${label}: names differ from the manifest`);
 }
 
 function decodeSingleDocument(source, label) {

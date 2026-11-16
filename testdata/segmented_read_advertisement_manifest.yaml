@@ -1,0 +1,5 @@
+requiredNames:
+  - advertisement-absent-pair
+  - advertisement-current-and-minimum
+  - advertisement-current-only-refused
+  - advertisement-minimum-only-refused

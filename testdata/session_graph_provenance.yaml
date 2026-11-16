@@ -277,7 +277,8 @@ authoritative_required_names: [authoritative-entry-label, authoritative-entry-na
 typescript_constraints:
   # Every optional count field on a generated component. A nullable carrier is
   # required and reads null as unmeasured; every other carrier omits an
-  # unmeasured count and refuses null.
+  # unmeasured count and refuses null. A served-int64 domain carries legacy
+  # values outside the canonical nonnegative safe-integer count range.
   count_carriers:
     - {component: AuthoritativeSessionStats, field: inputSubmissionCount}
     - {component: LocalSyncSummary, field: inputSubmissionCount}
@@ -287,6 +288,7 @@ typescript_constraints:
     - {component: SessionDetailHeaderPayload, field: inputSubmissionCount}
     - {component: SessionDetailPayload, field: inputSubmissionCount}
     - {component: SessionDetailReadPayload, field: inputSubmissionCount}
+    - {component: TranscriptSessionHeader, field: inputSubmissionCount, domain: served_int64}
     - {component: AuthoritativeSessionStats, field: conversationTurnCount}
     - {component: LocalSyncSummary, field: conversationTurnCount}
     - {component: SessionStats, field: conversationTurnCount}
@@ -295,6 +297,7 @@ typescript_constraints:
     - {component: SessionDetailHeaderPayload, field: conversationTurnCount}
     - {component: SessionDetailPayload, field: conversationTurnCount}
     - {component: SessionDetailReadPayload, field: conversationTurnCount}
+    - {component: TranscriptSessionHeader, field: conversationTurnCount, domain: served_int64}
     - {component: QualitySession, field: conversationTurnCount}
     - {component: VillageContributableTranscript, field: input_submission_count}
     - {component: VillageCollectiveTranscript, field: input_submission_count}

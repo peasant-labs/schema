@@ -1,0 +1,5 @@
+requiredNames:
+  - protocol-echo-current-accepted
+  - protocol-echo-minimum-declared-refused
+  - protocol-echo-absent-refused
+  - protocol-echo-unknown-refused

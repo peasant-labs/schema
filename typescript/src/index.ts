@@ -9,10 +9,11 @@ export { reconcileVillageContributionAttempt, villageContributionAttemptActor, t
 export { normalizeCollectiveObservationScope, encodeContributionTraversalRevision, parseContributionTraversalRevision, validateContributionHistoryQuery, type ContributionTraversalIdentity, type LocalContributionHistoryQuery } from "./collective-validation.js";
 export { collectiveFetchHTTPStatus } from "./collective-status.js";
 export { isConversationTurn } from "./conversation-turn.js";
-export { isTranscriptDirectoryPositionsValid } from "./transcript-directory-positions.js";
+export { isTranscriptDirectoryPositionsValid, isPositionedDirectoryPositionsValid } from "./transcript-directory-positions.js";
+export { readTranscriptServedTurn, type TranscriptServedTurn } from "./transcript-served-turn.js";
 import { requiredContentCapabilities, KnownContentCapability } from "./internal/generated/content-capabilities.gen.js";
 
-import { zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";
+import { zHarness, zObservedModelID, zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";
 import { maxNativeMetadataStringBytes } from "./internal/generated/metadata-limits.gen.js";
 import { wireAliasShapes } from "./internal/generated/wire-alias-shapes.gen.js";
 
@@ -57,6 +58,31 @@ export interface RawJsonPathPolicy {
   maxDocumentDepth?: number;
   opaqueMetadataPointers?: readonly string[];
 }
+
+export type TranscriptContentReadPolicy = RawJsonPathPolicy;
+
+/** The existing envelope source scan; its bounds and selected paths stay unchanged. */
+export const TranscriptSourceReadPolicy: TranscriptContentReadPolicy = {
+  maxDocumentBytes: 128 << 20, maxDocumentDepth: 64,
+  opaqueMetadataPointers: ["/sessionDetail/nativeMetadata/*/data"],
+};
+
+/** The existing bare-detail source scan; its selected path stays unchanged. */
+export const TranscriptSourceDetailReadPolicy: TranscriptContentReadPolicy = {
+  maxDocumentBytes: 128 << 20, maxDocumentDepth: 64,
+  opaqueMetadataPointers: ["/nativeMetadata/*/data"],
+};
+
+/** Download scan with no additional outer byte limit and both root shapes. */
+export const TranscriptDownloadPolicy: TranscriptContentReadPolicy = {
+  maxDocumentDepth: 64,
+  opaqueMetadataPointers: [
+    "/sessionDetail/nativeMetadata/*/data",
+    "/sessionDetail/earlierHistory/*/nativeMetadata/*/data",
+    "/nativeMetadata/*/data",
+    "/earlierHistory/*/nativeMetadata/*/data",
+  ],
+};
 
 export function scanRawJsonText(text: string, policy: RawJsonPathPolicy = {}): void {
   scanRawJson(text, policy);
@@ -117,7 +143,11 @@ function normalizeEmptyOptionalPublicRefs(value: unknown): void {
 }
 
 export function parseSessionDetailPayloadText(text: string): import("./internal/generated/contract/zod.gen.js").SessionDetailPayload {
-  scanRawJsonText(text, {maxDocumentBytes: 128 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/nativeMetadata/*/data"]});
+  return parseSessionDetailPayloadTextWithPolicy(text, TranscriptSourceDetailReadPolicy);
+}
+
+export function parseSessionDetailPayloadTextWithPolicy(text: string, policy: TranscriptContentReadPolicy): import("./internal/generated/contract/zod.gen.js").SessionDetailPayload {
+  scanRawJsonText(text, policy);
   return parseSessionDetailPayloadValue(JSON.parse(text));
 }
 
@@ -131,8 +161,46 @@ export function parseSchemaVersionAdvertisement(text: string): string[] {
   return [...value.contentCapabilities];
 }
 
+/** The host's served window, with both members treated as opaque exact tokens. */
+export interface SegmentedReadVersionWindow {
+  readonly current: string;
+  readonly min: string;
+}
+
+/**
+ * Parse the segmented read window independently of content capabilities.
+ * Both members absent or empty mean an older, 0.1.0-only host. An incomplete
+ * or malformed pair is refused rather than authorizing a newer generation.
+ */
+export function parseSegmentedReadVersionAdvertisement(text: string): SegmentedReadVersionWindow | null {
+  scanRawJsonText(text, {maxDocumentBytes: 1 << 20, maxDocumentDepth: 16});
+  const value: unknown = JSON.parse(text);
+  const where = "Segmented read version validation failed at @peasant-labs/schema parseSegmentedReadVersionAdvertisement during discovery decoding: ";
+  if (!isRecord(value)) throw new TypeError(where + "the response is not an object; the served window cannot be established and the reader cannot choose a generation safely; stay on 0.1.0 and ask the host to emit an object.");
+  const current = value.segmentedReadVersion;
+  const min = value.minSegmentedReadVersion;
+  if (current !== undefined && typeof current !== "string") throw new TypeError(where + "segmentedReadVersion is not a string; both members must be emitted together and the served window cannot be established; the reader cannot choose a generation safely, so stay on 0.1.0 and ask the host to emit both strings.");
+  if (min !== undefined && typeof min !== "string") throw new TypeError(where + "minSegmentedReadVersion is not a string; both members must be emitted together and the served window cannot be established; the reader cannot choose a generation safely, so stay on 0.1.0 and ask the host to emit both strings.");
+  const hasCurrent = current !== undefined && current !== "";
+  const hasMin = min !== undefined && min !== "";
+  if (!hasCurrent && !hasMin) return null;
+  if (!hasCurrent || !hasMin) {
+    const missing = hasCurrent ? "minSegmentedReadVersion" : "segmentedReadVersion";
+    throw new TypeError(where + missing + " is absent; the pair must be emitted together and the served window cannot be established; the reader cannot choose a generation safely, so stay on 0.1.0 and ask the host to emit both members.");
+  }
+  return {current, min};
+}
+
 export function parseTranscriptContentText(text: string): import("./internal/generated/contract/zod.gen.js").TranscriptContent {
-  scanRawJsonText(text, { maxDocumentBytes: 128 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/sessionDetail/nativeMetadata/*/data"] });
+  return parseTranscriptContentTextWithPolicy(text, TranscriptSourceReadPolicy);
+}
+
+export function parseTranscriptContentTextWithPolicy(text: string, policy: TranscriptContentReadPolicy): import("./internal/generated/contract/zod.gen.js").TranscriptContent {
+  scanRawJsonText(text, policy);
+  return decodeTranscriptContentValue(text);
+}
+
+function decodeTranscriptContentValue(text: string): import("./internal/generated/contract/zod.gen.js").TranscriptContent {
   const raw: unknown = JSON.parse(text);
   if (!isRecord(raw)) return zTranscriptContent.parse(raw);
   rejectWireAliases(raw, "TranscriptContent");
@@ -144,6 +212,149 @@ export function parseTranscriptContentText(text: string): import("./internal/gen
   if (content.sessionDetail === undefined || content.sessionDetail === null) failSemantic("sessionDetail is required");
   parsePublishedSessionDetailPayloadValue(content.sessionDetail);
   return content;
+}
+
+export interface TranscriptDownloadRead {
+  readonly kind: "strict" | "legacy" | "records";
+  readonly detail?: unknown;
+  readonly records?: readonly unknown[];
+}
+
+export type TranscriptDownloadTextFailure =
+  | "syntax" | "depth" | "duplicate-key" | "unicode" | "retained-unknown"
+  | "semantic-limit" | "shape" | "outer-size" | "embedded-public-root";
+
+/** The in-band strict core of the served content boundary. */
+export function transcriptContentIsStrict(detail: unknown): boolean {
+  if (!isRecord(detail)) return false;
+  if ([detail.harness, detail.provider, detail.modelHarness].includes("pi")) return true;
+  if (zHarness.safeParse(detail.harness).success) return true;
+  const fold = (key: string): string => key.replaceAll("ſ", "s").toLowerCase();
+  const isThinking = (key: string): boolean =>
+    ["thinkinglevel", "thinkinglevelraw", "thinkinglevelhistory"].includes(fold(key));
+  if (Object.keys(detail).some((key) =>
+    ["retainedunknown", "diagnostics", "nativemetadata"].includes(fold(key)) || isThinking(key))) return true;
+  if (!Array.isArray(detail.turns)) return false;
+  for (const turn of detail.turns) {
+    if (!isRecord(turn)) continue;
+    if (Object.keys(turn).some(isThinking) || Object.hasOwn(turn, "usage") || Object.hasOwn(turn, "sourceEntryRef")) return true;
+    if (!Array.isArray(turn.toolCalls)) continue;
+    for (const tool of turn.toolCalls) {
+      if (isRecord(tool) && ["usage", "callEntryRef", "resultEntryRef", "namespace"].some((key) => Object.hasOwn(tool, key))) return true;
+    }
+  }
+  return false;
+}
+
+function downloadFailure(kind: TranscriptDownloadTextFailure, message: string, cause?: unknown): never {
+  throw new TypeError(`${kind}: transcript download failed at @peasant-labs/schema parseTranscriptDownloadText: ${message}; no export was produced; repair the served content and retry.`, {cause});
+}
+
+function scanDownloadText(text: string): void {
+  try {
+    scanRawJsonText(text, TranscriptDownloadPolicy);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const kind: TranscriptDownloadTextFailure = message.includes("duplicate object key") ? "duplicate-key"
+      : message.toLowerCase().includes("depth") ? "depth"
+      : /unicode|surrogate/i.test(message) ? "unicode"
+      : "syntax";
+    downloadFailure(kind, "raw content validation failed", error);
+  }
+}
+
+/** Parse one authorized body for export, preserving the served detail value. */
+export function parseTranscriptDownloadText(text: string): TranscriptDownloadRead {
+  let value: unknown;
+  try {
+    scanDownloadText(text);
+  } catch (scanError) {
+    // Only multiple JSON documents can select JSONL; a syntactically valid
+    // single document never falls back after a scanner rejection.
+    try {
+      JSON.parse(text);
+    } catch {
+      const lines = text.split("\n").filter((line) => line.trim() !== "");
+      if (lines.length === 0) throw scanError;
+      const records = lines.map((line) => {
+        scanDownloadText(line);
+        const record: unknown = JSON.parse(line);
+        if (downloadEmbeddedPublicRoot(record, false)) downloadFailure("embedded-public-root", "a JSONL record embeds a public transcript root");
+        return record;
+      });
+      return {kind: "records", records};
+    }
+    throw scanError;
+  }
+  value = JSON.parse(text);
+  const envelope = isRecord(value) && (Object.hasOwn(value, "sessionDetail") || Object.hasOwn(value, "contractVersion"));
+  const detail = envelope && isRecord(value) ? value.sessionDetail : value;
+  if (envelope && !isRecord(detail)) downloadFailure("shape", "the envelope has no object sessionDetail");
+  if (transcriptContentIsStrict(detail)) {
+    if (isRecord(detail) && [detail.harness, detail.provider, detail.modelHarness].includes("pi") && detail.harness !== "pi") {
+      downloadFailure("shape", "Pi identity conflicts with the session harness");
+    }
+    try {
+      if (envelope) parseTranscriptContentTextWithPolicy(text, TranscriptDownloadPolicy);
+      else parseSessionDetailPayloadTextWithPolicy(text, TranscriptDownloadPolicy);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const kind: TranscriptDownloadTextFailure = message.includes("retainedUnknown") ? "retained-unknown"
+        : message.startsWith("Session detail validation failed") ? "semantic-limit" : "shape";
+      downloadFailure(kind, "the typed content gate refused the body", error);
+    }
+    return {kind: "strict", detail};
+  }
+  if (downloadEmbeddedPublicRoot(value, isRecord(value))) downloadFailure("embedded-public-root", "the legacy body embeds a public transcript root");
+  if (envelope && isRecord(value) && value.kind !== "session_detail") downloadFailure("shape", "the legacy envelope has an unsupported kind");
+  if (isRecord(detail) && Array.isArray(detail.turns)) {
+    for (const turn of detail.turns) {
+      if (isRecord(turn) && Object.hasOwn(turn, "observedModel")
+        && turn.observedModel !== null && turn.observedModel !== ""
+        && !zObservedModelID.safeParse(turn.observedModel).success) {
+        downloadFailure("shape", "a legacy observedModel is not a valid model identifier");
+      }
+    }
+  }
+  return {kind: "legacy", detail};
+}
+
+function downloadEmbeddedPublicRoot(value: unknown, allowRoot: boolean): boolean {
+  if (isRecord(value)) {
+    if (!allowRoot && downloadPublicRootShape(value)) return true;
+    return Object.entries(value).some(([key, child]) =>
+      !downloadOpaqueProviderChild(value, key, child) &&
+      downloadEmbeddedPublicRoot(child, allowRoot && key === "sessionDetail"));
+  }
+  return Array.isArray(value) && value.some((child) => downloadEmbeddedPublicRoot(child, false));
+}
+
+function downloadPublicRootShape(node: Record<string, unknown>): boolean {
+  const fold = (key: string): string => key.replaceAll("ſ", "s").toLowerCase();
+  for (const [key, value] of Object.entries(node)) {
+    if (["retainedunknown", "diagnostics"].includes(fold(key))) return true;
+    if (fold(key) === "sessiondetail") {
+      if (key !== "sessionDetail") return true;
+      if (isRecord(value) && downloadPublicRootShape(value)) return true;
+    }
+    if (fold(key) === "kind" && value === "session_detail") return true;
+  }
+  if (Object.hasOwn(node, "turns") && (node.turns === null || Array.isArray(node.turns))) return true;
+  if (node.harness === "pi" || node.kind === "session_detail") return true;
+  if (isRecord(node.sessionDetail)) {
+    return typeof node.contractVersion === "string" || Object.hasOwn(node.sessionDetail, "nativeMetadata") || downloadPublicRootShape(node.sessionDetail);
+  }
+  return false;
+}
+
+function downloadOpaqueProviderChild(node: Record<string, unknown>, key: string, child: unknown): boolean {
+  const legacyMessage = (v: Record<string, unknown>): boolean =>
+    typeof v.role === "string" && (Object.hasOwn(v, "content") || Object.hasOwn(v, "parts"));
+  if (legacyMessage(node) && ["content", "parts", "toolCalls", "tool_calls"].includes(key)) return true;
+  if (key === "message" && isRecord(child) && legacyMessage(child)) return true;
+  return typeof node.type === "string" &&
+    ["tool_use", "tool_result", "toolCall", "function_call", "function_call_output"].includes(node.type) &&
+    ["input", "arguments", "result", "output", "content"].includes(key);
 }
 
 export function parseServerMessageRaw(text: string): import("./internal/generated/contract/zod.gen.js").ServerMessage {

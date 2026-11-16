@@ -1,4 +1,13 @@
 // Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
+import { zTranscriptEntryReferenceKind, type TranscriptEntryReferenceKind as TranscriptEntryReferenceKindContract } from "./contract/zod.gen.js";
+import { zTranscriptReadTransportKind, type TranscriptReadTransportKind as TranscriptReadTransportKindContract } from "./contract/zod.gen.js";
+import { zTranscriptRecordedIndexState, type TranscriptRecordedIndexState as TranscriptRecordedIndexStateContract } from "./contract/zod.gen.js";
+import { zTranscriptRetainedState, type TranscriptRetainedState as TranscriptRetainedStateContract } from "./contract/zod.gen.js";
+import { zTranscriptViewerProjection, type TranscriptViewerProjection as TranscriptViewerProjectionContract } from "./contract/zod.gen.js";
+import { zTranscriptReadValidation, type TranscriptReadValidation as TranscriptReadValidationContract } from "./contract/zod.gen.js";
+import { zTranscriptNativePresence, type TranscriptNativePresence as TranscriptNativePresenceContract } from "./contract/zod.gen.js";
+import { zTranscriptUsagePresence, type TranscriptUsagePresence as TranscriptUsagePresenceContract } from "./contract/zod.gen.js";
+import { zTranscriptSegmentPartitionKind, type TranscriptSegmentPartitionKind as TranscriptSegmentPartitionKindContract } from "./contract/zod.gen.js";
 import { zCollectiveObservationReason, type CollectiveObservationReason as CollectiveObservationReasonContract } from "./contract/zod.gen.js";
 import { zCollectiveObservationState, type CollectiveObservationState as CollectiveObservationStateContract } from "./contract/zod.gen.js";
 import { zCollectiveOperation, type CollectiveOperation as CollectiveOperationContract } from "./contract/zod.gen.js";
@@ -127,6 +136,101 @@ import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookSt
 import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
 import { zThinkingLevel, type ThinkingLevel as ThinkingLevelContract } from "./contract/zod.gen.js";
 import { zScryVerdict, type ScryVerdict as ScryVerdictContract } from "./contract/zod.gen.js";
+
+export type TranscriptEntryReferenceKind = TranscriptEntryReferenceKindContract;
+export const TranscriptEntryReferenceKind = Object.freeze({
+  Source: zTranscriptEntryReferenceKind.parse("source"),
+  ToolCall: zTranscriptEntryReferenceKind.parse("tool_call"),
+  ToolResult: zTranscriptEntryReferenceKind.parse("tool_result"),
+} as const);
+export const AllTranscriptEntryReferenceKinds = Object.freeze([TranscriptEntryReferenceKind.Source, TranscriptEntryReferenceKind.ToolCall, TranscriptEntryReferenceKind.ToolResult]) as readonly TranscriptEntryReferenceKind[];
+export function isTranscriptEntryReferenceKind(value: unknown): value is TranscriptEntryReferenceKind {
+  return zTranscriptEntryReferenceKind.safeParse(value).success;
+}
+
+export type TranscriptReadTransportKind = TranscriptReadTransportKindContract;
+export const TranscriptReadTransportKind = Object.freeze({
+  LocalSession: zTranscriptReadTransportKind.parse("local_session"),
+  VillageTranscript: zTranscriptReadTransportKind.parse("village_transcript"),
+} as const);
+export const AllTranscriptReadTransportKinds = Object.freeze([TranscriptReadTransportKind.LocalSession, TranscriptReadTransportKind.VillageTranscript]) as readonly TranscriptReadTransportKind[];
+export function isTranscriptReadTransportKind(value: unknown): value is TranscriptReadTransportKind {
+  return zTranscriptReadTransportKind.safeParse(value).success;
+}
+
+export type TranscriptRecordedIndexState = TranscriptRecordedIndexStateContract;
+export const TranscriptRecordedIndexState = Object.freeze({
+  Present: zTranscriptRecordedIndexState.parse("present"),
+  Absent: zTranscriptRecordedIndexState.parse("absent"),
+  Invalid: zTranscriptRecordedIndexState.parse("invalid"),
+} as const);
+export const AllTranscriptRecordedIndexStates = Object.freeze([TranscriptRecordedIndexState.Present, TranscriptRecordedIndexState.Absent, TranscriptRecordedIndexState.Invalid]) as readonly TranscriptRecordedIndexState[];
+export function isTranscriptRecordedIndexState(value: unknown): value is TranscriptRecordedIndexState {
+  return zTranscriptRecordedIndexState.safeParse(value).success;
+}
+
+export type TranscriptRetainedState = TranscriptRetainedStateContract;
+export const TranscriptRetainedState = Object.freeze({
+  Absent: zTranscriptRetainedState.parse("absent"),
+  Deferred: zTranscriptRetainedState.parse("deferred"),
+} as const);
+export const AllTranscriptRetainedStates = Object.freeze([TranscriptRetainedState.Absent, TranscriptRetainedState.Deferred]) as readonly TranscriptRetainedState[];
+export function isTranscriptRetainedState(value: unknown): value is TranscriptRetainedState {
+  return zTranscriptRetainedState.safeParse(value).success;
+}
+
+export type TranscriptViewerProjection = TranscriptViewerProjectionContract;
+export const TranscriptViewerProjection = Object.freeze({
+  Anonymous: zTranscriptViewerProjection.parse("anonymous"),
+  Authenticated: zTranscriptViewerProjection.parse("authenticated"),
+} as const);
+export const AllTranscriptViewerProjections = Object.freeze([TranscriptViewerProjection.Anonymous, TranscriptViewerProjection.Authenticated]) as readonly TranscriptViewerProjection[];
+export function isTranscriptViewerProjection(value: unknown): value is TranscriptViewerProjection {
+  return zTranscriptViewerProjection.safeParse(value).success;
+}
+
+export type TranscriptReadValidation = TranscriptReadValidationContract;
+export const TranscriptReadValidation = Object.freeze({
+  PublishedStrict: zTranscriptReadValidation.parse("published_strict"),
+  ServedLegacy: zTranscriptReadValidation.parse("served_legacy"),
+  Migrated: zTranscriptReadValidation.parse("migrated"),
+} as const);
+export const AllTranscriptReadValidations = Object.freeze([TranscriptReadValidation.PublishedStrict, TranscriptReadValidation.ServedLegacy, TranscriptReadValidation.Migrated]) as readonly TranscriptReadValidation[];
+export function isTranscriptReadValidation(value: unknown): value is TranscriptReadValidation {
+  return zTranscriptReadValidation.safeParse(value).success;
+}
+
+export type TranscriptNativePresence = TranscriptNativePresenceContract;
+export const TranscriptNativePresence = Object.freeze({
+  Absent: zTranscriptNativePresence.parse("absent"),
+  Present: zTranscriptNativePresence.parse("present"),
+  Withheld: zTranscriptNativePresence.parse("withheld"),
+} as const);
+export const AllTranscriptNativePresences = Object.freeze([TranscriptNativePresence.Absent, TranscriptNativePresence.Present, TranscriptNativePresence.Withheld]) as readonly TranscriptNativePresence[];
+export function isTranscriptNativePresence(value: unknown): value is TranscriptNativePresence {
+  return zTranscriptNativePresence.safeParse(value).success;
+}
+
+export type TranscriptUsagePresence = TranscriptUsagePresenceContract;
+export const TranscriptUsagePresence = Object.freeze({
+  Present: zTranscriptUsagePresence.parse("present"),
+  Empty: zTranscriptUsagePresence.parse("empty"),
+  Unknown: zTranscriptUsagePresence.parse("unknown"),
+} as const);
+export const AllTranscriptUsagePresences = Object.freeze([TranscriptUsagePresence.Present, TranscriptUsagePresence.Empty, TranscriptUsagePresence.Unknown]) as readonly TranscriptUsagePresence[];
+export function isTranscriptUsagePresence(value: unknown): value is TranscriptUsagePresence {
+  return zTranscriptUsagePresence.safeParse(value).success;
+}
+
+export type TranscriptSegmentPartitionKind = TranscriptSegmentPartitionKindContract;
+export const TranscriptSegmentPartitionKind = Object.freeze({
+  Main: zTranscriptSegmentPartitionKind.parse("main"),
+  History: zTranscriptSegmentPartitionKind.parse("history"),
+} as const);
+export const AllTranscriptSegmentPartitionKinds = Object.freeze([TranscriptSegmentPartitionKind.Main, TranscriptSegmentPartitionKind.History]) as readonly TranscriptSegmentPartitionKind[];
+export function isTranscriptSegmentPartitionKind(value: unknown): value is TranscriptSegmentPartitionKind {
+  return zTranscriptSegmentPartitionKind.safeParse(value).success;
+}
 
 export type CollectiveObservationReason = CollectiveObservationReasonContract;
 export const CollectiveObservationReason = Object.freeze({

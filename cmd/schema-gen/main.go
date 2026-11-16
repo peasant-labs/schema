@@ -68,6 +68,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	minReadSpec, err := openapi.BuildSegmentedReadSpec(openapi.SegmentedReadMinVersion)
+	if err != nil {
+		log.Fatal(err)
+	}
+	currentReadSpec, err := openapi.BuildSegmentedReadSpec(openapi.SegmentedReadAPIVersion)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// --- HTML documentation (Redoc via CDN, no Node dependency) ---
 	docsDir := filepath.Join(moduleRoot, "docs", "api")
@@ -101,6 +109,14 @@ func main() {
 	if err := writeTypesHTML(sharedSpec, docsDir); err != nil {
 		log.Fatal(err)
 	}
+	minReadName := "segmented-read-" + openapi.SegmentedReadMinVersion
+	currentReadName := "segmented-read-" + openapi.SegmentedReadAPIVersion
+	if err := writeTypeCatalogHTML(minReadSpec, minReadName, "Segmented Read Protocol", docsDir); err != nil {
+		log.Fatal(err)
+	}
+	if err := writeTypeCatalogHTML(currentReadSpec, currentReadName, "Segmented Read Protocol", docsDir); err != nil {
+		log.Fatal(err)
+	}
 	if err := writeTypeGraphHTML(villageSpec, docsDir); err != nil {
 		log.Fatal(err)
 	}
@@ -114,6 +130,8 @@ func main() {
 		{villageSpec, "village-api", villageLabel, "Transcript publishing + CLI auth"},
 		{peasantLocalSpec, "peasantlocal-api", peasantLocalLabel, "REST + WebSocket"},
 		{sharedSpec, "types", typesLabel, "Domain type catalog + relationship diagram"},
+		{minReadSpec, minReadName, "Segmented Read Protocol v" + openapi.SegmentedReadMinVersion, "Frozen and still served"},
+		{currentReadSpec, currentReadName, "Segmented Read Protocol v" + openapi.SegmentedReadAPIVersion, "Positioned transcript read shapes"},
 		{nil, "type-graph", "Type Relationship Graph", "Full dependency graph across all types"},
 	}
 	if err := writeIndexHTML(indexEntries, docsDir); err != nil {

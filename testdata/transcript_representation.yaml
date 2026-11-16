@@ -1,0 +1,105 @@
+baseline: '{"RepresentationVersion":"r1","CutVersion":"c1","Revision":"1","Validation":"published_strict","Harness":"codex","ModelProvider":"openai","ContractVersion":"0.1.1","ViewerProjection":"anonymous","RepositoryWithheld":false,"NativePresence":"present"}'
+fields: [RepresentationVersion, CutVersion, Revision, Validation, Harness, ModelProvider, ContractVersion, ViewerProjection, RepositoryWithheld, NativePresence]
+cases:
+  - name: represent-baseline
+    classification: must-pass
+    provenance: {source: requirement, ref: "Byte-length framing and SHA-256 representation"}
+    mutation: {description: "Pin the original derivation bytes"}
+    input: {left: '{}'}
+    expected: {golden: "r1.832a4386b40c72ec85804d237372aee6115436c1b14ecb85fe743d448329acbc"}
+  - name: represent-revision-change
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "A new revision changes the identity"}
+    input: {left: '{"Revision":"2"}'}
+    expected: {relation: distinct}
+  - name: represent-cut-version-change
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "A changed cut changes the identity"}
+    input: {left: '{"CutVersion":"c2"}'}
+    expected: {relation: distinct}
+  - name: represent-version-change
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "A changed representation rule changes the identity"}
+    input: {left: '{"RepresentationVersion":"r2"}'}
+    expected: {relation: distinct}
+  - name: represent-validation-change
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "A changed validation attestation changes the identity"}
+    input: {left: '{"Validation":"served_legacy"}'}
+    expected: {relation: distinct}
+  - name: represent-harness-change
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "The served harness affects the cook"}
+    input: {left: '{"Harness":"pi"}'}
+    expected: {relation: distinct}
+  - name: represent-model-provider-change
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "A different stored model provider changes the identity"}
+    input: {left: '{"ModelProvider":"other"}'}
+    expected: {relation: distinct}
+  - name: represent-contract-version-change
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "A different contract version changes the identity"}
+    input: {left: '{"ContractVersion":"0.1.2"}'}
+    expected: {relation: distinct}
+  - name: represent-viewer-class-change
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "Anonymous and authenticated projections differ"}
+    input: {left: '{"ViewerProjection":"authenticated"}'}
+    expected: {relation: distinct}
+  - name: represent-withholding-flip
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "Repository withholding changes the identity"}
+    input: {left: '{"RepositoryWithheld":true}'}
+    expected: {relation: distinct}
+  - name: represent-native-present-change
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "Native presence changes the identity"}
+    input: {left: '{"NativePresence":"absent"}'}
+    expected: {relation: distinct}
+  - name: represent-native-absent-vs-withheld
+    classification: must-pass
+    provenance: {source: requirement, ref: "Representation inputs"}
+    mutation: {description: "Absent and withheld are different facts"}
+    input: {left: '{"NativePresence":"absent"}', right: '{"NativePresence":"withheld"}'}
+    expected: {relation: distinct}
+  - name: represent-field-boundary-collision
+    classification: must-pass
+    provenance: {source: requirement, ref: "Length-prefixed fields"}
+    mutation: {description: "Adjacent values cannot collide by concatenation"}
+    input: {left: '{"Harness":"a","ModelProvider":"bc"}', right: '{"Harness":"ab","ModelProvider":"c"}'}
+    expected: {relation: distinct}
+  - name: represent-utf8-length-is-bytes
+    classification: must-pass
+    provenance: {source: boundary, ref: "Representation lengths count UTF-8 bytes"}
+    mutation: {description: "A multibyte input has its byte length in the digest"}
+    input: {left: '{"Harness":"é"}'}
+    expected: {golden: "r1.ee0a90d15ba546f1f4539169ff0b2ca815bcbe41a0a3ada0ec2df6edc7745d19"}
+  - name: represent-empty-vs-absent
+    classification: must-pass
+    provenance: {source: requirement, ref: "An absent harness is represented by the empty input string"}
+    mutation: {description: "Absent and explicitly empty harness have the same representation input"}
+    input: {left: '{"Harness":""}', right: '{}', standalone: true}
+    expected: {relation: equal}
+  - name: represent-declaration-order-pinned
+    classification: must-pass
+    provenance: {source: requirement, ref: "Declaration order is derivation order"}
+    mutation: {description: "New or reordered fields fail the field inventory"}
+    input: {guard: fields}
+    expected: {}
+  - name: represent-viewer-projection-closed-set
+    classification: must-pass
+    provenance: {source: requirement, ref: "Two viewer projection values"}
+    mutation: {description: "Unknown viewer projections fail validation"}
+    input: {guard: projection}
+    expected: {}

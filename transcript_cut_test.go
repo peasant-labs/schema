@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"bytes"
+	"crypto/sha256"
 	_ "embed"
 	"encoding/hex"
 	"encoding/json"
@@ -166,6 +167,7 @@ type cutExpectation struct {
 type cutCase struct {
 	Name        string         `yaml:"name"`
 	BudgetBytes int            `yaml:"budgetBytes"`
+	Cook        bool           `yaml:"cook"`
 	Turns       []cutTurnSpec  `yaml:"turns"`
 	Expected    cutExpectation `yaml:"expected"`
 }
@@ -173,8 +175,10 @@ type cutCase struct {
 type cutFixture struct {
 	// ContractBudgetBytes is the budget every server cuts with. It is stated
 	// here once and schema.TranscriptSegmentBudgetBytes must equal it.
-	ContractBudgetBytes int       `yaml:"contractBudgetBytes"`
-	Cases               []cutCase `yaml:"cases"`
+	ContractBudgetBytes int                  `yaml:"contractBudgetBytes"`
+	CutVersion          string               `yaml:"cutVersion"`
+	Cases               []cutCase            `yaml:"cases"`
+	Versions            map[string][]cutCase `yaml:"versions"`
 }
 
 func decodeStrictYAML[T any](t *testing.T, raw []byte, label string) T {
@@ -194,6 +198,15 @@ func decodeStrictYAML[T any](t *testing.T, raw []byte, label string) T {
 func loadCutFixture(t *testing.T) cutFixture {
 	t.Helper()
 	fixture := decodeStrictYAML[cutFixture](t, transcriptCutYAML, "transcript cut fixture")
+	pinned, ok := fixture.Versions["c1"]
+	if !ok || !reflect.DeepEqual(pinned, fixture.Cases) {
+		t.Fatal("transcript cut fixture must retain the original c1 case list")
+	}
+	current, ok := fixture.Versions[schema.CutVersion]
+	if !ok {
+		t.Fatalf("transcript cut fixture lacks expectations for cut version %q", schema.CutVersion)
+	}
+	fixture.Cases = current
 	names := make([]string, len(fixture.Cases))
 	for i, c := range fixture.Cases {
 		names[i] = c.Name
@@ -221,8 +234,25 @@ func refExpectation(ref schema.TranscriptSegmentRef) (cutRefExpectation, bool) {
 // TestCutTranscriptSegments replays the cut cases. The refs are compared whole,
 // so a moved boundary, a changed byte length or a changed position each fail.
 func TestCutTranscriptSegments(t *testing.T) {
-	for _, c := range loadCutFixture(t).Cases {
+	fixture := loadCutFixture(t)
+	for _, c := range fixture.Cases {
 		t.Run(c.Name, func(t *testing.T) {
+			switch c.Name {
+			case "cut-version-matches-pinned-fixture":
+				if fixture.CutVersion != schema.CutVersion {
+					t.Fatalf("cut version = %q, fixture pins %q", schema.CutVersion, fixture.CutVersion)
+				}
+			case "cut-version-bump-required-on-boundary-change":
+				assertTranscriptCutOriginalVersionIsFrozen(t, fixture)
+				if len(c.Expected.Segments) < 2 {
+					t.Fatal("the version guard must exercise a segment boundary")
+				}
+			case "cut-budget-is-contract-constant":
+				assertTranscriptSegmentBudgetIsTheContractValue(t, fixture)
+				if c.BudgetBytes != fixture.ContractBudgetBytes {
+					t.Fatalf("the budget case uses %d, want the contract budget %d", c.BudgetBytes, fixture.ContractBudgetBytes)
+				}
+			}
 			turns := make([]schema.TurnDetail, len(c.Turns))
 			for i, spec := range c.Turns {
 				turn, err := spec.turn()
@@ -230,6 +260,16 @@ func TestCutTranscriptSegments(t *testing.T) {
 					t.Fatal(err)
 				}
 				turns[i] = turn
+			}
+			if c.Cook {
+				verdict := cookFixtureTurns(t, turns)
+				served := make([]schema.TurnDetail, 0, len(turns))
+				for i, turn := range turns {
+					if verdict[i].Keep {
+						served = append(served, turn)
+					}
+				}
+				turns = served
 			}
 			if c.Expected.TurnByteLengths != nil {
 				got := make([]int, len(turns))
@@ -303,11 +343,34 @@ func TestCutTranscriptSegments(t *testing.T) {
 	}
 }
 
+// TestTranscriptCutOriginalVersionIsFrozen prevents rewriting the old
+// expectations to make a changed rule pass. A new rule adds a new version.
+func TestTranscriptCutOriginalVersionIsFrozen(t *testing.T) {
+	assertTranscriptCutOriginalVersionIsFrozen(t, loadCutFixture(t))
+}
+
+func assertTranscriptCutOriginalVersionIsFrozen(t *testing.T, fixture cutFixture) {
+	t.Helper()
+	encoded, err := json.Marshal(fixture.Versions["c1"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := fmt.Sprintf("%x", sha256.Sum256(encoded))
+	const c1Digest = "ba6e6f4a4546e0f0343629a8c005190a39c7f4e74b56d313d7e9df42451e974a"
+	if got != c1Digest {
+		t.Fatalf("the original cut fixture digest is %s; preserve c1 and add expectations for a new version instead", got)
+	}
+}
+
 // TestTranscriptSegmentBudgetIsTheContractValue holds the budget constant equal
 // to the value the cut fixture states, so the budget cannot change without a
 // fixture edit that names it.
 func TestTranscriptSegmentBudgetIsTheContractValue(t *testing.T) {
-	fixture := loadCutFixture(t)
+	assertTranscriptSegmentBudgetIsTheContractValue(t, loadCutFixture(t))
+}
+
+func assertTranscriptSegmentBudgetIsTheContractValue(t *testing.T, fixture cutFixture) {
+	t.Helper()
 	if fixture.ContractBudgetBytes <= 0 {
 		t.Fatal("the transcript cut fixture states no contractBudgetBytes")
 	}
@@ -566,6 +629,15 @@ func TestTranscriptWindowSpanConstantsMatchTheDeclaredRange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	type queryParameter struct {
+		Name        string         `json:"name"`
+		In          string         `json:"in"`
+		Description string         `json:"description"`
+		Required    bool           `json:"required"`
+		Schema      map[string]any `json:"schema"`
+	}
+	shared := map[string]queryParameter{}
+	commonNames := []string{"anchor", "span", "revision"}
 	for _, read := range []struct {
 		name string
 		spec any
@@ -580,17 +652,29 @@ func TestTranscriptWindowSpanConstantsMatchTheDeclaredRange(t *testing.T) {
 		}
 		var document struct {
 			Paths map[string]map[string]struct {
-				Parameters []struct {
-					Name   string         `json:"name"`
-					Schema map[string]any `json:"schema"`
-				} `json:"parameters"`
+				Parameters []queryParameter `json:"parameters"`
 			} `json:"paths"`
 		}
 		if err := json.Unmarshal(raw, &document); err != nil {
 			t.Fatal(err)
 		}
 		found := false
+		seen := map[string]bool{}
 		for _, parameter := range document.Paths[read.path]["get"].Parameters {
+			if parameter.In == "query" && slices.Contains(commonNames, parameter.Name) {
+				if seen[parameter.Name] {
+					t.Fatalf("%s window repeats %s", read.name, parameter.Name)
+				}
+				seen[parameter.Name] = true
+				if read.name == "local" {
+					shared[parameter.Name] = parameter
+				} else if !reflect.DeepEqual(parameter, shared[parameter.Name]) {
+					t.Fatalf("%s window parameter %s = %+v, want shared Local declaration %+v", read.name, parameter.Name, parameter, shared[parameter.Name])
+				}
+				if parameter.Required != (parameter.Name == "anchor") {
+					t.Fatalf("%s window parameter %s required=%v, want anchor alone required", read.name, parameter.Name, parameter.Required)
+				}
+			}
 			if parameter.Name != "span" {
 				continue
 			}
@@ -608,6 +692,11 @@ func TestTranscriptWindowSpanConstantsMatchTheDeclaredRange(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("%s spec declares no span parameter on GET %s", read.name, read.path)
+		}
+		for _, name := range commonNames {
+			if !seen[name] {
+				t.Fatalf("%s spec declares no shared %s query parameter", read.name, name)
+			}
 		}
 	}
 }

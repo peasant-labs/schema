@@ -1,0 +1,691 @@
+turns:
+  cases:
+    - name: recorded-index-absent-preserves-turn
+      classification: must-pass
+      provenance: &legacy {source: manual, ref: "Non-strict legacy envelope with an absent recorded index"}
+      mutation: {description: "Omit the recorded index from the served turn"}
+      input: {raw: '{"role":"assistant","content":"answer"}'}
+      expected: {state: absent}
+    - name: recorded-index-absent
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "A missing recorded index stays absent"}
+      input: {raw: '{}'}
+      expected: {state: absent}
+    - name: recorded-index-null-preserves-turn
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "Preserve an explicit null index from a legacy turn"}
+      input: {raw: '{"index": null,  "content":"answer"}'}
+      expected: {state: invalid}
+    - name: recorded-index-invalid
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "A null recorded index is invalid rather than absent or zero"}
+      input: {raw: '{"index":null}'}
+      expected: {state: invalid}
+    - name: recorded-index-zero-is-present
+      classification: must-pass
+      provenance: &boundary {source: boundary, ref: "Recorded indexes are safe nonnegative JSON integers"}
+      mutation: {description: "Retain zero as a recorded value"}
+      input: {raw: '{"index":0}'}
+      expected: {state: present, index: 0}
+    - name: recorded-index-negative-is-invalid
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "A negative recorded index is not an address"}
+      input: {raw: '{"index":-1}'}
+      expected: {state: invalid}
+    - name: recorded-index-above-safe-domain-is-invalid
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "An integer above the browser safe range is not an address"}
+      input: {raw: '{"index":9007199254740992}'}
+      expected: {state: invalid}
+    - name: recorded-index-safe-maximum
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "The greatest safe integer remains an address"}
+      input: {raw: '{"index":9007199254740991}'}
+      expected: {state: present, index: 9007199254740991}
+    - name: recorded-index-fractional-refused
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "A fractional index is invalid at the row decoder"}
+      input: {raw: '{"index":1.5}'}
+      expected: {state: invalid}
+    - name: recorded-index-bool-refused
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "A boolean index is invalid at the row decoder"}
+      input: {raw: '{"index":true}'}
+      expected: {state: invalid}
+    - name: recorded-index-duplicate-key-refused
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "Duplicate index keys cannot select an address"}
+      input: {raw: '{"index":1,"index":2}'}
+      expected: {state: invalid}
+    - name: turn-bytes-preserved-verbatim
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "Keep whitespace, escapes and member order"}
+      input: {raw: '{ "z":1e3, "s":"\u00e9", "index": null }'}
+      expected: {state: invalid}
+    - name: turn-unknown-member-preserved
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "Keep an unknown object member"}
+      input: {raw: '{"index":7,"future":{"x":1}}'}
+      expected: {state: present, index: 7}
+    - name: turn-bytes-duplicate-key-preserved
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "The opaque constructor preserves duplicate keys for refusal by the document boundary"}
+      input: {raw: '{"x":1,"x":2}'}
+      expected: {state: invalid}
+    - name: turn-object-required
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A null turn is not a JSON object"}
+      input: {raw: 'null'}
+      expected: {}
+    - name: turn-array-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "An array is not a JSON object"}
+      input: {raw: '[]'}
+      expected: {}
+    - name: turn-invalid-utf8-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "Invalid UTF-8 cannot be retained as JSON text"}
+      input: {rawHex: "7b2278223a22ff227d"}
+      expected: {}
+capture:
+  cases:
+    - name: segment-v2-captures-exact-turn-bytes
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "Capture each turn from the served detail without re-encoding it"}
+      input:
+        detail: '{"turns":[{"a": 1, "index":null},{"s":"<a>","n":1e3}]}'
+      expected:
+        turns: ['{"a": 1, "index":null}', '{"s":"<a>","n":1e3}']
+    - name: segment-v2-rows-pair-with-stored-turns
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "Pair the stored turn and typed value from one capture"}
+      input:
+        detail: '{"turns":[{"index":1}]}'
+      expected:
+        turns: ['{"index":1}']
+    - name: segment-v2-empty-turns-absent
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "An absent turn array yields no turns"}
+      input: {detail: '{}'}
+      expected: {turns: []}
+    - name: segment-v2-empty-turns-null
+      classification: must-pass
+      provenance: *legacy
+      mutation: {description: "A null turn array yields no turns"}
+      input: {detail: '{"turns":null}'}
+      expected: {turns: []}
+    - name: segment-v2-nonarray-turns-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A present turns member must be an array or null"}
+      input: {detail: '{"turns":{}}'}
+      expected: {errorContains: "turns is not an array"}
+    - name: segment-v2-detail-not-object-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "The capture boundary requires a session detail object"}
+      input: {detail: '[]'}
+      expected: {errorContains: "not one valid JSON object"}
+    - name: segment-v2-envelope-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "The caller must select the detail rather than passing an envelope"}
+      input: {detail: '{"sessionDetail":{"turns":[]}}'}
+      expected: {errorContains: "an envelope was supplied"}
+    - name: segment-v2-nonobject-turn-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A turn position must hold an object"}
+      input: {detail: '{"turns":[null]}'}
+      expected: {errorContains: "turn 0 is not one JSON object"}
+    - name: segment-v2-typed-decode-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A turn value that cannot decode to the typed domain is refused"}
+      input: {detail: '{"turns":[{"role":"assistant","content":true}]}'}
+      expected: {errorContains: "turn 0 cannot be decoded"}
+    - name: segment-v2-nested-duplicate-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A duplicate member in a turn descendant is refused"}
+      input: {detail: '{"turns":[{"toolCalls":[{"name":"x","name":"y"}]}]}'}
+      expected: {errorContains: 'duplicate object key "name"'}
+evidence:
+  cases:
+    - name: provenance-empty-object-refused-before-cook
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "An empty provenance object has no valid evidence dimensions"}
+      input: '{"role":"system","content":"","provenance":{}}'
+      expected: "one or more evidence dimensions are missing or outside their closed sets"
+segments:
+  cases:
+    - name: position-contiguous
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "Consecutive served positions agree with the directory range"}
+      input: {segment: 0, total: 1, start: 0, count: 3, refFirst: 0, refLast: 2}
+      expected: {segmentValid: true, boundaryValid: true}
+    - name: segment-v2-second-segment-rows-accepted
+      classification: must-pass
+      provenance: *boundary
+      mutation: {description: "The second segment begins at its partition-wide offset"}
+      input: {segment: 1, total: 2, start: 50, count: 50, refFirst: 50, refLast: 99}
+      expected: {segmentValid: true, boundaryValid: true}
+    - name: segment-v2-row-position-off-by-one-refused
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "Contiguous rows begin before the directory ref"}
+      input: {segment: 1, total: 2, start: 49, count: 50, refFirst: 50, refLast: 99}
+      expected: {segmentValid: true, boundaryValid: false, errorContains: "row 0 carries position 49"}
+    - name: segment-v2-refuses-rows-out-of-served-order
+      classification: must-fail
+      provenance: *boundary
+      mutation: {description: "A gap between positions is not a contiguous segment"}
+      input: {segment: 1, total: 2, start: 50, count: 2, gapAt: 1, refFirst: 50, refLast: 51}
+      expected: {segmentValid: false, boundaryValid: false, errorContains: "row 1"}
+directories:
+  cases:
+    - name: directory-v2-unpaged-total-matches-refs
+      classification: must-pass
+      provenance: &directory {source: requirement, ref: "A whole directory covers the served partition"}
+      mutation: &directoryMutation {description: "Validate the supplied directory and ref coordinates"}
+      input: {totalTurns: 2, totalSegments: 2, refCount: 2}
+      expected: {}
+    - name: directory-v2-unpaged-total-mismatch-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 2, totalSegments: 2, refCount: 1}
+      expected: {errorContains: "totalSegments differs from the ref count"}
+    - name: directory-v2-total-turns-smaller-than-ref-count-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: {description: "The partition has fewer rows than its nonempty segments"}
+      input: {totalTurns: 1, totalSegments: 3, refCount: 3}
+      expected: {errorContains: "totalTurns is smaller than the served ref count"}
+    - name: directory-v2-page-first-accepted
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 1, perPage: 10000, refCount: 2}
+      expected: {}
+    - name: directory-v2-page-middle-accepted
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 2, perPage: 10000, refCount: 2, refStart: 10000, positionStart: 10000}
+      expected: {}
+    - name: directory-v2-page-full-cap-accepted
+      classification: must-pass
+      provenance: *boundary
+      mutation: *directoryMutation
+      input: {totalTurns: 10001, totalSegments: 10001, page: 1, perPage: 10000, refCount: 10000}
+      expected: {}
+    - name: directory-v2-page-half-specified-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 1, refCount: 1}
+      expected: {errorContains: "must be set together"}
+    - name: directory-v2-page-nonpositive-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 0, perPage: 10000, refCount: 1}
+      expected: {errorContains: "page number, size, or total is invalid"}
+    - name: directory-v2-page-per-page-not-cap-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 10002, totalSegments: 10002, page: 1, perPage: 9999, refCount: 1}
+      expected: {errorContains: "page number, size, or total is invalid"}
+    - name: directory-v2-page-under-cap-refused
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, page: 1, perPage: 10000, refCount: 1}
+      expected: {errorContains: "page number, size, or total is invalid"}
+    - name: directory-v2-total-at-ref-end-accepted
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, totalConversation: 1, spanBefore: 0, spanCount: 1}
+      expected: {}
+    - name: directory-v2-total-outside-ref-chain-rejected
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, totalConversation: 1, spanBefore: 1, spanCount: 1}
+      expected: {errorContains: "past totalConversationTurns"}
+    - name: directory-v2-total-negative-rejected
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 0, totalSegments: 0, refCount: 0, totalConversation: -1}
+      expected: {errorContains: "total is negative"}
+    - name: ref-v2-positions-contiguous
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 2, totalSegments: 2, refCount: 2, breakPosition: 1}
+      expected: {errorContains: "does not begin immediately after"}
+    - name: ref-v2-range-nonmonotonic-accepted
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, firstTurn: 2, lastTurn: 1}
+      expected: {}
+    - name: ref-v2-turn-range-present
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, firstTurn: 1, lastTurn: 2}
+      expected: {}
+    - name: ref-v2-turn-range-optional
+      classification: must-pass
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1}
+      expected: {}
+    - name: ref-v2-turn-range-half-rejected
+      classification: must-fail
+      provenance: *directory
+      mutation: *directoryMutation
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, firstTurn: 1}
+      expected: {errorContains: "must both be nonnegative or both absent"}
+    - name: ref-v2-turn-range-paired
+      classification: must-fail
+      provenance: *directory
+      mutation: {description: "A last recorded index without the first is not a pair"}
+      input: {totalTurns: 1, totalSegments: 1, refCount: 1, lastTurn: 1}
+      expected: {errorContains: "must both be nonnegative or both absent"}
+wire:
+  cases:
+    - name: ref-v2-required-positions
+      classification: must-pass
+      provenance: &wireRequirement {source: requirement, ref: "The route identity belongs to the transport"}
+      mutation: {description: "The Types contract requires both served-position boundaries"}
+      input: {subject: ref-schema, json: "{}"}
+      expected: {requiredMembers: [sourceFirstPosition, sourceLastPosition]}
+    - name: transport-local-session
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: &wireMutation {description: "Decode and validate the supplied wire object"}
+      input: {subject: transport, json: '{"kind":"local_session","sessionId":"ses_test"}'}
+      expected: {}
+    - name: transport-village-transcript
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: transport, json: '{"kind":"village_transcript","transcriptId":"123e4567-e89b-12d3-a456-426614174000"}'}
+      expected: {}
+    - name: transport-both-rejected
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: transport, json: '{"kind":"local_session","sessionId":"ses_test","transcriptId":"123e4567-e89b-12d3-a456-426614174000"}'}
+      expected: {errorContains: "requires only sessionId"}
+    - name: transport-neither-rejected
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: transport, json: '{"kind":"local_session"}'}
+      expected: {errorContains: "requires only sessionId"}
+    - name: transport-wrong-kind-rejected
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: transport, json: '{"kind":"village_transcript","sessionId":"ses_test"}'}
+      expected: {errorContains: "requires only transcriptId"}
+    - name: content-session-id-absent
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkContentSession: true}
+    - name: content-session-id-empty
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"contentSessionId":"","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkContentSession: true, contentSessionId: ""}
+    - name: content-session-id-outside-grammar
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"contentSessionId":"legacy value","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkContentSession: true, contentSessionId: "legacy value"}
+    - name: context-native-presence-present
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":0,"totalSegments":0}'}
+      expected: {}
+    - name: context-harness-absent
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "An omitted harness stays omitted in the read context"}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkHarness: true}
+    - name: context-harness-present-empty
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "An explicitly empty harness is present and is not an omitted value"}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"harness":"","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkHarness: true, harness: ""}
+    - name: context-harness-legacy-spelling
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Preserve the spelling of a served legacy harness"}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"harness":"claude","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkHarness: true, harness: "claude"}
+    - name: context-harness-null-projects-as-absent
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A null input produces no harness in the output"}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"harness":null,"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {checkHarness: true}
+    - name: context-native-presence-withheld
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":0,"totalSegments":0}'}
+      expected: {}
+    - name: representation-required
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      expected: {errorContains: "representation must be present"}
+    - name: partition-history-requires-section
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: partition, json: '{"kind":"history"}'}
+      expected: {errorContains: "history requires a nonnegative sectionIndex"}
+    - name: partition-main-refuses-section
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: partition, json: '{"kind":"main","sectionIndex":0}'}
+      expected: {errorContains: "main carries sectionIndex"}
+    - name: position-refuses-negative
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":-1,"recordedIndexState":"absent","turn":{}}'}
+      expected: {errorContains: "position or recorded-index state"}
+    - name: row-recorded-index-paired-with-state
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"present","turn":{}}'}
+      expected: {errorContains: "pair a present state with its recorded index"}
+    - name: row-recorded-index-absent-cannot-carry-value
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"absent","recordedIndex":0,"turn":{}}'}
+      expected: {errorContains: "pair a present state with its recorded index"}
+    - name: row-display-number-pattern
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"present","recordedIndex":42,"displayNumber":"27aa","turn":{"index":42}}'}
+      expected: {}
+    - name: row-display-number-absent-means-predating-server
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"absent","turn":{}}'}
+      expected: {}
+    - name: row-display-number-never-zero
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: *wireMutation
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"absent","displayNumber":"0","turn":{}}'}
+      expected: {errorContains: "displayNumber is malformed"}
+    - name: row-display-number-not-a-recorded-index
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "The displayed number and recorded turn identity remain independent"}
+      input: {subject: row, json: '{"position":0,"recordedIndexState":"present","recordedIndex":42,"displayNumber":"27aa","turn":{"index":42}}'}
+      expected: {recordedIndex: 42, displayNumber: "27aa"}
+    - name: directory-protocol-echo-valid
+      classification: must-pass
+      provenance: {source: requirement, ref: "A directory identifies its protocol"}
+      mutation: {description: "Supply a declared version on an otherwise valid directory"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {contains: '"protocolVersion":"0.2.0"'}
+    - name: directory-protocol-echo-missing
+      classification: must-fail
+      provenance: {source: requirement, ref: "A directory without its protocol echo is refused"}
+      mutation: {description: "Omit the version from the valid directory"}
+      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {errorContains: protocolVersion}
+    - name: directory-protocol-echo-minimum-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "A positioned directory cannot claim the shipped protocol"}
+      mutation: {description: "Supply the shipped protocol version on the positioned directory"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.1.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {errorContains: protocolVersion}
+    - name: directory-protocol-echo-unknown
+      classification: must-fail
+      provenance: {source: requirement, ref: "A directory with an undeclared protocol echo is refused"}
+      mutation: {description: "Supply an undeclared version on the valid directory"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.3.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {errorContains: protocolVersion}
+    - name: segment-protocol-echo-valid
+      classification: must-pass
+      provenance: {source: requirement, ref: "The segment writer echoes its protocol"}
+      mutation: {description: "Supply a declared version on an otherwise valid segment"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {contains: '"protocolVersion":"0.2.0"'}
+    - name: segment-protocol-echo-missing
+      classification: must-fail
+      provenance: {source: requirement, ref: "The segment writer refuses a missing echo"}
+      mutation: {description: "Omit the version from the valid segment"}
+      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: segment-protocol-echo-minimum-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "A positioned segment cannot claim the shipped protocol"}
+      mutation: {description: "Supply the shipped protocol version to the positioned segment writer"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.1.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: segment-protocol-echo-unknown
+      classification: must-fail
+      provenance: {source: requirement, ref: "The segment writer refuses an undeclared echo"}
+      mutation: {description: "Supply an undeclared version on the valid segment"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.3.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: window-protocol-echo-valid
+      classification: must-pass
+      provenance: {source: requirement, ref: "A window identifies its protocol"}
+      mutation: {description: "Supply a declared version on an otherwise valid window"}
+      input: {subject: window, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
+      expected: {contains: '"protocolVersion":"0.2.0"'}
+    - name: window-protocol-echo-missing
+      classification: must-fail
+      provenance: {source: requirement, ref: "A window without its protocol echo is refused"}
+      mutation: {description: "Omit the version from the valid window"}
+      input: {subject: window, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: window-protocol-echo-minimum-refused
+      classification: must-fail
+      provenance: {source: requirement, ref: "A positioned window cannot claim the shipped protocol"}
+      mutation: {description: "Supply the shipped protocol version on the positioned window"}
+      input: {subject: window, json: '{"context":{"protocolVersion":"0.1.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: window-protocol-echo-unknown
+      classification: must-fail
+      provenance: {source: requirement, ref: "A window with an undeclared protocol echo is refused"}
+      mutation: {description: "Supply an undeclared version on the valid window"}
+      input: {subject: window, json: '{"context":{"protocolVersion":"0.3.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: history-state-forward-open
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A future history section state remains an open string"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"history":[{"index":0,"state":"future-state","totalTurns":0,"usagePresent":"unknown"}],"usagePresent":"unknown","segments":[]}'}
+      expected: {contains: '"state":"future-state"'}
+    - name: manifest-usage-present
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "The directory can report observed usage evidence"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"present","segments":[]}'}
+      expected: {requiredMembers: [usagePresent], contains: '"usagePresent":"present"'}
+    - name: manifest-usage-empty
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Known empty usage is distinct from unknown"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"empty","segments":[]}'}
+      expected: {requiredMembers: [usagePresent], contains: '"usagePresent":"empty"'}
+    - name: manifest-usage-unknown
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Unknown usage is not a claim that no usage exists"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {requiredMembers: [usagePresent], contains: '"usagePresent":"unknown"'}
+    - name: directory-carries-no-display-number
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Display numbers belong to rows rather than directories or refs"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[{"index":0,"sourceFirstPosition":0,"sourceLastPosition":0,"byteLength":1}]}'}
+      expected: {forbiddenMembers: [displayNumber], notContains: '"displayNumber"'}
+    - name: segment-carries-no-native-presence
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "Native presence belongs to the repeated context, not the segment root"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {forbiddenMembers: [nativePresence], contains: '"nativePresence":"present"'}
+    - name: native-attached-generic
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A tool-attached native record is carried in the segment"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-1","kind":"pi.toolresult.details","source":{"entryRef":"result-1","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":0,"toolCallId":"call-1"},"data":{"value":"kept"}}]}'}
+      expected: {requiredMembers: [nativeMetadata], contains: '"toolCallId":"call-1"'}
+    - name: native-turn-only
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A turn-attached record need not name a tool call"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-2","kind":"pi.custommessage.details","source":{"entryRef":"entry-2","sourceType":"pi.custom_message"},"attachment":{"turnIndex":0},"customType":"example","data":{"value":"kept"}}]}'}
+      expected: {requiredMembers: [nativeMetadata], contains: '"turnIndex":0', notContains: '"toolCallId"'}
+    - name: native-session-only-excluded
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: {description: "A session-level record cannot be written as a segment attachment"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"session-record","kind":"pi.custom.data","source":{"entryRef":"entry-3","sourceType":"pi.custom"},"customType":"example","data":{}}]}'}
+      expected: {errorContains: "session-level records do not travel with segments"}
+    - name: native-withheld-omitted
+      classification: must-pass
+      provenance: *wireRequirement
+      mutation: {description: "A withheld projection omits native records"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {forbiddenMembers: [nativeMetadata], contains: '"nativePresence":"withheld"'}
+    - name: native-withheld-record-refused
+      classification: must-fail
+      provenance: *wireRequirement
+      mutation: {description: "A withheld context cannot disclose an attached native record"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"withheld","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-2","kind":"pi.custommessage.details","source":{"entryRef":"entry-2","sourceType":"pi.custom_message"},"attachment":{"turnIndex":0},"customType":"example","data":{}}]}'}
+      expected: {errorContains: "must not disclose withheld records"}
+raw:
+  cases:
+    - name: segment-v2-member-order-declared
+      classification: must-pass
+      provenance: &rawRequirement {source: requirement, ref: "A segment is written in declaration order without rewriting turn bytes"}
+      mutation: &rawMutation {description: "Exercise the production segment writer on the recorded golden"}
+      input: {mode: members}
+      expected: {members: [context, partition, index, rows, byteLength, hasOlder, hasNewer]}
+    - name: segment-v2-plain-marshal-refused
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: segment-refusal}
+      expected: {}
+    - name: row-v2-plain-marshal-refused
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: row-refusal}
+      expected: {}
+    - name: segment-v2-assembly-round-trips
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: round-trip}
+      expected: {}
+    - name: turn-bytes-verbatim-in-segment
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 2}
+      expected: {raw: '{"index":2, "n":1e3,"unknown":"\u00e9"}'}
+    - name: turn-bytes-interior-whitespace-preserved
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 1}
+      expected: {raw: '{"index": null,  "text": "<a> & b"}'}
+    - name: turn-bytes-number-lexeme-preserved
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 2}
+      expected: {raw: '{"index":2, "n":1e3,"unknown":"\u00e9"}'}
+    - name: turn-bytes-html-characters-unescaped
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 3}
+      expected: {raw: '{"content":"< > &"}'}
+    - name: turn-bytes-absent-index-preserved
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 0}
+      expected: {raw: '{"role": "user"}'}
+    - name: turn-bytes-null-index-preserved
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: turn, row: 1}
+      expected: {raw: '{"index": null,  "text": "<a> & b"}'}
+    - name: segment-v2-omits-absent-optional-members
+      classification: must-pass
+      provenance: *rawRequirement
+      mutation: *rawMutation
+      input: {mode: omissions, row: 3}
+      expected: {}
+served:
+  cases:
+    - name: row-display-number-present-on-every-served-row
+      classification: must-pass
+      provenance: {source: requirement, ref: "Cooked rows carry final partition-wide numbers"}
+      mutation: {description: "Filter a banner and a duplicate before writing the numbered rows"}
+      input:
+        harness: codex
+        detail: '{"turns":[{"role":"system","content":"short"},{"role":"user","content":"one"},{"role":"assistant","content":"answer"},{"role":"assistant","content":"answer"},{"role":"user","content":"two"}]}'
+      expected:
+        - {position: 0, displayNumber: "1", turn: '{"role":"user","content":"one"}'}
+        - {position: 1, displayNumber: "1a", turn: '{"role":"assistant","content":"answer"}'}
+        - {position: 2, displayNumber: "2", turn: '{"role":"user","content":"two"}'}
