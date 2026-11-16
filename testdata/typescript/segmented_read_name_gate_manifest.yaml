@@ -12,4 +12,9 @@ requiredNames:
   - name-gate-hash-not-name
   - name-gate-unrelated-dependency
   - name-gate-fixture-key
+  - name-gate-fixture-retired-declaration
+  - name-gate-fixture-positional-identifier
+  - name-gate-fixture-prose-excluded
+  - name-gate-control-file-mutation
+  - name-gate-inventory-entry-excluded
   - name-gate-positioned-name
