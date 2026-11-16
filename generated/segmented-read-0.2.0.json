@@ -498,6 +498,10 @@
           "nativePresence": {
             "$ref": "#/components/schemas/TranscriptNativePresence"
           },
+          "protocolVersion": {
+            "minLength": 1,
+            "type": "string"
+          },
           "representation": {
             "type": "string"
           },
@@ -537,6 +541,7 @@
           }
         },
         "required": [
+          "protocolVersion",
           "transport",
           "revision",
           "representation",

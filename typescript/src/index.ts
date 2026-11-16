@@ -161,6 +161,36 @@ export function parseSchemaVersionAdvertisement(text: string): string[] {
   return [...value.contentCapabilities];
 }
 
+/** The host's served window, with both members treated as opaque exact tokens. */
+export interface SegmentedReadVersionWindow {
+  readonly current: string;
+  readonly min: string;
+}
+
+/**
+ * Parse the segmented read window independently of content capabilities.
+ * Both members absent or empty mean an older, 0.1.0-only host. An incomplete
+ * or malformed pair is refused rather than authorizing a newer generation.
+ */
+export function parseSegmentedReadVersionAdvertisement(text: string): SegmentedReadVersionWindow | null {
+  scanRawJsonText(text, {maxDocumentBytes: 1 << 20, maxDocumentDepth: 16});
+  const value: unknown = JSON.parse(text);
+  const where = "Segmented read version validation failed at @peasant-labs/schema parseSegmentedReadVersionAdvertisement during discovery decoding: ";
+  if (!isRecord(value)) throw new TypeError(where + "the response is not an object; the served window cannot be established and the reader cannot choose a generation safely; stay on 0.1.0 and ask the host to emit an object.");
+  const current = value.segmentedReadVersion;
+  const min = value.minSegmentedReadVersion;
+  if (current !== undefined && typeof current !== "string") throw new TypeError(where + "segmentedReadVersion is not a string; both members must be emitted together and the served window cannot be established; the reader cannot choose a generation safely, so stay on 0.1.0 and ask the host to emit both strings.");
+  if (min !== undefined && typeof min !== "string") throw new TypeError(where + "minSegmentedReadVersion is not a string; both members must be emitted together and the served window cannot be established; the reader cannot choose a generation safely, so stay on 0.1.0 and ask the host to emit both strings.");
+  const hasCurrent = current !== undefined && current !== "";
+  const hasMin = min !== undefined && min !== "";
+  if (!hasCurrent && !hasMin) return null;
+  if (!hasCurrent || !hasMin) {
+    const missing = hasCurrent ? "minSegmentedReadVersion" : "segmentedReadVersion";
+    throw new TypeError(where + missing + " is absent; the pair must be emitted together and the served window cannot be established; the reader cannot choose a generation safely, so stay on 0.1.0 and ask the host to emit both members.");
+  }
+  return {current, min};
+}
+
 export function parseTranscriptContentText(text: string): import("./internal/generated/contract/zod.gen.js").TranscriptContent {
   return parseTranscriptContentTextWithPolicy(text, TranscriptSourceReadPolicy);
 }

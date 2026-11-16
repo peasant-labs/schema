@@ -84,7 +84,14 @@ func segmentedReadDescription() string {
 	for _, member := range []route.Route{route.VillageGetTranscriptSegments, route.VillageGetTranscriptSegment, route.VillageGetTranscriptWindow} {
 		fmt.Fprintf(&description, "\n- %s %s (%s)", member.Method(), member.Pattern(), member.OperationID())
 	}
-	description.WriteString("\nProtocol generation selectors (omission is v=0):")
+	description.WriteString("\n")
+	description.WriteString(segmentedReadGenerationDescription())
+	return description.String()
+}
+
+func segmentedReadGenerationDescription() string {
+	var description strings.Builder
+	description.WriteString("Protocol generation selectors (omission is v=0):")
 	for _, generation := range schema.SegmentedReadGenerations() {
 		version, ok := schema.SegmentedReadProtocolVersion(generation)
 		if !ok {

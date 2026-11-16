@@ -193,8 +193,9 @@ func TestPositionedSegmentServesCookedRows(t *testing.T) {
 			sessionID := schema.SessionID("ses_test")
 			segment := schema.PositionedSegment{
 				Context: schema.TranscriptReadContext{
-					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
-					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+					ProtocolVersion: schema.SegmentedReadAPIVersion,
+					Transport:       schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
+					Revision:        "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
 					NativePresence: schema.TranscriptNativeAbsent, TotalTurns: len(rows), TotalSegments: 1,
 				},
 				Partition: schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain}, Rows: rows,
@@ -379,8 +380,9 @@ func TestPositionedDirectory(t *testing.T) {
 			}
 			dir := schema.PositionedDirectory{
 				Context: schema.TranscriptReadContext{
-					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
-					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+					ProtocolVersion: schema.SegmentedReadAPIVersion,
+					Transport:       schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
+					Revision:        "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
 					NativePresence: schema.TranscriptNativeAbsent, TotalTurns: c.Input.TotalTurns,
 					TotalSegments: c.Input.TotalSegments, TotalConversationTurns: c.Input.TotalConversation,
 				},
@@ -421,8 +423,9 @@ func TestPositionedSegmentBoundaries(t *testing.T) {
 			}
 			segment := schema.PositionedSegment{
 				Context: schema.TranscriptReadContext{
-					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
-					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+					ProtocolVersion: schema.SegmentedReadAPIVersion,
+					Transport:       schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
+					Revision:        "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
 					NativePresence: schema.TranscriptNativeAbsent, TotalTurns: 100, TotalSegments: c.Input.Total,
 				},
 				Partition: schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain},
@@ -520,8 +523,9 @@ func TestTranscriptServedTurn(t *testing.T) {
 			sessionID := schema.SessionID("ses_test")
 			segment := schema.PositionedSegment{
 				Context: schema.TranscriptReadContext{
-					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
-					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+					ProtocolVersion: schema.SegmentedReadAPIVersion,
+					Transport:       schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
+					Revision:        "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
 					NativePresence: schema.TranscriptNativeAbsent, TotalTurns: 1, TotalSegments: 1,
 				},
 				Partition: schema.TranscriptSegmentPartition{Kind: schema.TranscriptPartitionMain},

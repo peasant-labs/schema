@@ -1,0 +1,25 @@
+cases:
+  - name: protocol-echo-current-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "The producing host echoes its declared version"}
+    mutation: {description: "Supply the current version"}
+    input: {version: "0.2.0"}
+    expected: {}
+  - name: protocol-echo-minimum-declared-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "Validation accepts exact declared-set membership"}
+    mutation: {description: "Supply the other declared token"}
+    input: {version: "0.1.0"}
+    expected: {}
+  - name: protocol-echo-absent-refused
+    classification: must-fail
+    provenance: {source: requirement, ref: "Read bodies must identify their protocol"}
+    mutation: {description: "Omit the version"}
+    input: {version: ""}
+    expected: {errorContains: "protocolVersion"}
+  - name: protocol-echo-unknown-refused
+    classification: must-fail
+    provenance: {source: boundary, ref: "Undeclared tokens do not attest the body"}
+    mutation: {description: "Supply an unknown version"}
+    input: {version: "0.3.0"}
+    expected: {errorContains: "protocolVersion"}

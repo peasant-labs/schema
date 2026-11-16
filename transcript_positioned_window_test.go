@@ -108,8 +108,9 @@ func TestResolvePositionedWindow(t *testing.T) {
 			}
 			input := schema.PositionedWindowInput{
 				Context: schema.TranscriptReadContext{
-					Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
-					Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+					ProtocolVersion: schema.SegmentedReadAPIVersion,
+					Transport:       schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &sessionID},
+					Revision:        "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
 					NativePresence: schema.TranscriptNativeAbsent, TotalTurns: len(turns), TotalSegments: c.Input.TotalSegments,
 				},
 				Partition:       partition,

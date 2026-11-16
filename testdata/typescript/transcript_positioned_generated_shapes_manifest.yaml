@@ -1,4 +1,7 @@
 requiredNames:
+  - directory-missing-protocol-echo-refused
+  - directory-empty-protocol-echo-refused
+  - directory-unknown-protocol-shape-accepted
   - directory-empty-array-accepted
   - directory-null-array-refused
   - segment-nonempty-rows-accepted

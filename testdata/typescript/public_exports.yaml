@@ -60,6 +60,9 @@ functions:
   - name: parseSchemaVersionAdvertisement
     target: runtime-capability-advertisement-parser
     surfaces: [root]
+  - name: parseSegmentedReadVersionAdvertisement
+    target: runtime-segmented-read-version-parser
+    surfaces: [root]
   - name: knownContentCapabilities
     target: runtime-capability-reader
     surfaces: [root]

@@ -490,7 +490,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	// The Village operations retain the Local API's v1 parameters and shapes;
 	// The positioned protocol is an opt-in addition on these Village paths only.
 	type positionedQuery struct {
-		Version        int                                   `query:"v" description:"Omitted selects v1; set to 2 to request the positioned read protocol."`
+		Version        int                                   `query:"v" description:"Segmented read protocol generation."`
 		Partition      schema.TranscriptSegmentPartitionKind `query:"partition" description:"Positioned partition: main or history; omitted selects main."`
 		Section        *int                                  `query:"section" minimum:"0" nullable:"false" description:"History section index. Required for history and omitted for main."`
 		Representation string                                `query:"representation" description:"Optional positioned representation to revalidate; a mismatch requires reload."`
@@ -1075,6 +1075,9 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		if err := setTranscriptReadHeaders(r.Spec, variant.path); err != nil {
 			return err
 		}
+		if err := setSegmentedReadGeneration(r.Spec, variant.path); err != nil {
+			return err
+		}
 	}
 	for _, variant := range []struct {
 		path    string
@@ -1112,6 +1115,35 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	}
 
 	return nil
+}
+
+func setSegmentedReadGeneration(spec *openapi31.Spec, path string) error {
+	item, ok := spec.Paths.MapOfPathItemValues[path]
+	if !ok || item.Get == nil {
+		return fmt.Errorf("declare segmented read generation for GET %s: the operation is missing; the selector cannot be documented; register the read first", path)
+	}
+	generationDescription := segmentedReadGenerationDescription()
+	if item.Get.Description == nil {
+		return fmt.Errorf("declare segmented read generation for GET %s: the operation description is missing; readers cannot discover the served generations; restore its description", path)
+	}
+	for _, ref := range item.Get.Parameters {
+		if ref.Parameter == nil || ref.Parameter.Name != "v" || ref.Parameter.In != openapi31.ParameterInQuery {
+			continue
+		}
+		if ref.Parameter.Schema == nil {
+			return fmt.Errorf("declare segmented read generation for GET %s: the v parameter has no schema; valid selectors cannot be described; restore its integer declaration", path)
+		}
+		generations := schema.SegmentedReadGenerations()
+		values := make([]interface{}, len(generations))
+		for i, generation := range generations {
+			values[i] = generation
+		}
+		ref.Parameter.Schema["enum"] = values
+		ref.Parameter.WithDescription(generationDescription)
+		item.Get.WithDescription(*item.Get.Description + "\n\n" + generationDescription)
+		return nil
+	}
+	return fmt.Errorf("declare segmented read generation for GET %s: the v query parameter is missing; readers cannot select a protocol; restore the generation parameter", path)
 }
 
 func setTranscriptHeaderReadHeaders(spec *openapi31.Spec, path string) error {

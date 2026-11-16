@@ -1,0 +1,14 @@
+requiredNames:
+  - version-advertisement-both-absent
+  - version-advertisement-both-empty
+  - version-advertisement-omitted-and-empty
+  - version-advertisement-explicit-minimal
+  - version-advertisement-complete-window
+  - version-advertisement-unknown-verbatim
+  - version-advertisement-current-only
+  - version-advertisement-minimum-only
+  - version-advertisement-empty-minimum
+  - version-advertisement-null-current
+  - version-advertisement-numeric-minimum
+  - version-advertisement-not-object
+  - version-advertisement-capability-independent

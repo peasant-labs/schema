@@ -114,6 +114,9 @@ func (TranscriptUsagePresence) JSONSchema() (jsonschema.Schema, error) {
 
 // TranscriptReadContext carries the authorized facts repeated on each read.
 type TranscriptReadContext struct {
+	// ProtocolVersion identifies the declared protocol that produced this
+	// body. A reader must refuse a missing or unknown echo.
+	ProtocolVersion        string                   `json:"protocolVersion" minLength:"1"`
 	Transport              TranscriptReadTransport  `json:"transport"`
 	ContentSessionID       *string                  `json:"contentSessionId,omitempty"`
 	Revision               string                   `json:"revision"`
@@ -135,6 +138,9 @@ func (c TranscriptReadContext) Validate() error {
 	const where = "transcript context validation failed at schema.TranscriptReadContext.Validate: "
 	if err := c.Transport.Validate(); err != nil {
 		return err
+	}
+	if !inSet(c.ProtocolVersion, AllSegmentedReadVersions) {
+		return fmt.Errorf("%sprotocolVersion is empty or not a declared segmented read version; the body cannot be interpreted safely; emit a version from AllSegmentedReadVersions", where)
 	}
 	if !isDecimalRevision(c.Revision) || c.Representation == "" {
 		return fmt.Errorf("%srevision must be decimal and representation must be present; responses cannot be joined across generations otherwise; emit both identities", where)

@@ -5888,6 +5888,7 @@ export const zTranscriptReadContext = z.object({
     harness: z.string().optional(),
     model: z.string().optional(),
     nativePresence: zTranscriptNativePresence,
+    protocolVersion: z.string().min(1),
     representation: z.string(),
     revision: z.string(),
     thinkingLevel: zThinkingLevel.optional(),

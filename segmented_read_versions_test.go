@@ -3,6 +3,7 @@ package schema_test
 import (
 	_ "embed"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
@@ -21,6 +22,12 @@ var segmentedReadAdvertisementYAML []byte
 
 //go:embed testdata/segmented_read_advertisement_manifest.yaml
 var segmentedReadAdvertisementManifestYAML []byte
+
+//go:embed testdata/segmented_read_protocol_echo.yaml
+var segmentedReadProtocolEchoYAML []byte
+
+//go:embed testdata/segmented_read_protocol_echo_manifest.yaml
+var segmentedReadProtocolEchoManifestYAML []byte
 
 func TestSegmentedReadProtocolVersion(t *testing.T) {
 	type input struct {
@@ -92,6 +99,43 @@ func TestSegmentedReadAdvertisementProducer(t *testing.T) {
 				}
 			} else if !hasCurrent || !hasMinimum || current != c.Input.Current || minimum != c.Input.Min {
 				t.Fatalf("pair not emitted exactly: %s", wire)
+			}
+		})
+	}
+}
+
+func TestTranscriptReadContextProtocolVersion(t *testing.T) {
+	type input struct {
+		Version string `yaml:"version"`
+	}
+	type expected struct {
+		ErrorContains string `yaml:"errorContains"`
+	}
+	corpus, err := testcase.LoadCorpus[input, expected](segmentedReadProtocolEchoYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := make([]string, 0, len(corpus.Cases))
+	for _, c := range corpus.Cases {
+		names = append(names, c.Name)
+	}
+	caseassert.RequireManifestNames(t, "segmented read protocol echo", segmentedReadProtocolEchoManifestYAML, names)
+	for _, c := range corpus.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			id := schema.SessionID("ses_test")
+			context := schema.TranscriptReadContext{
+				ProtocolVersion: c.Input.Version,
+				Transport:       schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &id},
+				Revision:        "1", Representation: "r1.test",
+				Validation: schema.TranscriptReadServedLegacy, NativePresence: schema.TranscriptNativeAbsent,
+			}
+			err := context.Validate()
+			if c.Classification == testcase.MustFail {
+				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+					t.Fatalf("context error = %v, want %q", err, c.Expected.ErrorContains)
+				}
+			} else if err != nil {
+				t.Fatalf("declared protocol refused: %v", err)
 			}
 		})
 	}

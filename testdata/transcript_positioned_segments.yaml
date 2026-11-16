@@ -360,61 +360,61 @@ wire:
       classification: must-pass
       provenance: *wireRequirement
       mutation: *wireMutation
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
       expected: {checkContentSession: true}
     - name: content-session-id-empty
       classification: must-pass
       provenance: *wireRequirement
       mutation: *wireMutation
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"contentSessionId":"","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"contentSessionId":"","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
       expected: {checkContentSession: true, contentSessionId: ""}
     - name: content-session-id-outside-grammar
       classification: must-pass
       provenance: *wireRequirement
       mutation: *wireMutation
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"contentSessionId":"legacy value","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"contentSessionId":"legacy value","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
       expected: {checkContentSession: true, contentSessionId: "legacy value"}
     - name: context-native-presence-present
       classification: must-pass
       provenance: *wireRequirement
       mutation: *wireMutation
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":0,"totalSegments":0}'}
       expected: {}
     - name: context-harness-absent
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "An omitted harness stays omitted in the read context"}
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
       expected: {checkHarness: true}
     - name: context-harness-present-empty
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "An explicitly empty harness is present and is not an omitted value"}
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"harness":"","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"harness":"","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
       expected: {checkHarness: true, harness: ""}
     - name: context-harness-legacy-spelling
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "Preserve the spelling of a served legacy harness"}
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"harness":"claude","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"harness":"claude","revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
       expected: {checkHarness: true, harness: "claude"}
     - name: context-harness-null-projects-as-absent
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "A null input produces no harness in the output"}
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"harness":null,"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"harness":null,"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
       expected: {checkHarness: true}
     - name: context-native-presence-withheld
       classification: must-pass
       provenance: *wireRequirement
       mutation: *wireMutation
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":0,"totalSegments":0}'}
       expected: {}
     - name: representation-required
       classification: must-fail
       provenance: *wireRequirement
       mutation: *wireMutation
-      input: {subject: context, json: '{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
+      input: {subject: context, json: '{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0}'}
       expected: {errorContains: "representation must be present"}
     - name: partition-history-requires-section
       classification: must-fail
@@ -474,67 +474,67 @@ wire:
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "A future history section state remains an open string"}
-      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"history":[{"index":0,"state":"future-state","totalTurns":0,"usagePresent":"unknown"}],"usagePresent":"unknown","segments":[]}'}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"history":[{"index":0,"state":"future-state","totalTurns":0,"usagePresent":"unknown"}],"usagePresent":"unknown","segments":[]}'}
       expected: {contains: '"state":"future-state"'}
     - name: manifest-usage-present
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "The directory can report observed usage evidence"}
-      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"present","segments":[]}'}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"present","segments":[]}'}
       expected: {requiredMembers: [usagePresent], contains: '"usagePresent":"present"'}
     - name: manifest-usage-empty
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "Known empty usage is distinct from unknown"}
-      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"empty","segments":[]}'}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"empty","segments":[]}'}
       expected: {requiredMembers: [usagePresent], contains: '"usagePresent":"empty"'}
     - name: manifest-usage-unknown
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "Unknown usage is not a claim that no usage exists"}
-      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
       expected: {requiredMembers: [usagePresent], contains: '"usagePresent":"unknown"'}
     - name: directory-carries-no-display-number
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "Display numbers belong to rows rather than directories or refs"}
-      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[{"index":0,"sourceFirstPosition":0,"sourceLastPosition":0,"byteLength":1}]}'}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[{"index":0,"sourceFirstPosition":0,"sourceLastPosition":0,"byteLength":1}]}'}
       expected: {forbiddenMembers: [displayNumber], notContains: '"displayNumber"'}
     - name: segment-carries-no-native-presence
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "Native presence belongs to the repeated context, not the segment root"}
-      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
       expected: {forbiddenMembers: [nativePresence], contains: '"nativePresence":"present"'}
     - name: native-attached-generic
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "A tool-attached native record is carried in the segment"}
-      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-1","kind":"pi.toolresult.details","source":{"entryRef":"result-1","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":0,"toolCallId":"call-1"},"data":{"value":"kept"}}]}'}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-1","kind":"pi.toolresult.details","source":{"entryRef":"result-1","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":0,"toolCallId":"call-1"},"data":{"value":"kept"}}]}'}
       expected: {requiredMembers: [nativeMetadata], contains: '"toolCallId":"call-1"'}
     - name: native-turn-only
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "A turn-attached record need not name a tool call"}
-      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-2","kind":"pi.custommessage.details","source":{"entryRef":"entry-2","sourceType":"pi.custom_message"},"attachment":{"turnIndex":0},"customType":"example","data":{"value":"kept"}}]}'}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-2","kind":"pi.custommessage.details","source":{"entryRef":"entry-2","sourceType":"pi.custom_message"},"attachment":{"turnIndex":0},"customType":"example","data":{"value":"kept"}}]}'}
       expected: {requiredMembers: [nativeMetadata], contains: '"turnIndex":0', notContains: '"toolCallId"'}
     - name: native-session-only-excluded
       classification: must-fail
       provenance: *wireRequirement
       mutation: {description: "A session-level record cannot be written as a segment attachment"}
-      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"session-record","kind":"pi.custom.data","source":{"entryRef":"entry-3","sourceType":"pi.custom"},"customType":"example","data":{}}]}'}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"present","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"session-record","kind":"pi.custom.data","source":{"entryRef":"entry-3","sourceType":"pi.custom"},"customType":"example","data":{}}]}'}
       expected: {errorContains: "session-level records do not travel with segments"}
     - name: native-withheld-omitted
       classification: must-pass
       provenance: *wireRequirement
       mutation: {description: "A withheld projection omits native records"}
-      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"withheld","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
       expected: {forbiddenMembers: [nativeMetadata], contains: '"nativePresence":"withheld"'}
     - name: native-withheld-record-refused
       classification: must-fail
       provenance: *wireRequirement
       mutation: {description: "A withheld context cannot disclose an attached native record"}
-      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"withheld","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-2","kind":"pi.custommessage.details","source":{"entryRef":"entry-2","sourceType":"pi.custom_message"},"attachment":{"turnIndex":0},"customType":"example","data":{}}]}'}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"published_strict","nativePresence":"withheld","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"present","recordedIndex":0,"turn":{"index":0}}],"byteLength":0,"hasOlder":false,"hasNewer":false,"nativeMetadata":[{"id":"native-2","kind":"pi.custommessage.details","source":{"entryRef":"entry-2","sourceType":"pi.custom_message"},"attachment":{"turnIndex":0},"customType":"example","data":{}}]}'}
       expected: {errorContains: "must not disclose withheld records"}
 raw:
   cases:

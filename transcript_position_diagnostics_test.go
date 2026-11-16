@@ -71,8 +71,9 @@ func TestTranscriptDirectoryPositionDiagnostics(t *testing.T) {
 				session := schema.SessionID("ses_test")
 				err = (schema.PositionedDirectory{
 					Context: schema.TranscriptReadContext{
-						Transport: schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &session},
-						Revision:  "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
+						ProtocolVersion: schema.SegmentedReadAPIVersion,
+						Transport:       schema.TranscriptReadTransport{Kind: schema.TranscriptReadTransportLocalSession, SessionID: &session},
+						Revision:        "1", Representation: "r1.test", Validation: schema.TranscriptReadServedLegacy,
 						NativePresence: schema.TranscriptNativeAbsent, TotalTurns: in.TotalTurns,
 						TotalSegments: in.TotalSegments, TotalConversationTurns: &in.TotalConversation,
 					},

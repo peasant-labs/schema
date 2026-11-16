@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -94,6 +95,50 @@ func TestSegmentedReadSpec_GenerationTableMatches(t *testing.T) {
 		if !strings.Contains(*spec.Info.Description, fmt.Sprintf("%s %s (%s)", member.Method(), member.Pattern(), member.OperationID())) {
 			t.Errorf("host route %s missing", member.OperationID())
 		}
+	}
+}
+
+func TestSegmentedReadHostGenerationParametersMatch(t *testing.T) {
+	spec, err := openapi.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	generations := schema.SegmentedReadGenerations()
+	want := make([]interface{}, len(generations))
+	for i, generation := range generations {
+		want[i] = generation
+	}
+	for _, member := range []route.Route{route.VillageGetTranscriptSegments, route.VillageGetTranscriptSegment, route.VillageGetTranscriptWindow} {
+		t.Run(member.OperationID(), func(t *testing.T) {
+			item, ok := spec.Paths.MapOfPathItemValues[member.Pattern()]
+			if !ok || item.Get == nil || item.Get.Description == nil {
+				t.Fatal("host read or its description is missing")
+			}
+			if _, ok := item.Get.Responses.MapOfResponseOrReferenceValues["400"]; !ok {
+				t.Fatal("the route does not declare a bad-generation refusal")
+			}
+			var found bool
+			for _, ref := range item.Get.Parameters {
+				param := ref.Parameter
+				if param == nil || param.Name != "v" || string(param.In) != "query" {
+					continue
+				}
+				found = true
+				if !reflect.DeepEqual(param.Schema["enum"], want) || param.Description == nil {
+					t.Fatalf("generation parameter = %#v, want enum %v and description", param, want)
+				}
+				for _, generation := range generations {
+					version, ok := schema.SegmentedReadProtocolVersion(generation)
+					mapping := fmt.Sprintf("v=%d -> %s", generation, version)
+					if !ok || !strings.Contains(*param.Description, mapping) || !strings.Contains(*item.Get.Description, mapping) {
+						t.Errorf("generation mapping %q is missing from parameter or operation", mapping)
+					}
+				}
+			}
+			if !found {
+				t.Fatal("the host route has no generation selector")
+			}
+		})
 	}
 }
 
