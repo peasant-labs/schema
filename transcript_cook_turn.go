@@ -34,10 +34,10 @@ func NewTranscriptCookTurns(sessionDetail json.RawMessage) ([]TranscriptCookTurn
 	if err != nil {
 		return nil, fmt.Errorf("%ssession detail is not one valid JSON object: %w; pass the served session detail object", where, err)
 	}
-	if _, ok := detail["sessionDetail"]; ok {
+	if _, ok := detail[transcriptWireSessionDetail]; ok {
 		return nil, fmt.Errorf("%san envelope was supplied instead of its session detail; no turns can be paired; select sessionDetail before calling", where)
 	}
-	raw, ok := detail["turns"]
+	raw, ok := detail[transcriptWireTurns]
 	if !ok || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
 		return []TranscriptCookTurn{}, nil
 	}

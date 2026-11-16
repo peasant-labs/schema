@@ -761,7 +761,7 @@ func DecodeTranscriptContentRawWithPolicy(raw []byte, policy TranscriptContentRe
 	if err := rejectNoncanonicalWireKeys(envelope, reflect.TypeFor[TranscriptContent](), "transcriptContent"); err != nil {
 		return TranscriptContent{}, err
 	}
-	detail, ok := envelope["sessionDetail"]
+	detail, ok := envelope[transcriptWireSessionDetail]
 	if !ok || isNullRaw(detail) {
 		return TranscriptContent{}, fmt.Errorf("transcript content validation failed at schema.DecodeTranscriptContentRaw: sessionDetail is missing or null; the envelope cannot be consumed; send a non-null detail object")
 	}

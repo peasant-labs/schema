@@ -24,7 +24,10 @@ async function sourcePaths(directory, prefix = "") {
   for (const entry of await readdir(new URL(directory, oracleDirectory), { withFileTypes: true })) {
     const path = `${prefix}${entry.name}`;
     if (entry.isDirectory()) result.push(...await sourcePaths(`${directory}${entry.name}/`, `${path}/`));
-    else if (entry.isFile()) result.push(path);
+    else if (entry.isFile()) {
+      // The README explains the capture; it is not a captured source file.
+      if (path !== "README.md") result.push(path);
+    }
     else throw new TypeError(`oracle source must not be a symlink or special file: ${path}`);
   }
   return result;

@@ -102,7 +102,7 @@ func DecodeTranscriptRecordedIndex(turn TranscriptServedTurn) (TranscriptRecorde
 	if err := json.Unmarshal(turn.raw, &fields); err != nil {
 		return TranscriptRecordedIndexInvalid, nil
 	}
-	raw, ok := fields["index"]
+	raw, ok := fields[transcriptWireIndex]
 	if !ok {
 		return TranscriptRecordedIndexAbsent, nil
 	}

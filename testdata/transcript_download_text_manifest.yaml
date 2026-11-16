@@ -29,3 +29,9 @@ requiredNames:
   - download-text-source-history-opaque-policy
   - download-text-uncapped-outer-size
   - download-text-default-entry-still-capped
+  - download-tool-use-opaque-input
+  - download-tool-result-opaque-result
+  - download-tool-call-opaque-output
+  - download-function-call-opaque-arguments
+  - download-function-output-opaque-content
+  - download-unknown-tool-type-not-opaque

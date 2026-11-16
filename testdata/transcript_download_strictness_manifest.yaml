@@ -1,0 +1,19 @@
+requiredNames:
+  - known-harness
+  - unknown-harness
+  - pi-provider
+  - pi-model-harness
+  - pi-provider-case-sensitive
+  - retained-unknown-folded
+  - diagnostics-folded
+  - native-metadata-folded
+  - thinking-level-folded
+  - thinking-raw-folded
+  - thinking-history-folded
+  - turn-usage
+  - turn-source-reference
+  - tool-usage
+  - tool-call-reference
+  - tool-result-reference
+  - tool-namespace
+  - nested-members-exact

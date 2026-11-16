@@ -155,28 +155,28 @@ func transcriptMemberArray(members map[string]json.RawMessage, name string) []js
 }
 
 func transcriptFacts(members map[string]json.RawMessage, validateEvidence bool) (transcriptCookFacts, error) {
-	facts := transcriptCookFacts{role: transcriptMemberString(members, "role"), content: transcriptMemberString(members, "content")}
-	_ = json.Unmarshal(members["depth"], &facts.depth)
-	facts.control = transcriptMemberString(members, "controlKind").value != ""
-	facts.protected = transcriptMemberString(members, "sourceEntryRef").value != "" || transcriptMemberSet(members, "usage")
-	if _, present := members["provenance"]; present {
+	facts := transcriptCookFacts{role: transcriptMemberString(members, transcriptWireRole), content: transcriptMemberString(members, transcriptWireContent)}
+	_ = json.Unmarshal(members[transcriptWireDepth], &facts.depth)
+	facts.control = transcriptMemberString(members, transcriptWireControlKind).value != ""
+	facts.protected = transcriptMemberString(members, transcriptWireSourceEntryRef).value != "" || transcriptMemberSet(members, transcriptWireUsage)
+	if _, present := members[transcriptWireProvenance]; present {
 		facts.protected = true
 	}
 	if validateEvidence {
-		if err := transcriptValidateEvidence(members, "sourceEntryRef", "provenance"); err != nil {
+		if err := transcriptValidateEvidence(members, transcriptWireSourceEntryRef, transcriptWireProvenance); err != nil {
 			return facts, err
 		}
 	}
-	for _, raw := range transcriptMemberArray(members, "contentParts") {
+	for _, raw := range transcriptMemberArray(members, transcriptWireContentParts) {
 		part, err := transcriptRawMembers(raw)
 		if err != nil { // A null part is not an image.
 			continue
 		}
-		if transcriptMemberString(part, "type").value == "image" && transcriptMemberSet(part, "image") {
+		if TurnPartType(transcriptMemberString(part, transcriptWireType).value) == TurnPartTypeImage && transcriptMemberSet(part, transcriptWireImage) {
 			facts.image = true
 		}
 	}
-	tools := transcriptMemberArray(members, "toolCalls")
+	tools := transcriptMemberArray(members, transcriptWireToolCalls)
 	facts.tools = len(tools)
 	for _, raw := range tools {
 		tool, err := transcriptRawMembers(raw)
@@ -187,17 +187,17 @@ func transcriptFacts(members map[string]json.RawMessage, validateEvidence bool) 
 			continue
 		}
 		if validateEvidence {
-			if err := transcriptValidateEvidence(tool, "callEntryRef", "callProvenance"); err != nil {
+			if err := transcriptValidateEvidence(tool, transcriptWireCallEntryRef, transcriptWireCallProvenance); err != nil {
 				return facts, err
 			}
-			if err := transcriptValidateEvidence(tool, "resultEntryRef", "resultProvenance"); err != nil {
+			if err := transcriptValidateEvidence(tool, transcriptWireResultEntryRef, transcriptWireResultProvenance); err != nil {
 				return facts, err
 			}
 		}
-		_, callProvenance := tool["callProvenance"]
-		_, resultProvenance := tool["resultProvenance"]
-		if transcriptMemberString(tool, "callEntryRef").value != "" || transcriptMemberString(tool, "resultEntryRef").value != "" ||
-			transcriptMemberSet(tool, "usage") || callProvenance || resultProvenance {
+		_, callProvenance := tool[transcriptWireCallProvenance]
+		_, resultProvenance := tool[transcriptWireResultProvenance]
+		if transcriptMemberString(tool, transcriptWireCallEntryRef).value != "" || transcriptMemberString(tool, transcriptWireResultEntryRef).value != "" ||
+			transcriptMemberSet(tool, transcriptWireUsage) || callProvenance || resultProvenance {
 			facts.protected = true
 		}
 	}
@@ -224,12 +224,12 @@ func transcriptValidateEvidence(members map[string]json.RawMessage, refName, pro
 	}
 	for name := range fields {
 		switch name {
-		case "origin", "actor", "delivery", "ownership", "evidence", "inputModality", "submissionRef":
+		case transcriptWireOrigin, transcriptWireActor, transcriptWireDelivery, transcriptWireOwnership, transcriptWireEvidence, transcriptWireInputModality, transcriptWireSubmissionRef:
 		default:
 			return fmt.Errorf("%s has an unknown member", provenanceName)
 		}
 	}
-	if rawRef, ok := fields["submissionRef"]; ok && bytes.Equal(bytes.TrimSpace(rawRef), []byte("null")) {
+	if rawRef, ok := fields[transcriptWireSubmissionRef]; ok && bytes.Equal(bytes.TrimSpace(rawRef), []byte("null")) {
 		return fmt.Errorf("%s has a null submission reference", provenanceName)
 	}
 	var provenance ContentProvenance
