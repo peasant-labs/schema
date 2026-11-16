@@ -1,0 +1,721 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Peasant Segmented Read Protocol v0.2.0",
+    "description": "This document owns segmented read shapes; the host API document owns the routes. Routes:\n- GET /api/v1/transcripts/{id}/segments (getTranscriptSegments)\n- GET /api/v1/transcripts/{id}/segments/{index} (getTranscriptSegment)\n- GET /api/v1/transcripts/{id}/window (getTranscriptWindow)\nProtocol generation selectors (omission is v=0):\n- v=0 -\u003e 0.1.0\n- v=1 -\u003e 0.1.0\n- v=2 -\u003e 0.2.0",
+    "version": "0.2.0"
+  },
+  "components": {
+    "schemas": {
+      "ConversationTurnSpan": {
+        "properties": {
+          "before": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "count": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "before",
+          "count"
+        ],
+        "type": "object"
+      },
+      "NativeAttachmentRef": {
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "turnIndex": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "NativeMetadataKind": {
+        "description": "Kind of bounded non-conversational native metadata",
+        "enum": [
+          "pi.custom.data",
+          "pi.custommessage.details",
+          "pi.toolresult.details",
+          "pi.compaction.details",
+          "pi.branchsummary.details"
+        ],
+        "examples": [
+          "pi.custom.data",
+          "pi.custommessage.details",
+          "pi.toolresult.details",
+          "pi.compaction.details",
+          "pi.branchsummary.details"
+        ],
+        "title": "Native Metadata Kind",
+        "type": "string"
+      },
+      "NativeMetadataRecord": {
+        "properties": {
+          "attachment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NativeAttachmentRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customType": {
+            "type": "string"
+          },
+          "data": {},
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NativeMetadataKind"
+          },
+          "source": {
+            "$ref": "#/components/schemas/NativeSourceRef"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "source",
+          "data"
+        ],
+        "type": "object"
+      },
+      "NativeMetadataSourceType": {
+        "description": "Native source category for public metadata",
+        "enum": [
+          "pi.custom",
+          "pi.custom_message",
+          "pi.message",
+          "pi.compaction",
+          "pi.branch_summary"
+        ],
+        "examples": [
+          "pi.custom",
+          "pi.custom_message",
+          "pi.message",
+          "pi.compaction",
+          "pi.branch_summary"
+        ],
+        "title": "Native Metadata Source Type",
+        "type": "string"
+      },
+      "NativePiMessageRole": {
+        "description": "Pi message role needed for public metadata validation",
+        "enum": [
+          "toolResult"
+        ],
+        "examples": [
+          "toolResult"
+        ],
+        "title": "Native Pi Message Role",
+        "type": "string"
+      },
+      "NativeSourceRef": {
+        "properties": {
+          "entryRef": {
+            "$ref": "#/components/schemas/SourceEntryRef"
+          },
+          "messageRole": {
+            "$ref": "#/components/schemas/NativePiMessageRole"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/NativeMetadataSourceType"
+          }
+        },
+        "required": [
+          "entryRef",
+          "sourceType"
+        ],
+        "type": "object"
+      },
+      "SessionID": {
+        "description": "Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), msg_{id}, or a Strike session ID)",
+        "examples": [
+          "99d59925-36bc-424c-a789-8be54d9702ba",
+          "agent-a3aee4f",
+          "ses_3cd91f52effeXd3QAJ54jOyzv5",
+          "sess_3cd91f52effeXd3QAJ54jOyzv5",
+          "20260728T123456.123456789Z-ABCDEFGHIJKLMNOPQRST234567",
+          "ABCDEFGHIJKLMNOPQRST234567"
+        ],
+        "format": "session-id",
+        "pattern": "^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+|[0-9]{8}T[0-9]{6}\\.[0-9]{9}Z-[A-Z2-7]{26}|[A-Z2-7]{26})$",
+        "title": "Session ID",
+        "type": "string"
+      },
+      "SourceEntryRef": {
+        "format": "public-ref-utf8-96-bytes",
+        "maxLength": 96,
+        "minLength": 1,
+        "title": "Source Entry Reference",
+        "type": "string"
+      },
+      "ThinkingLevel": {
+        "description": "Canonical reasoning-effort level of assistant-generated output: off, minimal, low, medium, high, xhigh, max, ultra, ultracode. off is the single disabled state, ultra is above max, and ultracode is a distinct level. Omit the field when the level is unknown; never infer it from token budgets.",
+        "enum": [
+          "off",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max",
+          "ultra",
+          "ultracode"
+        ],
+        "examples": [
+          "off",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max",
+          "ultra",
+          "ultracode"
+        ],
+        "title": "Thinking Level",
+        "type": "string"
+      },
+      "ThinkingLevelRaw": {
+        "description": "Exact native thinking-level spelling observed when it differs from the emitted canonical thinkingLevel, including when no canonical level could be mapped. Source evidence, never a canonical value; numeric budgets are never raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode White_Space code point at either edge. Omit when nothing was observed or the native spelling is canonical.",
+        "examples": [
+          "none",
+          "custom"
+        ],
+        "format": "thinking-level-raw-utf8-128-bytes",
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^(?:﻿|[^\\s])(?:[\\s\\S]*(?:﻿|[^\\s]))?$",
+        "title": "Thinking Level Raw",
+        "type": "string"
+      },
+      "TranscriptHistorySection": {
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          },
+          "totalConversationTurns": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalTurns": {
+            "type": "integer"
+          },
+          "usagePresent": {
+            "$ref": "#/components/schemas/TranscriptUsagePresence"
+          }
+        },
+        "required": [
+          "index",
+          "totalTurns",
+          "usagePresent"
+        ],
+        "type": "object"
+      },
+      "TranscriptNativePresence": {
+        "description": "Closed session graph value",
+        "enum": [
+          "absent",
+          "present",
+          "withheld"
+        ],
+        "examples": [
+          "absent",
+          "present",
+          "withheld"
+        ],
+        "title": "Transcript Native Presence",
+        "type": "string"
+      },
+      "TranscriptReadContext": {
+        "properties": {
+          "contentHash": {
+            "type": "string"
+          },
+          "contentSessionId": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "harness": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "nativePresence": {
+            "$ref": "#/components/schemas/TranscriptNativePresence"
+          },
+          "representation": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "thinkingLevel": {
+            "$ref": "#/components/schemas/ThinkingLevel"
+          },
+          "thinkingLevelRaw": {
+            "$ref": "#/components/schemas/ThinkingLevelRaw"
+          },
+          "totalConversationTurns": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalSegments": {
+            "type": "integer"
+          },
+          "totalTurns": {
+            "type": "integer"
+          },
+          "transport": {
+            "$ref": "#/components/schemas/TranscriptReadTransport"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/TranscriptReadValidation"
+          }
+        },
+        "required": [
+          "transport",
+          "revision",
+          "representation",
+          "validation",
+          "nativePresence",
+          "totalTurns",
+          "totalSegments"
+        ],
+        "type": "object"
+      },
+      "TranscriptReadTransport": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/TranscriptReadTransportKind"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcriptId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillageUUID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "TranscriptReadTransportKind": {
+        "description": "Closed session graph value",
+        "enum": [
+          "local_session",
+          "village_transcript"
+        ],
+        "examples": [
+          "local_session",
+          "village_transcript"
+        ],
+        "title": "Transcript Read Transport Kind",
+        "type": "string"
+      },
+      "TranscriptReadValidation": {
+        "description": "Closed session graph value",
+        "enum": [
+          "published_strict",
+          "served_legacy",
+          "migrated"
+        ],
+        "examples": [
+          "published_strict",
+          "served_legacy",
+          "migrated"
+        ],
+        "title": "Transcript Read Validation",
+        "type": "string"
+      },
+      "TranscriptRecordedIndexState": {
+        "description": "Closed session graph value",
+        "enum": [
+          "present",
+          "absent",
+          "invalid"
+        ],
+        "examples": [
+          "present",
+          "absent",
+          "invalid"
+        ],
+        "title": "Transcript Recorded Index State",
+        "type": "string"
+      },
+      "TranscriptSegmentDirectoryV2": {
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/TranscriptReadContext"
+          },
+          "directoryPage": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "directoryPerPage": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptHistorySection"
+            },
+            "type": "array"
+          },
+          "partition": {
+            "$ref": "#/components/schemas/TranscriptSegmentPartition"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegmentRefV2"
+            },
+            "type": "array"
+          },
+          "usagePresent": {
+            "$ref": "#/components/schemas/TranscriptUsagePresence"
+          }
+        },
+        "required": [
+          "context",
+          "partition",
+          "usagePresent",
+          "segments"
+        ],
+        "type": "object"
+      },
+      "TranscriptSegmentPartition": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/TranscriptSegmentPartitionKind"
+          },
+          "sectionIndex": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "TranscriptSegmentPartitionKind": {
+        "description": "Closed session graph value",
+        "enum": [
+          "main",
+          "history"
+        ],
+        "examples": [
+          "main",
+          "history"
+        ],
+        "title": "Transcript Segment Partition Kind",
+        "type": "string"
+      },
+      "TranscriptSegmentRefV2": {
+        "properties": {
+          "byteLength": {
+            "type": "integer"
+          },
+          "conversationTurns": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConversationTurnSpan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstTurn": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "lastTurn": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sourceFirstPosition": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sourceLastPosition": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "sourceFirstPosition",
+          "sourceLastPosition",
+          "byteLength"
+        ],
+        "type": "object"
+      },
+      "TranscriptSegmentRow": {
+        "properties": {
+          "displayNumber": {
+            "minLength": 1,
+            "pattern": "^[1-9][0-9]*[a-z]*$",
+            "type": "string"
+          },
+          "position": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "recordedIndex": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "recordedIndexState": {
+            "$ref": "#/components/schemas/TranscriptRecordedIndexState"
+          },
+          "turn": {
+            "$ref": "#/components/schemas/TranscriptV2Turn"
+          }
+        },
+        "required": [
+          "position",
+          "recordedIndexState",
+          "turn"
+        ],
+        "type": "object"
+      },
+      "TranscriptSegmentV2": {
+        "properties": {
+          "byteLength": {
+            "type": "integer"
+          },
+          "context": {
+            "$ref": "#/components/schemas/TranscriptReadContext"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/NativeMetadataRecord"
+            },
+            "type": "array"
+          },
+          "partition": {
+            "$ref": "#/components/schemas/TranscriptSegmentPartition"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegmentRow"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "context",
+          "partition",
+          "index",
+          "rows",
+          "byteLength",
+          "hasOlder",
+          "hasNewer"
+        ],
+        "type": "object"
+      },
+      "TranscriptUsagePresence": {
+        "description": "Closed session graph value",
+        "enum": [
+          "present",
+          "empty",
+          "unknown"
+        ],
+        "examples": [
+          "present",
+          "empty",
+          "unknown"
+        ],
+        "title": "Transcript Usage Presence",
+        "type": "string"
+      },
+      "TranscriptV2Turn": {
+        "type": "object"
+      },
+      "TranscriptWindowV2": {
+        "properties": {
+          "anchorPosition": {
+            "type": "integer"
+          },
+          "anchorSegment": {
+            "type": "integer"
+          },
+          "anchorTurn": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "context": {
+            "$ref": "#/components/schemas/TranscriptReadContext"
+          },
+          "firstPosition": {
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "lastPosition": {
+            "type": "integer"
+          },
+          "partition": {
+            "$ref": "#/components/schemas/TranscriptSegmentPartition"
+          },
+          "requestedAnchor": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "requestedPosition": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "segments": {
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "span": {
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "context",
+          "partition",
+          "anchorPosition",
+          "anchorSegment",
+          "span",
+          "firstPosition",
+          "lastPosition",
+          "segments",
+          "hasOlder",
+          "hasNewer"
+        ],
+        "type": "object"
+      },
+      "VillageUUID": {
+        "description": "Village-side canonical lowercase UUID identifier",
+        "examples": [
+          "123e4567-e89b-12d3-a456-426614174000"
+        ],
+        "format": "uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "title": "Village UUID",
+        "type": "string"
+      }
+    }
+  }
+}

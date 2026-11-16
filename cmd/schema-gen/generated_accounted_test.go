@@ -36,6 +36,7 @@ func TestGeneratedDirFullyAccounted(t *testing.T) {
 		t.Fatalf("GenerateSpecArtifacts: %v", err)
 	}
 	retiredSpecRegistry := loadRetiredSpecRegistry(t, root)
+	frozenServed := loadServedFrozenSpecRegistry(t, root)
 
 	// accounted = current-generated ∪ retired-registered (both keyed by filename).
 	accounted := make(map[string]bool, len(artifacts)+2*len(retiredSpecRegistry))
@@ -47,6 +48,10 @@ func TestGeneratedDirFullyAccounted(t *testing.T) {
 		if !rs.JSONOnly {
 			accounted[rs.Name+".yaml"] = true
 		}
+	}
+	for _, spec := range frozenServed {
+		accounted[spec.Name+".json"] = true
+		accounted[spec.Name+".yaml"] = true
 	}
 
 	for _, dir := range committedSpecDirs(root) {

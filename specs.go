@@ -14,6 +14,25 @@ import (
 //go:embed generated
 var generatedFS embed.FS
 
+// SegmentedReadSpecJSON returns the newest declared segmented read document.
+func SegmentedReadSpecJSON() []byte {
+	return segmentedReadSpecJSON(SegmentedReadAPIVersion)
+}
+
+// SegmentedReadMinSpecJSON returns the oldest still-served read document.
+func SegmentedReadMinSpecJSON() []byte {
+	return segmentedReadSpecJSON(SegmentedReadMinVersion)
+}
+
+func segmentedReadSpecJSON(version string) []byte {
+	name := "generated/segmented-read-" + version + ".json"
+	b, err := generatedFS.ReadFile(name)
+	if err != nil {
+		panic(fmt.Sprintf("schema segmented read spec is missing at %q: %v; the declared protocol cannot be served from the module; run `make schema` and commit the generated artifact", name, err))
+	}
+	return b
+}
+
 // VillageAPISpecJSON returns the JSON bytes of the CURRENT Village API OpenAPI
 // spec — the version named by VillageAPIVersion. It is version-aware: the filename
 // is derived from the single-source VillageAPIVersion constant, never a literal, so
