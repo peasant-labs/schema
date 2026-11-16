@@ -1,5 +1,5 @@
 # The segmented transcript reads the Village API declares. They carry the
-# v1 response types of the local dashboard reads and additive v2 alternatives.
+# Shipped response types of the local dashboard reads and additive positioned alternatives.
 # statuses is the exact set of declared response statuses; errorRef is the
 # body every error status carries.
 # reachableComponents names nested components the Village-to-Local comparison

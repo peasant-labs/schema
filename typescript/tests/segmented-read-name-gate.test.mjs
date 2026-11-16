@@ -16,8 +16,10 @@ assert.deepEqual([...names].sort(), [...required].sort(), "every retired declara
 // prefixes. A checksum is opaque provenance, not a declaration or prose.
 const alternatives = names.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).sort((a, b) => b.length - a.length).join("|");
 const retired = new RegExp(`(?:^|[^A-Za-z0-9_$])(?:zSchema|Schema|z)?(?:${alternatives})(?:Schema)?(?=$|[^A-Za-z0-9_$])`);
-const lowerIdentifier = /\b(?=[A-Za-z_$][A-Za-z0-9_$]*\b)(?=[A-Za-z0-9_$]*(?:transcript|segment|directory|window|turn|ref|context))(?=[A-Za-z0-9_$]*v2)[A-Za-z0-9_$]+\b/i;
-const lowerProse = /\b(?:v2\s+(?:transcript|segment|directory|window|turn|row|ref|read|protocol|positions?)|(?:transcript|segment|directory|window|turn|row|ref|read|protocol)\s+v2)\b/i;
+const legacyGeneration = ["v", "2"].join("");
+const lowerIdentifier = new RegExp(`\\b(?=[A-Za-z_$][A-Za-z0-9_$]*\\b)(?=[A-Za-z0-9_$]*(?:transcript|segment|directory|window|turn|ref|context))(?=[A-Za-z0-9_$]*${legacyGeneration})[A-Za-z0-9_$]+\\b`, "i");
+const readSubject = "(?:transcript|segmented|segments?|directory|window|turns?|rows?|refs?|reads?|protocol|positions?)";
+const lowerProse = new RegExp(`\\b${legacyGeneration}\\b(?!-)[^\\n]{0,80}\\b${readSubject}\\b|\\b${readSubject}\\b[^\\n]{0,80}\\b${legacyGeneration}\\b(?!-)`, "i");
 const checksum = /(?:h1:|sha256[-:])[A-Za-z0-9+/=]+/g;
 
 function hasRetiredName(source) {
