@@ -2516,9 +2516,11 @@ export const zSchemaVersionResponse = z.object({
     contentCapabilities: z.array(z.string()).optional(),
     minPullContractVersion: z.string().optional(),
     minPushContractVersion: z.string(),
+    minSegmentedReadVersion: z.string().optional(),
     pullContractMaxVersion: z.string().optional(),
     pullContractVersion: z.string().optional(),
     pushContractVersion: z.string(),
+    segmentedReadVersion: z.string().optional(),
     supportedTargetKinds: z.array(z.string()).nullable(),
     supportedTypeIds: z.array(z.string()).nullable()
 });

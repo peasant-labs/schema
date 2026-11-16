@@ -8296,11 +8296,15 @@ components:
           type: string
         minPushContractVersion:
           type: string
+        minSegmentedReadVersion:
+          type: string
         pullContractMaxVersion:
           type: string
         pullContractVersion:
           type: string
         pushContractVersion:
+          type: string
+        segmentedReadVersion:
           type: string
         supportedTargetKinds:
           items:

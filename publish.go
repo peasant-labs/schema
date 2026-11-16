@@ -248,6 +248,13 @@ type SchemaVersionResponse struct {
 	PullContractVersion     PushContractVersion `json:"pullContractVersion,omitempty"`
 	MinPullContractVersion  PushContractVersion `json:"minPullContractVersion,omitempty"`
 	MaxPullContractVersion  PushContractVersion `json:"pullContractMaxVersion,omitempty"`
+	// SegmentedReadVersion and MinSegmentedReadVersion state the newest and
+	// oldest segmented read protocol the host serves. Emit both or neither.
+	// An absent pair means 0.1.0 only; a lone member is unusable and a reader
+	// must fail closed rather than select the newer generation. The values are
+	// opaque exact tokens, not a request to infer semantic-version ordering.
+	SegmentedReadVersion    string `json:"segmentedReadVersion,omitempty"`
+	MinSegmentedReadVersion string `json:"minSegmentedReadVersion,omitempty"`
 	// ContentCapabilities advertises optional enriched-content contracts proven
 	// safe through the server's publish, storage, migration, and serving paths.
 	// Omitted and empty mean no capability; JSON null is outside the contract.
@@ -259,6 +266,15 @@ type SchemaVersionResponse struct {
 	// server output is invalid, clients tolerate and deduplicate it, order has no
 	// meaning, and canonical server serialization is lexicographically sorted.
 	ContentCapabilities []ContentCapability `json:"contentCapabilities,omitempty"`
+}
+
+// MarshalJSON prevents a producer from emitting an incomplete read window.
+func (r SchemaVersionResponse) MarshalJSON() ([]byte, error) {
+	if (r.SegmentedReadVersion == "") != (r.MinSegmentedReadVersion == "") {
+		return nil, fmt.Errorf("schema version response encoding failed at schema.SchemaVersionResponse.MarshalJSON during discovery: segmentedReadVersion and minSegmentedReadVersion must be emitted together; readers cannot safely establish the served window from one member; provide both values or omit both")
+	}
+	type plain SchemaVersionResponse
+	return json.Marshal(plain(r))
 }
 
 func (r *SchemaVersionResponse) UnmarshalJSON(data []byte) error {

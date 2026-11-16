@@ -1,0 +1,31 @@
+cases:
+  - name: omitted-generation-selects-shipped-protocol
+    classification: must-pass
+    provenance: {source: requirement, ref: "An omitted selector decodes to zero"}
+    mutation: {description: "Resolve omitted generation"}
+    input: {generation: 0}
+    expected: {version: "0.1.0", supported: true}
+  - name: explicit-first-generation-selects-shipped-protocol
+    classification: must-pass
+    provenance: {source: requirement, ref: "Explicit first generation retains shipped reads"}
+    mutation: {description: "Resolve first generation"}
+    input: {generation: 1}
+    expected: {version: "0.1.0", supported: true}
+  - name: second-generation-selects-positioned-protocol
+    classification: must-pass
+    provenance: {source: requirement, ref: "The positioned protocol is opt-in"}
+    mutation: {description: "Resolve second generation"}
+    input: {generation: 2}
+    expected: {version: "0.2.0", supported: true}
+  - name: negative-generation-refused
+    classification: must-fail
+    provenance: {source: boundary, ref: "Unknown generations are refused"}
+    mutation: {description: "Request a negative generation"}
+    input: {generation: -1}
+    expected: {supported: false}
+  - name: unknown-future-generation-refused
+    classification: must-fail
+    provenance: {source: boundary, ref: "Unknown generations are refused"}
+    mutation: {description: "Request an undeclared generation"}
+    input: {generation: 3}
+    expected: {supported: false}

@@ -383,4 +383,60 @@ const (
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
 	// Bumped to 0.51.0 for the positioned segmented transcript read catalog.
 	TypesVersion = "0.51.0"
+
+	// SegmentedReadAPIVersion identifies the newest declared segmented read
+	// protocol. Version 0.1.0 is still served when v is omitted or v=1.
+	// Version 0.2.0 adds the positioned protocol at v=2 (breaking-class
+	// change expressed as a minor bump before 1.0).
+	//
+	// Patch bumps describe documentation only. A declaration, member, bound,
+	// default, pattern, refusal or closed-set change needs a minor bump; before
+	// 1.0 this includes breaking changes. At and after 1.0 breaking changes
+	// require a major bump. Name each bump's class explicitly.
+	//
+	// A version that is still served after a bump is frozen while served and
+	// remains generated with its own hash pin. Retired versions stop being
+	// generated and move to the retired-spec registry.
+	SegmentedReadAPIVersion = "0.2.0"
+
+	// SegmentedReadMinVersion is the oldest declared and served segmented read
+	// protocol. It moves only when the oldest served version is retired.
+	SegmentedReadMinVersion = "0.1.0"
 )
+
+// AllSegmentedReadVersions is the exact set of declared protocol versions.
+// Compare tokens by membership, never by inferred semantic-version ordering.
+var AllSegmentedReadVersions = []string{SegmentedReadAPIVersion, SegmentedReadMinVersion}
+
+type segmentedReadGeneration struct {
+	generation int
+	version    string
+}
+
+// The omitted selector decodes to zero; one is its explicit equivalent.
+var segmentedReadGenerations = [...]segmentedReadGeneration{
+	{generation: 0, version: SegmentedReadMinVersion},
+	{generation: 1, version: SegmentedReadMinVersion},
+	{generation: 2, version: SegmentedReadAPIVersion},
+}
+
+// SegmentedReadProtocolVersion resolves the integer generation to an exact
+// protocol version. Unknown generations are refused by returning false.
+func SegmentedReadProtocolVersion(generation int) (string, bool) {
+	for _, entry := range segmentedReadGenerations {
+		if entry.generation == generation {
+			return entry.version, true
+		}
+	}
+	return "", false
+}
+
+// SegmentedReadGenerations returns the supported selectors in declaration order.
+// The returned slice is independent of the protocol's generation table.
+func SegmentedReadGenerations() []int {
+	generations := make([]int, len(segmentedReadGenerations))
+	for i, entry := range segmentedReadGenerations {
+		generations[i] = entry.generation
+	}
+	return generations
+}

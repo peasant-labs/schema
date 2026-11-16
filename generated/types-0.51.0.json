@@ -11107,6 +11107,9 @@
           "minPushContractVersion": {
             "type": "string"
           },
+          "minSegmentedReadVersion": {
+            "type": "string"
+          },
           "pullContractMaxVersion": {
             "type": "string"
           },
@@ -11114,6 +11117,9 @@
             "type": "string"
           },
           "pushContractVersion": {
+            "type": "string"
+          },
+          "segmentedReadVersion": {
             "type": "string"
           },
           "supportedTargetKinds": {

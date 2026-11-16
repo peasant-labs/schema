@@ -43,6 +43,8 @@ const versions = {
   VillageAPIVersion: requiredMatch(versionsSource, /VillageAPIVersion\s*=\s*"([^"]+)"/, "VillageAPIVersion", "versions.go"),
   PeasantLocalAPIVersion: requiredMatch(versionsSource, /PeasantLocalAPIVersion\s*=\s*"([^"]+)"/, "PeasantLocalAPIVersion", "versions.go"),
   TypesVersion: requiredMatch(versionsSource, /TypesVersion\s*=\s*"([^"]+)"/, "TypesVersion", "versions.go"),
+  SegmentedReadAPIVersion: requiredMatch(versionsSource, /SegmentedReadAPIVersion\s*=\s*"([^"]+)"/, "SegmentedReadAPIVersion", "versions.go"),
+  SegmentedReadMinVersion: requiredMatch(versionsSource, /SegmentedReadMinVersion\s*=\s*"([^"]+)"/, "SegmentedReadMinVersion", "versions.go"),
   MetadataSchemaVersion: Number(requiredMatch(metadataSource, /MetadataSchemaVersion\s*=\s*(\d+)/, "MetadataSchemaVersion", "metadata.go")),
 };
 
@@ -118,7 +120,7 @@ async function readGeneratorOutput(path, label) {
 }
 
 function renderVersions(values) {
-  return `${header()}export const VillageAPIVersion = ${JSON.stringify(values.VillageAPIVersion)} as const;\nexport const PeasantLocalAPIVersion = ${JSON.stringify(values.PeasantLocalAPIVersion)} as const;\nexport const TypesVersion = ${JSON.stringify(values.TypesVersion)} as const;\nexport const MetadataSchemaVersion = ${values.MetadataSchemaVersion} as const;\n`;
+  return `${header()}export const VillageAPIVersion = ${JSON.stringify(values.VillageAPIVersion)} as const;\nexport const PeasantLocalAPIVersion = ${JSON.stringify(values.PeasantLocalAPIVersion)} as const;\nexport const TypesVersion = ${JSON.stringify(values.TypesVersion)} as const;\nexport const SegmentedReadAPIVersion = ${JSON.stringify(values.SegmentedReadAPIVersion)} as const;\nexport const SegmentedReadMinVersion = ${JSON.stringify(values.SegmentedReadMinVersion)} as const;\nexport const MetadataSchemaVersion = ${values.MetadataSchemaVersion} as const;\n`;
 }
 
 // Derive exact known keys from the same canonical schemas as the public types.

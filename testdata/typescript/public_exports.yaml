@@ -18,6 +18,12 @@ constants:
   - name: TypesVersion
     value: 0.51.0
     surfaces: [root]
+  - name: SegmentedReadAPIVersion
+    value: 0.2.0
+    surfaces: [root]
+  - name: SegmentedReadMinVersion
+    value: 0.1.0
+    surfaces: [root]
   - name: MetadataSchemaVersion
     value: "12"
     surfaces: [root]
