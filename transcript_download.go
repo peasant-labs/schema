@@ -20,10 +20,10 @@ var (
 	TranscriptDownloadPolicy = TranscriptContentReadPolicy{
 		MaxDocumentDepth: 64,
 		OpaqueMetadataPointers: []string{
-			"/sessionDetail/nativeMetadata/*/data",
-			"/sessionDetail/earlierHistory/*/nativeMetadata/*/data",
-			"/nativeMetadata/*/data",
-			"/earlierHistory/*/nativeMetadata/*/data",
+			"/" + transcriptWireSessionDetail + "/" + transcriptWireNativeMetadata + "/*/" + transcriptWireData,
+			"/" + transcriptWireSessionDetail + "/" + transcriptWireEarlierHistory + "/*/" + transcriptWireNativeMetadata + "/*/" + transcriptWireData,
+			"/" + transcriptWireNativeMetadata + "/*/" + transcriptWireData,
+			"/" + transcriptWireEarlierHistory + "/*/" + transcriptWireNativeMetadata + "/*/" + transcriptWireData,
 		},
 	}
 )
@@ -60,37 +60,38 @@ func TranscriptContentStrict(detail json.RawMessage) bool {
 		return true
 	}
 	var harness string
-	if json.Unmarshal(object["harness"], &harness) == nil {
+	if json.Unmarshal(object[transcriptWireHarness], &harness) == nil {
+		harnessValue := Harness(harness)
 		for _, value := range Harnesses() {
-			if harness == string(value) {
+			if harnessValue == value {
 				return true
 			}
 		}
 	}
 	for key := range object {
-		if strings.EqualFold(key, "retainedUnknown") || strings.EqualFold(key, "diagnostics") ||
-			strings.EqualFold(key, "nativeMetadata") || transcriptThinkingMember(key) {
+		if strings.EqualFold(key, transcriptWireRetainedUnknown) || strings.EqualFold(key, transcriptWireDiagnostics) ||
+			strings.EqualFold(key, transcriptWireNativeMetadata) || transcriptThinkingMember(key) {
 			return true
 		}
 	}
 	var turns []map[string]json.RawMessage
-	_ = json.Unmarshal(object["turns"], &turns)
+	_ = json.Unmarshal(object[transcriptWireTurns], &turns)
 	for _, turn := range turns {
 		for key := range turn {
 			if transcriptThinkingMember(key) {
 				return true
 			}
 		}
-		if _, ok := turn["usage"]; ok {
+		if _, ok := turn[transcriptWireUsage]; ok {
 			return true
 		}
-		if _, ok := turn["sourceEntryRef"]; ok {
+		if _, ok := turn[transcriptWireSourceEntryRef]; ok {
 			return true
 		}
 		var tools []map[string]json.RawMessage
-		_ = json.Unmarshal(turn["toolCalls"], &tools)
+		_ = json.Unmarshal(turn[transcriptWireToolCalls], &tools)
 		for _, tool := range tools {
-			for _, key := range []string{"usage", "callEntryRef", "resultEntryRef", "namespace"} {
+			for _, key := range []string{transcriptWireUsage, transcriptWireCallEntryRef, transcriptWireResultEntryRef, transcriptWireNamespace} {
 				if _, ok := tool[key]; ok {
 					return true
 				}
@@ -101,9 +102,9 @@ func TranscriptContentStrict(detail json.RawMessage) bool {
 }
 
 func transcriptDownloadPiIdentity(object map[string]json.RawMessage) bool {
-	for _, name := range []string{"harness", "provider", "modelHarness"} {
+	for _, name := range []string{transcriptWireHarness, transcriptWireProvider, transcriptWireModelHarness} {
 		var value string
-		if json.Unmarshal(object[name], &value) == nil && value == string(HarnessPi) {
+		if json.Unmarshal(object[name], &value) == nil && Harness(value) == HarnessPi {
 			return true
 		}
 	}
@@ -111,8 +112,8 @@ func transcriptDownloadPiIdentity(object map[string]json.RawMessage) bool {
 }
 
 func transcriptThinkingMember(key string) bool {
-	return strings.EqualFold(key, "thinkingLevel") || strings.EqualFold(key, "thinkingLevelRaw") ||
-		strings.EqualFold(key, "thinkingLevelHistory")
+	return strings.EqualFold(key, transcriptWireThinkingLevel) || strings.EqualFold(key, transcriptWireThinkingLevelRaw) ||
+		strings.EqualFold(key, transcriptWireThinkingLevelHistory)
 }
 
 // DecodeTranscriptDownloadRaw scans and dispatches an authorized content body.
@@ -157,14 +158,14 @@ func DecodeTranscriptDownloadRaw(raw []byte) (TranscriptDownloadRead, error) {
 	object, isObject := value.(map[string]any)
 	envelope := false
 	if isObject {
-		_, hasDetail := object["sessionDetail"]
-		_, hasVersion := object["contractVersion"]
+		_, hasDetail := object[transcriptWireSessionDetail]
+		_, hasVersion := object[transcriptWireContractVersion]
 		envelope = hasDetail || hasVersion
 		if envelope {
 			var root map[string]json.RawMessage
 			_ = json.Unmarshal(raw, &root)
-			detail = root["sessionDetail"]
-			if _, ok := object["sessionDetail"].(map[string]any); !ok {
+			detail = root[transcriptWireSessionDetail]
+			if _, ok := object[transcriptWireSessionDetail].(map[string]any); !ok {
 				return TranscriptDownloadRead{}, fmt.Errorf("%sthe envelope has no object sessionDetail; no export was produced; supply the complete served detail", where)
 			}
 		}
@@ -174,7 +175,7 @@ func DecodeTranscriptDownloadRaw(raw []byte) (TranscriptDownloadRead, error) {
 		_ = json.Unmarshal(detail, &detailMembers)
 		if transcriptDownloadPiIdentity(detailMembers) {
 			var harness string
-			if json.Unmarshal(detailMembers["harness"], &harness) != nil || harness != string(HarnessPi) {
+			if json.Unmarshal(detailMembers[transcriptWireHarness], &harness) != nil || Harness(harness) != HarnessPi {
 				return TranscriptDownloadRead{}, fmt.Errorf("%sPi identity conflicts with the session harness; no export was produced; republish a complete Pi detail with its original harness", where)
 			}
 		}
@@ -193,8 +194,8 @@ func DecodeTranscriptDownloadRaw(raw []byte) (TranscriptDownloadRead, error) {
 		return TranscriptDownloadRead{}, fmt.Errorf("%sthe legacy body embeds a public transcript root; no export was produced; republish one supported envelope", where)
 	}
 	if envelope {
-		kind, ok := object["kind"].(string)
-		if !ok || kind != string(ContentKindSessionDetail) {
+		kind, ok := object[transcriptWireKind].(string)
+		if !ok || ContentKind(kind) != ContentKindSessionDetail {
 			return TranscriptDownloadRead{}, fmt.Errorf("%sthe legacy envelope has an unsupported kind; no export was produced; supply a session_detail envelope", where)
 		}
 	}
@@ -210,9 +211,9 @@ func transcriptDownloadObservedModels(detail json.RawMessage) error {
 		return nil
 	}
 	var turns []map[string]json.RawMessage
-	_ = json.Unmarshal(object["turns"], &turns)
+	_ = json.Unmarshal(object[transcriptWireTurns], &turns)
 	for i, turn := range turns {
-		raw, present := turn["observedModel"]
+		raw, present := turn[transcriptWireObservedModel]
 		if !present {
 			continue
 		}
@@ -242,7 +243,7 @@ func transcriptEmbeddedPublicRoot(value any, allowRoot bool) bool {
 			if transcriptOpaqueProviderChild(node, key, child) {
 				continue
 			}
-			if transcriptEmbeddedPublicRoot(child, allowRoot && key == "sessionDetail") {
+			if transcriptEmbeddedPublicRoot(child, allowRoot && key == transcriptWireSessionDetail) {
 				return true
 			}
 		}
@@ -258,22 +259,23 @@ func transcriptEmbeddedPublicRoot(value any, allowRoot bool) bool {
 
 func transcriptPublicRootShape(node map[string]any) bool {
 	for key, value := range node {
-		if strings.EqualFold(key, "retainedUnknown") || strings.EqualFold(key, "diagnostics") {
+		if strings.EqualFold(key, transcriptWireRetainedUnknown) || strings.EqualFold(key, transcriptWireDiagnostics) {
 			return true
 		}
-		if strings.EqualFold(key, "sessionDetail") {
-			if key != "sessionDetail" {
+		if strings.EqualFold(key, transcriptWireSessionDetail) {
+			if key != transcriptWireSessionDetail {
 				return true
 			}
 			if detail, ok := value.(map[string]any); ok && transcriptPublicRootShape(detail) {
 				return true
 			}
 		}
-		if strings.EqualFold(key, "kind") && value == string(ContentKindSessionDetail) {
+		kind, isString := value.(string)
+		if strings.EqualFold(key, transcriptWireKind) && isString && ContentKind(kind) == ContentKindSessionDetail {
 			return true
 		}
 	}
-	if value, present := node["turns"]; present {
+	if value, present := node[transcriptWireTurns]; present {
 		if value == nil {
 			return true
 		}
@@ -281,14 +283,16 @@ func transcriptPublicRootShape(node map[string]any) bool {
 			return true
 		}
 	}
-	if node["harness"] == string(HarnessPi) || node["kind"] == string(ContentKindSessionDetail) {
+	harness, _ := node[transcriptWireHarness].(string)
+	kind, _ := node[transcriptWireKind].(string)
+	if Harness(harness) == HarnessPi || ContentKind(kind) == ContentKindSessionDetail {
 		return true
 	}
-	if detail, ok := node["sessionDetail"].(map[string]any); ok {
-		if _, ok := node["contractVersion"].(string); ok {
+	if detail, ok := node[transcriptWireSessionDetail].(map[string]any); ok {
+		if _, ok := node[transcriptWireContractVersion].(string); ok {
 			return true
 		}
-		if _, ok := detail["nativeMetadata"]; ok {
+		if _, ok := detail[transcriptWireNativeMetadata]; ok {
 			return true
 		}
 		return transcriptPublicRootShape(detail)
@@ -296,23 +300,36 @@ func transcriptPublicRootShape(node map[string]any) bool {
 	return false
 }
 
+// These are the recognized tool shapes in an open provider-defined type field.
+// Other provider types are not treated as opaque tool payloads.
+type transcriptProviderToolKind string
+
+const (
+	transcriptProviderToolUse            transcriptProviderToolKind = transcriptProviderToolKind(EntryTypeToolUse)
+	transcriptProviderToolResult         transcriptProviderToolKind = transcriptProviderToolKind(EntryTypeToolResult)
+	transcriptProviderToolCall           transcriptProviderToolKind = "toolCall"
+	transcriptProviderFunctionCall       transcriptProviderToolKind = "function_call"
+	transcriptProviderFunctionCallOutput transcriptProviderToolKind = "function_call_output"
+)
+
 func transcriptOpaqueProviderChild(node map[string]any, key string, child any) bool {
 	legacyMessage := func(value map[string]any) bool {
-		_, role := value["role"].(string)
-		_, content := value["content"]
-		_, parts := value["parts"]
+		_, role := value[transcriptWireRole].(string)
+		_, content := value[transcriptWireContent]
+		_, parts := value[transcriptWireParts]
 		return role && (content || parts)
 	}
-	if legacyMessage(node) && (key == "content" || key == "parts" || key == "toolCalls" || key == "tool_calls") {
+	if legacyMessage(node) && (key == transcriptWireContent || key == transcriptWireParts || key == transcriptWireToolCalls || key == transcriptWireToolCallsLegacy) {
 		return true
 	}
-	if message, ok := child.(map[string]any); key == "message" && ok && legacyMessage(message) {
+	if message, ok := child.(map[string]any); key == transcriptWireMessage && ok && legacyMessage(message) {
 		return true
 	}
-	switch node["type"] {
-	case "tool_use", "tool_result", "toolCall", "function_call", "function_call_output":
+	kind, _ := node[transcriptWireType].(string)
+	switch transcriptProviderToolKind(kind) {
+	case transcriptProviderToolUse, transcriptProviderToolResult, transcriptProviderToolCall, transcriptProviderFunctionCall, transcriptProviderFunctionCallOutput:
 		switch key {
-		case "input", "arguments", "result", "output", "content":
+		case transcriptWireInput, transcriptWireArguments, transcriptWireResult, transcriptWireOutput, transcriptWireContent:
 			return true
 		}
 	}

@@ -14,8 +14,8 @@ import (
 // TranscriptSessionHeaderPresenceMembers names the fields whose absence must
 // remain distinct from an explicitly supplied zero value.
 var TranscriptSessionHeaderPresenceMembers = []string{
-	"id", "harness", "startTime", "endTime", "durationMins",
-	"totalTokens", "tokensIn", "tokensOut", "turnCount", "toolCallCount",
+	transcriptWireID, transcriptWireHarness, transcriptWireStartTime, transcriptWireEndTime, transcriptWireDurationMins,
+	transcriptWireTotalTokens, transcriptWireTokensIn, transcriptWireTokensOut, transcriptWireTurnCount, transcriptWireToolCallCount,
 }
 
 // TranscriptSessionHeader is the bounded metadata projection of the served
@@ -75,7 +75,7 @@ func NewTranscriptSessionHeader(sessionDetail json.RawMessage) (TranscriptSessio
 	if err != nil {
 		return header, fmt.Errorf("%sthe served detail is not one object with unique members: %w; pass the served sessionDetail object", where, err)
 	}
-	if _, ok := members["sessionDetail"]; ok {
+	if _, ok := members[transcriptWireSessionDetail]; ok {
 		return header, fmt.Errorf("%san envelope was supplied instead of its detail; select the served sessionDetail object", where)
 	}
 	value := reflect.ValueOf(&header).Elem()
@@ -86,7 +86,7 @@ func NewTranscriptSessionHeader(sessionDetail json.RawMessage) (TranscriptSessio
 		if !ok || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
 			continue
 		}
-		if name == "earlierHistory" {
+		if name == transcriptWireEarlierHistory {
 			states, err := transcriptHeaderHistory(raw)
 			if err != nil {
 				return TranscriptSessionHeader{}, fmt.Errorf("%searlierHistory cannot be projected: %w; pass the served section array", where, err)
@@ -115,7 +115,7 @@ func transcriptHeaderHistory(raw json.RawMessage) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("section %d is not an object with unique members: %w", i, err)
 		}
-		state, present := members["state"]
+		state, present := members[transcriptWireState]
 		if !present {
 			continue
 		}
@@ -137,7 +137,7 @@ func transcriptHeaderHistory(raw json.RawMessage) ([]string, error) {
 // TranscriptSessionHeaderRepositoryMembers is the exact set of header fields
 // removed by the repository-withholding projection.
 var TranscriptSessionHeaderRepositoryMembers = []string{
-	"project", "workingDirectory", "gitBranch", "gitRemote",
+	transcriptWireProject, transcriptWireWorkingDirectory, transcriptWireGitBranch, transcriptWireGitRemote,
 }
 
 // WithholdSessionHeaderRepository omits repository identity from a header.
@@ -191,8 +191,9 @@ func (h TranscriptContentHeader) Validate() error {
 	}
 	known := false
 	if h.SessionHeader.Harness != nil {
+		harnessValue := Harness(*h.SessionHeader.Harness)
 		for _, harness := range Harnesses() {
-			if *h.SessionHeader.Harness == string(harness) {
+			if harnessValue == harness {
 				known = true
 				break
 			}

@@ -85,11 +85,11 @@ func LocateTranscriptEntry(rows []TranscriptEntryScanRow, reference string) (Tra
 		if row.State == TranscriptRecordedIndexPresent {
 			hit.RecordedIndex = row.Recorded
 		}
-		if transcriptEntryStringEquals(members["sourceEntryRef"], reference) {
+		if transcriptEntryStringEquals(members[transcriptWireSourceEntryRef], reference) {
 			hit.Kind = TranscriptEntryReferenceSource
 			return hit, true, nil
 		}
-		rawCalls := bytes.TrimSpace(members["toolCalls"])
+		rawCalls := bytes.TrimSpace(members[transcriptWireToolCalls])
 		if len(rawCalls) == 0 || rawCalls[0] != '[' {
 			continue
 		}
@@ -102,11 +102,11 @@ func LocateTranscriptEntry(rows []TranscriptEntryScanRow, reference string) (Tra
 			if err != nil {
 				return TranscriptEntryHit{}, false, fmt.Errorf("%sserved row %d tool call %d is not a valid object: %w; capture the served rows again before scanning", where, position, i, err)
 			}
-			if transcriptEntryStringEquals(call["callEntryRef"], reference) {
+			if transcriptEntryStringEquals(call[transcriptWireCallEntryRef], reference) {
 				hit.Kind = TranscriptEntryReferenceToolCall
 				return hit, true, nil
 			}
-			if transcriptEntryStringEquals(call["resultEntryRef"], reference) {
+			if transcriptEntryStringEquals(call[transcriptWireResultEntryRef], reference) {
 				hit.Kind = TranscriptEntryReferenceToolResult
 				return hit, true, nil
 			}

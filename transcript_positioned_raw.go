@@ -25,7 +25,7 @@ func (TranscriptSegmentRow) MarshalJSON() ([]byte, error) {
 }
 
 var positionedSegmentMembers = []string{
-	"context", "partition", "index", "rows", "byteLength", "hasOlder", "hasNewer", "nativeMetadata",
+	"context", "partition", transcriptWireIndex, "rows", "byteLength", "hasOlder", "hasNewer", transcriptWireNativeMetadata,
 }
 
 // ValidatePositionedSegmentBoundaries compares the segment's served rows
