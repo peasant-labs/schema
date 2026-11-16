@@ -470,6 +470,60 @@ wire:
       mutation: {description: "The displayed number and recorded turn identity remain independent"}
       input: {subject: row, json: '{"position":0,"recordedIndexState":"present","recordedIndex":42,"displayNumber":"27aa","turn":{"index":42}}'}
       expected: {recordedIndex: 42, displayNumber: "27aa"}
+    - name: directory-protocol-echo-valid
+      classification: must-pass
+      provenance: {source: requirement, ref: "A directory identifies its protocol"}
+      mutation: {description: "Supply a declared version on an otherwise valid directory"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {contains: '"protocolVersion":"0.2.0"'}
+    - name: directory-protocol-echo-missing
+      classification: must-fail
+      provenance: {source: requirement, ref: "A directory without its protocol echo is refused"}
+      mutation: {description: "Omit the version from the valid directory"}
+      input: {subject: directory, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {errorContains: protocolVersion}
+    - name: directory-protocol-echo-unknown
+      classification: must-fail
+      provenance: {source: requirement, ref: "A directory with an undeclared protocol echo is refused"}
+      mutation: {description: "Supply an undeclared version on the valid directory"}
+      input: {subject: directory, json: '{"context":{"protocolVersion":"0.3.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":0,"totalSegments":0},"partition":{"kind":"main"},"usagePresent":"unknown","segments":[]}'}
+      expected: {errorContains: protocolVersion}
+    - name: segment-protocol-echo-valid
+      classification: must-pass
+      provenance: {source: requirement, ref: "The segment writer echoes its protocol"}
+      mutation: {description: "Supply a declared version on an otherwise valid segment"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {contains: '"protocolVersion":"0.2.0"'}
+    - name: segment-protocol-echo-missing
+      classification: must-fail
+      provenance: {source: requirement, ref: "The segment writer refuses a missing echo"}
+      mutation: {description: "Omit the version from the valid segment"}
+      input: {subject: segment, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: segment-protocol-echo-unknown
+      classification: must-fail
+      provenance: {source: requirement, ref: "The segment writer refuses an undeclared echo"}
+      mutation: {description: "Supply an undeclared version on the valid segment"}
+      input: {subject: segment, json: '{"context":{"protocolVersion":"0.3.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"index":0,"rows":[{"position":0,"recordedIndexState":"absent","turn":{}}],"byteLength":0,"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: window-protocol-echo-valid
+      classification: must-pass
+      provenance: {source: requirement, ref: "A window identifies its protocol"}
+      mutation: {description: "Supply a declared version on an otherwise valid window"}
+      input: {subject: window, json: '{"context":{"protocolVersion":"0.2.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
+      expected: {contains: '"protocolVersion":"0.2.0"'}
+    - name: window-protocol-echo-missing
+      classification: must-fail
+      provenance: {source: requirement, ref: "A window without its protocol echo is refused"}
+      mutation: {description: "Omit the version from the valid window"}
+      input: {subject: window, json: '{"context":{"transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
+    - name: window-protocol-echo-unknown
+      classification: must-fail
+      provenance: {source: requirement, ref: "A window with an undeclared protocol echo is refused"}
+      mutation: {description: "Supply an undeclared version on the valid window"}
+      input: {subject: window, json: '{"context":{"protocolVersion":"0.3.0","transport":{"kind":"local_session","sessionId":"ses_test"},"revision":"1","representation":"r1.test","validation":"served_legacy","nativePresence":"absent","totalTurns":1,"totalSegments":1},"partition":{"kind":"main"},"anchorPosition":0,"anchorSegment":0,"span":1,"firstPosition":0,"lastPosition":0,"segments":[0],"hasOlder":false,"hasNewer":false}'}
+      expected: {errorContains: protocolVersion}
     - name: history-state-forward-open
       classification: must-pass
       provenance: *wireRequirement

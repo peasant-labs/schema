@@ -296,6 +296,15 @@ func TestPositionedSegmentWireValidation(t *testing.T) {
 					t.Fatal(err)
 				}
 				encoded, err = schema.MarshalPositionedSegment(segment)
+			case "window":
+				var window schema.PositionedWindow
+				if err := json.Unmarshal([]byte(c.Input.JSON), &window); err != nil {
+					t.Fatal(err)
+				}
+				err = window.Validate()
+				if err == nil {
+					encoded, err = json.Marshal(window)
+				}
 			case "ref-schema":
 				spec, buildErr := openapi.BuildTypesSpec()
 				if buildErr != nil {

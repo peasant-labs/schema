@@ -1,12 +1,14 @@
 package schema_test
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"strings"
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
+	"github.com/peasant-labs/schema/openapi"
 	"github.com/peasant-labs/schema/testcase"
 	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
@@ -28,6 +30,12 @@ var segmentedReadProtocolEchoYAML []byte
 
 //go:embed testdata/segmented_read_protocol_echo_manifest.yaml
 var segmentedReadProtocolEchoManifestYAML []byte
+
+//go:embed testdata/segmented_read_spec_accessors.yaml
+var segmentedReadSpecAccessorsYAML []byte
+
+//go:embed testdata/segmented_read_spec_accessors_manifest.yaml
+var segmentedReadSpecAccessorsManifestYAML []byte
 
 func TestSegmentedReadProtocolVersion(t *testing.T) {
 	type input struct {
@@ -136,6 +144,45 @@ func TestTranscriptReadContextProtocolVersion(t *testing.T) {
 				}
 			} else if err != nil {
 				t.Fatalf("declared protocol refused: %v", err)
+			}
+		})
+	}
+}
+
+func TestSegmentedReadSpecAccessors(t *testing.T) {
+	type input struct {
+		Role string `yaml:"role"`
+	}
+	type expected struct {
+		Artifact string `yaml:"artifact"`
+	}
+	corpus, err := testcase.LoadCorpus[input, expected](segmentedReadSpecAccessorsYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := make([]string, 0, len(corpus.Cases))
+	for _, c := range corpus.Cases {
+		names = append(names, c.Name)
+	}
+	caseassert.RequireManifestNames(t, "segmented read spec accessors", segmentedReadSpecAccessorsManifestYAML, names)
+	artifacts, err := openapi.GenerateSpecArtifacts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range corpus.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var got []byte
+			switch c.Input.Role {
+			case "current":
+				got = schema.SegmentedReadSpecJSON()
+			case "minimum":
+				got = schema.SegmentedReadMinSpecJSON()
+			default:
+				t.Fatalf("unknown accessor role %q", c.Input.Role)
+			}
+			want, ok := artifacts[c.Expected.Artifact]
+			if !ok || !bytes.Equal(got, want) {
+				t.Fatalf("embedded document does not match generated artifact %q", c.Expected.Artifact)
 			}
 		})
 	}

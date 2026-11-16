@@ -10,5 +10,8 @@ requiredNames:
   - version-advertisement-empty-minimum
   - version-advertisement-null-current
   - version-advertisement-numeric-minimum
+  - version-advertisement-null-alone
+  - version-advertisement-duplicate-member
   - version-advertisement-not-object
   - version-advertisement-capability-independent
+  - version-advertisement-ignores-capability-shape

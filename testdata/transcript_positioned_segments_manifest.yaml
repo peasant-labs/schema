@@ -73,6 +73,15 @@ requiredNames:
   - row-recorded-index-absent-cannot-carry-value
   - row-display-number-pattern
   - row-display-number-absent-means-predating-server
+  - directory-protocol-echo-valid
+  - directory-protocol-echo-missing
+  - directory-protocol-echo-unknown
+  - segment-protocol-echo-valid
+  - segment-protocol-echo-missing
+  - segment-protocol-echo-unknown
+  - window-protocol-echo-valid
+  - window-protocol-echo-missing
+  - window-protocol-echo-unknown
   - row-display-number-never-zero
   - row-display-number-not-a-recorded-index
   - history-state-forward-open

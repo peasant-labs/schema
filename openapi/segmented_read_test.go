@@ -73,6 +73,39 @@ func TestSegmentedReadSpec(t *testing.T) {
 					t.Errorf("other protocol's component %q present", name)
 				}
 			}
+			wire, err := spec.MarshalJSON()
+			if err != nil {
+				t.Fatal(err)
+			}
+			var doc map[string]interface{}
+			if err := json.Unmarshal(wire, &doc); err != nil {
+				t.Fatal(err)
+			}
+			components := doc["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+			var visit func(interface{})
+			visit = func(value interface{}) {
+				switch node := value.(type) {
+				case map[string]interface{}:
+					for key, child := range node {
+						if key == "$ref" {
+							ref, ok := child.(string)
+							const prefix = "#/components/schemas/"
+							if !ok || !strings.HasPrefix(ref, prefix) {
+								t.Errorf("non-local component reference %v", child)
+							} else if _, ok := components[strings.TrimPrefix(ref, prefix)]; !ok {
+								t.Errorf("component reference %q is unresolved", ref)
+							}
+						} else {
+							visit(child)
+						}
+					}
+				case []interface{}:
+					for _, child := range node {
+						visit(child)
+					}
+				}
+			}
+			visit(components)
 		})
 	}
 }
