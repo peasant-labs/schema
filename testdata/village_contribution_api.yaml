@@ -1,8 +1,8 @@
 required_names:
   views: [view-grouped, view-paged, view-snapshot, view-empty-is-not-a-token, view-flat-is-not-a-token, view-capitalised, view-padded, view-unknown]
-  error_codes: [code-moved, code-missing, code-private-unapproved, code-conflict, code-policy, code-membership, code-stale-selection, code-snapshot-timeout, code-snapshot-busy, code-snapshot-too-large-retired, code-live-retired, code-empty, code-capitalised, code-unknown]
-  bounds: [page-limit-default, page-limit-minimum, page-limit-maximum]
-  shapes: [page-response-family, page-response-empty-helpers, page-response-matched-absent, page-response-session-end, page-response-retired-snapshot-limit, snapshot-response-compact, snapshot-record-no-parent, snapshot-record-retired-title, snapshot-response-retired-truncated, project-page-counts, project-page-retired-project-q, error-response-moved, error-response-policy-without-transcript, error-response-legacy-text-only, selection-request, selection-request-retired-expand-helpers]
+  error_codes: [code-moved, code-missing, code-private-unapproved, code-conflict, code-policy, code-membership, code-stale-selection, code-snapshot-timeout, code-snapshot-busy, code-snapshot-too-large, code-live-retired, code-empty, code-capitalised, code-unknown]
+  bounds: [page-limit-default, page-limit-minimum, page-limit-maximum, snapshot-max-bytes, selection-max-transcripts]
+  shapes: [page-response-family, page-response-empty-helpers, page-response-matched-absent, page-response-session-end, page-response-retired-snapshot-limit, snapshot-response-compact, snapshot-record-no-parent, snapshot-record-retired-title, snapshot-response-retired-truncated, project-page-counts, project-page-retired-project-q, error-response-moved, error-response-policy-without-transcript, error-response-legacy-text-only, error-response-snapshot-too-large, selection-request, selection-request-retired-expand-helpers]
 views:
   cases:
     - name: view-grouped
@@ -109,12 +109,12 @@ error_codes:
       classification: must-pass
       provenance: *codes
       mutation: {description: a server already building the most snapshots it will is a member}
-    - name: code-snapshot-too-large-retired
+    - name: code-snapshot-too-large
       input: {raw: snapshot_too_large}
-      expected: {valid: false}
-      classification: must-fail
-      provenance: {source: requirement, ref: snapshot-has-no-cap}
-      mutation: {description: the snapshot has no record or byte cap, so no code reports one}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: snapshot-size-limit}
+      mutation: {description: a snapshot that would exceed the 8 MiB limit is refused whole and its code is a member}
     - name: code-live-retired
       input: {raw: live}
       expected: {valid: false}
@@ -159,6 +159,18 @@ bounds:
       classification: must-pass
       provenance: *bounds
       mutation: {description: a page holds at most 500 root sessions}
+    - name: snapshot-max-bytes
+      input: {constant: snapshot_max_bytes}
+      expected: {value: 8388608}
+      classification: must-pass
+      provenance: {source: requirement, ref: snapshot-size-limit}
+      mutation: {description: one snapshot document is limited to 8 MiB of response body, counted in bytes and not in records}
+    - name: selection-max-transcripts
+      input: {constant: selection_max_transcripts}
+      expected: {value: 1000}
+      classification: must-pass
+      provenance: {source: requirement, ref: selection-write-is-bounded}
+      mutation: {description: one selection write offers at most 1000 sessions and a larger selection is sent as several requests}
 shapes:
   cases:
     - name: page-response-family
@@ -224,8 +236,8 @@ shapes:
           snapshot_limit: 5000
       expected: {valid: false}
       classification: must-fail
-      provenance: {source: requirement, ref: snapshot-has-no-cap}
-      mutation: {description: no response declares a snapshot limit}
+      provenance: {source: requirement, ref: snapshot-limit-is-a-contract-constant}
+      mutation: {description: the snapshot limit is a contract constant, so no response declares a limit field}
     - name: snapshot-response-compact
       input:
         target: snapshot
@@ -267,8 +279,8 @@ shapes:
           truncated: true
       expected: {valid: false}
       classification: must-fail
-      provenance: {source: requirement, ref: snapshot-has-no-cap}
-      mutation: {description: a snapshot is never truncated, so it has no truncation flag}
+      provenance: {source: requirement, ref: snapshot-is-refused-whole}
+      mutation: {description: a snapshot over the limit is refused whole and never truncated, so it has no truncation flag}
     - name: project-page-counts
       input:
         target: project-page
@@ -318,6 +330,14 @@ shapes:
       classification: must-pass
       provenance: {source: requirement, ref: existing-error-body-keeps-working}
       mutation: {description: a refusal with no machine reason keeps the legacy body}
+    - name: error-response-snapshot-too-large
+      input:
+        target: error
+        json: {error: "the snapshot is over the size limit; narrow the search and read it again", code: snapshot_too_large}
+      expected: {valid: true, present: [error, code], absent: [details]}
+      classification: must-pass
+      provenance: {source: requirement, ref: snapshot-size-limit}
+      mutation: {description: an oversized snapshot is refused whole with a request-level code and no per-transcript details}
     - name: selection-request
       input:
         target: selection

@@ -29,8 +29,16 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   its root's project; a helper may be in another project and carries its own
   `project_hash`. `view=snapshot` returns the compact record of every session in
   the matching families of one project (id, visibility, latest contribution
-  status, project, parent link) with no record cap and no byte cap; it may
-  refuse with the 503 codes `snapshot_timeout` and `snapshot_busy`. One search
+  status, project, parent link) in one document with no record-count cap. The
+  document is limited to 8 MiB (8388608 bytes) of response body
+  (`VillageContributionSnapshotMaxBytes`); a snapshot that would exceed the
+  limit is refused whole with a 413 whose code is the new
+  `VillageContributionErrorCode` member `snapshot_too_large`, nothing partial
+  is returned, and the client narrows the search with `q` or `provider` and
+  reads the snapshot again. The limit is a contract constant, so no
+  `snapshot_limit` parameter or field and no `truncated` field exists. The
+  snapshot may also refuse with the 503 codes `snapshot_timeout` and
+  `snapshot_busy`. One search
   parameter `q` matches project display names, root and helper titles and exact
   transcript ids; a family appears when its root or any helper matches, and each
   family member carries the optional `matched` flag. New
@@ -48,9 +56,14 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   parameters `q`, `project_hash`, `provider`, `cursor` and `limit` apply only to
   `view=paged` and `view=snapshot`; they are ignored without `view` and with
   `view=grouped`, whose responses are unchanged. `view=snapshot` without
-  `project_hash` is a 400, and the 413 applies only when `view` is omitted. The
+  `project_hash` is a 400. Without `view`, a 413 with no code is the flat
+  list's row-limit refusal. The
   selection write offers exactly the listed `transcript_ids`; `project_hash` is
-  the project of the selected roots and helpers are not checked against it. Its
+  the project of the selected roots and helpers are not checked against it. One
+  request offers at most 1000 sessions (`VillageContributionSelectionMaxTranscripts`):
+  `transcript_ids` and `private_approvals` each hold at most 1000 ids, a body
+  over the bound is a 400 with no code, and a client with a larger selection
+  sends it as several requests. Its
   refusals carry the status that names their kind: 400 is a body that violates
   the contract (no code); 403 carries `membership` (the caller may not
   contribute to the collective) or `policy` (the collective's policy refuses

@@ -59,9 +59,9 @@ func loadContributionFixtures(t *testing.T) contributionFixtures {
 	assertcase.RequireValid(t, f.Views)
 	assertcase.RequireMin(t, f.ErrorCodes, 14)
 	assertcase.RequireValid(t, f.ErrorCodes)
-	assertcase.RequireMin(t, f.Bounds, 3)
+	assertcase.RequireMin(t, f.Bounds, 5)
 	assertcase.RequireValid(t, f.Bounds)
-	assertcase.RequireMin(t, f.Shapes, 16)
+	assertcase.RequireMin(t, f.Shapes, 17)
 	assertcase.RequireValid(t, f.Shapes)
 	requireNames(t, "contributable view", f.RequiredNames.Views, namesOf(f.Views))
 	requireNames(t, "contribution error code", f.RequiredNames.ErrorCodes, namesOf(f.ErrorCodes))
@@ -131,16 +131,24 @@ func TestVillageContributionErrorCodeMenu(t *testing.T) {
 	}
 }
 
+// contributionBoundConstants maps the constant names the bounds corpus uses to
+// the exported Go constants.
+func contributionBoundConstants() map[string]int {
+	return map[string]int{
+		"default":                   schema.VillageContributionPageLimitDefault,
+		"minimum":                   schema.VillageContributionPageLimitMinimum,
+		"maximum":                   schema.VillageContributionPageLimitMaximum,
+		"snapshot_max_bytes":        schema.VillageContributionSnapshotMaxBytes,
+		"selection_max_transcripts": schema.VillageContributionSelectionMaxTranscripts,
+	}
+}
+
 // TestVillageContributionPageLimitMatchesDeclaredRange holds the Go constants,
 // the frozen product values and the spec's limit parameters equal, the way the
 // transcript window span constants are held.
 func TestVillageContributionPageLimitMatchesDeclaredRange(t *testing.T) {
 	f := loadContributionFixtures(t)
-	constants := map[string]int{
-		"default": schema.VillageContributionPageLimitDefault,
-		"minimum": schema.VillageContributionPageLimitMinimum,
-		"maximum": schema.VillageContributionPageLimitMaximum,
-	}
+	constants := contributionBoundConstants()
 	for _, c := range f.Bounds.Cases {
 		got, ok := constants[c.Input.Constant]
 		if !ok {
@@ -263,5 +271,43 @@ func TestVillageContributionWireShapes(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestVillageContributionSelectionBoundMatchesDeclaredRange holds the selection
+// bound constant equal to the maxItems of both arrays of the selection request,
+// and the snapshot size constant equal to the limit the operation and the
+// snapshot response state in prose.
+func TestVillageContributionSelectionBoundMatchesDeclaredRange(t *testing.T) {
+	spec, err := openapi.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	schemas := doc["components"].(map[string]any)["schemas"].(map[string]any)
+	request := schemas["SchemaVillageBatchShareSelectionRequest"].(map[string]any)["properties"].(map[string]any)
+	for _, name := range []string{"transcript_ids", "private_approvals"} {
+		property := request[name].(map[string]any)
+		if got, _ := property["maxItems"].(float64); int(got) != schema.VillageContributionSelectionMaxTranscripts {
+			t.Errorf("%s maxItems = %v, want %d", name, property["maxItems"], schema.VillageContributionSelectionMaxTranscripts)
+		}
+		if description, _ := property["description"].(string); !strings.Contains(description, strconv.Itoa(schema.VillageContributionSelectionMaxTranscripts)) {
+			t.Errorf("%s description does not state the bound: %q", name, description)
+		}
+	}
+	if schema.VillageContributionSnapshotMaxBytes != 8*1024*1024 {
+		t.Errorf("snapshot limit = %d bytes, want 8 MiB", schema.VillageContributionSnapshotMaxBytes)
+	}
+	statement := "limited to 8 MiB (" + strconv.Itoa(schema.VillageContributionSnapshotMaxBytes) + " bytes) of response body"
+	snapshot := schemas["SchemaVillageContributionSnapshotResponse"].(map[string]any)
+	if description, _ := snapshot["description"].(string); !strings.Contains(description, statement) || !strings.Contains(description, "snapshot_too_large") {
+		t.Errorf("snapshot response description does not state the limit and its code: %q", description)
 	}
 }

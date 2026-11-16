@@ -60,7 +60,16 @@ type villageRequestBodyFixture struct {
 	Path   string         `yaml:"path"`
 	Method string         `yaml:"method"`
 	Body   map[string]any `yaml:"body"`
-	Valid  bool           `yaml:"valid"`
+	// Fill sets each named body property to an array of distinct transcript
+	// ids, so a case at an array bound does not spell out every id.
+	Fill  []villageBodyFill `yaml:"fill"`
+	Valid bool              `yaml:"valid"`
+}
+
+// villageBodyFill is one body property filled with Count distinct ids.
+type villageBodyFill struct {
+	Property string `yaml:"property"`
+	Count    int    `yaml:"count"`
 }
 
 // villageRemovedOperationFixture is an operation the contract no longer
@@ -101,6 +110,8 @@ type villageComponentPropertyFixture struct {
 	ItemsType string `yaml:"items_type"`
 	Minimum   *int64 `yaml:"minimum"`
 	Maximum   *int64 `yaml:"maximum"`
+	MinItems  *int64 `yaml:"min_items"`
+	MaxItems  *int64 `yaml:"max_items"`
 }
 
 func TestBuildVillageAPISpec_CollectivesOperations(t *testing.T) {
@@ -256,6 +267,14 @@ func TestBuildVillageAPISpec_CollectivesPropertyContracts(t *testing.T) {
 		if fixture.Maximum != nil {
 			if got, ok := property["maximum"].(float64); !ok || int64(got) != *fixture.Maximum {
 				t.Errorf("component %s property %s maximum = %v, want %d", fixture.Component, fixture.Property, property["maximum"], *fixture.Maximum)
+			}
+		}
+		for bound, want := range map[string]*int64{"minItems": fixture.MinItems, "maxItems": fixture.MaxItems} {
+			if want == nil {
+				continue
+			}
+			if got, ok := property[bound].(float64); !ok || int64(got) != *want {
+				t.Errorf("component %s property %s %s = %v, want %d", fixture.Component, fixture.Property, bound, property[bound], *want)
 			}
 		}
 		if fixture.ItemsRef != "" {

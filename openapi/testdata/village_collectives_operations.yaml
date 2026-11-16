@@ -152,7 +152,7 @@ operations:
     request_components: []
     response_components: [VillageContributableResponse, VillageContributionPageResponse, VillageContributionSnapshotResponse]
     statuses: ["200", "400", "401", "403", "413", "500", "503"]
-    description_anchors: [already live, unpaginated, root sessions, no record or byte cap, snapshot_busy, the 413 applies only when view is omitted, ignored without view and with view=grouped, those two responses stay unchanged, view=snapshot without project_hash is a 400, refuses only with a 503 whose code is snapshot_timeout or snapshot_busy, "ordered by the last activity of the root session, newest first", "or its published_at when both are unknown", "ordered by the root's transcript id ascending", helpers do not affect the position of their family, "loops back on itself", "listed exactly once"]
+    description_anchors: [already live, unpaginated, root sessions, a 413 without a code is that row-limit refusal, with no record-count cap, limited to 8 MiB (8388608 bytes) of response body, refused whole with a 413 whose code is snapshot_too_large, nothing partial is returned, narrows the search with the q or provider parameter and reads the snapshot again, snapshot_busy, ignored without view and with view=grouped, those two responses stay unchanged, view=snapshot without project_hash is a 400, also refuses with a 503 whose code is snapshot_timeout or snapshot_busy, "ordered by the last activity of the root session, newest first", "or its published_at when both are unknown", "ordered by the root's transcript id ascending", helpers do not affect the position of their family, "loops back on itself", "listed exactly once"]
   - path: /api/v1/collectives/{id}/contributable/projects
     method: get
     operation_id: listContributionProjects
@@ -166,7 +166,7 @@ operations:
     request_components: [VillageBatchShareSelectionRequest]
     response_components: [VillageBatchShareResponse]
     statuses: ["200", "400", "401", "403", "404", "409", "413", "500"]
-    description_anchors: [one exact selection, closed code, already_shared, offers exactly the listed transcript_ids, never expands a root into its helpers, project of the selected roots, not checked against it, "400: the request body violates the contract", "403 with code membership", "403 with code policy", "409 with code moved, missing, private_unapproved, conflict or stale_selection", "the WHOLE request is refused and nothing is written", "413: the request body is larger than 1 MiB and nothing was written", becomes live before the write commits, is not a refusal]
+    description_anchors: [one exact selection, closed code, already_shared, offers exactly the listed transcript_ids, never expands a root into its helpers, project of the selected roots, not checked against it, "400: the request body violates the contract", "a transcript_ids or private_approvals list of more than 1000 ids", "holds at most 1000 ids", "One request offers at most 1000 sessions", "sends it as several requests", "403 with code membership", "403 with code policy", "409 with code moved, missing, private_unapproved, conflict or stale_selection", "the WHOLE request is refused and nothing is written", "413: the request body is larger than 1 MiB and nothing was written", becomes live before the write commits, is not a refusal]
   - path: /api/v1/collectives/{id}/shares
     method: post
     operation_id: batchShareProject
@@ -360,7 +360,7 @@ component_enums:
   - component: VillageContributableView
     values: [grouped, paged, snapshot]
   - component: VillageContributionErrorCode
-    values: [moved, missing, private_unapproved, conflict, policy, membership, stale_selection, snapshot_timeout, snapshot_busy]
+    values: [moved, missing, private_unapproved, conflict, policy, membership, stale_selection, snapshot_timeout, snapshot_busy, snapshot_too_large]
   - component: VillageTranscriptVisibility
     values: [private, shared, public]
   - component: VillageContributionStatus
@@ -579,6 +579,19 @@ component_properties:
     required: true
     nullable: false
     items_ref: "#/components/schemas/SchemaTranscriptID"
+  - component: VillageBatchShareSelectionRequest
+    property: transcript_ids
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaTranscriptID"
+    min_items: 1
+    max_items: 1000
+  - component: VillageBatchShareSelectionRequest
+    property: private_approvals
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaTranscriptID"
+    max_items: 1000
   - component: VillageBatchReviewRequest
     property: transcript_ids
     required: true
@@ -743,6 +756,9 @@ request_body_names:
   - selection-valid
   - selection-empty-transcripts-rejected
   - selection-missing-approvals-rejected
+  - selection-at-bound-valid
+  - selection-over-bound-rejected
+  - selection-approvals-over-bound-rejected
   - invite-username-valid
   - invite-empty-username-rejected
   - invite-missing-username-rejected
@@ -843,12 +859,29 @@ request_bodies:
     method: post
     body: {project_hash: "abababababababababababababababababababababababababababababababab", transcript_ids: ["00000000-0000-4000-8000-000000000001"]}
     valid: false
+  - name: selection-at-bound-valid
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", private_approvals: []}
+    fill: [{property: transcript_ids, count: 1000}]
+    valid: true
+  - name: selection-over-bound-rejected
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", private_approvals: []}
+    fill: [{property: transcript_ids, count: 1001}]
+    valid: false
+  - name: selection-approvals-over-bound-rejected
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab"}
+    fill: [{property: transcript_ids, count: 1000}, {property: private_approvals, count: 1001}]
+    valid: false
 retired_names:
-  - {name: snapshot_limit, kind: property, reason: "the snapshot has no record or byte cap, so no response declares a limit"}
-  - {name: snapshot_limit, kind: parameter, reason: "the snapshot has no record or byte cap, so no request declares a limit"}
+  - {name: snapshot_limit, kind: property, reason: "the snapshot limit is a contract constant, not a field, so no response declares a limit"}
+  - {name: snapshot_limit, kind: parameter, reason: "the snapshot limit is a contract constant, not a parameter, so no request declares a limit"}
   - {name: project_q, kind: parameter, reason: "one q parameter searches both the picker and the paged view"}
   - {name: project_q, kind: property, reason: "one q parameter searches both the picker and the paged view"}
-  - {name: snapshot_too_large, kind: enum_value, reason: "the snapshot has no cap, so no code reports that it was too large"}
   - {name: live, kind: enum_value, reason: "a transcript already live in the collective is not a refusal; the selection write returns it under already_shared, so no refusal reports it"}
 response_arm_sample_names:
   - canonical-flat

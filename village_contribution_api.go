@@ -31,6 +31,25 @@ const (
 	VillageContributionPageLimitMaximum = 500
 )
 
+// The snapshot view and the selection write are bounded by the size of one
+// document and by the number of sessions in one request.
+const (
+	// VillageContributionSnapshotMaxBytes bounds the encoded response body of
+	// one snapshot, 8 MiB (8388608 bytes). A snapshot that would exceed it is
+	// refused whole with a 413 whose code is snapshot_too_large; nothing
+	// partial is returned, and the client narrows the search with q or
+	// provider and reads the snapshot again. The bound is a size: there is no
+	// record-count cap, so how many sessions fit depends on their records. It
+	// is a contract constant, not a field, and the snapshot declares no limit
+	// parameter.
+	VillageContributionSnapshotMaxBytes = 8 << 20
+	// VillageContributionSelectionMaxTranscripts is the most sessions one
+	// selection write may offer, and the most private approvals it may carry.
+	// A body over the bound is an ordinary contract violation, a 400 with no
+	// code; a client with a larger selection sends it as several requests.
+	VillageContributionSelectionMaxTranscripts = 1000
+)
+
 // VillageContributableView is the closed view menu of the contributable
 // operation. Omitting the parameter keeps the flat whole-library response, so
 // the flat response has no token. The menu is distinct from the grouped-view
@@ -97,6 +116,10 @@ const (
 	// VillageContributionErrorSnapshotBusy: the server is already building the
 	// maximum number of snapshots.
 	VillageContributionErrorSnapshotBusy VillageContributionErrorCode = "snapshot_busy"
+	// VillageContributionErrorSnapshotTooLarge: the snapshot of the project
+	// would exceed the size limit; narrow the search with q or provider and read
+	// it again. Nothing partial is returned.
+	VillageContributionErrorSnapshotTooLarge VillageContributionErrorCode = "snapshot_too_large"
 )
 
 var AllVillageContributionErrorCodes = []VillageContributionErrorCode{
@@ -109,6 +132,7 @@ var AllVillageContributionErrorCodes = []VillageContributionErrorCode{
 	VillageContributionErrorStaleSelection,
 	VillageContributionErrorSnapshotTimeout,
 	VillageContributionErrorSnapshotBusy,
+	VillageContributionErrorSnapshotTooLarge,
 }
 
 func (c VillageContributionErrorCode) IsValid() bool {
@@ -190,7 +214,11 @@ type VillageContributionSnapshotRecord struct {
 
 // VillageContributionSnapshotResponse is the exact selection set of one
 // project: every session in every matching family whose root is in that
-// project. It has no record cap and no byte cap; the server may refuse with
+// project. It has no record-count cap, but the encoded response body is limited
+// to VillageContributionSnapshotMaxBytes (8 MiB). A snapshot that would exceed
+// the limit is refused whole with a 413 whose code is snapshot_too_large, and
+// nothing partial is returned; the client narrows the search with q or provider
+// and reads the snapshot again. The server may also refuse with the 503 codes
 // snapshot_timeout or snapshot_busy. Count equals len(Records) and counts
 // sessions, not roots.
 type VillageContributionSnapshotResponse struct {
@@ -198,6 +226,13 @@ type VillageContributionSnapshotResponse struct {
 	ProjectHash ProjectHash                         `json:"project_hash" description:"The project of the family roots. Helpers in the records may belong to other projects."`
 	Records     []VillageContributionSnapshotRecord `json:"records" nullable:"false"`
 	Count       int                                 `json:"count" minimum:"0" maximum:"9007199254740991" description:"The number of records, counted in sessions, not roots. Equals the length of records."`
+}
+
+// PrepareJSONSchema states the size limit on the response component, which
+// struct tags cannot describe.
+func (VillageContributionSnapshotResponse) PrepareJSONSchema(s *jsonschema.Schema) error {
+	s.WithDescription("The compact record of every session in the matching families of one project, in one document. The document is limited to 8 MiB (8388608 bytes) of response body and there is no record-count cap. A snapshot that would exceed the limit is refused whole with a 413 whose code is snapshot_too_large, and nothing partial is returned; narrow the search with q or provider and read the snapshot again. The limit is a contract constant, so no limit parameter or field exists.")
+	return nil
 }
 
 // VillageContributionProjectSummary is one project in the picker. Its counts
@@ -238,9 +273,12 @@ type VillageContributionProjectPage struct {
 // VillageBatchShareSelectionRequest writes one exact selection. TranscriptIDs
 // lists every session to offer, roots and helpers alike; the server does not
 // expand a root into its helpers. PrivateApprovals lists the private
-// transcripts among them whose owner approved their visibility.
+// transcripts among them whose owner approved their visibility. One request
+// offers at most VillageContributionSelectionMaxTranscripts sessions; a client
+// with a larger selection sends it as several requests, and a body over the
+// bound is a 400.
 type VillageBatchShareSelectionRequest struct {
 	ProjectHash      ProjectHash    `json:"project_hash" description:"The project of the selected roots. Helpers may belong to other projects and are not checked against it."`
-	TranscriptIDs    []TranscriptID `json:"transcript_ids" nullable:"false" minItems:"1" description:"Exactly the sessions to offer, roots and helpers alike. The server never expands a root into its helpers."`
-	PrivateApprovals []TranscriptID `json:"private_approvals" nullable:"false"`
+	TranscriptIDs    []TranscriptID `json:"transcript_ids" nullable:"false" minItems:"1" maxItems:"1000" description:"Exactly the sessions to offer, roots and helpers alike, at most 1000 in one request; a client with a larger selection sends it as several requests. The server never expands a root into its helpers."`
+	PrivateApprovals []TranscriptID `json:"private_approvals" nullable:"false" maxItems:"1000" description:"The private transcripts among transcript_ids whose owner approved their visibility, at most 1000 in one request."`
 }

@@ -40,6 +40,7 @@ export function describeErrorCode(code: VillageContributionErrorCode): string {
       return "request";
     case "snapshot_timeout":
     case "snapshot_busy":
+    case "snapshot_too_large":
       return "snapshot";
     default: {
       const unreachable: never = code;
