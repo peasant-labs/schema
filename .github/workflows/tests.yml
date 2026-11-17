@@ -36,7 +36,7 @@ jobs:
         if: github.event_name == 'merge_group'
         with:
           repository: peasant-labs/infra
-          ref: ac25a75b1679b12bb340b989dc9ee883b327e279
+          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -154,7 +154,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: ac25a75b1679b12bb340b989dc9ee883b327e279
+          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -223,50 +223,38 @@ jobs:
         if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: go-apidiff-comment
+          name: go-apidiff-intermediate
           path: ${{ runner.temp }}/go-apidiff-comment
           if-no-files-found: error
           retention-days: 1
 
-  # GitHub withholds secrets from fork and Dependabot pull_request runs.
-  # This job is informational and is not part of merge-gate.
-  apidiff-comment:
+  # Always publish one artifact for a PR, even when contract-gates is skipped.
+  # The placeholder is not an established API-diff signal.
+  apidiff-payload:
     needs: [contract-gates]
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
     steps:
-      - name: Check out the reviewed script
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          path: reviewed
-          persist-credentials: false
-      - name: Download the API diff payload
+      - name: Prepare the placeholder payload
+        run: |
+          mkdir -p "${RUNNER_TEMP}/apidiff-payload"
+          : > "${RUNNER_TEMP}/apidiff-payload/placeholder.txt"
+      - name: Collect the API diff payload
+        if: needs.contract-gates.result != 'skipped'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: go-apidiff-comment
-          path: evidence
-      - name: Mint the comment App token
-        id: bot
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+          name: go-apidiff-intermediate
+          path: ${{ runner.temp }}/apidiff-payload
+      - name: Upload the comment payload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          client-id: ${{ vars.JOURNEY_APP_CLIENT_ID }}
-          private-key: ${{ secrets.JOURNEY_APP_PRIVATE_KEY }}
-          owner: peasant-labs
-          repositories: schema
-          permission-contents: read
-          permission-issues: write
-          permission-pull-requests: write
-      - name: Upsert the API diff comment
-        env:
-          GH_TOKEN: ${{ secrets.JOURNEY_GITHUB_USER_PAT || steps.bot.outputs.token }}
-          JOURNEY_APP_TOKEN: ${{ steps.bot.outputs.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          EVIDENCE_DIR: evidence
-        run: node reviewed/scripts/post-go-apidiff-comment.mjs
+          name: go-apidiff-comment
+          path: ${{ runner.temp }}/apidiff-payload
+          if-no-files-found: error
+          retention-days: 1
 
   vendor-hash:
     needs: changes

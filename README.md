@@ -350,10 +350,10 @@ or from the tag.
 | Exported-Go-API diff | `go-apidiff` | Reports incompatible changes and compatible additions. A break must be declared in the PR title; unreadable output fails closed. |
 
 `release-intent check-contract` judges the report against the live title on the
-PR and in the merge group, and against landed titles before a tag. The reviewed
-comment job in `tests.yml` posts the Go API diff for same-repository PRs.
-GitHub withholds its credentials on fork and Dependabot PRs; see the runbook
-for this unresolved comment-coverage blocker. Alongside these, `make check`
+PR and in the merge group, and against landed titles before a tag. A reviewed
+`workflow_run` comment job posts the Go API diff, including for fork and
+Dependabot PRs, after resolving the target from the run's head. See the runbook
+for its credential and rollout checks. Alongside these, `make check`
 runs the codegen-freshness gate, the retired-versions
 immutability guard, the leaf-audit, the `vendorHash`-stability proof, and the
 synthetic-break tests that prove the `oasdiff` / `go-apidiff` gates actually fire.

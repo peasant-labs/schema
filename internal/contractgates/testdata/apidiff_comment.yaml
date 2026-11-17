@@ -2,22 +2,40 @@ required:
   - blind-leaves-prior
   - clean-without-prior
   - clean-clears-prior
+  - incompatible-only
   - incompatible-and-compatible
   - compatible-only
-  - untrusted-fence
+  - mentions-and-markdown-neutralized
+  - invalid-markdown-rejected
+  - missing-artifact-directory-refused
+  - artifact-pr-number-ignored
+  - no-open-pr
+  - closed-pr
+  - different-head-repository
+  - different-head-branch
+  - stale-head
+  - stale-malformed-payload
+  - no-pr-oversized-payload
+  - changed-before-write
+  - ambiguous-pr
+  - paginated-match
+  - paginated-ambiguity
+  - oversized-signal
+  - truncated-comment
 cases:
-  - name: blind-leaves-prior
-    changes_present: false
-    previous: true
-    expected_method: no-write
-  - name: clean-without-prior
-    changes_present: true
-    expected_method: no-write
+  - {name: blind-leaves-prior, previous: true, expected_method: no-write}
+  - {name: clean-without-prior, changes_present: true, expected_method: no-write}
   - name: clean-clears-prior
     changes_present: true
     previous: true
     expected_method: PATCH
     contains: ["no incompatible or compatible", "previously-listed"]
+  - name: incompatible-only
+    changes_present: true
+    changes: "- Removed: method removed"
+    expected_method: POST
+    contains: ["incompatible exported-Go-API", "![minor]", "Removed: method removed"]
+    excludes: ["compatible (non-breaking)"]
   - name: incompatible-and-compatible
     changes_present: true
     changes: "- Removed: method removed"
@@ -31,8 +49,40 @@ cases:
     expected_method: POST
     contains: ["compatible (non-breaking)", "Added: method added"]
     excludes: ["incompatible exported-Go-API"]
-  - name: untrusted-fence
+  - name: mentions-and-markdown-neutralized
+    changes_present: true
+    changes: "- X@team: [click](https://example.invalid) @all <script> `code`"
+    expected_method: POST
+    contains: ["X@\u200bteam", "@\u200ball", "&#91;click&#93;", "&#60;script&#62;", "&#96;code&#96;"]
+    excludes: ["@team", "@all", "[click]", "<script>", "`code`"]
+  - name: invalid-markdown-rejected
     changes_present: true
     changes: "```\n@all\n```"
+    expected_exit: 1
+    expected_method: no-write
+  - {name: missing-artifact-directory-refused, missing_directory: true, expected_exit: 1, expected_method: no-write}
+  - name: artifact-pr-number-ignored
+    changes_present: true
+    changes: "- Removed: removed"
+    artifact_number: "999"
     expected_method: POST
-    contains: ["````\n```\n@all\n```\n````"]
+  - {name: no-open-pr, changes_present: true, pr_mode: none, expected_method: no-write}
+  - {name: closed-pr, changes_present: true, pr_mode: closed, expected_method: no-write}
+  - {name: different-head-repository, changes_present: true, pr_mode: other-repository, expected_method: no-write}
+  - {name: different-head-branch, changes_present: true, pr_mode: other-branch, expected_method: no-write}
+  - {name: stale-head, changes_present: true, pr_mode: stale, expected_method: no-write}
+  - {name: stale-malformed-payload, changes_present: true, changes: "not a change", pr_mode: stale, expected_method: no-write}
+  - {name: no-pr-oversized-payload, changes_present: true, changes: "- X: value\n", repeat: 30000, pr_mode: none, expected_method: no-write}
+  - {name: changed-before-write, changes_present: true, previous: true, pr_mode: advances, expected_method: no-write}
+  - {name: ambiguous-pr, changes_present: true, pr_mode: ambiguous, expected_method: no-write}
+  - {name: paginated-match, changes_present: true, previous: true, pr_mode: paginated-match, expected_method: PATCH, expected_pages: 2}
+  - {name: paginated-ambiguity, changes_present: true, pr_mode: paginated-ambiguity, expected_method: no-write, expected_pages: 2}
+  - {name: oversized-signal, changes_present: true, changes: "- X: value\n", repeat: 30000, expected_exit: 1, expected_method: no-write}
+  - name: truncated-comment
+    changes_present: true
+    changes: "- Example: a long compatible value with repeated punctuation < > [ ] and a mention @name\n"
+    repeat: 500
+    expected_method: POST
+    contains: ["output truncated", "@\u200bname"]
+    excludes: ["@name"]
+    max_body_bytes: 33000

@@ -11,7 +11,7 @@ queue:
     - {workflow: cut-release.yml, job: cut, kind: cut-release}
     - {workflow: nix-vendor-hash.yml, job: update, kind: vendor-hash}
   comment_jobs:
-    - workflow: tests.yml
-      job: apidiff-comment
+    - workflow: go-apidiff-comment.yml
+      job: comment
       reviewed_script: scripts/post-go-apidiff-comment.mjs
       pat_secret: JOURNEY_GITHUB_USER_PAT

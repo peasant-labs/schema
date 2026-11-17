@@ -238,8 +238,8 @@ with the base; it does not include uncommitted changes:
   numbered file, and records ERR-level breaks.
 - **`go-apidiff`** reports incompatible exported Go changes and compatible
   additions. Intentional spec-version stamp value changes are exempt; an
-  unparseable result fails closed. The reviewed same-repository PR comment
-  carries its tri-state result.
+  unparseable result fails closed. The reviewed `workflow_run` PR comment
+  carries its tri-state result, including for fork PRs.
 - **`release-intent check-contract`** rejects an undeclared break. Locally,
   `make gates` fails conservatively without a title; set `TITLE` and put the
   pinned tool on `PATH` to judge the same report as CI.

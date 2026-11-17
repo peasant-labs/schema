@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: ac25a75b1679b12bb340b989dc9ee883b327e279
+          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
           path: infra-tool
           sparse-checkout: |
             tools/release

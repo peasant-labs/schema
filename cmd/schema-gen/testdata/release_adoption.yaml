@@ -1,4 +1,4 @@
-tool_pin: ac25a75b1679b12bb340b989dc9ee883b327e279
+tool_pin: 1946dd27019c7be7f1b2356d36f3db148a45a76f
 required:
   - pr-and-group-live-title
   - pr-and-group-contract-report

@@ -59,25 +59,22 @@ token. `RELEASE_BATCH_MODE` is unset for plan-only operation; the maintainer
 sets it to `tag` only after the plan-only checks below. `RELEASE_BATCH_FLOOR`
 is normally unset; it is a recovery boundary, not a release version.
 
-The reviewed go-apidiff comment job uses the existing organization variable
-`JOURNEY_APP_CLIENT_ID`, secret `JOURNEY_APP_PRIVATE_KEY`, and
-`JOURNEY_GITHUB_USER_PAT` (with the Journey App token as fallback). Confirm the
-App is installed for schema with Contents read, Issues write and Pull requests
-write, and the PAT can update the existing sticky comment. The script comes
-from the default branch; the diff artifact is untrusted data and cannot choose
-the target PR. GitHub withholds these secrets from fork and Dependabot
-`pull_request` runs, so those runs do **not** post or update the sticky
-comment. The contract check still runs; preserving the earlier fork comment
-coverage requires a separately reviewed trusted-event design and a compatible
-release-policy checker before this adoption is safe to merge.
+The reviewed go-apidiff comment job uses the existing organization secret
+`JOURNEY_GITHUB_USER_PAT`. Confirm that its owner can read pull requests and
+create and update the existing sticky comment, including comments authored by
+the earlier bot. The `workflow_run` job downloads the triggering run's artifact
+with the read-only workflow token, then runs a default-branch script with the
+PAT. It resolves the open PR from the run's head SHA, repository and branch;
+the untrusted artifact cannot select a PR or supply Markdown to post. This
+trusted-event separation also covers fork and Dependabot PRs.
 
 Before merging the adoption, the maintainer should:
 
 1. Confirm squash merge commits use the PR title, and auto-merge is enabled.
    Retitle or drain open PRs using the old release-title grammar.
-2. Resolve the fork-comment coverage blocker above. Ensure the existing
-   credentials and the npm Trusted Publisher are available; do not assume a
-   secret is available on a fork event.
+2. Ensure the existing credentials and npm Trusted Publisher are available.
+   Verify the sticky-comment update on an existing bot-authored comment and
+   on a fork PR after the workflow is on the default branch.
 3. Configure and compare the `Merge queue` ruleset with
    `.github/release-queue.policy.yml`; protect release tags so only the
    releaser App creates them. Confirm the queue ruleset coexists with the
