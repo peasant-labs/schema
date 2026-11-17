@@ -1,0 +1,16 @@
+releases: true
+tag_prefix: v
+automation_author: app/peasant-labs-releaser
+changelog: CHANGELOG.md
+version_files:
+  - {path: typescript/package.json, field: version}
+protected_paths: []
+surfaces:
+  types: [types]
+  village-api: [village-api, publish-request, annotation-push-request]
+  local-api: [peasantlocal-api]
+  segmented-read: [segmented-read]
+bot_branches:
+  release: automation/release
+  cut-release: automation/cut-release
+  vendor-hash: automation/vendor-hash

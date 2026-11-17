@@ -1,0 +1,15 @@
+required:
+  - break-in-new-version-across-multiple-commits
+cases:
+  - name: break-in-new-version-across-multiple-commits
+    base_version: "0.1.0"
+    head_version: "0.2.0"
+    base_spec: |
+      {"openapi":"3.0.0","info":{"title":"fixture","version":"0.1.0"},"paths":{"/removed":{"get":{"operationId":"getRemoved","responses":{"200":{"description":"ok"}}}}}}
+    head_spec: |
+      {"openapi":"3.0.0","info":{"title":"fixture","version":"0.2.0"},"paths":{}}
+    request_schema: |
+      {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:fixture","type":"object"}
+    expected_surface: village-api
+    expected_change: functional
+    expected_breaking: true

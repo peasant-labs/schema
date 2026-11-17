@@ -1,0 +1,38 @@
+required:
+  - blind-leaves-prior
+  - clean-without-prior
+  - clean-clears-prior
+  - incompatible-and-compatible
+  - compatible-only
+  - untrusted-fence
+cases:
+  - name: blind-leaves-prior
+    changes_present: false
+    previous: true
+    expected_method: no-write
+  - name: clean-without-prior
+    changes_present: true
+    expected_method: no-write
+  - name: clean-clears-prior
+    changes_present: true
+    previous: true
+    expected_method: PATCH
+    contains: ["no incompatible or compatible", "previously-listed"]
+  - name: incompatible-and-compatible
+    changes_present: true
+    changes: "- Removed: method removed"
+    compatible: "- Added: method added"
+    previous: true
+    expected_method: PATCH
+    contains: ["incompatible exported-Go-API", "![minor]", "Removed: method removed", "compatible (non-breaking)", "Added: method added"]
+  - name: compatible-only
+    changes_present: true
+    compatible: "- Added: method added"
+    expected_method: POST
+    contains: ["compatible (non-breaking)", "Added: method added"]
+    excludes: ["incompatible exported-Go-API"]
+  - name: untrusted-fence
+    changes_present: true
+    changes: "```\n@all\n```"
+    expected_method: POST
+    contains: ["````\n```\n@all\n```\n````"]

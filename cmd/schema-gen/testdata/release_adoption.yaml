@@ -1,0 +1,64 @@
+tool_pin: ac25a75b1679b12bb340b989dc9ee883b327e279
+required:
+  - pr-and-group-live-title
+  - pr-and-group-contract-report
+  - release-group-requires-vendor-hash
+  - vendor-hash-is-advisory-on-content-pr
+  - vendor-hash-diff-is-one-line
+  - pre-tag-contract-has-floor
+  - pending-range-has-floor
+  - tag-range-has-floor
+  - tag-judges-contract
+  - npm-tag-matches-version
+cases:
+  - name: pr-and-group-live-title
+    workflow: tests.yml
+    job: contract-gates
+    step: Resolve the entry PR and its live title
+    run_contains: ["group-pr", "gh pr view", "git merge-base", "git checkout --detach"]
+  - name: pr-and-group-contract-report
+    workflow: tests.yml
+    job: contract-gates
+    step: Check the live title against the contract
+    run_contains: ["check-contract", "--report", "PR_TITLE"]
+  - name: release-group-requires-vendor-hash
+    workflow: tests.yml
+    job: merge-gate
+    step: Require successful or intentionally skipped jobs
+    run_contains: ['if [ "$RELEASE" = true ]', '."vendor-hash".result']
+  - name: vendor-hash-is-advisory-on-content-pr
+    workflow: tests.yml
+    job: vendor-hash
+    step: Check vendor hash
+    continue_contains: ["needs.changes.outputs.release != 'true'"]
+  - name: vendor-hash-diff-is-one-line
+    workflow: nix-vendor-hash.yml
+    job: prepare
+    step: Compute and bundle the vendor hash
+    run_contains: ["git diff --numstat", "vendorHash", "removed != 1 || added != 1", "git bundle create"]
+  - name: pre-tag-contract-has-floor
+    workflow: release-batch.yml
+    job: plan
+    step: Verify the candidate contract
+    run_contains: ["check-contract", "--until", "--floor"]
+    id: verify-contract
+  - name: pending-range-has-floor
+    workflow: release-batch.yml
+    job: plan
+    step: Check the pending range before preparing a release PR
+    run_contains: ["check-contract", "--until", "--floor", "contract-gates.sh report"]
+  - name: tag-range-has-floor
+    workflow: release.yml
+    job: contract-gates
+    step: Determine the previous final tag
+    run_contains: ["check-contract", "--until", "--floor", "--print-range-base"]
+  - name: tag-judges-contract
+    workflow: release.yml
+    job: contract-gates
+    step: Check the tag contract
+    run_contains: ["check-contract", "--until", "--floor", "--report"]
+  - name: npm-tag-matches-version
+    workflow: release.yml
+    job: npm-publish
+    step: Guard tag and package version consistency
+    run_contains: ["typescript/package.json", "${TAG#v}", '"${version}" = "${pkg_version}"']

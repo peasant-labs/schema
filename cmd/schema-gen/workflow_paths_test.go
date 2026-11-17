@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -14,12 +15,8 @@ type workflowPathsFixture struct {
 }
 
 // TestTestsWorkflowTriggersOnTypeScriptPaths guards that
-// .github/workflows/tests.yml's pull_request and push path filters cover every
-// path testdata/typescript/workflow_paths.yaml names as required. A future
-// workflow edit that narrows those filters would silently stop CI from
-// re-running `make check` (and so the TypeScript typecheck/test/package gates)
-// on a change that only touches typescript/**, testcase/testdata/**, or
-// testdata/**.
+// the unfiltered workflow delegates the TypeScript path decision to its changes
+// job. A future edit must not stop make check for a TypeScript-only change.
 func TestTestsWorkflowTriggersOnTypeScriptPaths(t *testing.T) {
 	root, err := findModuleRoot()
 	if err != nil {
@@ -62,25 +59,26 @@ func TestTestsWorkflowTriggersOnTypeScriptPaths(t *testing.T) {
 		t.Fatalf("%s has no top-level \"on:\" trigger mapping", workflowPath)
 	}
 
-	for _, trigger := range []string{"pull_request", "push"} {
-		triggerNode := workflowMappingChild(onNode, trigger)
-		if triggerNode == nil {
-			t.Errorf("%s on.%s is missing; the TypeScript-dependent required_paths in %s cannot be enforced for this trigger", workflowPath, trigger, fixturePath)
-			continue
-		}
-		pathsNode := workflowMappingChild(triggerNode, "paths")
-		if pathsNode == nil || pathsNode.Kind != yaml.SequenceNode {
-			t.Errorf("%s on.%s.paths is missing or not a sequence", workflowPath, trigger)
-			continue
-		}
-		have := make(map[string]bool, len(pathsNode.Content))
-		for _, item := range pathsNode.Content {
-			have[item.Value] = true
-		}
-		for _, required := range fixture.RequiredPaths {
-			if !have[required] {
-				t.Errorf("%s on.%s.paths is missing %q (required by %s); CI would stop re-running make check on a change scoped to this path, add it back to the trigger filter", workflowPath, trigger, required, fixturePath)
+	if workflowMappingChild(onNode, "merge_group") == nil || workflowMappingChild(onNode, "pull_request") == nil {
+		t.Fatalf("%s must run for pull requests and merge groups", workflowPath)
+	}
+	jobs := workflowMappingChild(doc.Content[0], "jobs")
+	changes := workflowMappingChild(jobs, "changes")
+	steps := workflowMappingChild(changes, "steps")
+	if steps == nil || steps.Kind != yaml.SequenceNode {
+		t.Fatal("changes job has no steps")
+	}
+	script := ""
+	for _, step := range steps.Content {
+		if id := workflowMappingChild(step, "id"); id != nil && id.Value == "diff" {
+			if run := workflowMappingChild(step, "run"); run != nil {
+				script = run.Value
 			}
+		}
+	}
+	for _, required := range fixture.RequiredPaths {
+		if !strings.Contains(script, required) {
+			t.Errorf("changes classifier is missing %q from %s", required, fixturePath)
 		}
 	}
 }
