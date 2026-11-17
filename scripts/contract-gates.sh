@@ -422,7 +422,7 @@ main() {
     # evaluate-apidiff and never on the decision path (exit 0 always).
     extract-compatible) extract_go_apidiff_compatible ;;
     all)
-      local base_ref="${2:-}" head_ref="HEAD" arg
+      local base_ref="${2:-}" head_ref="HEAD" arg rc=0
       shift 2
       # The immutable check compares the same endpoints as the report.
       local -a args=("$@")
@@ -432,9 +432,13 @@ main() {
           head_ref="${args[$((arg+1))]}"
         fi
       done
-      gate_vacuum
-      gate_immutable "${base_ref}" "${head_ref}"
-      gate_report "${base_ref}" "$@"
+      # Each command gets its own errexit-enabled shell. A failed lint or
+      # immutability check must not hide an independently established API diff,
+      # but every failed stage still fails the aggregate gate.
+      "${BASH}" "${repo_root}/scripts/contract-gates.sh" vacuum || rc=1
+      "${BASH}" "${repo_root}/scripts/contract-gates.sh" immutable "${base_ref}" "${head_ref}" || rc=1
+      "${BASH}" "${repo_root}/scripts/contract-gates.sh" report "${base_ref}" "$@" || rc=1
+      return "${rc}"
       ;;
     *)
       echo "usage: contract-gates.sh <vacuum|immutable BASE [HEAD]|go-apidiff BASE|report BASE [--head HEAD] [--out FILE]|all BASE [--head HEAD] [--out FILE]|evaluate-apidiff|extract-compatible>" >&2
