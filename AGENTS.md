@@ -236,7 +236,7 @@ real test behind each one.
 
 `make check` runs the unstring static guard. The pin lives in one place, the
 `UNSTRING` variable in the `Makefile` (default
-`go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.3`). The run
+`go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.4`). The run
 needs Go 1.26 or newer and ast-grep 0.51.2 exactly; the dev shell provides that
 ast-grep, and any other version stops before a scan.
 
@@ -260,7 +260,7 @@ baseline.
 its own package, so the catalog is this repository's typed constants and
 TypeScript unions.
 
-The tool contract is [`infra/unstring/README.md`](https://github.com/peasant-labs/infra/blob/unstring/v0.0.3/unstring/README.md).
+The tool contract is [`infra/unstring/README.md`](https://github.com/peasant-labs/infra/blob/unstring/v0.0.4/unstring/README.md).
 
 ## Hygiene
 

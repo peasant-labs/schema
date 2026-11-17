@@ -1,7 +1,7 @@
 .PHONY: schema check fmt vet test freshness gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check check-unstring unstring-update
 
 GO ?= go
-UNSTRING ?= go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.3
+UNSTRING ?= go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.4
 
 # BASE_REF: the ref the breaking-change gates (oasdiff / go-apidiff) diff against.
 # CI sets it to the PR base (origin/develop). Locally, default to origin/develop;
