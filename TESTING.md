@@ -70,12 +70,12 @@ script) behind it.
 |---|---|---|
 | Codegen freshness | `cmd/schema-gen/freshness_test.go`, `cmd/schema-gen/redactions_freshness_test.go`, `cmd/schema-gen/routes_test.go`, `cmd/schema-gen/generated_accounted_test.go`; `make freshness` | **Hard.** A committed spec that drifts from the Go source fails the build. |
 | Retired-version immutability | `cmd/schema-gen/retired_specs_test.go` | **Hard.** A frozen spec that is edited or deleted fails. |
-| OpenAPI breaking diff (`oasdiff`) | `scripts/contract-gates.sh` (`make gates`); `internal/contractgates/synthetic_break_test.go` | **Hard.** An ERR-level break vs the prior golden fails. |
+| OpenAPI breaking diff (`oasdiff`) | `scripts/contract-gates.sh`, `cmd/schema-gen/report.go`; `internal/contractgates/synthetic_break_test.go` | An ERR-level break is reported against the base surface version and must be declared in the title. |
 | OpenAPI lint (`vacuum`) | `scripts/contract-gates.sh` + `.vacuum.yaml` | **Hard.** An `error`-severity finding in a generated spec fails. |
-| Exported-Go-API diff (`go-apidiff`) | `scripts/contract-gates.sh`; `internal/contractgates/synthetic_break_test.go` | **Advisory (pre-1.0).** Incompatible changes warn; an unparseable diff fails closed. |
+| Exported-Go-API diff (`go-apidiff`) | `scripts/contract-gates.sh`; `internal/contractgates/synthetic_break_test.go` | Incompatible changes must be declared in the title; an unparseable diff fails closed. |
 | Leaf-purity audit | `leaf_audit_test.go` | **Hard.** A `go.mod` direct require outside the allowed set fails. |
 | Vendor-hash stability | `vendorhash_test.go` | **Hard.** A local-path `replace` in `go.mod` fails. |
-| Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish (GitHub Release or npm) behind an un-gated workflow, is rejected. |
+| Release grammar + guard | pinned `release-intent`, `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** Malformed intent titles or tags, and an un-gated publish workflow, are rejected. |
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
 | Local API 0.5.0 closed-set exhaustive coverage + regen-freshness | `enumcorpus/enumcorpus_test.go` (`TestEnumCorpora_ExhaustiveCoverageAndFreshness`, one subtest pair per enum) | **Hard.** `enumcorpus.BuildCorpus`/`RenderCorpus` generalize `licensecorpus`'s pattern over any closed string enum; `cmd/gen-enum-corpora` regenerates all ten committed corpora (`AssociationConclusion`, `AssociationEvidenceKind`, `Confidence`, `RewriteResolution`, `RewriteMethod`, `InsightKind`, `InsightProvenance`, `ReadAttributionState`, `ReadStateGrade`, `TargetKind`) in one `go generate`. |
@@ -226,22 +226,23 @@ negative control that proves the guard actually fires.
 
 ### The OpenAPI + Go-API gates (and their meta-gates)
 
-`scripts/contract-gates.sh` runs three gates against a base ref (`make gates
-BASE_REF=origin/develop`):
+`scripts/contract-gates.sh` runs the contract checks against a base ref
+(`make gates BASE_REF=origin/develop`). The report compares committed `HEAD`
+with the base; it does not include uncommitted changes:
 
-- **`vacuum`** lints every generated OpenAPI spec (the `*-api-*.yaml` surfaces and
-  the `types-*.yaml` catalog; the publish-request JSON Schema is not an OpenAPI doc
-  and is excluded) against `.vacuum.yaml`, failing on `error` severity. Hermetic:
-  no git history needed.
-- **`oasdiff`** breaking-diffs each generated spec against the same file on the base
-  ref and fails on an ERR-level break. A version file that is new on the branch
-  (absent at the base) has nothing to diff and is skipped.
-- **`go-apidiff`** diffs the exported Go API vs the base ref under a pre-1.0
-  **advisory** policy: an incompatible change surfaces a warning (and, in CI, a
-  sticky PR comment) but does not fail the gate; an intentional spec-version stamp
-  bump (`VillageAPIVersion` / `PeasantLocalAPIVersion` / `TypesVersion`) is exempt;
-  and an `Incompatible changes` section that cannot be parsed **fails closed** (a
-  blind gate must stop the line).
+- **`vacuum`** lints generated OpenAPI specs, including segmented reads, against
+  `.vacuum.yaml`, failing on `error` severity. Request JSON Schemas are not
+  OpenAPI documents.
+- Numbered files already present on the base are immutable. For the report,
+  **`oasdiff`** compares each surface's base and head versions, including a new
+  numbered file, and records ERR-level breaks.
+- **`go-apidiff`** reports incompatible exported Go changes and compatible
+  additions. Intentional spec-version stamp value changes are exempt; an
+  unparseable result fails closed. The reviewed same-repository PR comment
+  carries its tri-state result.
+- **`release-intent check-contract`** rejects an undeclared break. Locally,
+  `make gates` fails conservatively without a title; set `TITLE` and put the
+  pinned tool on `PATH` to judge the same report as CI.
 
 A gate that can never fail is worthless, so the gates have their own tests.
 `internal/contractgates/synthetic_break_test.go` proves they fire:

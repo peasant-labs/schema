@@ -114,7 +114,8 @@ attempt to overwrite it. Failure of one publisher does not block its sibling.
 ## Local checks and recovery
 
 Run `nix develop -c make check` and `nix develop -c make gates
-BASE_REF=origin/develop`. With a declared break, put the pinned
+BASE_REF=origin/develop`. The contract report compares committed `HEAD` with
+the base, so commit the changes first. With a declared break, put the pinned
 `release-intent` on `PATH` and pass
 `TITLE='feat(local-api)![minor]: describe the change'` to `make gates`.
 Without a title the local gate fails conservatively on a reported break.

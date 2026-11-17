@@ -169,7 +169,7 @@ An older version has one of two freeze states:
 
 Keep the corresponding required-name manifests in step with an intentional
 state transition. An intentional stamp bump is exempt from the exported-Go-API
-advisory gate; every other incompatible change is reported.
+diff; every other incompatible change must be declared in the PR title.
 
 ## Leaf purity
 

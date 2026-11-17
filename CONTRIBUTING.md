@@ -142,7 +142,8 @@ Gates that run in CI (and locally):
   `oasdiff` / `go-apidiff` gates actually fire.
 - **`make gates`** (`tests.yml` -> `contract-gates` on PRs and merge groups):
   vacuum lints specs, numbered files are immutable, and oasdiff plus go-apidiff
-  produce a report. Without `TITLE`, a reported break fails conservatively.
+  compare committed `HEAD` with the base to produce a report; commit changes
+  before running it. Without `TITLE`, a reported break fails conservatively.
   With `TITLE='feat(scope)![minor]: description'`, the pinned `release-intent`
   on `PATH` judges the report. CI always judges the live PR title. The tools
   are provisioned through the dev shell, never `go.mod`.
