@@ -1,6 +1,7 @@
-.PHONY: schema check fmt vet test freshness gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check
+.PHONY: schema check fmt vet test freshness gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check check-unstring unstring-update
 
 GO ?= go
+UNSTRING ?= go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.4
 
 # BASE_REF: the ref the breaking-change gates (oasdiff / go-apidiff) diff against.
 # CI sets it to the PR base (origin/develop). Locally, default to origin/develop;
@@ -38,8 +39,8 @@ vet:
 	cd tools/redaction-categories && GOWORK=off $(GO) vet ./...
 
 # check is the schema repo's quality gate — the make-check-equivalent of peasant's
-# `make check`, minus the peasant-specific web build and ast-grep step (no
-# ast-grep ruleset is configured in this contract-only leaf). The Go race suite
+# `make check`, minus the peasant-specific web build. The unstring static guard
+# runs here and needs ast-grep 0.51.2 from the dev shell. The Go race suite
 # includes the leaf-audit test and the oasdiff/go-apidiff synthetic-break tests,
 # which t.Skip with an actionable message when a gate binary is absent (e.g.
 # outside `nix develop`) and run for real inside the flake dev shell. The full
@@ -48,9 +49,16 @@ vet:
 # The release-workflow guard (release-guard check-workflow) keeps publication
 # behind the required gates; the race suite is the authoritative test run.
 check: fmt vet freshness typescript-check
+	$(UNSTRING) check
 	$(GO) run ./cmd/release-guard check-workflow --policy .github/release-guard.policy.yml --release .github/workflows/release.yml
 	$(GO) test -race ./...
 	cd tools/redaction-categories && GOWORK=off $(GO) test -race ./...
+
+check-unstring:
+	$(UNSTRING) check
+
+unstring-update:
+	$(UNSTRING) update
 
 test:
 	$(GO) test -race ./...

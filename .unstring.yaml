@@ -1,0 +1,11 @@
+version: 1
+go:
+  roots: [.]
+ts:
+  roots: [typescript/src]
+exempt:
+  - rule: "*"
+    paths:
+      - route/routes_gen.go
+      - typescript/src/internal/generated/*.gen.ts
+    reason: generated code, not hand-edited
