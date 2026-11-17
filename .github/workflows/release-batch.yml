@@ -248,13 +248,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # The $owner/$repo/$branch below are GraphQL query variables,
-          # intentionally single-quoted so the shell does not expand them.
-          # shellcheck disable=SC2016
-          gh api graphql -F owner='{owner}' -F repo='{repo}' -F branch=develop -f query='
-            query($owner:String!, $repo:String!, $branch:String!) {
-              repository(owner:$owner, name:$repo) { mergeQueue(branch:$branch) {
-                entries(first:100) { totalCount nodes { position pullRequest { number title } } } } } }' > queue.json
+          # Escaped dollar signs keep these GraphQL variables literal.
+          gh api graphql -F owner='{owner}' -F repo='{repo}' -F branch=develop -f query="
+            query(\$owner:String!, \$repo:String!, \$branch:String!) {
+              repository(owner:\$owner, name:\$repo) { mergeQueue(branch:\$branch) {
+                entries(first:100) { totalCount nodes { position pullRequest { number title } } } } } }" > queue.json
 
       # The release PR's number, whether it is queued, and whether it is armed.
       # A new release PR is opened by the release job after this run's read,
