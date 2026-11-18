@@ -109,6 +109,9 @@ provenance_gates:
   job_conditions:
     verify: "!cancelled() && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true'"
     release: "!cancelled() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true' && needs.verify.result == 'success'"
+  job_needs:
+    verify: [plan]
+    release: [plan, verify]
 provenance_candidate: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 provenance_config:
   automation_author: app/peasant-labs-releaser
@@ -266,6 +269,8 @@ cases:
     job: plan
     step: Verify the release candidate PR provenance
     id: provenance
+    no_continue: true
+    no_job_continue: true
     after: Plan with the contract verdict
     if_value: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag'"
     env_values:

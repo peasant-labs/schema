@@ -3,12 +3,15 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
 )
 
+// The provenance shell is tested separately. These job and step wiring checks
+// establish that its failure fails the plan and prevents the release job.
 func TestReleaseSetupGates(t *testing.T) {
 	var fixture struct {
 		Precheck struct {
@@ -17,9 +20,10 @@ func TestReleaseSetupGates(t *testing.T) {
 			SetupSteps []string `yaml:"setup_steps"`
 		} `yaml:"precheck"`
 		Provenance struct {
-			CandidateOutput string            `yaml:"candidate_output"`
-			JobConditions   map[string]string `yaml:"job_conditions"`
-			PullRequests    string            `yaml:"pull_requests"`
+			CandidateOutput string              `yaml:"candidate_output"`
+			JobConditions   map[string]string   `yaml:"job_conditions"`
+			JobNeeds        map[string][]string `yaml:"job_needs"`
+			PullRequests    string              `yaml:"pull_requests"`
 		} `yaml:"provenance_gates"`
 		CutIf   string   `yaml:"cut_default_branch_if"`
 		CutJobs []string `yaml:"cut_jobs"`
@@ -49,6 +53,9 @@ func TestReleaseSetupGates(t *testing.T) {
 	}
 	jobs := readJobs("release-batch.yml")
 	plan := workflowMappingChild(jobs, "plan")
+	if workflowMappingChild(plan, "continue-on-error") != nil {
+		t.Error("release plan must not set continue-on-error")
+	}
 	permissions := workflowMappingChild(plan, "permissions")
 	if value := workflowMappingChild(permissions, "pull-requests"); value == nil || fixture.Provenance.PullRequests == "" || value.Value != fixture.Provenance.PullRequests {
 		t.Error("release plan must have pull-requests: read")
@@ -65,6 +72,26 @@ func TestReleaseSetupGates(t *testing.T) {
 	for job, expected := range fixture.Provenance.JobConditions {
 		if value := workflowMappingChild(workflowMappingChild(jobs, job), "if"); value == nil || expected == "" || value.Value != expected {
 			t.Errorf("%s job condition must equal %q", job, expected)
+		}
+	}
+	if _, ok := fixture.Provenance.JobNeeds["verify"]; !ok {
+		t.Error("provenance fixture must require verify job dependencies")
+	}
+	if _, ok := fixture.Provenance.JobNeeds["release"]; !ok {
+		t.Error("provenance fixture must require release job dependencies")
+	}
+	for job, expected := range fixture.Provenance.JobNeeds {
+		needs := workflowMappingChild(workflowMappingChild(jobs, job), "needs")
+		var actual []string
+		if needs == nil || needs.Decode(&actual) != nil {
+			t.Errorf("%s job must declare its dependencies", job)
+			continue
+		}
+		want := slices.Clone(expected)
+		slices.Sort(want)
+		slices.Sort(actual)
+		if !slices.Equal(actual, want) {
+			t.Errorf("%s job dependencies = %v, want %v", job, actual, want)
 		}
 	}
 	steps := workflowMappingChild(plan, "steps")
