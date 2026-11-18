@@ -1,6 +1,9 @@
 # The Village operations that declare 410, and the ones that must not.
 # declared: each operation declares exactly one 410 whose body is the shared
 # Village error envelope and whose description carries every listed phrase.
+# excludes: phrases that neither the 410 description nor the operation
+# description may carry, so the retracted copy never reaches a lost-content
+# read and the lost-content copy never reaches the metadata read.
 # absent: each operation declares no 410 at all; the pull surface stays 404 for
 # a retracted or lost transcript so a pull cannot confirm that an id existed.
 declared:
@@ -15,6 +18,9 @@ declared:
           - "retracted by its publisher"
           - "its content has been deleted and cannot be shown"
           - "Only the last audience"
+        excludes:
+          - "stored content has been lost"
+          - "an operator recorded the loss"
     - name: content-read-declares-lost-content
       classification: must-pass
       provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the content read"}
@@ -24,6 +30,9 @@ declared:
         contains:
           - "stored content has been lost and cannot be loaded"
           - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
     - name: segment-directory-read-declares-lost-content
       classification: must-pass
       provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the segment directory"}
@@ -33,6 +42,9 @@ declared:
         contains:
           - "stored content has been lost and cannot be loaded"
           - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
     - name: segment-read-declares-lost-content
       classification: must-pass
       provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the segment read"}
@@ -42,6 +54,9 @@ declared:
         contains:
           - "stored content has been lost and cannot be loaded"
           - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
     - name: window-read-declares-lost-content
       classification: must-pass
       provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the window read"}
@@ -51,6 +66,9 @@ declared:
         contains:
           - "stored content has been lost and cannot be loaded"
           - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
     - name: header-read-declares-lost-content
       classification: must-pass
       provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the header read"}
@@ -60,6 +78,9 @@ declared:
         contains:
           - "stored content has been lost and cannot be loaded"
           - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
     - name: locator-read-declares-lost-content
       classification: must-pass
       provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the locator after access"}
@@ -69,6 +90,9 @@ declared:
         contains:
           - "stored content has been lost and cannot be loaded"
           - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
 absent:
   cases:
     - name: transcript-pull-request-list-declares-no-410

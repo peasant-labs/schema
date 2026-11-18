@@ -12,13 +12,14 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   publisher retracted: the content has been deleted and cannot be shown, and
   only the transcript's last audience sees it. `getTranscriptContent`,
   `getTranscriptHeader`, `getTranscriptSegments`, `getTranscriptSegment`,
-  `getTranscriptWindow` and `locateTranscriptEntry` answer `410` for a transcript whose stored content an
-  operator recorded as lost, after access is decided; the locator never answers the retracted `410`. No pull operation, and no
-  other operation, declares `410`. This is an additive response status: no
-  type, Types version, Local API version or segmented read protocol version
-  changes, and the segmented read documents are byte-identical. The prior
-  Village API 0.41.0 documents and request schemas move to the retirement
-  registry, byte-frozen.
+  `getTranscriptWindow` and `locateTranscriptEntry` answer `410` for a
+  transcript whose stored content an operator recorded as lost, after access
+  is decided. The locator never answers the retracted `410`. No pull
+  operation, and no other operation, declares `410`. This is an additive
+  response status: no type, Types version, Local API version or segmented
+  read protocol version changes, and the segmented read documents are
+  byte-identical. The prior Village API 0.41.0 documents and request schemas
+  move to the retirement registry, byte-frozen.
 
 - The Go `route` package provides a typed member per Village and Local API
   operation, each carrying its method, and path builders returning `(string, error)`.

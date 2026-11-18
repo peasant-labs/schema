@@ -28,6 +28,7 @@ type villageAbsenteeGoneInput struct {
 
 type villageAbsenteeGoneExpected struct {
 	Contains []string `yaml:"contains"`
+	Excludes []string `yaml:"excludes"`
 }
 
 type villageAbsenteeGoneFixtures struct {
@@ -50,6 +51,9 @@ func loadVillageAbsenteeGoneFixtures(t *testing.T) villageAbsenteeGoneFixtures {
 	var names []string
 	for _, c := range fixtures.Declared.Cases {
 		names = append(names, c.Name)
+		if len(c.Expected.Excludes) == 0 {
+			t.Fatalf("declared case %s lists no excluded phrase; each 410 copy must be pinned against the other", c.Name)
+		}
 	}
 	for _, c := range fixtures.Absent.Cases {
 		names = append(names, c.Name)
@@ -64,16 +68,22 @@ type goneDocument struct {
 	Paths map[string]goneEntry `json:"paths"`
 }
 
+// goneEntry carries every HTTP method an OpenAPI path item can declare, so a
+// 410 on any operation, however unusual its method, reaches the exact-set check.
 type goneEntry struct {
-	Get    *goneOperation `json:"get"`
-	Put    *goneOperation `json:"put"`
-	Post   *goneOperation `json:"post"`
-	Patch  *goneOperation `json:"patch"`
-	Delete *goneOperation `json:"delete"`
+	Get     *goneOperation `json:"get"`
+	Put     *goneOperation `json:"put"`
+	Post    *goneOperation `json:"post"`
+	Patch   *goneOperation `json:"patch"`
+	Delete  *goneOperation `json:"delete"`
+	Head    *goneOperation `json:"head"`
+	Options *goneOperation `json:"options"`
+	Trace   *goneOperation `json:"trace"`
 }
 
 type goneOperation struct {
 	OperationID string                  `json:"operationId"`
+	Description string                  `json:"description"`
 	Responses   map[string]goneResponse `json:"responses"`
 }
 
@@ -88,7 +98,7 @@ type goneResponse struct {
 
 func (e goneEntry) operations() []*goneOperation {
 	var operations []*goneOperation
-	for _, operation := range []*goneOperation{e.Get, e.Put, e.Post, e.Patch, e.Delete} {
+	for _, operation := range []*goneOperation{e.Get, e.Put, e.Post, e.Patch, e.Delete, e.Head, e.Options, e.Trace} {
 		if operation != nil {
 			operations = append(operations, operation)
 		}
@@ -173,6 +183,16 @@ func TestVillageAbsenteeGoneIsDeclared(t *testing.T) {
 					for _, phrase := range c.Expected.Contains {
 						if !strings.Contains(response.Description, phrase) {
 							t.Fatalf("%s 410 description %q does not contain %q", c.Input.OperationID, response.Description, phrase)
+						}
+					}
+					// The 410 copy and the operation description each announce
+					// the 410, so both are held to the excluded phrases.
+					for _, phrase := range c.Expected.Excludes {
+						if strings.Contains(response.Description, phrase) {
+							t.Fatalf("%s 410 description %q must not contain %q", c.Input.OperationID, response.Description, phrase)
+						}
+						if strings.Contains(operation.Description, phrase) {
+							t.Fatalf("%s operation description must not contain %q", c.Input.OperationID, phrase)
 						}
 					}
 				})
