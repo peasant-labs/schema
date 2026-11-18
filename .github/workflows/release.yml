@@ -324,7 +324,7 @@ jobs:
         run: |
           set -euo pipefail
           version="${TAG#v}"
-          pkg_version="$(nix develop -c node -p "require('./typescript/package.json').version")"
+          pkg_version="$(jq -r '.version' typescript/package.json)"
           test "${version}" = "${pkg_version}" || { echo "::error::tag ${TAG} does not match typescript/package.json version ${pkg_version}; tags are immutable, so fix forward"; exit 1; }
 
       - name: Remove the private flag in the publish working copy
@@ -365,5 +365,5 @@ jobs:
         run: |
           set -euo pipefail
           nix develop -c pnpm --dir typescript publish --access public --no-git-checks --tag "${{ steps.disttag.outputs.tag }}"
-          published_version="$(nix develop -c node -p "require('./typescript/package.json').version")"
+          published_version="$(jq -r '.version' typescript/package.json)"
           echo "::notice::published @peasant-labs/schema@${published_version} to npm under dist-tag ${{ steps.disttag.outputs.tag }} via OIDC trusted publishing"
