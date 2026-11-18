@@ -30,47 +30,6 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   refuse an empty, `.` or `..` path parameter value. No spec document or
   version stamp changes.
 
-- Local API 0.39.0 and Types 0.52.0 declare the local owner and claim
-  contract. `GET /api/v1/local-owner` returns `LocalOwnerStatus`: the one
-  permanent `LocalOwner` for the data directory, the most recent 100
-  `LocalClaimEntry` rows newest first, the full `totalClaims`, the older-page
-  `nextBefore` cursor, the server-computed `LocalOwnerClaimPrompt`, and the
-  session and annotation ownership counts. The log is ordered by `claimedAt`
-  descending, then insertion order descending. `nextBefore` names the last
-  returned entry and is present exactly when an older entry exists, found by
-  reading one row past the page. `POST /api/v1/local-owner/claim` takes
-  `LocalOwnerClaimRequest` (`all=false` claims only unclaimed artifacts,
-  `all=true` claims every local session and annotation) and answers
-  `LocalOwnerClaimResult`: the recomputed status plus `claimed`,
-  `alreadyClaimed`, and the appended `claimId`. An explicit claim always
-  appends, including when it moves nothing, and returns its `claimId`. An
-  automatic claim covers only sessions with no stored row and no saved copy
-  before the harvest, including a session first stored while still active. It
-  reuses the account's `automatic` entry only while that entry is the newest in
-  the log for this local owner; otherwise it appends one. `POST
-  /api/v1/local-owner/decline` records only the prompt decision and writes no
-  claim. The read declares `500`; claim declares `400`, `401`, and `500`;
-  decline declares `401` and `500`; both POST routes also declare the shared
-  cross-origin `403`. A claim entry reuses the `CollectiveObservationScope`
-  field names and grammar (`villageUrl` and `userId`), with `username` as a
-  display snapshot only and a closed `source` (`manual`, `sign_in_prompt`,
-  `automatic`). The prompt state is a closed set (`not_applicable`, `due`,
-  `declined`, `completed`) and carries the account scope when signed in and
-  `decidedAt` when settled. Local reads gain an optional role-neutral
-  `LocalArtifactIdentity` (`local`, `village`, `foreign`, or `unknown`, never a
-  local fallback for an empty pulled owner) and a positive `adapterVersion` on
-  `SessionSummary`, `LocalSyncSummary`, and `SessionDetailReadPayload`, never on
-  the shared `SessionDetailPayload` or the push types. A `village` identity
-  carries `claimId` and `villageUrl` beside `userId`, the same spelling the
-  claim entry and prompt use; the `foreign` kind is declared for a future
-  pulled-owner projection and no local read emits it yet. `unknown` carries no
-  identity; an absent `owner` means the server does not project owners at all.
-  The annotations list response becomes `LocalAnnotationRow`, which embeds
-  `AnnotationSummary` and promotes its nine required fields while adding
-  optional `owner` and `author` projections. No Village route, publish type, or
-  pulled-manifest field changes. The prior Local API 0.38.0 and Types 0.50.0
-  and Types 0.51.0 specs are frozen in the retirement registry.
-
 - Types 0.50.0, Village API 0.40.0 and Local API 0.38.0 recognize the separate
   `antigravity-cli` and `antigravity-ide` harness identities, with corresponding
   Go constants and display names. The previous
