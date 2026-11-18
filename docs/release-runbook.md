@@ -30,7 +30,11 @@ Consumers re-pin only after the schema tag exists.
    default-branch run can retry.
 4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
    and the contract check precede the independent GitHub Release and npm
-   publishers. One `gh release create --draft --verify-tag ... 'dist/assets/*'`
+   publishers. When `gh release view` finds no release, `gh release list`
+   (drafts included) must show no release or draft for the tag; it fails on
+   any API error, so a rate limit, a 5xx or an authentication error stops the
+   run before anything is created. Then one
+   `gh release create --draft --verify-tag ... 'dist/assets/*'`
    command creates the draft and uploads the generated JSON and YAML specs to
    that same release. The next step checks that the draft holds assets; only
    then is it published, and a last check confirms the release is published,
@@ -44,6 +48,11 @@ releaser App author for the merge-queue squash commit `cf9f3b7189d00a1ac841a75c4
 The same check for ordinary merge commit `24323466e020c223cf9750bd0606774c104b4b76`
 returned a human-authored PR. This is live evidence, not a guarantee of future
 API behavior: the provenance test stubs Git, yq, and gh.
+
+A transient API error (rate limit, 5xx, authentication) fails the run before
+anything is created: rerun the workflow; no new tag is needed. If the list
+check reports a release or draft for the tag, nothing was created by this run;
+delete stale drafts by id as below, then rerun.
 
 On a rerun, a published release with assets is left unchanged. A failed upload
 leaves an unpublished draft: the draft check fails before publishing, and a

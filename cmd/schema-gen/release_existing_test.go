@@ -31,26 +31,32 @@ func TestReleaseViewChecks(t *testing.T) {
 		DraftCases        []releaseViewCase `yaml:"draft_release_cases"`
 		PublishedRequired []string          `yaml:"published_release_required"`
 		PublishedCases    []releaseViewCase `yaml:"published_release_cases"`
+		ListRequired      []string          `yaml:"release_list_required"`
+		ListCases         []releaseViewCase `yaml:"release_list_cases"`
 	}
 	if err := yaml.Unmarshal(releaseAdoptionFixture, &fixture); err != nil {
 		t.Fatal(err)
 	}
+	const view = "release view v1.2.3 --repo peasant-labs/schema --json "
 	for _, check := range []struct {
-		step, fields string
-		required     []string
-		cases        []releaseViewCase
+		step, args string
+		required   []string
+		cases      []releaseViewCase
 	}{
-		{"Verify the existing release is complete", "isDraft,assets", fixture.ExistingRequired, fixture.ExistingCases},
-		{"Verify the draft before publishing", "isDraft,assets", fixture.DraftRequired, fixture.DraftCases},
-		{"Verify the published release", "isDraft,isImmutable,assets", fixture.PublishedRequired, fixture.PublishedCases},
+		{"Verify the existing release is complete", view + "isDraft,assets --jq", fixture.ExistingRequired, fixture.ExistingCases},
+		{"Refuse an existing release for the tag", "release list --repo peasant-labs/schema --limit 100 --json tagName,isDraft --jq", fixture.ListRequired, fixture.ListCases},
+		{"Verify the draft before publishing", view + "isDraft,assets --jq", fixture.DraftRequired, fixture.DraftCases},
+		{"Verify the published release", view + "isDraft,isImmutable,assets --jq", fixture.PublishedRequired, fixture.PublishedCases},
 	} {
 		t.Run(check.step, func(t *testing.T) {
-			runReleaseViewStep(t, check.step, check.fields, check.required, check.cases)
+			runReleaseViewStep(t, check.step, check.args, check.required, check.cases)
 		})
 	}
 }
 
-func runReleaseViewStep(t *testing.T, stepName, fields string, required []string, cases []releaseViewCase) {
+// runReleaseViewStep runs the step with a stubbed gh that requires exactly
+// args before the final jq filter, then applies that filter with jq.
+func runReleaseViewStep(t *testing.T, stepName, args string, required []string, cases []releaseViewCase) {
 	t.Helper()
 	root, err := findModuleRoot()
 	if err != nil {
@@ -89,12 +95,14 @@ func runReleaseViewStep(t *testing.T, stepName, fields string, required []string
 		t.Run(c.Name, func(t *testing.T) {
 			dir := t.TempDir()
 			gh := `#!/bin/sh
-[ "$#" -eq 9 ] && [ "$1" = release ] && [ "$2" = view ] && [ "$3" = "$TAG" ] && [ "$4" = --repo ] && [ "$5" = "$GITHUB_REPOSITORY" ] && [ "$6" = --json ] && [ "$7" = "$TEST_FIELDS" ] && [ "$8" = --jq ] || exit 92
+filter=$(eval "printf '%s' \"\${$#}\"")
+set -- $(printf '%s\n' "$@" | head -n $(($# - 1)))
+[ "$*" = "$TEST_ARGS" ] || exit 92
 if [ "$TEST_API_EXIT" -ne 0 ]; then
   printf 'mock API unavailable\n' >&2
   exit "$TEST_API_EXIT"
 fi
-printf '%s\n' "$TEST_RELEASE_JSON" | jq -e -r "$9" || exit 1
+printf '%s\n' "$TEST_RELEASE_JSON" | jq -e -r "$filter" || exit 1
 `
 			if err := os.WriteFile(filepath.Join(dir, "gh"), []byte(gh), 0o755); err != nil {
 				t.Fatal(err)
@@ -102,7 +110,7 @@ printf '%s\n' "$TEST_RELEASE_JSON" | jq -e -r "$9" || exit 1
 			cmd := exec.Command("bash", "-e", "-c", script)
 			cmd.Dir = dir
 			cmd.Env = append(os.Environ(), "PATH="+dir+string(os.PathListSeparator)+os.Getenv("PATH"),
-				"TAG=v1.2.3", "GITHUB_REPOSITORY=peasant-labs/schema", "TEST_FIELDS="+fields,
+				"TAG=v1.2.3", "GITHUB_REPOSITORY=peasant-labs/schema", "TEST_ARGS="+args,
 				"TEST_RELEASE_JSON="+c.Response, "TEST_API_EXIT="+strconv.Itoa(c.APIExit))
 			output, err := cmd.CombinedOutput()
 			exit := 0

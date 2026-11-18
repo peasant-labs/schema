@@ -258,12 +258,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq 'if (.isDraft | type) != "boolean" then error("release draft status is invalid; inspect the release before retrying") elif .isDraft then error("release is an unpublished draft; list the drafts for this tag with gh api repos/\u0024GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id> (never gh release delete \u0024TAG), then rerun; do not create a new tag") elif (.assets | type) != "array" then error("published release assets are invalid; inspect the release before retrying") elif (.assets | length == 0) then error("published release has no assets; tags are immutable, so fix forward with a new tag") else "existing release is published and has assets" end'
 
+      # A failed view may be a rate limit, a 5xx or an authentication error
+      # rather than an absent release, and GitHub keeps several drafts for one
+      # tag. gh lists drafts too, so this fails when any release or leftover
+      # draft names the tag, and it fails closed on any API error, stopping
+      # the run before anything is created.
+      - name: Refuse an existing release for the tag
+        id: list
+        if: steps.view.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft --jq '[.[] | select(.tagName == env.TAG)] | if length > 0 then error("a release or draft already exists for this tag, so nothing was created; list the drafts with gh api repos/\u0024GITHUB_REPOSITORY/releases, delete stale drafts by id with gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id> (never gh release delete \u0024TAG), then rerun; no new tag is needed") else "no release or draft exists for this tag" end'
+
       # One command creates the draft and uploads every asset to that same
       # release. A separate uploader finds its release by tag and can create
       # a second draft, which is how v0.55.0-v0.57.1 were published empty.
       - name: Create the draft release with its assets
         id: create
-        if: steps.view.outcome == 'failure'
+        if: steps.view.outcome == 'failure' && steps.list.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}

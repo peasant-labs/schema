@@ -124,6 +124,38 @@ published_release_cases:
     api_exit: 1
     expected_exit: 1
     expected_output: "mock API unavailable"
+release_list_required:
+  - no-release-for-the-tag
+  - draft-exists
+  - published-release-exists
+  - another-tag-only
+  - api-failure
+  - malformed-output
+release_list_cases:
+  - name: no-release-for-the-tag
+    response: '[]'
+    expected_exit: 0
+    expected_output: "no release or draft exists for this tag"
+  - name: draft-exists
+    response: '[{"tagName":"v1.2.3","isDraft":true}]'
+    expected_exit: 1
+    expected_output: "a release or draft already exists for this tag, so nothing was created"
+  - name: published-release-exists
+    response: '[{"tagName":"v1.2.3","isDraft":false}]'
+    expected_exit: 1
+    expected_output: "a release or draft already exists for this tag, so nothing was created"
+  - name: another-tag-only
+    response: '[{"tagName":"v1.2.2","isDraft":false},{"tagName":"v1.2.4","isDraft":true}]'
+    expected_exit: 0
+    expected_output: "no release or draft exists for this tag"
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
+  - name: malformed-output
+    response: "not-json"
+    expected_exit: 1
+    expected_output: "parse error"
 prepared_tag_required:
   - release-commit-snapshot
   - branch-advances-after-plan
@@ -377,6 +409,7 @@ required:
   - npm-published-version-has-no-shell-banner
   - release-checks-for-existing
   - existing-release-must-be-complete
+  - release-refuses-an-existing-release-for-the-tag
   - release-creates-a-draft-with-its-assets
   - release-verifies-the-draft
   - release-publishes-after-verifying-the-draft
@@ -510,6 +543,7 @@ cases:
       gh release create: Create the draft release with its assets
       gh release edit: Publish the release
       isImmutable: Verify the published release
+      gh release list: Refuse an existing release for the tag
   - name: existing-release-must-be-complete
     workflow: release.yml
     job: release
@@ -521,13 +555,26 @@ cases:
     env_values:
       GH_TOKEN: "${{ github.token }}"
     run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"', '--json isDraft,assets', '--jq', 'unpublished draft', 'gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id>', 'never gh release delete', 'do not create a new tag', 'published release has no assets', 'fix forward with a new tag']
+  - name: release-refuses-an-existing-release-for-the-tag
+    workflow: release.yml
+    job: release
+    step: Refuse an existing release for the tag
+    id: list
+    after: Look for an existing release
+    if_value: "steps.view.outcome == 'failure'"
+    no_continue: true
+    no_job_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft --jq', 'select(.tagName == env.TAG)', 'error(', 'delete stale drafts by id', 'no new tag is needed']
+    run_excludes: ['--exclude-drafts']
   - name: release-creates-a-draft-with-its-assets
     workflow: release.yml
     job: release
     step: Create the draft release with its assets
     id: create
-    after: Verify the existing release is complete
-    if_value: "steps.view.outcome == 'failure'"
+    after: Refuse an existing release for the tag
+    if_value: "steps.view.outcome == 'failure' && steps.list.outcome == 'success'"
     no_continue: true
     env_values:
       GH_TOKEN: "${{ github.token }}"
