@@ -151,9 +151,10 @@ Release recovery rules:
   `peasant-labs-releaser` GitHub App (Integration id 3988034). A human
   `git push` of a release tag is refused. Fix a failed batch; do not change the
   ruleset to work around it.
-- If a non-releasing fix lands after the release PR merges, its release commit
-  is behind the tip and the planner returns `action=none`. Do not move or
-  recreate the tag. Cut a new patch release whose commit includes the fix.
+- In the 0.56.0 incident, a later non-releasing fix moved the tip after the
+  release PR merged, and the batch returned `action=none` for the already-merged
+  release commit. Do not treat `none` as success or move a tag; cut a new
+  release that includes the fix.
 - An immutable GitHub Release cannot be updated. Rerunning the publish workflow
   on an existing tag fails at `publish GitHub Release` with `tag_name was used
   by an immutable release` or `target_commitish cannot be changed`. Fix forward
