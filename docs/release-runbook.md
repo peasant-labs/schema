@@ -144,3 +144,20 @@ If the release job fails to push a tag, inspect the job and remote tag first.
 After fixing the cause, dispatch `release-batch` on the default branch so it
 replans and verifies the current candidate. If the tag already exists, do not
 move or recreate it; investigate its target and the tag-triggered run instead.
+
+Release recovery rules:
+
+- The `Protect release tags` ruleset has exactly one bypass actor: the
+  `peasant-labs-releaser` GitHub App (Integration id 3988034). A human
+  `git push` of a release tag is refused. Fix a failed batch; do not change the
+  ruleset to work around it.
+- If a non-releasing fix lands after the release PR merges, its release commit
+  is behind the tip and the planner returns `action=none`. Do not move or
+  recreate the tag. Cut a new patch release whose commit includes the fix.
+- An immutable GitHub Release cannot be updated. Rerunning the publish workflow
+  on an existing tag fails at `publish GitHub Release` with `tag_name was used
+  by an immutable release` or `target_commitish cannot be changed`. Fix forward
+  with a new tag; the release-assets policy owns the long-term idempotence design.
+- The npm version guard reads `typescript/package.json` with `jq`. The dev-shell
+  banner polluted the old `nix develop -c node -p` capture; do not reintroduce
+  a stdout-captured dev-shell command.
