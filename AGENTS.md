@@ -237,13 +237,10 @@ A hit that is not a closed-set value may carry
 three words, after an em dash. `closed-set-literal` and `go-closed-set-literal`
 accept no marker: the fix for a set value is the typed value.
 
-`route/routes_gen.go` and `typescript/src/internal/generated/*.gen.ts` are
+`route/routes_gen.go` and `typescript/src/internal/generated/**` are
 exempt as generated code. A `rule: "*"` exemption is accepted only when every
 matched file carries a `Code generated … DO NOT EDIT` header, which those files
-do. `local-api.ts`, `village-api.ts`, and `contract/zod.gen.ts` under
-`typescript/src/internal/generated/` are generated too, but they lack that
-header, so the tool will not exempt them; they stay in the scan and the
-baseline.
+do.
 `schema.module` is omitted: this repository is the contract, not a consumer of
 its own package, so the catalog is this repository's typed constants and
 TypeScript unions.
