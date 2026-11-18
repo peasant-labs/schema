@@ -1247,7 +1247,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Locate a reference in the served main partition. The request carries the expected revision, representation and public content hash, but no location kind or partition selector. After access and hash verification, the first exact source, tool call or tool result member in served order wins. A denied viewer and a missing reference receive the same non-disclosing 404; the reference is never echoed. A stale revision or representation is 409, and a temporary load refusal is 503 with Retry-After. */
+        /** @description Locate a reference in the served main partition. The request carries the expected revision, representation and public content hash, but no location kind or partition selector. After access and hash verification, the first exact source, tool call or tool result member in served order wins. A denied viewer and a missing reference receive the same non-disclosing 404; the reference is never echoed. A stale revision or representation is 409, and a temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided. */
         post: operations["locateTranscriptEntry"];
         delete?: never;
         options?: never;
@@ -7242,6 +7242,19 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
                 headers: {
                     /** @description private, no-store for a successful read; no-store for a refusal. */
                     "Cache-Control"?: string;

@@ -464,7 +464,9 @@ const (
 	// non-disclosing 404, and the pull reads never answer 410.
 	transcriptRetractedGone = "Gone. The transcript was retracted by its publisher; its content has been deleted and cannot be shown. Only the last audience of the transcript sees this answer; every other viewer receives the same 404 as an unknown id."
 	// transcriptContentLostGone is the 410 of every content-bearing read of a
-	// transcript whose stored content an operator recorded as lost.
+	// transcript whose stored content an operator recorded as lost. The locator
+	// is one of them; it never answers the retracted 410, which is the metadata
+	// read's audience rule.
 	transcriptContentLostGone = "Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404."
 )
 
@@ -650,9 +652,10 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodPost, path: "/api/v1/transcripts/{id}/segments/locate", id: "locateTranscriptEntry", tag: "transcripts",
-			description: "Locate a reference in the served main partition. The request carries the expected revision, representation and public content hash, but no location kind or partition selector. After access and hash verification, the first exact source, tool call or tool result member in served order wins. A denied viewer and a missing reference receive the same non-disclosing 404; the reference is never echoed. A stale revision or representation is 409, and a temporary load refusal is 503 with Retry-After.",
+			description: "Locate a reference in the served main partition. The request carries the expected revision, representation and public content hash, but no location kind or partition selector. After access and hash verification, the first exact source, tool call or tool result member in served order wins. A denied viewer and a missing reference receive the same non-disclosing 404; the reference is never echoed. A stale revision or representation is 409, and a temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.",
 			requests:    []interface{}{transcriptPath, new(schema.TranscriptEntryLocateRequest)}, response: new(schema.TranscriptEntryMatch),
-			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
+			errorStatuses:  []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusGone, http.StatusInternalServerError, http.StatusServiceUnavailable},
+			errorSummaries: map[int]string{http.StatusGone: transcriptContentLostGone},
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/segments/{index}", id: "getTranscriptSegment", tag: "transcripts",

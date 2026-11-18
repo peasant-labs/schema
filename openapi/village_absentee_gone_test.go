@@ -43,7 +43,7 @@ func loadVillageAbsenteeGoneFixtures(t *testing.T) villageAbsenteeGoneFixtures {
 	if err := decoder.Decode(&fixtures); err != nil {
 		t.Fatal(err)
 	}
-	testassert.RequireMin(t, fixtures.Declared, 6)
+	testassert.RequireMin(t, fixtures.Declared, 7)
 	testassert.RequireValid(t, fixtures.Declared)
 	testassert.RequireMin(t, fixtures.Absent, 1)
 	testassert.RequireValid(t, fixtures.Absent)
@@ -147,9 +147,9 @@ func (d goneDocument) operation(t *testing.T, in villageAbsenteeGoneInput) *gone
 	return nil
 }
 
-// TestVillageAbsenteeGoneIsDeclared holds the six transcript reads to a 410
+// TestVillageAbsenteeGoneIsDeclared holds the seven transcript reads to a 410
 // that carries the shared error envelope and its copy, holds the pull
-// operations to no 410, and holds the whole document to exactly those six
+// operations to no 410, and holds the whole document to exactly those seven
 // operations. The check runs against the document the generator builds and
 // against the document the module serves, so a stale embedded copy fails too.
 func TestVillageAbsenteeGoneIsDeclared(t *testing.T) {

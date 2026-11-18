@@ -60,6 +60,15 @@ declared:
         contains:
           - "stored content has been lost and cannot be loaded"
           - "an operator recorded the loss"
+    - name: locator-read-declares-lost-content
+      classification: must-pass
+      provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the locator after access"}
+      mutation: {description: "Drop 410 from locateTranscriptEntry or change its copy"}
+      input: {operationId: locateTranscriptEntry, path: "/api/v1/transcripts/{id}/segments/locate"}
+      expected:
+        contains:
+          - "stored content has been lost and cannot be loaded"
+          - "an operator recorded the loss"
 absent:
   cases:
     - name: transcript-pull-request-list-declares-no-410

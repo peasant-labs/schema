@@ -7,13 +7,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
-- Village API 0.42.0 declares `410` on six transcript reads, with the shared
+- Village API 0.42.0 declares `410` on seven transcript reads, with the shared
   error envelope. `getTranscriptMetadata` answers `410` for a transcript its
   publisher retracted: the content has been deleted and cannot be shown, and
   only the transcript's last audience sees it. `getTranscriptContent`,
-  `getTranscriptHeader`, `getTranscriptSegments`, `getTranscriptSegment` and
-  `getTranscriptWindow` answer `410` for a transcript whose stored content an
-  operator recorded as lost, after access is decided. No pull operation, and no
+  `getTranscriptHeader`, `getTranscriptSegments`, `getTranscriptSegment`,
+  `getTranscriptWindow` and `locateTranscriptEntry` answer `410` for a transcript whose stored content an
+  operator recorded as lost, after access is decided; the locator never answers the retracted `410`. No pull operation, and no
   other operation, declares `410`. This is an additive response status: no
   type, Types version, Local API version or segmented read protocol version
   changes, and the segmented read documents are byte-identical. The prior

@@ -143,7 +143,7 @@ const (
 	// Bumped to 0.41.0 for the additive positioned segmented transcript reads.
 	// Bumped to 0.42.0 when the transcript metadata read declared 410 for a
 	// transcript its publisher retracted, and the content, header, segment
-	// directory, segment and window reads declared 410 for a transcript whose
+	// directory, segment, window and locator reads declared 410 for a transcript whose
 	// stored content an operator recorded as lost (additive statuses on the
 	// existing error envelope = minor bump). The pull reads declare no 410. No
 	// type, protocol version or segmented read document changes.

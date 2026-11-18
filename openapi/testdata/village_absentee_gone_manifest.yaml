@@ -5,6 +5,7 @@ requiredNames:
   - segment-read-declares-lost-content
   - window-read-declares-lost-content
   - header-read-declares-lost-content
+  - locator-read-declares-lost-content
   - transcript-pull-request-list-declares-no-410
   - pull-request-attachment-read-declares-no-410
   - transcript-list-declares-no-410
