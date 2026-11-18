@@ -269,8 +269,8 @@ func TestTypesComponentsRequireOnlyDeclaredProperties(t *testing.T) {
 		"LegacyPullAnnotation": "frozen legacy envelope; carries the Go embedded-field name",
 	}
 	for component, schemaMap := range spec.Components.Schemas {
-		properties, _ := schemaMap["properties"].(map[string]interface{})
-		required, _ := schemaMap["required"].([]interface{})
+		properties, _ := schemaMap["properties"].(map[string]interface{}) // unstring-allow: go-json-key-assert — inspect the generated component map directly
+		required, _ := schemaMap["required"].([]interface{})              // unstring-allow: go-json-key-assert — inspect the generated component map directly
 		for _, raw := range required {
 			name, ok := raw.(string)
 			if !ok {
