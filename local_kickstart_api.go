@@ -525,7 +525,12 @@ const (
 	// LocalKickstartErrorSessionNotFound: no live session has the id.
 	LocalKickstartErrorSessionNotFound LocalKickstartErrorCode = "kickstart_session_not_found"
 	// LocalKickstartErrorPreviewRowNotFound: the session's forest holds no such row.
-	LocalKickstartErrorPreviewRowNotFound LocalKickstartErrorCode = "kickstart_preview_row_not_found"
+	LocalKickstartErrorPreviewRowNotFound     LocalKickstartErrorCode = "kickstart_preview_row_not_found"
+	LocalKickstartErrorPreviewCaptureNotFound LocalKickstartErrorCode = "kickstart_preview_capture_not_found"
+	LocalKickstartErrorPreviewSourceChanged   LocalKickstartErrorCode = "kickstart_preview_source_changed"
+	LocalKickstartErrorPreviewLateResult      LocalKickstartErrorCode = "kickstart_preview_late_result"
+	LocalKickstartErrorPreviewCapacity        LocalKickstartErrorCode = "kickstart_preview_capacity"
+	LocalKickstartErrorPreviewOutOfOrder      LocalKickstartErrorCode = "kickstart_preview_out_of_order"
 
 	// 500: the server could not finish.
 
@@ -579,6 +584,11 @@ var AllLocalKickstartErrorCodes = []LocalKickstartErrorCode{
 	LocalKickstartErrorCommitRefused,
 	LocalKickstartErrorSessionNotFound,
 	LocalKickstartErrorPreviewRowNotFound,
+	LocalKickstartErrorPreviewCaptureNotFound,
+	LocalKickstartErrorPreviewSourceChanged,
+	LocalKickstartErrorPreviewLateResult,
+	LocalKickstartErrorPreviewCapacity,
+	LocalKickstartErrorPreviewOutOfOrder,
 	LocalKickstartErrorFailed,
 	LocalKickstartErrorStatusUnreadable,
 	LocalKickstartErrorConfigUnreadable,
@@ -599,35 +609,40 @@ var AllLocalKickstartErrorCodes = []LocalKickstartErrorCode{
 // testdata/local-api/kickstart_errors.yaml states the same pairs independently,
 // and a test holds the two equal.
 var localKickstartErrorStatuses = map[LocalKickstartErrorCode]int{
-	LocalKickstartErrorBodyMissing:         400,
-	LocalKickstartErrorBodyInvalid:         400,
-	LocalKickstartErrorScopeInvalid:        400,
-	LocalKickstartErrorAnswersInvalid:      400,
-	LocalKickstartErrorSessionCommitting:   400,
-	LocalKickstartErrorRevisionAhead:       400,
-	LocalKickstartErrorAnswerRefused:       400,
-	LocalKickstartErrorScanNotDone:         400,
-	LocalKickstartErrorFieldUnknown:        400,
-	LocalKickstartErrorFieldOutOfScope:     400,
-	LocalKickstartErrorFieldHidden:         400,
-	LocalKickstartErrorTreeAnswerShape:     400,
-	LocalKickstartErrorConnectOutOfScope:   400,
-	LocalKickstartErrorConnectNotConnected: 400,
-	LocalKickstartErrorConnectUnknown:      400,
-	LocalKickstartErrorCommitRefused:       400,
-	LocalKickstartErrorSessionNotFound:     404,
-	LocalKickstartErrorPreviewRowNotFound:  404,
-	LocalKickstartErrorFailed:              500,
-	LocalKickstartErrorStatusUnreadable:    500,
-	LocalKickstartErrorConfigUnreadable:    500,
-	LocalKickstartErrorConfigUnwritable:    500,
-	LocalKickstartErrorSessionUnbuildable:  500,
-	LocalKickstartErrorAnswerUnencodable:   500,
-	LocalKickstartErrorPreviewUnreadable:   500,
-	LocalKickstartErrorContractBreach:      500,
-	LocalKickstartErrorUnavailable:         503,
-	LocalKickstartErrorConfigBusy:          503,
-	LocalKickstartErrorConfigChanging:      503,
+	LocalKickstartErrorBodyMissing:            400,
+	LocalKickstartErrorBodyInvalid:            400,
+	LocalKickstartErrorScopeInvalid:           400,
+	LocalKickstartErrorAnswersInvalid:         400,
+	LocalKickstartErrorSessionCommitting:      400,
+	LocalKickstartErrorRevisionAhead:          400,
+	LocalKickstartErrorAnswerRefused:          400,
+	LocalKickstartErrorScanNotDone:            400,
+	LocalKickstartErrorFieldUnknown:           400,
+	LocalKickstartErrorFieldOutOfScope:        400,
+	LocalKickstartErrorFieldHidden:            400,
+	LocalKickstartErrorTreeAnswerShape:        400,
+	LocalKickstartErrorConnectOutOfScope:      400,
+	LocalKickstartErrorConnectNotConnected:    400,
+	LocalKickstartErrorConnectUnknown:         400,
+	LocalKickstartErrorCommitRefused:          400,
+	LocalKickstartErrorSessionNotFound:        404,
+	LocalKickstartErrorPreviewRowNotFound:     404,
+	LocalKickstartErrorPreviewCaptureNotFound: 404,
+	LocalKickstartErrorPreviewSourceChanged:   400,
+	LocalKickstartErrorPreviewLateResult:      400,
+	LocalKickstartErrorPreviewCapacity:        503,
+	LocalKickstartErrorPreviewOutOfOrder:      400,
+	LocalKickstartErrorFailed:                 500,
+	LocalKickstartErrorStatusUnreadable:       500,
+	LocalKickstartErrorConfigUnreadable:       500,
+	LocalKickstartErrorConfigUnwritable:       500,
+	LocalKickstartErrorSessionUnbuildable:     500,
+	LocalKickstartErrorAnswerUnencodable:      500,
+	LocalKickstartErrorPreviewUnreadable:      500,
+	LocalKickstartErrorContractBreach:         500,
+	LocalKickstartErrorUnavailable:            503,
+	LocalKickstartErrorConfigBusy:             503,
+	LocalKickstartErrorConfigChanging:         503,
 }
 
 // NewLocalKickstartErrorCode refuses a token outside the menu.

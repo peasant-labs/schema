@@ -36,6 +36,9 @@ const versionsSource = await readFile(join(moduleRoot, "versions.go"), "utf8");
 const localAPISource = await readFile(join(moduleRoot, "local_api.go"), "utf8");
 const sessionTeammateBound = Number(requiredMatch(localAPISource, /SessionTeammateMaxIdentityRunes\s*=\s*(\d+)/, "SessionTeammateMaxIdentityRunes", "local_api.go"));
 const kickstartSource = await readFile(join(moduleRoot, "local_kickstart_api.go"), "utf8");
+const previewSource = await readFile(join(moduleRoot, "local_kickstart_preview_stream.go"), "utf8");
+const previewNodeIDBytes = Number(requiredMatch(previewSource, /^const MaxLocalKickstartPreviewNodeIDBytes = (\d+)$/m, "MaxLocalKickstartPreviewNodeIDBytes", "local_kickstart_preview_stream.go"));
+const directoryRefLimit = Number(requiredMatch(localAPISource, /^const MaxTranscriptDirectoryRefs = (\d+)$/m, "MaxTranscriptDirectoryRefs", "local_api.go"));
 const localKickstartDroppedLabelsMax = Number(requiredMatch(kickstartSource, /^const LocalKickstartDroppedLabelsMax = (\d+)$/m, "LocalKickstartDroppedLabelsMax", "local_kickstart_api.go"));
 const metadataSource = await readFile(join(moduleRoot, "metadata.go"), "utf8");
 const usageMetadataSource = await readFile(join(moduleRoot, "usage_metadata.go"), "utf8");
@@ -72,7 +75,7 @@ const redactionProjection = JSON.parse(execFileSync("go", ["run", "-mod=readonly
 await writeFile(join(generatedRoot, "redaction-categories.gen.ts"), renderRedactionCategories(redactionProjection));
 await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
-await writeFile(join(generatedRoot, "kickstart-limits.gen.ts"), `${header()}export const LocalKickstartDroppedLabelsMax = ${localKickstartDroppedLabelsMax} as const;\n`);
+await writeFile(join(generatedRoot, "kickstart-limits.gen.ts"), `${header()}export const LocalKickstartDroppedLabelsMax = ${localKickstartDroppedLabelsMax} as const;\nexport const MaxLocalKickstartPreviewNodeIDBytes = ${previewNodeIDBytes} as const;\nexport const MaxTranscriptDirectoryRefs = ${directoryRefLimit} as const;\n`);
 await writeFile(join(generatedRoot, "metadata-limits.gen.ts"), `${header()}export const maxNativeMetadataStringBytes = ${maxNativeMetadataStringBytes} as const;\n`);
 await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatalog));
 await writeFile(join(generatedRoot, "collective-compatibility.gen.ts"), renderCollectiveCompatibility(await readFile(join(moduleRoot, "collective_compatibility.go"), "utf8"), enumCatalog));

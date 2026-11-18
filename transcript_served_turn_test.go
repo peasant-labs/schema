@@ -76,9 +76,24 @@ type positionedDirectoryExpected struct {
 	ErrorContains string `yaml:"errorContains"`
 }
 
+// positionedWireSubject selects which positioned-read shape a fixture tests.
+// It is independent of command names, diff kinds, and preview event kinds.
+type positionedWireSubject string
+
+const (
+	positionedWireTransport positionedWireSubject = "transport"
+	positionedWireContext   positionedWireSubject = "context"
+	positionedWirePartition positionedWireSubject = "partition"
+	positionedWireRow       positionedWireSubject = "row"
+	positionedWireDirectory positionedWireSubject = "directory"
+	positionedWireSegment   positionedWireSubject = "segment"
+	positionedWireWindow    positionedWireSubject = "window"
+	positionedWireRefSchema positionedWireSubject = "ref-schema"
+)
+
 type positionedWireInput struct {
-	Subject string `yaml:"subject"`
-	JSON    string `yaml:"json"`
+	Subject positionedWireSubject `yaml:"subject"`
+	JSON    string                `yaml:"json"`
 }
 
 type positionedWireExpected struct {
@@ -225,13 +240,13 @@ func TestPositionedSegmentWireValidation(t *testing.T) {
 			var err error
 			var encoded []byte
 			switch c.Input.Subject {
-			case "transport":
+			case positionedWireTransport:
 				var transport schema.TranscriptReadTransport
 				if err := json.Unmarshal([]byte(c.Input.JSON), &transport); err != nil {
 					t.Fatal(err)
 				}
 				err = transport.Validate()
-			case "context":
+			case positionedWireContext:
 				var context schema.TranscriptReadContext
 				if err := json.Unmarshal([]byte(c.Input.JSON), &context); err != nil {
 					t.Fatal(err)
@@ -263,13 +278,13 @@ func TestPositionedSegmentWireValidation(t *testing.T) {
 						}
 					}
 				}
-			case "partition":
+			case positionedWirePartition:
 				var partition schema.TranscriptSegmentPartition
 				if err := json.Unmarshal([]byte(c.Input.JSON), &partition); err != nil {
 					t.Fatal(err)
 				}
 				err = partition.Validate()
-			case "row":
+			case positionedWireRow:
 				var row schema.TranscriptSegmentRow
 				if err := json.Unmarshal([]byte(c.Input.JSON), &row); err != nil {
 					t.Fatal(err)
@@ -281,7 +296,7 @@ func TestPositionedSegmentWireValidation(t *testing.T) {
 				if c.Expected.DisplayNumber != nil && row.DisplayNumber != *c.Expected.DisplayNumber {
 					t.Fatalf("displayNumber = %q, want %q", row.DisplayNumber, *c.Expected.DisplayNumber)
 				}
-			case "directory":
+			case positionedWireDirectory:
 				var directory schema.PositionedDirectory
 				if err := json.Unmarshal([]byte(c.Input.JSON), &directory); err != nil {
 					t.Fatal(err)
@@ -290,13 +305,13 @@ func TestPositionedSegmentWireValidation(t *testing.T) {
 				if err == nil {
 					encoded, err = json.Marshal(directory)
 				}
-			case "segment":
+			case positionedWireSegment:
 				var segment schema.PositionedSegment
 				if err := json.Unmarshal([]byte(c.Input.JSON), &segment); err != nil {
 					t.Fatal(err)
 				}
 				encoded, err = schema.MarshalPositionedSegment(segment)
-			case "window":
+			case positionedWireWindow:
 				var window schema.PositionedWindow
 				if err := json.Unmarshal([]byte(c.Input.JSON), &window); err != nil {
 					t.Fatal(err)
@@ -305,7 +320,7 @@ func TestPositionedSegmentWireValidation(t *testing.T) {
 				if err == nil {
 					encoded, err = json.Marshal(window)
 				}
-			case "ref-schema":
+			case positionedWireRefSchema:
 				spec, buildErr := openapi.BuildTypesSpec()
 				if buildErr != nil {
 					t.Fatal(buildErr)

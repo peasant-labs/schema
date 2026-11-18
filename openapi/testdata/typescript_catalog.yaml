@@ -1553,6 +1553,16 @@ types:
   - {go_name: LocalKickstartNode, disposition: catalog, component: LocalKickstartNode, reason: kickstart forest row}
   - {go_name: LocalKickstartTree, disposition: catalog, component: LocalKickstartTree, reason: kickstart whole forest}
   - {go_name: LocalKickstartPreview, disposition: catalog, component: LocalKickstartPreview, reason: kickstart bounded preview}
+  - {go_name: LocalKickstartPreviewOp, disposition: catalog, component: LocalKickstartPreviewOp, reason: preview stream operation}
+  - {go_name: LocalKickstartPreviewContinuation, disposition: catalog, component: LocalKickstartPreviewContinuation, reason: preview stream continuation}
+  - {go_name: LocalKickstartPreviewEventKind, disposition: catalog, component: LocalKickstartPreviewEventKind, reason: preview stream event kind}
+  - {go_name: LocalKickstartPreviewCutReason, disposition: catalog, component: LocalKickstartPreviewCutReason, reason: preview stream cut reason}
+  - {go_name: LocalKickstartPreviewCloseReason, disposition: catalog, component: LocalKickstartPreviewCloseReason, reason: preview stream close reason}
+  - {go_name: LocalKickstartPreviewRequest, disposition: catalog, component: LocalKickstartPreviewRequest, reason: preview stream request}
+  - {go_name: LocalKickstartPreviewEvent, disposition: catalog, component: LocalKickstartPreviewEvent, reason: preview stream event}
+  - {go_name: LocalKickstartPreviewDirectory, disposition: catalog, component: LocalKickstartPreviewDirectory, reason: preview stream directory}
+  - {go_name: LocalKickstartPreviewSegment, disposition: catalog, component: LocalKickstartPreviewSegment, reason: preview stream segment}
+  - {go_name: LocalKickstartPreviewState, disposition: runtime-only, reason: in-memory merge state is not a wire payload}
   - {go_name: LocalKickstartAnswers, disposition: catalog, component: LocalKickstartAnswers, reason: kickstart patch body}
   - {go_name: LocalKickstartOverwrite, disposition: catalog, component: LocalKickstartOverwrite, reason: kickstart stale-write notice}
   - {go_name: LocalKickstartPatchResult, disposition: catalog, component: LocalKickstartPatchResult, reason: kickstart patch result}
