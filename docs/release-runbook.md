@@ -151,9 +151,15 @@ Release recovery rules:
   `peasant-labs-releaser` GitHub App (Integration id 3988034). A human
   `git push` of a release tag is refused. Fix a failed batch; do not change the
   ruleset to work around it.
-- In the 0.56.0 incident, a later non-releasing fix moved the tip after the
-  release PR merged, and the batch returned `action=none` for the already-merged
-  release commit. Do not treat `none` as success or move a tag; cut a new
+- `RELEASE_BATCH_MODE` must be `tag` for the batch to write. When unset, the
+  batch runs plan-only and returns `action=none` for pending releases. After any
+  runner, permission, or release-config change, confirm the variable is `tag`
+  with `gh variable list -R peasant-labs/schema` before treating a plan as
+  authoritative.
+- In the 0.56.0 incident, the batch returned `action=none` because
+  `RELEASE_BATCH_MODE` was unset; that alone prevented a write. A later
+  non-releasing fix also moved the tip after the release PR merged. Do not
+  treat `none` as success or move a tag; set the mode to `tag`, then cut a new
   release that includes the fix.
 - An immutable GitHub Release cannot be updated. Rerunning the publish workflow
   on an existing tag fails at `publish GitHub Release` with `tag_name was used
