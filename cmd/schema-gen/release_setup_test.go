@@ -16,6 +16,11 @@ func TestReleaseSetupGates(t *testing.T) {
 			SetupIf    string   `yaml:"setup_if"`
 			SetupSteps []string `yaml:"setup_steps"`
 		} `yaml:"precheck"`
+		Provenance struct {
+			CandidateOutput string            `yaml:"candidate_output"`
+			JobConditions   map[string]string `yaml:"job_conditions"`
+			PullRequests    string            `yaml:"pull_requests"`
+		} `yaml:"provenance_gates"`
 		CutIf   string   `yaml:"cut_default_branch_if"`
 		CutJobs []string `yaml:"cut_jobs"`
 	}
@@ -43,7 +48,26 @@ func TestReleaseSetupGates(t *testing.T) {
 		return jobs
 	}
 	jobs := readJobs("release-batch.yml")
-	steps := workflowMappingChild(workflowMappingChild(jobs, "plan"), "steps")
+	plan := workflowMappingChild(jobs, "plan")
+	permissions := workflowMappingChild(plan, "permissions")
+	if value := workflowMappingChild(permissions, "pull-requests"); value == nil || fixture.Provenance.PullRequests == "" || value.Value != fixture.Provenance.PullRequests {
+		t.Error("release plan must have pull-requests: read")
+	}
+	if value := workflowMappingChild(workflowMappingChild(plan, "outputs"), "candidate"); value == nil || value.Value != fixture.Provenance.CandidateOutput {
+		t.Errorf("release plan candidate output must equal %q", fixture.Provenance.CandidateOutput)
+	}
+	if _, ok := fixture.Provenance.JobConditions["verify"]; !ok {
+		t.Error("provenance fixture must require a verify job condition")
+	}
+	if _, ok := fixture.Provenance.JobConditions["release"]; !ok {
+		t.Error("provenance fixture must require a release job condition")
+	}
+	for job, expected := range fixture.Provenance.JobConditions {
+		if value := workflowMappingChild(workflowMappingChild(jobs, job), "if"); value == nil || expected == "" || value.Value != expected {
+			t.Errorf("%s job condition must equal %q", job, expected)
+		}
+	}
+	steps := workflowMappingChild(plan, "steps")
 	if steps == nil {
 		t.Fatal("release plan has no steps")
 	}

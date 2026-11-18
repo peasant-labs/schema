@@ -17,12 +17,22 @@ Consumers re-pin only after the schema tag exists.
    mode is on, it checks the landed range and maintains the single
    `automation/release` PR with a generated changelog section and the npm
    version. The release PR is queued by the bot; do not edit or merge it by
-   hand. The bot tags only a fresh, verified release commit.
+   hand. Before making a tag, the plan job uses its read-only token to require
+   exactly one merged PR for the candidate, with the candidate as its merge
+   commit, the configured release bot branch as its head, and the releaser App
+   as its author. A failed lookup or provenance check stops the tag.
 4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
    and the contract check precede the independent GitHub Release and npm
-   publishers. The GitHub Release carries the generated JSON and YAML specs.
-   The npm job checks that the committed package version matches the tag and
-   removes `private` only in its working copy.
+   publishers. The GitHub Release is created as a draft, the generated JSON
+   and YAML specs are uploaded, and only then is it published and protected by
+   release immutability. The npm job checks that the committed package version
+   matches the tag and removes `private` only in its working copy.
+
+On a rerun, an existing release is left unchanged, whether it is mutable or
+immutable. A rerun does not resume an incomplete draft or upload missing
+assets. Investigate a failed draft before proceeding; an immutable release
+cannot gain assets, so a published failure is fixed forward with a new
+release.
 
 Tags are append-only. Never push, move, or delete a public tag by hand. Old
 `pkg/schema/v*` tags remain intact. The old tag parser still recognizes

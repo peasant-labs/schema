@@ -110,7 +110,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          ref: cb913e71af97d6070ed80224ecc0b6cb865644eb
           path: infra-tool
           sparse-checkout: |
             tools/release
@@ -176,11 +176,46 @@ jobs:
           FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: release-intent plan --branch origin/develop --mode "${MODE}" --verdict ${{ (steps.verify-contract.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${FLOOR}"
 
+      - name: Verify the release candidate PR provenance
+        id: provenance
+        if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag'"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE: ${{ steps.verdict.outputs.candidate }}
+          PLAN_SOURCE: ${{ steps.plan.outputs.source }}
+        run: |
+          set -euo pipefail
+          [[ "${CANDIDATE}" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || { echo "::error::release candidate is not a full commit SHA"; exit 1; }
+          config="${RUNNER_TEMP}/release-provenance-config.json"
+          pages="${RUNNER_TEMP}/release-provenance-prs.json"
+          if ! git show "${PLAN_SOURCE}:.github/release-intent.yaml" | yq -o=json '.' > "${config}"; then
+            echo "::error::could not read the release configuration from plan source ${PLAN_SOURCE}"
+            exit 1
+          fi
+          branch="$(jq -er '.bot_branches.release | select(type == "string" and length > 0)' "${config}")" || { echo "::error::release configuration has no bot release branch"; exit 1; }
+          author="$(jq -er '.automation_author | select(. == "app/peasant-labs-releaser")' "${config}")" || { echo "::error::release configuration does not name the releaser App"; exit 1; }
+          login="${author#app/}[bot]"
+          if ! gh api --paginate "repos/${GITHUB_REPOSITORY}/commits/${CANDIDATE}/pulls?per_page=100" > "${pages}"; then
+            echo "::error::could not read pull requests associated with release candidate ${CANDIDATE}"
+            exit 1
+          fi
+          if ! jq -es --arg candidate "${CANDIDATE}" --arg branch "${branch}" --arg author "${author}" --arg login "${login}" '
+            length > 0 and
+            all(.[]; type == "array") and
+            all(.[][]; type == "object" and has("merged_at") and (.merged_at == null or (.merged_at | type == "string" and length > 0))) and
+            ([.[][] | select(.merged_at != null)] |
+              length == 1 and .[0].merge_commit_sha == $candidate and .[0].head.ref == $branch and
+              (.[0].user.login == $login or .[0].user.login == $author))
+          ' "${pages}" > /dev/null; then
+            echo "::error::release candidate ${CANDIDATE} must be the merge commit of exactly one merged release PR from ${branch} by ${login}"
+            exit 1
+          fi
+
       # The annotated tag object is made here, without a credential, and
       # handed to the release job as a bundle. The bundle excludes the
       # commit this run checked out, which the release job's checkout has.
       - name: Make the annotated release tag
-        if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag'"
+        if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag' && steps.provenance.outcome == 'success'"
         env:
           TAG: ${{ steps.verdict.outputs.tag }}
           CANDIDATE: ${{ steps.verdict.outputs.candidate }}
@@ -332,7 +367,7 @@ jobs:
 
   verify:
     needs: [plan]
-    if: "!cancelled() && needs.plan.outputs.proceed == 'true'"
+    if: "!cancelled() && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true'"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -349,7 +384,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          ref: cb913e71af97d6070ed80224ecc0b6cb865644eb
           path: infra-tool
           sparse-checkout: |
             tools/release
@@ -450,7 +485,7 @@ jobs:
     # The default-branch check belongs before the mint, in this job's own if:
     # a dispatch on any other branch runs that branch's copy of this file,
     # and it must never hold the App key.
-    if: "!cancelled() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.plan.outputs.proceed == 'true' && needs.verify.result == 'success'"
+    if: "!cancelled() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true' && needs.verify.result == 'success'"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
