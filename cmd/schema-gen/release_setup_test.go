@@ -3,12 +3,15 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
 )
 
+// The provenance shell is tested separately. These job and step wiring checks
+// establish that its failure fails the plan and prevents the release job.
 func TestReleaseSetupGates(t *testing.T) {
 	var fixture struct {
 		Precheck struct {
@@ -16,8 +19,16 @@ func TestReleaseSetupGates(t *testing.T) {
 			SetupIf    string   `yaml:"setup_if"`
 			SetupSteps []string `yaml:"setup_steps"`
 		} `yaml:"precheck"`
-		CutIf   string   `yaml:"cut_default_branch_if"`
-		CutJobs []string `yaml:"cut_jobs"`
+		Provenance struct {
+			CandidateOutput string              `yaml:"candidate_output"`
+			JobConditions   map[string]string   `yaml:"job_conditions"`
+			JobNeeds        map[string][]string `yaml:"job_needs"`
+			PullRequests    string              `yaml:"pull_requests"`
+		} `yaml:"provenance_gates"`
+		PublicationRequired []string            `yaml:"publication_required"`
+		PublicationNeeds    map[string][]string `yaml:"publication_needs"`
+		CutIf               string              `yaml:"cut_default_branch_if"`
+		CutJobs             []string            `yaml:"cut_jobs"`
 	}
 	if err := yaml.Unmarshal(releaseAdoptionFixture, &fixture); err != nil {
 		t.Fatal(err)
@@ -43,7 +54,49 @@ func TestReleaseSetupGates(t *testing.T) {
 		return jobs
 	}
 	jobs := readJobs("release-batch.yml")
-	steps := workflowMappingChild(workflowMappingChild(jobs, "plan"), "steps")
+	plan := workflowMappingChild(jobs, "plan")
+	if workflowMappingChild(plan, "continue-on-error") != nil {
+		t.Error("release plan must not set continue-on-error")
+	}
+	permissions := workflowMappingChild(plan, "permissions")
+	if value := workflowMappingChild(permissions, "pull-requests"); value == nil || fixture.Provenance.PullRequests == "" || value.Value != fixture.Provenance.PullRequests {
+		t.Error("release plan must have pull-requests: read")
+	}
+	if value := workflowMappingChild(workflowMappingChild(plan, "outputs"), "candidate"); value == nil || value.Value != fixture.Provenance.CandidateOutput {
+		t.Errorf("release plan candidate output must equal %q", fixture.Provenance.CandidateOutput)
+	}
+	if _, ok := fixture.Provenance.JobConditions["verify"]; !ok {
+		t.Error("provenance fixture must require a verify job condition")
+	}
+	if _, ok := fixture.Provenance.JobConditions["release"]; !ok {
+		t.Error("provenance fixture must require a release job condition")
+	}
+	for job, expected := range fixture.Provenance.JobConditions {
+		if value := workflowMappingChild(workflowMappingChild(jobs, job), "if"); value == nil || expected == "" || value.Value != expected {
+			t.Errorf("%s job condition must equal %q", job, expected)
+		}
+	}
+	if _, ok := fixture.Provenance.JobNeeds["verify"]; !ok {
+		t.Error("provenance fixture must require verify job dependencies")
+	}
+	if _, ok := fixture.Provenance.JobNeeds["release"]; !ok {
+		t.Error("provenance fixture must require release job dependencies")
+	}
+	for job, expected := range fixture.Provenance.JobNeeds {
+		needs := workflowMappingChild(workflowMappingChild(jobs, job), "needs")
+		var actual []string
+		if needs == nil || needs.Decode(&actual) != nil {
+			t.Errorf("%s job must declare its dependencies", job)
+			continue
+		}
+		want := slices.Clone(expected)
+		slices.Sort(want)
+		slices.Sort(actual)
+		if !slices.Equal(actual, want) {
+			t.Errorf("%s job dependencies = %v, want %v", job, actual, want)
+		}
+	}
+	steps := workflowMappingChild(plan, "steps")
 	if steps == nil {
 		t.Fatal("release plan has no steps")
 	}
@@ -80,6 +133,26 @@ func TestReleaseSetupGates(t *testing.T) {
 				(strings.Contains(run.Value, "vars.RELEASE_BATCH_MODE") || strings.Contains(run.Value, "vars.RELEASE_BATCH_FLOOR")) {
 				t.Error("release mode and floor must enter shell steps through env")
 			}
+		}
+	}
+	publishJobs := readJobs("release.yml")
+	for _, name := range fixture.PublicationRequired {
+		expected, ok := fixture.PublicationNeeds[name]
+		if !ok {
+			t.Errorf("publication fixture must require %s job dependencies", name)
+			continue
+		}
+		needs := workflowMappingChild(workflowMappingChild(publishJobs, name), "needs")
+		var actual []string
+		if needs == nil || needs.Decode(&actual) != nil {
+			t.Errorf("%s publication job must declare its dependencies", name)
+			continue
+		}
+		want := slices.Clone(expected)
+		slices.Sort(want)
+		slices.Sort(actual)
+		if !slices.Equal(actual, want) {
+			t.Errorf("%s publication job dependencies = %v, want %v", name, actual, want)
 		}
 	}
 	cutJobs := readJobs("cut-release.yml")

@@ -99,6 +99,7 @@ func transcriptImagePartByteLength(image *ImagePart) int {
 // in the earlier segments, so no directory page restarts it. Two servers that
 // cut the same turns with the same budget produce the same refs. No turns give
 // an empty, non-nil slice.
+// Preview segments are capture-local and need not match the later stored cut.
 func CutTranscriptSegments(turns []TurnDetail, budget int) []TranscriptSegmentRef {
 	if len(turns) == 0 {
 		return []TranscriptSegmentRef{}

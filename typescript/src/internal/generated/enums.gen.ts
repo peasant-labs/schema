@@ -128,6 +128,11 @@ import { zLocalKickstartResolution } from "./contract/zod.gen.js";
 import { zLocalKickstartNextStep } from "./contract/zod.gen.js";
 import { zLocalKickstartDiffLineType } from "./contract/zod.gen.js";
 import { zLocalKickstartEventKind } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewOp } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewContinuation } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewEventKind } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewCutReason } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewCloseReason } from "./contract/zod.gen.js";
 import { zLocalKickstartCloseReason } from "./contract/zod.gen.js";
 import { zLocalKickstartConnectAnswer } from "./contract/zod.gen.js";
 import { zLocalKickstartErrorCode } from "./contract/zod.gen.js";
@@ -802,9 +807,10 @@ export const MessageType = Object.freeze({
   Connected: "connected",
   Error: "error",
   Kickstart: "kickstart",
+  KickstartPreview: "kickstart_preview",
 } as const);
 export type MessageType = (typeof MessageType)[keyof typeof MessageType];
-export const AllMessageTypes = Object.freeze([MessageType.Subscribe, MessageType.Unsubscribe, MessageType.Dashboard, MessageType.Sessions, MessageType.SessionDetail, MessageType.Trends, MessageType.Quality, MessageType.Annotations, MessageType.ProjectFamiliarity, MessageType.Connected, MessageType.Error, MessageType.Kickstart]) as readonly MessageType[];
+export const AllMessageTypes = Object.freeze([MessageType.Subscribe, MessageType.Unsubscribe, MessageType.Dashboard, MessageType.Sessions, MessageType.SessionDetail, MessageType.Trends, MessageType.Quality, MessageType.Annotations, MessageType.ProjectFamiliarity, MessageType.Connected, MessageType.Error, MessageType.Kickstart, MessageType.KickstartPreview]) as readonly MessageType[];
 export function isMessageType(value: unknown): value is MessageType {
   return zMessageType.safeParse(value).success;
 }
@@ -1675,6 +1681,77 @@ export function isLocalKickstartEventKind(value: unknown): value is LocalKicksta
   return zLocalKickstartEventKind.safeParse(value).success;
 }
 
+export const LocalKickstartPreviewOp = Object.freeze({
+  Open: "open",
+  More: "more",
+  Close: "close",
+} as const);
+export type LocalKickstartPreviewOp = (typeof LocalKickstartPreviewOp)[keyof typeof LocalKickstartPreviewOp];
+export const AllLocalKickstartPreviewOps = Object.freeze([LocalKickstartPreviewOp.Open, LocalKickstartPreviewOp.More, LocalKickstartPreviewOp.Close]) as readonly LocalKickstartPreviewOp[];
+export function isLocalKickstartPreviewOp(value: unknown): value is LocalKickstartPreviewOp {
+  return zLocalKickstartPreviewOp.safeParse(value).success;
+}
+
+export const LocalKickstartPreviewContinuation = Object.freeze({
+  More: "more",
+  End: "end",
+  Cut: "cut",
+} as const);
+export type LocalKickstartPreviewContinuation = (typeof LocalKickstartPreviewContinuation)[keyof typeof LocalKickstartPreviewContinuation];
+export const AllLocalKickstartPreviewContinuations = Object.freeze([LocalKickstartPreviewContinuation.More, LocalKickstartPreviewContinuation.End, LocalKickstartPreviewContinuation.Cut]) as readonly LocalKickstartPreviewContinuation[];
+export function isLocalKickstartPreviewContinuation(value: unknown): value is LocalKickstartPreviewContinuation {
+  return zLocalKickstartPreviewContinuation.safeParse(value).success;
+}
+
+export const LocalKickstartPreviewEventKind = Object.freeze({
+  Opened: "opened",
+  Segment: "segment",
+  Closed: "closed",
+} as const);
+export type LocalKickstartPreviewEventKind = (typeof LocalKickstartPreviewEventKind)[keyof typeof LocalKickstartPreviewEventKind];
+export const AllLocalKickstartPreviewEventKinds = Object.freeze([LocalKickstartPreviewEventKind.Opened, LocalKickstartPreviewEventKind.Segment, LocalKickstartPreviewEventKind.Closed]) as readonly LocalKickstartPreviewEventKind[];
+export function isLocalKickstartPreviewEventKind(value: unknown): value is LocalKickstartPreviewEventKind {
+  return zLocalKickstartPreviewEventKind.safeParse(value).success;
+}
+
+export const LocalKickstartPreviewCutReason = Object.freeze({
+  SourceBudget: "source_budget",
+  SerializedBudget: "serialized_budget",
+  TurnBudget: "turn_budget",
+  OversizedRecord: "oversized_record",
+  OriginNotResumable: "origin_not_resumable",
+} as const);
+export type LocalKickstartPreviewCutReason = (typeof LocalKickstartPreviewCutReason)[keyof typeof LocalKickstartPreviewCutReason];
+export const AllLocalKickstartPreviewCutReasons = Object.freeze([LocalKickstartPreviewCutReason.SourceBudget, LocalKickstartPreviewCutReason.SerializedBudget, LocalKickstartPreviewCutReason.TurnBudget, LocalKickstartPreviewCutReason.OversizedRecord, LocalKickstartPreviewCutReason.OriginNotResumable]) as readonly LocalKickstartPreviewCutReason[];
+export function isLocalKickstartPreviewCutReason(value: unknown): value is LocalKickstartPreviewCutReason {
+  return zLocalKickstartPreviewCutReason.safeParse(value).success;
+}
+
+export const LocalKickstartPreviewCloseReason = Object.freeze({
+  ClosedByClient: "closed_by_client",
+  Replaced: "replaced",
+  SessionClosed: "session_closed",
+  Rescanned: "rescanned",
+  Idle: "idle",
+  Evicted: "evicted",
+  Shutdown: "shutdown",
+  SourceChanged: "source_changed",
+  LateResult: "late_result",
+  Unreadable: "unreadable",
+  OutOfOrder: "out_of_order",
+  SlowClient: "slow_client",
+  RowNotFound: "row_not_found",
+  NotASessionRow: "not_a_session_row",
+  Unavailable: "unavailable",
+  NoTurns: "no_turns",
+  Capacity: "capacity",
+} as const);
+export type LocalKickstartPreviewCloseReason = (typeof LocalKickstartPreviewCloseReason)[keyof typeof LocalKickstartPreviewCloseReason];
+export const AllLocalKickstartPreviewCloseReasons = Object.freeze([LocalKickstartPreviewCloseReason.ClosedByClient, LocalKickstartPreviewCloseReason.Replaced, LocalKickstartPreviewCloseReason.SessionClosed, LocalKickstartPreviewCloseReason.Rescanned, LocalKickstartPreviewCloseReason.Idle, LocalKickstartPreviewCloseReason.Evicted, LocalKickstartPreviewCloseReason.Shutdown, LocalKickstartPreviewCloseReason.SourceChanged, LocalKickstartPreviewCloseReason.LateResult, LocalKickstartPreviewCloseReason.Unreadable, LocalKickstartPreviewCloseReason.OutOfOrder, LocalKickstartPreviewCloseReason.SlowClient, LocalKickstartPreviewCloseReason.RowNotFound, LocalKickstartPreviewCloseReason.NotASessionRow, LocalKickstartPreviewCloseReason.Unavailable, LocalKickstartPreviewCloseReason.NoTurns, LocalKickstartPreviewCloseReason.Capacity]) as readonly LocalKickstartPreviewCloseReason[];
+export function isLocalKickstartPreviewCloseReason(value: unknown): value is LocalKickstartPreviewCloseReason {
+  return zLocalKickstartPreviewCloseReason.safeParse(value).success;
+}
+
 export const LocalKickstartCloseReason = Object.freeze({
   Committed: "committed",
   Expired: "expired",
@@ -1714,6 +1791,11 @@ export const LocalKickstartErrorCode = Object.freeze({
   CommitRefused: "kickstart_commit_refused",
   SessionNotFound: "kickstart_session_not_found",
   PreviewRowNotFound: "kickstart_preview_row_not_found",
+  PreviewCaptureNotFound: "kickstart_preview_capture_not_found",
+  PreviewSourceChanged: "kickstart_preview_source_changed",
+  PreviewLateResult: "kickstart_preview_late_result",
+  PreviewCapacity: "kickstart_preview_capacity",
+  PreviewOutOfOrder: "kickstart_preview_out_of_order",
   Failed: "kickstart_failed",
   StatusUnreadable: "kickstart_status_unreadable",
   ConfigUnreadable: "kickstart_config_unreadable",
@@ -1727,7 +1809,7 @@ export const LocalKickstartErrorCode = Object.freeze({
   ConfigChanging: "kickstart_config_changing",
 } as const);
 export type LocalKickstartErrorCode = (typeof LocalKickstartErrorCode)[keyof typeof LocalKickstartErrorCode];
-export const AllLocalKickstartErrorCodes = Object.freeze([LocalKickstartErrorCode.BodyMissing, LocalKickstartErrorCode.BodyInvalid, LocalKickstartErrorCode.ScopeInvalid, LocalKickstartErrorCode.AnswersInvalid, LocalKickstartErrorCode.SessionCommitting, LocalKickstartErrorCode.RevisionAhead, LocalKickstartErrorCode.AnswerRefused, LocalKickstartErrorCode.ScanNotDone, LocalKickstartErrorCode.FieldUnknown, LocalKickstartErrorCode.FieldOutOfScope, LocalKickstartErrorCode.FieldHidden, LocalKickstartErrorCode.TreeAnswerShape, LocalKickstartErrorCode.ConnectOutOfScope, LocalKickstartErrorCode.ConnectNotConnected, LocalKickstartErrorCode.ConnectUnknown, LocalKickstartErrorCode.CommitRefused, LocalKickstartErrorCode.SessionNotFound, LocalKickstartErrorCode.PreviewRowNotFound, LocalKickstartErrorCode.Failed, LocalKickstartErrorCode.StatusUnreadable, LocalKickstartErrorCode.ConfigUnreadable, LocalKickstartErrorCode.ConfigUnwritable, LocalKickstartErrorCode.SessionUnbuildable, LocalKickstartErrorCode.AnswerUnencodable, LocalKickstartErrorCode.PreviewUnreadable, LocalKickstartErrorCode.ContractBreach, LocalKickstartErrorCode.Unavailable, LocalKickstartErrorCode.ConfigBusy, LocalKickstartErrorCode.ConfigChanging]) as readonly LocalKickstartErrorCode[];
+export const AllLocalKickstartErrorCodes = Object.freeze([LocalKickstartErrorCode.BodyMissing, LocalKickstartErrorCode.BodyInvalid, LocalKickstartErrorCode.ScopeInvalid, LocalKickstartErrorCode.AnswersInvalid, LocalKickstartErrorCode.SessionCommitting, LocalKickstartErrorCode.RevisionAhead, LocalKickstartErrorCode.AnswerRefused, LocalKickstartErrorCode.ScanNotDone, LocalKickstartErrorCode.FieldUnknown, LocalKickstartErrorCode.FieldOutOfScope, LocalKickstartErrorCode.FieldHidden, LocalKickstartErrorCode.TreeAnswerShape, LocalKickstartErrorCode.ConnectOutOfScope, LocalKickstartErrorCode.ConnectNotConnected, LocalKickstartErrorCode.ConnectUnknown, LocalKickstartErrorCode.CommitRefused, LocalKickstartErrorCode.SessionNotFound, LocalKickstartErrorCode.PreviewRowNotFound, LocalKickstartErrorCode.PreviewCaptureNotFound, LocalKickstartErrorCode.PreviewSourceChanged, LocalKickstartErrorCode.PreviewLateResult, LocalKickstartErrorCode.PreviewCapacity, LocalKickstartErrorCode.PreviewOutOfOrder, LocalKickstartErrorCode.Failed, LocalKickstartErrorCode.StatusUnreadable, LocalKickstartErrorCode.ConfigUnreadable, LocalKickstartErrorCode.ConfigUnwritable, LocalKickstartErrorCode.SessionUnbuildable, LocalKickstartErrorCode.AnswerUnencodable, LocalKickstartErrorCode.PreviewUnreadable, LocalKickstartErrorCode.ContractBreach, LocalKickstartErrorCode.Unavailable, LocalKickstartErrorCode.ConfigBusy, LocalKickstartErrorCode.ConfigChanging]) as readonly LocalKickstartErrorCode[];
 export function isLocalKickstartErrorCode(value: unknown): value is LocalKickstartErrorCode {
   return zLocalKickstartErrorCode.safeParse(value).success;
 }

@@ -52,6 +52,11 @@ sets:
       - kickstart_commit_refused
       - kickstart_session_not_found
       - kickstart_preview_row_not_found
+      - kickstart_preview_capture_not_found
+      - kickstart_preview_source_changed
+      - kickstart_preview_late_result
+      - kickstart_preview_capacity
+      - kickstart_preview_out_of_order
       - kickstart_failed
       - kickstart_status_unreadable
       - kickstart_config_unreadable

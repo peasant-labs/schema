@@ -17,12 +17,78 @@ Consumers re-pin only after the schema tag exists.
    mode is on, it checks the landed range and maintains the single
    `automation/release` PR with a generated changelog section and the npm
    version. The release PR is queued by the bot; do not edit or merge it by
-   hand. The bot tags only a fresh, verified release commit.
+   hand. Before making a tag, the plan job uses its read-only token to require
+   exactly one merged PR for the candidate, with the candidate as its merge
+   commit, the configured release bot branch as its head, and the releaser App
+   as its author. A failed lookup or provenance check makes the shell exit
+   nonzero; neither the step nor the plan job sets `continue-on-error`, and
+   the release job requires a successful plan. The tag names that release
+   PR's merge commit; later commits belong to the next release. The independent
+   verifier checks the prepared tag against the recorded candidate and branch
+   ancestry without replanning against the current tip. If the run's event
+   commit predates the candidate, the ancestry check fails closed; a later
+   default-branch run can retry.
 4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
    and the contract check precede the independent GitHub Release and npm
-   publishers. The GitHub Release carries the generated JSON and YAML specs.
-   The npm job checks that the committed package version matches the tag and
-   removes `private` only in its working copy.
+   publishers. When `gh release view` finds no release, `gh release list`
+   (drafts included) must show no release or draft for the tag; it fails on
+   any API error, so a rate limit, a 5xx or an authentication error stops the
+   run before anything is created. Then one
+   `gh release create --draft --verify-tag ... 'dist/assets/*'`
+   command creates the draft and uploads the generated JSON and YAML specs to
+   that same release. The next step checks that the draft holds assets; only
+   then is it published, and a last check confirms the release is published,
+   immutable and holds assets. The release notes sit beside the assets at
+   `dist/release-notes.md` and are not uploaded. The npm job checks that the committed package version
+   matches the tag and removes `private` only in its working copy.
+
+On 2026-11-18, a read-only check of GitHub's commit-to-pulls API returned the
+merged bot release PR, its merge commit, `automation/release` head, and
+releaser App author for the merge-queue squash commit `cf9f3b7189d00a1ac841a75c413299d15c6fa257`.
+The same check for ordinary merge commit `24323466e020c223cf9750bd0606774c104b4b76`
+returned a human-authored PR. This is live evidence, not a guarantee of future
+API behavior: the provenance test stubs Git, yq, and gh.
+
+A transient API error (rate limit, 5xx, authentication) fails the run before
+anything is created: rerun the workflow; no new tag is needed. If the list
+check reports a release or draft for the tag, nothing was created by this run;
+delete stale drafts by id as below, then rerun.
+
+On a rerun, a published release with assets is left unchanged. A failed upload
+leaves an unpublished draft: the draft check fails before publishing, and a
+rerun fails on the existing draft without resuming the upload. Drafts are not
+immutable. Delete every draft for the tag **by its id**, then rerun the release
+workflow for the same tag. Set `TAG` to the existing tag and list the drafts:
+
+```sh
+gh api repos/peasant-labs/schema/releases --paginate \
+  --jq ".[] | select(.draft and .tag_name == \"$TAG\") | {id, assets: (.assets | length), created_at}"
+gh api -X DELETE repos/peasant-labs/schema/releases/<id>
+```
+
+Deleting a draft that holds a few hundred assets can answer HTTP 502 and still
+finish a little later; read the release back by id and retry only while it
+still exists.
+
+Never use `gh release delete "$TAG"`: when a tag has several drafts, the tag
+lookup returns one of them (the oldest), so the command can delete the wrong
+one, and `--cleanup-tag` would delete the tag. Do not create a new tag to
+recover a draft. If an already-published release has no assets, fix forward
+with a new tag; do not attempt to repair a published immutable release or
+reuse its tag.
+
+Why one command: v0.55.0 through v0.57.1 were published with no assets. In run
+44295390680, `gh release create --draft` made one draft at 11:37:06; a
+separate upload action, which finds a release only by listing releases, did not
+see it, made a second draft at 11:37:13 and uploaded 349 assets there; at
+11:37:16 `gh release edit --draft=false` published the first, empty draft,
+because GitHub's tag lookup returns the oldest draft. v0.54.0, the last good
+release, used one `gh release create` with its assets, as the workflow does
+again now.
+
+A failed `gh release view`, including a network or authentication failure, is
+treated as no release. If a release actually exists, the create step fails
+loudly, so this fallback cannot report a false success.
 
 Tags are append-only. Never push, move, or delete a public tag by hand. Old
 `pkg/schema/v*` tags remain intact. The old tag parser still recognizes
@@ -161,10 +227,11 @@ Release recovery rules:
   non-releasing fix also moved the tip after the release PR merged. Do not
   treat `none` as success or move a tag; set the mode to `tag`, then cut a new
   release that includes the fix.
-- An immutable GitHub Release cannot be updated. Rerunning the publish workflow
-  on an existing tag fails at `publish GitHub Release` with `tag_name was used
-  by an immutable release` or `target_commitish cannot be changed`. Fix forward
-  with a new tag; the release-assets policy owns the long-term idempotence design.
+- An immutable GitHub Release cannot be updated. Older publisher runs failed
+  with `tag_name was used by an immutable release` or `target_commitish cannot
+  be changed`. The current publisher leaves complete releases alone and fails
+  on incomplete releases. Delete an unpublished draft by its id as described above; for
+  an already-published release without assets, fix forward with a new tag.
 - The npm version guard reads `typescript/package.json` with `jq`. The dev-shell
   banner polluted the old `nix develop -c node -p` capture; do not reintroduce
   a stdout-captured dev-shell command.

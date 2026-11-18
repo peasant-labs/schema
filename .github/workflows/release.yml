@@ -77,7 +77,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          ref: 6a15bbbd87457dacc65a4048aee16017f22dc716
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -144,7 +144,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          ref: 6a15bbbd87457dacc65a4048aee16017f22dc716
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -197,11 +197,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+      # The release assets go in dist/assets, which holds only files, and the
+      # notes sit beside it in dist, so the publisher's one asset glob
+      # uploads the contracts and not the notes.
       - name: Prepare the generated contracts and release notes
         run: |
           set -euo pipefail
-          mkdir -p dist
-          cp generated/*.json generated/*.yaml dist/
+          mkdir -p dist/assets
+          cp generated/*.json generated/*.yaml dist/assets/
           awk -v tag="$TAG" -v version="${TAG#v}" '
             /^## / {
               if (found) exit
@@ -237,6 +240,8 @@ jobs:
           name: release-dist
           path: dist
 
+      # Any view failure, including network or authentication errors, is
+      # treated as no release. Create fails loudly if the release exists.
       - name: Look for an existing release
         id: view
         continue-on-error: true
@@ -244,34 +249,57 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY"
 
-      - name: Create the release for the existing tag
-        id: create
-        if: steps.view.outcome == 'failure'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}
-          LATEST: ${{ needs.guard.outputs.kind == 'final' }}
-        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" --latest="$LATEST"
-
-      - name: Update the release notes
+      # \u0024 prints a dollar sign in the jq message without a jq variable.
+      # A leftover draft is deleted by its id: gh release delete resolves a
+      # tag that has several drafts to the oldest one.
+      - name: Verify the existing release is complete
         if: steps.view.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
+        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq 'if (.isDraft | type) != "boolean" then error("release draft status is invalid; inspect the release before retrying") elif .isDraft then error("release is an unpublished draft; list the drafts for this tag with gh api repos/\u0024GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id> (never gh release delete \u0024TAG), then rerun; do not create a new tag") elif (.assets | type) != "array" then error("published release assets are invalid; inspect the release before retrying") elif (.assets | length == 0) then error("published release has no assets; tags are immutable, so fix forward with a new tag") else "existing release is published and has assets" end'
+
+      # A failed view may be a rate limit, a 5xx or an authentication error
+      # rather than an absent release, and GitHub keeps several drafts for one
+      # tag. gh lists drafts too, so this fails when any release or leftover
+      # draft names the tag, and it fails closed on any API error, stopping
+      # the run before anything is created.
+      - name: Refuse an existing release for the tag
+        id: list
+        if: steps.view.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft --jq '[.[] | select(.tagName == env.TAG)] | if length > 0 then error("a release or draft already exists for this tag, so nothing was created; list the drafts with gh api repos/\u0024GITHUB_REPOSITORY/releases, delete stale drafts by id with gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id> (never gh release delete \u0024TAG), then rerun; no new tag is needed") else "no release or draft exists for this tag" end'
+
+      # One command creates the draft and uploads every asset to that same
+      # release. A separate uploader finds its release by tag and can create
+      # a second draft, which is how v0.55.0-v0.57.1 were published empty.
+      - name: Create the draft release with its assets
+        id: create
+        if: steps.view.outcome == 'failure' && steps.list.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}
+        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "$TAG" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" 'dist/assets/*'
+
+      - name: Verify the draft before publishing
+        if: steps.view.outcome == 'failure' && steps.create.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq 'if .isDraft != true or (.assets | type) != "array" or (.assets | length) == 0 then error("the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/\u0024GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id> (never gh release delete \u0024TAG), then rerun; no new tag is needed") else "draft holds \(.assets | length) assets" end'
+
+      - name: Publish the release
+        if: steps.view.outcome == 'failure' && steps.create.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
           PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}
           LATEST: ${{ needs.guard.outputs.kind == 'final' }}
-        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" --latest="$LATEST"
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease="$PRERELEASE" --latest="$LATEST"
 
-      - name: Upload the release assets
-        if: steps.view.outcome == 'success' || steps.create.outcome == 'success'
-        uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2.4.2
-        with:
-          tag_name: ${{ github.ref_name }}
-          repository: ${{ github.repository }}
-          files: dist/*
-          fail_on_unmatched_files: true
-          overwrite_files: true
-          prerelease: ${{ needs.guard.outputs.prerelease }}
-          make_latest: ${{ needs.guard.outputs.latest }}
+      - name: Verify the published release
+        if: steps.view.outcome == 'failure' && steps.create.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,assets --jq 'if .isDraft != false or .isImmutable != true or (.assets | type) != "array" or (.assets | length) == 0 then error("the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag") else "release is published, immutable and holds \(.assets | length) assets" end'
 
   # Publish the generated @peasant-labs/schema TypeScript package to npm. Sits
   # behind the SAME three gates as the GitHub Release publish job above (guard ->

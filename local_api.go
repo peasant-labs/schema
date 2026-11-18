@@ -1723,6 +1723,7 @@ const (
 	MsgConnected          MessageType = "connected"
 	MsgError              MessageType = "error"
 	MsgKickstart          MessageType = "kickstart"
+	MsgKickstartPreview   MessageType = "kickstart_preview"
 )
 
 // AllMessageTypes is the canonical list of WebSocket message discriminators.
@@ -1739,6 +1740,7 @@ var AllMessageTypes = []MessageType{
 	MsgConnected,
 	MsgError,
 	MsgKickstart,
+	MsgKickstartPreview,
 }
 
 // IsValid reports whether m is a defined WebSocket message discriminator.
@@ -1860,8 +1862,9 @@ type ChannelSubscription struct {
 
 // ClientMessage is sent from the browser to the server via WebSocket.
 type ClientMessage struct {
-	Type     MessageType           `json:"type"`
-	Channels []ChannelSubscription `json:"channels,omitempty"`
+	Type     MessageType                   `json:"type"`
+	Channels []ChannelSubscription         `json:"channels,omitempty"`
+	Preview  *LocalKickstartPreviewRequest `json:"preview,omitempty"`
 }
 
 // ServerMessage is a message sent from the server to the browser via WebSocket.
