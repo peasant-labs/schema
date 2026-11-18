@@ -1,727 +1,727 @@
 // Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
-import { zTranscriptEntryReferenceKind, type TranscriptEntryReferenceKind as TranscriptEntryReferenceKindContract } from "./contract/zod.gen.js";
-import { zTranscriptReadTransportKind, type TranscriptReadTransportKind as TranscriptReadTransportKindContract } from "./contract/zod.gen.js";
-import { zTranscriptRecordedIndexState, type TranscriptRecordedIndexState as TranscriptRecordedIndexStateContract } from "./contract/zod.gen.js";
-import { zTranscriptRetainedState, type TranscriptRetainedState as TranscriptRetainedStateContract } from "./contract/zod.gen.js";
-import { zTranscriptViewerProjection, type TranscriptViewerProjection as TranscriptViewerProjectionContract } from "./contract/zod.gen.js";
-import { zTranscriptReadValidation, type TranscriptReadValidation as TranscriptReadValidationContract } from "./contract/zod.gen.js";
-import { zTranscriptNativePresence, type TranscriptNativePresence as TranscriptNativePresenceContract } from "./contract/zod.gen.js";
-import { zTranscriptUsagePresence, type TranscriptUsagePresence as TranscriptUsagePresenceContract } from "./contract/zod.gen.js";
-import { zTranscriptSegmentPartitionKind, type TranscriptSegmentPartitionKind as TranscriptSegmentPartitionKindContract } from "./contract/zod.gen.js";
-import { zCollectiveObservationReason, type CollectiveObservationReason as CollectiveObservationReasonContract } from "./contract/zod.gen.js";
-import { zCollectiveObservationState, type CollectiveObservationState as CollectiveObservationStateContract } from "./contract/zod.gen.js";
-import { zCollectiveOperation, type CollectiveOperation as CollectiveOperationContract } from "./contract/zod.gen.js";
-import { zOperationIssueCode, type OperationIssueCode as OperationIssueCodeContract } from "./contract/zod.gen.js";
-import { zLocalContributionEvidenceKind, type LocalContributionEvidenceKind as LocalContributionEvidenceKindContract } from "./contract/zod.gen.js";
-import { zCollectiveEvidenceCoverage, type CollectiveEvidenceCoverage as CollectiveEvidenceCoverageContract } from "./contract/zod.gen.js";
-import { zLocalConfirmedContributionOutcome, type LocalConfirmedContributionOutcome as LocalConfirmedContributionOutcomeContract } from "./contract/zod.gen.js";
-import { zLocalOperationDiagnosticOutcome, type LocalOperationDiagnosticOutcome as LocalOperationDiagnosticOutcomeContract } from "./contract/zod.gen.js";
-import { zPullAssociationMetadataState, type PullAssociationMetadataState as PullAssociationMetadataStateContract } from "./contract/zod.gen.js";
-import { zCollectiveFetchDomain, type CollectiveFetchDomain as CollectiveFetchDomainContract } from "./contract/zod.gen.js";
-import { zCollectiveFetchState, type CollectiveFetchState as CollectiveFetchStateContract } from "./contract/zod.gen.js";
-import { zCollectiveFetchCommit, type CollectiveFetchCommit as CollectiveFetchCommitContract } from "./contract/zod.gen.js";
-import { zCollectiveFetchOutcome, type CollectiveFetchOutcome as CollectiveFetchOutcomeContract } from "./contract/zod.gen.js";
-import { zCollectiveObservationSource, type CollectiveObservationSource as CollectiveObservationSourceContract } from "./contract/zod.gen.js";
-import { zCollectiveSourceOutcome, type CollectiveSourceOutcome as CollectiveSourceOutcomeContract } from "./contract/zod.gen.js";
-import { zLocalSyncPublicationFilter, type LocalSyncPublicationFilter as LocalSyncPublicationFilterContract } from "./contract/zod.gen.js";
-import { zPageSize, type PageSize as PageSizeContract } from "./contract/zod.gen.js";
-import { zPublishOperationKind, type PublishOperationKind as PublishOperationKindContract } from "./contract/zod.gen.js";
-import { zVisibilityIntent, type VisibilityIntent as VisibilityIntentContract } from "./contract/zod.gen.js";
-import { zAnnotationAxis, type AnnotationAxis as AnnotationAxisContract } from "./contract/zod.gen.js";
-import { zAnnotationDatatype, type AnnotationDatatype as AnnotationDatatypeContract } from "./contract/zod.gen.js";
-import { zAnnotationPushStatus, type AnnotationPushStatus as AnnotationPushStatusContract } from "./contract/zod.gen.js";
-import { zAnnotationStatus, type AnnotationStatus as AnnotationStatusContract } from "./contract/zod.gen.js";
-import { zAnnotatorKind, type AnnotatorKind as AnnotatorKindContract } from "./contract/zod.gen.js";
-import { zAssociationConclusion, type AssociationConclusion as AssociationConclusionContract } from "./contract/zod.gen.js";
-import { zAssociationEvidenceKind, type AssociationEvidenceKind as AssociationEvidenceKindContract } from "./contract/zod.gen.js";
-import { zBuiltinCommand, type BuiltinCommand as BuiltinCommandContract } from "./contract/zod.gen.js";
-import { zChangeBinding, type ChangeBinding as ChangeBindingContract } from "./contract/zod.gen.js";
-import { zChannelTopic, type ChannelTopic as ChannelTopicContract } from "./contract/zod.gen.js";
-import { zConfidence, type Confidence as ConfidenceContract } from "./contract/zod.gen.js";
-import { zContentKind, type ContentKind as ContentKindContract } from "./contract/zod.gen.js";
-import { zDecayLevel, type DecayLevel as DecayLevelContract } from "./contract/zod.gen.js";
-import { zDiffLineKind, type DiffLineKind as DiffLineKindContract } from "./contract/zod.gen.js";
-import { zEdgeViolationKind, type EdgeViolationKind as EdgeViolationKindContract } from "./contract/zod.gen.js";
-import { zEntryType, type EntryType as EntryTypeContract } from "./contract/zod.gen.js";
-import { zTurnPartType, type TurnPartType as TurnPartTypeContract } from "./contract/zod.gen.js";
-import { zImageMediaType, type ImageMediaType as ImageMediaTypeContract } from "./contract/zod.gen.js";
-import { zOmittedReason, type OmittedReason as OmittedReasonContract } from "./contract/zod.gen.js";
-import { zFileChangeStatus, type FileChangeStatus as FileChangeStatusContract } from "./contract/zod.gen.js";
-import { zHarness, type Harness as HarnessContract } from "./contract/zod.gen.js";
-import { zInsightKind, type InsightKind as InsightKindContract } from "./contract/zod.gen.js";
-import { zInsightProvenance, type InsightProvenance as InsightProvenanceContract } from "./contract/zod.gen.js";
-import { zInteractionType, type InteractionType as InteractionTypeContract } from "./contract/zod.gen.js";
-import { zLicense, type License as LicenseContract } from "./contract/zod.gen.js";
-import { zMapNodeKind, type MapNodeKind as MapNodeKindContract } from "./contract/zod.gen.js";
-import { zMessageType, type MessageType as MessageTypeContract } from "./contract/zod.gen.js";
-import { zReadAttributionState, type ReadAttributionState as ReadAttributionStateContract } from "./contract/zod.gen.js";
-import { zReadStateGrade, type ReadStateGrade as ReadStateGradeContract } from "./contract/zod.gen.js";
-import { zRewriteMethod, type RewriteMethod as RewriteMethodContract } from "./contract/zod.gen.js";
-import { zRewriteResolution, type RewriteResolution as RewriteResolutionContract } from "./contract/zod.gen.js";
-import { zRole, type Role as RoleContract } from "./contract/zod.gen.js";
-import { zScaleKind, type ScaleKind as ScaleKindContract } from "./contract/zod.gen.js";
-import { zSessionOrigin, type SessionOrigin as SessionOriginContract } from "./contract/zod.gen.js";
-import { zSessionOutcome, type SessionOutcome as SessionOutcomeContract } from "./contract/zod.gen.js";
-import { zSourceFormat, type SourceFormat as SourceFormatContract } from "./contract/zod.gen.js";
-import { zStopReason, type StopReason as StopReasonContract } from "./contract/zod.gen.js";
-import { zTargetKind, type TargetKind as TargetKindContract } from "./contract/zod.gen.js";
-import { zToolCallKind, type ToolCallKind as ToolCallKindContract } from "./contract/zod.gen.js";
-import { zTypeOrigin, type TypeOrigin as TypeOriginContract } from "./contract/zod.gen.js";
-import { zValueDomainKind, type ValueDomainKind as ValueDomainKindContract } from "./contract/zod.gen.js";
-import { zTranscriptUpdateLicense, type TranscriptUpdateLicense as TranscriptUpdateLicenseContract } from "./contract/zod.gen.js";
-import { zTranscriptUpdateVisibility, type TranscriptUpdateVisibility as TranscriptUpdateVisibilityContract } from "./contract/zod.gen.js";
-import { zVillageAssignableCollectiveRole, type VillageAssignableCollectiveRole as VillageAssignableCollectiveRoleContract } from "./contract/zod.gen.js";
-import { zVillageContributionStatus, type VillageContributionStatus as VillageContributionStatusContract } from "./contract/zod.gen.js";
-import { zVillageCollectiveAcceptanceMode, type VillageCollectiveAcceptanceMode as VillageCollectiveAcceptanceModeContract } from "./contract/zod.gen.js";
-import { zVillageCollectiveDataAccess, type VillageCollectiveDataAccess as VillageCollectiveDataAccessContract } from "./contract/zod.gen.js";
-import { zVillageCollectiveRole, type VillageCollectiveRole as VillageCollectiveRoleContract } from "./contract/zod.gen.js";
-import { zVillageCollectiveViewerRole, type VillageCollectiveViewerRole as VillageCollectiveViewerRoleContract } from "./contract/zod.gen.js";
-import { zVillageProjectNameSource, type VillageProjectNameSource as VillageProjectNameSourceContract } from "./contract/zod.gen.js";
-import { zVillageReviewDecision, type VillageReviewDecision as VillageReviewDecisionContract } from "./contract/zod.gen.js";
-import { zVillageShareEventActor, type VillageShareEventActor as VillageShareEventActorContract } from "./contract/zod.gen.js";
-import { zVillageShareStatus, type VillageShareStatus as VillageShareStatusContract } from "./contract/zod.gen.js";
-import { zVillageTranscriptDeletionPolicy, type VillageTranscriptDeletionPolicy as VillageTranscriptDeletionPolicyContract } from "./contract/zod.gen.js";
-import { zVillageTranscriptVisibility, type VillageTranscriptVisibility as VillageTranscriptVisibilityContract } from "./contract/zod.gen.js";
-import { zVisibility, type Visibility as VisibilityContract } from "./contract/zod.gen.js";
-import { zUsageScope, type UsageScope as UsageScopeContract } from "./contract/zod.gen.js";
-import { zUsageCompleteness, type UsageCompleteness as UsageCompletenessContract } from "./contract/zod.gen.js";
-import { zNativeMetadataKind, type NativeMetadataKind as NativeMetadataKindContract } from "./contract/zod.gen.js";
-import { zNativeMetadataSourceType, type NativeMetadataSourceType as NativeMetadataSourceTypeContract } from "./contract/zod.gen.js";
-import { zNativePiMessageRole, type NativePiMessageRole as NativePiMessageRoleContract } from "./contract/zod.gen.js";
-import { zDigestItemKind, type DigestItemKind as DigestItemKindContract } from "./contract/zod.gen.js";
-import { zVillagePullRequestAttachmentState, type VillagePullRequestAttachmentState as VillagePullRequestAttachmentStateContract } from "./contract/zod.gen.js";
-import { zVillagePromptsCheckMode, type VillagePromptsCheckMode as VillagePromptsCheckModeContract } from "./contract/zod.gen.js";
-import { zVillagePublicOwnerKind, type VillagePublicOwnerKind as VillagePublicOwnerKindContract } from "./contract/zod.gen.js";
-import { zSessionRelationshipKind, type SessionRelationshipKind as SessionRelationshipKindContract } from "./contract/zod.gen.js";
-import { zRelationshipTargetState, type RelationshipTargetState as RelationshipTargetStateContract } from "./contract/zod.gen.js";
-import { zEvidenceKind, type EvidenceKind as EvidenceKindContract } from "./contract/zod.gen.js";
-import { zSessionTeammateEvidence, type SessionTeammateEvidence as SessionTeammateEvidenceContract } from "./contract/zod.gen.js";
-import { zSessionPurpose, type SessionPurpose as SessionPurposeContract } from "./contract/zod.gen.js";
-import { zContentOrigin, type ContentOrigin as ContentOriginContract } from "./contract/zod.gen.js";
-import { zActorOrigin, type ActorOrigin as ActorOriginContract } from "./contract/zod.gen.js";
-import { zDeliveryOrigin, type DeliveryOrigin as DeliveryOriginContract } from "./contract/zod.gen.js";
-import { zContentOwnership, type ContentOwnership as ContentOwnershipContract } from "./contract/zod.gen.js";
-import { zInputModality, type InputModality as InputModalityContract } from "./contract/zod.gen.js";
-import { zPublicSourceAnchorKind, type PublicSourceAnchorKind as PublicSourceAnchorKindContract } from "./contract/zod.gen.js";
-import { zEarlierHistoryState, type EarlierHistoryState as EarlierHistoryStateContract } from "./contract/zod.gen.js";
-import { zRelationshipNavigationStatus, type RelationshipNavigationStatus as RelationshipNavigationStatusContract } from "./contract/zod.gen.js";
-import { zSessionListItemKind, type SessionListItemKind as SessionListItemKindContract } from "./contract/zod.gen.js";
-import { zSyncStatus, type SyncStatus as SyncStatusContract } from "./contract/zod.gen.js";
-import { zSyncHoldReason, type SyncHoldReason as SyncHoldReasonContract } from "./contract/zod.gen.js";
-import { zSyncPushSessionStatus, type SyncPushSessionStatus as SyncPushSessionStatusContract } from "./contract/zod.gen.js";
-import { zSyncPushStep, type SyncPushStep as SyncPushStepContract } from "./contract/zod.gen.js";
-import { zSyncPushStepOutcome, type SyncPushStepOutcome as SyncPushStepOutcomeContract } from "./contract/zod.gen.js";
-import { zSyncLoginStatus, type SyncLoginStatus as SyncLoginStatusContract } from "./contract/zod.gen.js";
-import { zSyncLogoutStatus, type SyncLogoutStatus as SyncLogoutStatusContract } from "./contract/zod.gen.js";
-import { zLocalPublicationState, type LocalPublicationState as LocalPublicationStateContract } from "./contract/zod.gen.js";
-import { zLocalCollectiveSuggestionReason, type LocalCollectiveSuggestionReason as LocalCollectiveSuggestionReasonContract } from "./contract/zod.gen.js";
-import { zLocalSettingKind, type LocalSettingKind as LocalSettingKindContract } from "./contract/zod.gen.js";
-import { zLocalKickstartScope, type LocalKickstartScope as LocalKickstartScopeContract } from "./contract/zod.gen.js";
-import { zLocalKickstartStopKind, type LocalKickstartStopKind as LocalKickstartStopKindContract } from "./contract/zod.gen.js";
-import { zLocalKickstartFieldKind, type LocalKickstartFieldKind as LocalKickstartFieldKindContract } from "./contract/zod.gen.js";
-import { zLocalKickstartLineKind, type LocalKickstartLineKind as LocalKickstartLineKindContract } from "./contract/zod.gen.js";
-import { zLocalKickstartNodeKind, type LocalKickstartNodeKind as LocalKickstartNodeKindContract } from "./contract/zod.gen.js";
-import { zLocalKickstartNodeState, type LocalKickstartNodeState as LocalKickstartNodeStateContract } from "./contract/zod.gen.js";
-import { zLocalKickstartScanState, type LocalKickstartScanState as LocalKickstartScanStateContract } from "./contract/zod.gen.js";
-import { zLocalKickstartIngestState, type LocalKickstartIngestState as LocalKickstartIngestStateContract } from "./contract/zod.gen.js";
-import { zLocalKickstartResolution, type LocalKickstartResolution as LocalKickstartResolutionContract } from "./contract/zod.gen.js";
-import { zLocalKickstartNextStep, type LocalKickstartNextStep as LocalKickstartNextStepContract } from "./contract/zod.gen.js";
-import { zLocalKickstartDiffLineType, type LocalKickstartDiffLineType as LocalKickstartDiffLineTypeContract } from "./contract/zod.gen.js";
-import { zLocalKickstartEventKind, type LocalKickstartEventKind as LocalKickstartEventKindContract } from "./contract/zod.gen.js";
-import { zLocalKickstartCloseReason, type LocalKickstartCloseReason as LocalKickstartCloseReasonContract } from "./contract/zod.gen.js";
-import { zLocalKickstartConnectAnswer, type LocalKickstartConnectAnswer as LocalKickstartConnectAnswerContract } from "./contract/zod.gen.js";
-import { zLocalKickstartErrorCode, type LocalKickstartErrorCode as LocalKickstartErrorCodeContract } from "./contract/zod.gen.js";
-import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } from "./contract/zod.gen.js";
-import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
-import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
-import { zThinkingLevel, type ThinkingLevel as ThinkingLevelContract } from "./contract/zod.gen.js";
-import { zScryVerdict, type ScryVerdict as ScryVerdictContract } from "./contract/zod.gen.js";
+import { zTranscriptEntryReferenceKind } from "./contract/zod.gen.js";
+import { zTranscriptReadTransportKind } from "./contract/zod.gen.js";
+import { zTranscriptRecordedIndexState } from "./contract/zod.gen.js";
+import { zTranscriptRetainedState } from "./contract/zod.gen.js";
+import { zTranscriptViewerProjection } from "./contract/zod.gen.js";
+import { zTranscriptReadValidation } from "./contract/zod.gen.js";
+import { zTranscriptNativePresence } from "./contract/zod.gen.js";
+import { zTranscriptUsagePresence } from "./contract/zod.gen.js";
+import { zTranscriptSegmentPartitionKind } from "./contract/zod.gen.js";
+import { zCollectiveObservationReason } from "./contract/zod.gen.js";
+import { zCollectiveObservationState } from "./contract/zod.gen.js";
+import { zCollectiveOperation } from "./contract/zod.gen.js";
+import { zOperationIssueCode } from "./contract/zod.gen.js";
+import { zLocalContributionEvidenceKind } from "./contract/zod.gen.js";
+import { zCollectiveEvidenceCoverage } from "./contract/zod.gen.js";
+import { zLocalConfirmedContributionOutcome } from "./contract/zod.gen.js";
+import { zLocalOperationDiagnosticOutcome } from "./contract/zod.gen.js";
+import { zPullAssociationMetadataState } from "./contract/zod.gen.js";
+import { zCollectiveFetchDomain } from "./contract/zod.gen.js";
+import { zCollectiveFetchState } from "./contract/zod.gen.js";
+import { zCollectiveFetchCommit } from "./contract/zod.gen.js";
+import { zCollectiveFetchOutcome } from "./contract/zod.gen.js";
+import { zCollectiveObservationSource } from "./contract/zod.gen.js";
+import { zCollectiveSourceOutcome } from "./contract/zod.gen.js";
+import { zLocalSyncPublicationFilter } from "./contract/zod.gen.js";
+import { zPageSize } from "./contract/zod.gen.js";
+import { zPublishOperationKind } from "./contract/zod.gen.js";
+import { zVisibilityIntent } from "./contract/zod.gen.js";
+import { zAnnotationAxis } from "./contract/zod.gen.js";
+import { zAnnotationDatatype } from "./contract/zod.gen.js";
+import { zAnnotationPushStatus } from "./contract/zod.gen.js";
+import { zAnnotationStatus } from "./contract/zod.gen.js";
+import { zAnnotatorKind } from "./contract/zod.gen.js";
+import { zAssociationConclusion } from "./contract/zod.gen.js";
+import { zAssociationEvidenceKind } from "./contract/zod.gen.js";
+import { zBuiltinCommand } from "./contract/zod.gen.js";
+import { zChangeBinding } from "./contract/zod.gen.js";
+import { zChannelTopic } from "./contract/zod.gen.js";
+import { zConfidence } from "./contract/zod.gen.js";
+import { zContentKind } from "./contract/zod.gen.js";
+import { zDecayLevel } from "./contract/zod.gen.js";
+import { zDiffLineKind } from "./contract/zod.gen.js";
+import { zEdgeViolationKind } from "./contract/zod.gen.js";
+import { zEntryType } from "./contract/zod.gen.js";
+import { zTurnPartType } from "./contract/zod.gen.js";
+import { zImageMediaType } from "./contract/zod.gen.js";
+import { zOmittedReason } from "./contract/zod.gen.js";
+import { zFileChangeStatus } from "./contract/zod.gen.js";
+import { zHarness } from "./contract/zod.gen.js";
+import { zInsightKind } from "./contract/zod.gen.js";
+import { zInsightProvenance } from "./contract/zod.gen.js";
+import { zInteractionType } from "./contract/zod.gen.js";
+import { zLicense } from "./contract/zod.gen.js";
+import { zMapNodeKind } from "./contract/zod.gen.js";
+import { zMessageType } from "./contract/zod.gen.js";
+import { zReadAttributionState } from "./contract/zod.gen.js";
+import { zReadStateGrade } from "./contract/zod.gen.js";
+import { zRewriteMethod } from "./contract/zod.gen.js";
+import { zRewriteResolution } from "./contract/zod.gen.js";
+import { zRole } from "./contract/zod.gen.js";
+import { zScaleKind } from "./contract/zod.gen.js";
+import { zSessionOrigin } from "./contract/zod.gen.js";
+import { zSessionOutcome } from "./contract/zod.gen.js";
+import { zSourceFormat } from "./contract/zod.gen.js";
+import { zStopReason } from "./contract/zod.gen.js";
+import { zTargetKind } from "./contract/zod.gen.js";
+import { zToolCallKind } from "./contract/zod.gen.js";
+import { zTypeOrigin } from "./contract/zod.gen.js";
+import { zValueDomainKind } from "./contract/zod.gen.js";
+import { zTranscriptUpdateLicense } from "./contract/zod.gen.js";
+import { zTranscriptUpdateVisibility } from "./contract/zod.gen.js";
+import { zVillageAssignableCollectiveRole } from "./contract/zod.gen.js";
+import { zVillageContributionStatus } from "./contract/zod.gen.js";
+import { zVillageCollectiveAcceptanceMode } from "./contract/zod.gen.js";
+import { zVillageCollectiveDataAccess } from "./contract/zod.gen.js";
+import { zVillageCollectiveRole } from "./contract/zod.gen.js";
+import { zVillageCollectiveViewerRole } from "./contract/zod.gen.js";
+import { zVillageProjectNameSource } from "./contract/zod.gen.js";
+import { zVillageReviewDecision } from "./contract/zod.gen.js";
+import { zVillageShareEventActor } from "./contract/zod.gen.js";
+import { zVillageShareStatus } from "./contract/zod.gen.js";
+import { zVillageTranscriptDeletionPolicy } from "./contract/zod.gen.js";
+import { zVillageTranscriptVisibility } from "./contract/zod.gen.js";
+import { zVisibility } from "./contract/zod.gen.js";
+import { zUsageScope } from "./contract/zod.gen.js";
+import { zUsageCompleteness } from "./contract/zod.gen.js";
+import { zNativeMetadataKind } from "./contract/zod.gen.js";
+import { zNativeMetadataSourceType } from "./contract/zod.gen.js";
+import { zNativePiMessageRole } from "./contract/zod.gen.js";
+import { zDigestItemKind } from "./contract/zod.gen.js";
+import { zVillagePullRequestAttachmentState } from "./contract/zod.gen.js";
+import { zVillagePromptsCheckMode } from "./contract/zod.gen.js";
+import { zVillagePublicOwnerKind } from "./contract/zod.gen.js";
+import { zSessionRelationshipKind } from "./contract/zod.gen.js";
+import { zRelationshipTargetState } from "./contract/zod.gen.js";
+import { zEvidenceKind } from "./contract/zod.gen.js";
+import { zSessionTeammateEvidence } from "./contract/zod.gen.js";
+import { zSessionPurpose } from "./contract/zod.gen.js";
+import { zContentOrigin } from "./contract/zod.gen.js";
+import { zActorOrigin } from "./contract/zod.gen.js";
+import { zDeliveryOrigin } from "./contract/zod.gen.js";
+import { zContentOwnership } from "./contract/zod.gen.js";
+import { zInputModality } from "./contract/zod.gen.js";
+import { zPublicSourceAnchorKind } from "./contract/zod.gen.js";
+import { zEarlierHistoryState } from "./contract/zod.gen.js";
+import { zRelationshipNavigationStatus } from "./contract/zod.gen.js";
+import { zSessionListItemKind } from "./contract/zod.gen.js";
+import { zSyncStatus } from "./contract/zod.gen.js";
+import { zSyncHoldReason } from "./contract/zod.gen.js";
+import { zSyncPushSessionStatus } from "./contract/zod.gen.js";
+import { zSyncPushStep } from "./contract/zod.gen.js";
+import { zSyncPushStepOutcome } from "./contract/zod.gen.js";
+import { zSyncLoginStatus } from "./contract/zod.gen.js";
+import { zSyncLogoutStatus } from "./contract/zod.gen.js";
+import { zLocalPublicationState } from "./contract/zod.gen.js";
+import { zLocalCollectiveSuggestionReason } from "./contract/zod.gen.js";
+import { zLocalSettingKind } from "./contract/zod.gen.js";
+import { zLocalKickstartScope } from "./contract/zod.gen.js";
+import { zLocalKickstartStopKind } from "./contract/zod.gen.js";
+import { zLocalKickstartFieldKind } from "./contract/zod.gen.js";
+import { zLocalKickstartLineKind } from "./contract/zod.gen.js";
+import { zLocalKickstartNodeKind } from "./contract/zod.gen.js";
+import { zLocalKickstartNodeState } from "./contract/zod.gen.js";
+import { zLocalKickstartScanState } from "./contract/zod.gen.js";
+import { zLocalKickstartIngestState } from "./contract/zod.gen.js";
+import { zLocalKickstartResolution } from "./contract/zod.gen.js";
+import { zLocalKickstartNextStep } from "./contract/zod.gen.js";
+import { zLocalKickstartDiffLineType } from "./contract/zod.gen.js";
+import { zLocalKickstartEventKind } from "./contract/zod.gen.js";
+import { zLocalKickstartCloseReason } from "./contract/zod.gen.js";
+import { zLocalKickstartConnectAnswer } from "./contract/zod.gen.js";
+import { zLocalKickstartErrorCode } from "./contract/zod.gen.js";
+import { zAutoPublishEvent } from "./contract/zod.gen.js";
+import { zAutoPublishHookStatus } from "./contract/zod.gen.js";
+import { zAutoPublishRuleKind } from "./contract/zod.gen.js";
+import { zThinkingLevel } from "./contract/zod.gen.js";
+import { zScryVerdict } from "./contract/zod.gen.js";
 
-export type TranscriptEntryReferenceKind = TranscriptEntryReferenceKindContract;
 export const TranscriptEntryReferenceKind = Object.freeze({
-  Source: zTranscriptEntryReferenceKind.parse("source"),
-  ToolCall: zTranscriptEntryReferenceKind.parse("tool_call"),
-  ToolResult: zTranscriptEntryReferenceKind.parse("tool_result"),
+  Source: "source",
+  ToolCall: "tool_call",
+  ToolResult: "tool_result",
 } as const);
+export type TranscriptEntryReferenceKind = (typeof TranscriptEntryReferenceKind)[keyof typeof TranscriptEntryReferenceKind];
 export const AllTranscriptEntryReferenceKinds = Object.freeze([TranscriptEntryReferenceKind.Source, TranscriptEntryReferenceKind.ToolCall, TranscriptEntryReferenceKind.ToolResult]) as readonly TranscriptEntryReferenceKind[];
 export function isTranscriptEntryReferenceKind(value: unknown): value is TranscriptEntryReferenceKind {
   return zTranscriptEntryReferenceKind.safeParse(value).success;
 }
 
-export type TranscriptReadTransportKind = TranscriptReadTransportKindContract;
 export const TranscriptReadTransportKind = Object.freeze({
-  LocalSession: zTranscriptReadTransportKind.parse("local_session"),
-  VillageTranscript: zTranscriptReadTransportKind.parse("village_transcript"),
+  LocalSession: "local_session",
+  VillageTranscript: "village_transcript",
 } as const);
+export type TranscriptReadTransportKind = (typeof TranscriptReadTransportKind)[keyof typeof TranscriptReadTransportKind];
 export const AllTranscriptReadTransportKinds = Object.freeze([TranscriptReadTransportKind.LocalSession, TranscriptReadTransportKind.VillageTranscript]) as readonly TranscriptReadTransportKind[];
 export function isTranscriptReadTransportKind(value: unknown): value is TranscriptReadTransportKind {
   return zTranscriptReadTransportKind.safeParse(value).success;
 }
 
-export type TranscriptRecordedIndexState = TranscriptRecordedIndexStateContract;
 export const TranscriptRecordedIndexState = Object.freeze({
-  Present: zTranscriptRecordedIndexState.parse("present"),
-  Absent: zTranscriptRecordedIndexState.parse("absent"),
-  Invalid: zTranscriptRecordedIndexState.parse("invalid"),
+  Present: "present",
+  Absent: "absent",
+  Invalid: "invalid",
 } as const);
+export type TranscriptRecordedIndexState = (typeof TranscriptRecordedIndexState)[keyof typeof TranscriptRecordedIndexState];
 export const AllTranscriptRecordedIndexStates = Object.freeze([TranscriptRecordedIndexState.Present, TranscriptRecordedIndexState.Absent, TranscriptRecordedIndexState.Invalid]) as readonly TranscriptRecordedIndexState[];
 export function isTranscriptRecordedIndexState(value: unknown): value is TranscriptRecordedIndexState {
   return zTranscriptRecordedIndexState.safeParse(value).success;
 }
 
-export type TranscriptRetainedState = TranscriptRetainedStateContract;
 export const TranscriptRetainedState = Object.freeze({
-  Absent: zTranscriptRetainedState.parse("absent"),
-  Deferred: zTranscriptRetainedState.parse("deferred"),
+  Absent: "absent",
+  Deferred: "deferred",
 } as const);
+export type TranscriptRetainedState = (typeof TranscriptRetainedState)[keyof typeof TranscriptRetainedState];
 export const AllTranscriptRetainedStates = Object.freeze([TranscriptRetainedState.Absent, TranscriptRetainedState.Deferred]) as readonly TranscriptRetainedState[];
 export function isTranscriptRetainedState(value: unknown): value is TranscriptRetainedState {
   return zTranscriptRetainedState.safeParse(value).success;
 }
 
-export type TranscriptViewerProjection = TranscriptViewerProjectionContract;
 export const TranscriptViewerProjection = Object.freeze({
-  Anonymous: zTranscriptViewerProjection.parse("anonymous"),
-  Authenticated: zTranscriptViewerProjection.parse("authenticated"),
+  Anonymous: "anonymous",
+  Authenticated: "authenticated",
 } as const);
+export type TranscriptViewerProjection = (typeof TranscriptViewerProjection)[keyof typeof TranscriptViewerProjection];
 export const AllTranscriptViewerProjections = Object.freeze([TranscriptViewerProjection.Anonymous, TranscriptViewerProjection.Authenticated]) as readonly TranscriptViewerProjection[];
 export function isTranscriptViewerProjection(value: unknown): value is TranscriptViewerProjection {
   return zTranscriptViewerProjection.safeParse(value).success;
 }
 
-export type TranscriptReadValidation = TranscriptReadValidationContract;
 export const TranscriptReadValidation = Object.freeze({
-  PublishedStrict: zTranscriptReadValidation.parse("published_strict"),
-  ServedLegacy: zTranscriptReadValidation.parse("served_legacy"),
-  Migrated: zTranscriptReadValidation.parse("migrated"),
+  PublishedStrict: "published_strict",
+  ServedLegacy: "served_legacy",
+  Migrated: "migrated",
 } as const);
+export type TranscriptReadValidation = (typeof TranscriptReadValidation)[keyof typeof TranscriptReadValidation];
 export const AllTranscriptReadValidations = Object.freeze([TranscriptReadValidation.PublishedStrict, TranscriptReadValidation.ServedLegacy, TranscriptReadValidation.Migrated]) as readonly TranscriptReadValidation[];
 export function isTranscriptReadValidation(value: unknown): value is TranscriptReadValidation {
   return zTranscriptReadValidation.safeParse(value).success;
 }
 
-export type TranscriptNativePresence = TranscriptNativePresenceContract;
 export const TranscriptNativePresence = Object.freeze({
-  Absent: zTranscriptNativePresence.parse("absent"),
-  Present: zTranscriptNativePresence.parse("present"),
-  Withheld: zTranscriptNativePresence.parse("withheld"),
+  Absent: "absent",
+  Present: "present",
+  Withheld: "withheld",
 } as const);
+export type TranscriptNativePresence = (typeof TranscriptNativePresence)[keyof typeof TranscriptNativePresence];
 export const AllTranscriptNativePresences = Object.freeze([TranscriptNativePresence.Absent, TranscriptNativePresence.Present, TranscriptNativePresence.Withheld]) as readonly TranscriptNativePresence[];
 export function isTranscriptNativePresence(value: unknown): value is TranscriptNativePresence {
   return zTranscriptNativePresence.safeParse(value).success;
 }
 
-export type TranscriptUsagePresence = TranscriptUsagePresenceContract;
 export const TranscriptUsagePresence = Object.freeze({
-  Present: zTranscriptUsagePresence.parse("present"),
-  Empty: zTranscriptUsagePresence.parse("empty"),
-  Unknown: zTranscriptUsagePresence.parse("unknown"),
+  Present: "present",
+  Empty: "empty",
+  Unknown: "unknown",
 } as const);
+export type TranscriptUsagePresence = (typeof TranscriptUsagePresence)[keyof typeof TranscriptUsagePresence];
 export const AllTranscriptUsagePresences = Object.freeze([TranscriptUsagePresence.Present, TranscriptUsagePresence.Empty, TranscriptUsagePresence.Unknown]) as readonly TranscriptUsagePresence[];
 export function isTranscriptUsagePresence(value: unknown): value is TranscriptUsagePresence {
   return zTranscriptUsagePresence.safeParse(value).success;
 }
 
-export type TranscriptSegmentPartitionKind = TranscriptSegmentPartitionKindContract;
 export const TranscriptSegmentPartitionKind = Object.freeze({
-  Main: zTranscriptSegmentPartitionKind.parse("main"),
-  History: zTranscriptSegmentPartitionKind.parse("history"),
+  Main: "main",
+  History: "history",
 } as const);
+export type TranscriptSegmentPartitionKind = (typeof TranscriptSegmentPartitionKind)[keyof typeof TranscriptSegmentPartitionKind];
 export const AllTranscriptSegmentPartitionKinds = Object.freeze([TranscriptSegmentPartitionKind.Main, TranscriptSegmentPartitionKind.History]) as readonly TranscriptSegmentPartitionKind[];
 export function isTranscriptSegmentPartitionKind(value: unknown): value is TranscriptSegmentPartitionKind {
   return zTranscriptSegmentPartitionKind.safeParse(value).success;
 }
 
-export type CollectiveObservationReason = CollectiveObservationReasonContract;
 export const CollectiveObservationReason = Object.freeze({
-  Membership: zCollectiveObservationReason.parse("membership"),
-  Contribution: zCollectiveObservationReason.parse("contribution"),
-  Organization: zCollectiveObservationReason.parse("organization"),
-  Explicit: zCollectiveObservationReason.parse("explicit"),
+  Membership: "membership",
+  Contribution: "contribution",
+  Organization: "organization",
+  Explicit: "explicit",
 } as const);
+export type CollectiveObservationReason = (typeof CollectiveObservationReason)[keyof typeof CollectiveObservationReason];
 export const AllCollectiveObservationReasons = Object.freeze([CollectiveObservationReason.Membership, CollectiveObservationReason.Contribution, CollectiveObservationReason.Organization, CollectiveObservationReason.Explicit]) as readonly CollectiveObservationReason[];
 export function isCollectiveObservationReason(value: unknown): value is CollectiveObservationReason {
   return zCollectiveObservationReason.safeParse(value).success;
 }
 
-export type CollectiveObservationState = CollectiveObservationStateContract;
 export const CollectiveObservationState = Object.freeze({
-  Observed: zCollectiveObservationState.parse("observed"),
-  Unavailable: zCollectiveObservationState.parse("unavailable"),
-  Invalidated: zCollectiveObservationState.parse("invalidated"),
+  Observed: "observed",
+  Unavailable: "unavailable",
+  Invalidated: "invalidated",
 } as const);
+export type CollectiveObservationState = (typeof CollectiveObservationState)[keyof typeof CollectiveObservationState];
 export const AllCollectiveObservationStates = Object.freeze([CollectiveObservationState.Observed, CollectiveObservationState.Unavailable, CollectiveObservationState.Invalidated]) as readonly CollectiveObservationState[];
 export function isCollectiveObservationState(value: unknown): value is CollectiveObservationState {
   return zCollectiveObservationState.safeParse(value).success;
 }
 
-export type CollectiveOperation = CollectiveOperationContract;
 export const CollectiveOperation = Object.freeze({
-  Publish: zCollectiveOperation.parse("publish"),
-  Share: zCollectiveOperation.parse("share"),
-  Fetch: zCollectiveOperation.parse("fetch"),
-  Pull: zCollectiveOperation.parse("pull"),
+  Publish: "publish",
+  Share: "share",
+  Fetch: "fetch",
+  Pull: "pull",
 } as const);
+export type CollectiveOperation = (typeof CollectiveOperation)[keyof typeof CollectiveOperation];
 export const AllCollectiveOperations = Object.freeze([CollectiveOperation.Publish, CollectiveOperation.Share, CollectiveOperation.Fetch, CollectiveOperation.Pull]) as readonly CollectiveOperation[];
 export function isCollectiveOperation(value: unknown): value is CollectiveOperation {
   return zCollectiveOperation.safeParse(value).success;
 }
 
-export type OperationIssueCode = OperationIssueCodeContract;
 export const OperationIssueCode = Object.freeze({
-  Auth: zOperationIssueCode.parse("auth"),
-  Remote: zOperationIssueCode.parse("remote"),
-  Contract: zOperationIssueCode.parse("contract"),
-  Deadline: zOperationIssueCode.parse("deadline"),
-  Persistence: zOperationIssueCode.parse("persistence"),
-  Superseded: zOperationIssueCode.parse("superseded"),
+  Auth: "auth",
+  Remote: "remote",
+  Contract: "contract",
+  Deadline: "deadline",
+  Persistence: "persistence",
+  Superseded: "superseded",
 } as const);
+export type OperationIssueCode = (typeof OperationIssueCode)[keyof typeof OperationIssueCode];
 export const AllOperationIssueCodes = Object.freeze([OperationIssueCode.Auth, OperationIssueCode.Remote, OperationIssueCode.Contract, OperationIssueCode.Deadline, OperationIssueCode.Persistence, OperationIssueCode.Superseded]) as readonly OperationIssueCode[];
 export function isOperationIssueCode(value: unknown): value is OperationIssueCode {
   return zOperationIssueCode.safeParse(value).success;
 }
 
-export type LocalContributionEvidenceKind = LocalContributionEvidenceKindContract;
 export const LocalContributionEvidenceKind = Object.freeze({
-  RemoteAttempts: zLocalContributionEvidenceKind.parse("remote-attempts"),
-  Receipts: zLocalContributionEvidenceKind.parse("receipts"),
-  OperationDiagnostics: zLocalContributionEvidenceKind.parse("operation-diagnostics"),
+  RemoteAttempts: "remote-attempts",
+  Receipts: "receipts",
+  OperationDiagnostics: "operation-diagnostics",
 } as const);
+export type LocalContributionEvidenceKind = (typeof LocalContributionEvidenceKind)[keyof typeof LocalContributionEvidenceKind];
 export const AllLocalContributionEvidenceKinds = Object.freeze([LocalContributionEvidenceKind.RemoteAttempts, LocalContributionEvidenceKind.Receipts, LocalContributionEvidenceKind.OperationDiagnostics]) as readonly LocalContributionEvidenceKind[];
 export function isLocalContributionEvidenceKind(value: unknown): value is LocalContributionEvidenceKind {
   return zLocalContributionEvidenceKind.safeParse(value).success;
 }
 
-export type CollectiveEvidenceCoverage = CollectiveEvidenceCoverageContract;
 export const CollectiveEvidenceCoverage = Object.freeze({
-  Available: zCollectiveEvidenceCoverage.parse("available"),
-  Unknown: zCollectiveEvidenceCoverage.parse("unknown"),
+  Available: "available",
+  Unknown: "unknown",
 } as const);
+export type CollectiveEvidenceCoverage = (typeof CollectiveEvidenceCoverage)[keyof typeof CollectiveEvidenceCoverage];
 export const AllCollectiveEvidenceCoverages = Object.freeze([CollectiveEvidenceCoverage.Available, CollectiveEvidenceCoverage.Unknown]) as readonly CollectiveEvidenceCoverage[];
 export function isCollectiveEvidenceCoverage(value: unknown): value is CollectiveEvidenceCoverage {
   return zCollectiveEvidenceCoverage.safeParse(value).success;
 }
 
-export type LocalConfirmedContributionOutcome = LocalConfirmedContributionOutcomeContract;
 export const LocalConfirmedContributionOutcome = Object.freeze({
-  Published: zLocalConfirmedContributionOutcome.parse("published"),
-  Submitted: zLocalConfirmedContributionOutcome.parse("submitted"),
+  Published: "published",
+  Submitted: "submitted",
 } as const);
+export type LocalConfirmedContributionOutcome = (typeof LocalConfirmedContributionOutcome)[keyof typeof LocalConfirmedContributionOutcome];
 export const AllLocalConfirmedContributionOutcomes = Object.freeze([LocalConfirmedContributionOutcome.Published, LocalConfirmedContributionOutcome.Submitted]) as readonly LocalConfirmedContributionOutcome[];
 export function isLocalConfirmedContributionOutcome(value: unknown): value is LocalConfirmedContributionOutcome {
   return zLocalConfirmedContributionOutcome.safeParse(value).success;
 }
 
-export type LocalOperationDiagnosticOutcome = LocalOperationDiagnosticOutcomeContract;
 export const LocalOperationDiagnosticOutcome = Object.freeze({
-  Failed: zLocalOperationDiagnosticOutcome.parse("failed"),
-  Uncertain: zLocalOperationDiagnosticOutcome.parse("uncertain"),
+  Failed: "failed",
+  Uncertain: "uncertain",
 } as const);
+export type LocalOperationDiagnosticOutcome = (typeof LocalOperationDiagnosticOutcome)[keyof typeof LocalOperationDiagnosticOutcome];
 export const AllLocalOperationDiagnosticOutcomes = Object.freeze([LocalOperationDiagnosticOutcome.Failed, LocalOperationDiagnosticOutcome.Uncertain]) as readonly LocalOperationDiagnosticOutcome[];
 export function isLocalOperationDiagnosticOutcome(value: unknown): value is LocalOperationDiagnosticOutcome {
   return zLocalOperationDiagnosticOutcome.safeParse(value).success;
 }
 
-export type PullAssociationMetadataState = PullAssociationMetadataStateContract;
 export const PullAssociationMetadataState = Object.freeze({
-  Observed: zPullAssociationMetadataState.parse("observed"),
-  Stale: zPullAssociationMetadataState.parse("stale"),
-  Unknown: zPullAssociationMetadataState.parse("unknown"),
-  Invalidated: zPullAssociationMetadataState.parse("invalidated"),
+  Observed: "observed",
+  Stale: "stale",
+  Unknown: "unknown",
+  Invalidated: "invalidated",
 } as const);
+export type PullAssociationMetadataState = (typeof PullAssociationMetadataState)[keyof typeof PullAssociationMetadataState];
 export const AllPullAssociationMetadataStates = Object.freeze([PullAssociationMetadataState.Observed, PullAssociationMetadataState.Stale, PullAssociationMetadataState.Unknown, PullAssociationMetadataState.Invalidated]) as readonly PullAssociationMetadataState[];
 export function isPullAssociationMetadataState(value: unknown): value is PullAssociationMetadataState {
   return zPullAssociationMetadataState.safeParse(value).success;
 }
 
-export type CollectiveFetchDomain = CollectiveFetchDomainContract;
 export const CollectiveFetchDomain = Object.freeze({
-  Catalog: zCollectiveFetchDomain.parse("catalog"),
-  History: zCollectiveFetchDomain.parse("history"),
-  Associations: zCollectiveFetchDomain.parse("associations"),
+  Catalog: "catalog",
+  History: "history",
+  Associations: "associations",
 } as const);
+export type CollectiveFetchDomain = (typeof CollectiveFetchDomain)[keyof typeof CollectiveFetchDomain];
 export const AllCollectiveFetchDomains = Object.freeze([CollectiveFetchDomain.Catalog, CollectiveFetchDomain.History, CollectiveFetchDomain.Associations]) as readonly CollectiveFetchDomain[];
 export function isCollectiveFetchDomain(value: unknown): value is CollectiveFetchDomain {
   return zCollectiveFetchDomain.safeParse(value).success;
 }
 
-export type CollectiveFetchState = CollectiveFetchStateContract;
 export const CollectiveFetchState = Object.freeze({
-  Complete: zCollectiveFetchState.parse("complete"),
-  Failed: zCollectiveFetchState.parse("failed"),
-  Cancelled: zCollectiveFetchState.parse("cancelled"),
-  Superseded: zCollectiveFetchState.parse("superseded"),
-  NotRequested: zCollectiveFetchState.parse("not_requested"),
+  Complete: "complete",
+  Failed: "failed",
+  Cancelled: "cancelled",
+  Superseded: "superseded",
+  NotRequested: "not_requested",
 } as const);
+export type CollectiveFetchState = (typeof CollectiveFetchState)[keyof typeof CollectiveFetchState];
 export const AllCollectiveFetchStates = Object.freeze([CollectiveFetchState.Complete, CollectiveFetchState.Failed, CollectiveFetchState.Cancelled, CollectiveFetchState.Superseded, CollectiveFetchState.NotRequested]) as readonly CollectiveFetchState[];
 export function isCollectiveFetchState(value: unknown): value is CollectiveFetchState {
   return zCollectiveFetchState.safeParse(value).success;
 }
 
-export type CollectiveFetchCommit = CollectiveFetchCommitContract;
 export const CollectiveFetchCommit = Object.freeze({
-  Updated: zCollectiveFetchCommit.parse("updated"),
-  Unchanged: zCollectiveFetchCommit.parse("unchanged"),
-  Retained: zCollectiveFetchCommit.parse("retained"),
+  Updated: "updated",
+  Unchanged: "unchanged",
+  Retained: "retained",
 } as const);
+export type CollectiveFetchCommit = (typeof CollectiveFetchCommit)[keyof typeof CollectiveFetchCommit];
 export const AllCollectiveFetchCommits = Object.freeze([CollectiveFetchCommit.Updated, CollectiveFetchCommit.Unchanged, CollectiveFetchCommit.Retained]) as readonly CollectiveFetchCommit[];
 export function isCollectiveFetchCommit(value: unknown): value is CollectiveFetchCommit {
   return zCollectiveFetchCommit.safeParse(value).success;
 }
 
-export type CollectiveFetchOutcome = CollectiveFetchOutcomeContract;
 export const CollectiveFetchOutcome = Object.freeze({
-  Complete: zCollectiveFetchOutcome.parse("complete"),
-  Partial: zCollectiveFetchOutcome.parse("partial"),
-  Failed: zCollectiveFetchOutcome.parse("failed"),
+  Complete: "complete",
+  Partial: "partial",
+  Failed: "failed",
 } as const);
+export type CollectiveFetchOutcome = (typeof CollectiveFetchOutcome)[keyof typeof CollectiveFetchOutcome];
 export const AllCollectiveFetchOutcomes = Object.freeze([CollectiveFetchOutcome.Complete, CollectiveFetchOutcome.Partial, CollectiveFetchOutcome.Failed]) as readonly CollectiveFetchOutcome[];
 export function isCollectiveFetchOutcome(value: unknown): value is CollectiveFetchOutcome {
   return zCollectiveFetchOutcome.safeParse(value).success;
 }
 
-export type CollectiveObservationSource = CollectiveObservationSourceContract;
 export const CollectiveObservationSource = Object.freeze({
-  Membership: zCollectiveObservationSource.parse("membership"),
-  ContributionDiscovery: zCollectiveObservationSource.parse("contribution-discovery"),
-  Organization: zCollectiveObservationSource.parse("organization"),
-  Explicit: zCollectiveObservationSource.parse("explicit"),
-  Submissions: zCollectiveObservationSource.parse("submissions"),
-  Attempts: zCollectiveObservationSource.parse("attempts"),
-  Associations: zCollectiveObservationSource.parse("associations"),
+  Membership: "membership",
+  ContributionDiscovery: "contribution-discovery",
+  Organization: "organization",
+  Explicit: "explicit",
+  Submissions: "submissions",
+  Attempts: "attempts",
+  Associations: "associations",
 } as const);
+export type CollectiveObservationSource = (typeof CollectiveObservationSource)[keyof typeof CollectiveObservationSource];
 export const AllCollectiveObservationSources = Object.freeze([CollectiveObservationSource.Membership, CollectiveObservationSource.ContributionDiscovery, CollectiveObservationSource.Organization, CollectiveObservationSource.Explicit, CollectiveObservationSource.Submissions, CollectiveObservationSource.Attempts, CollectiveObservationSource.Associations]) as readonly CollectiveObservationSource[];
 export function isCollectiveObservationSource(value: unknown): value is CollectiveObservationSource {
   return zCollectiveObservationSource.safeParse(value).success;
 }
 
-export type CollectiveSourceOutcome = CollectiveSourceOutcomeContract;
 export const CollectiveSourceOutcome = Object.freeze({
-  Disclosed: zCollectiveSourceOutcome.parse("disclosed"),
-  NotDisclosed: zCollectiveSourceOutcome.parse("not_disclosed"),
-  Failed: zCollectiveSourceOutcome.parse("failed"),
+  Disclosed: "disclosed",
+  NotDisclosed: "not_disclosed",
+  Failed: "failed",
 } as const);
+export type CollectiveSourceOutcome = (typeof CollectiveSourceOutcome)[keyof typeof CollectiveSourceOutcome];
 export const AllCollectiveSourceOutcomes = Object.freeze([CollectiveSourceOutcome.Disclosed, CollectiveSourceOutcome.NotDisclosed, CollectiveSourceOutcome.Failed]) as readonly CollectiveSourceOutcome[];
 export function isCollectiveSourceOutcome(value: unknown): value is CollectiveSourceOutcome {
   return zCollectiveSourceOutcome.safeParse(value).success;
 }
 
-export type LocalSyncPublicationFilter = LocalSyncPublicationFilterContract;
 export const LocalSyncPublicationFilter = Object.freeze({
-  All: zLocalSyncPublicationFilter.parse("all"),
-  NotPublished: zLocalSyncPublicationFilter.parse("not-published"),
-  Published: zLocalSyncPublicationFilter.parse("published"),
-  Auto: zLocalSyncPublicationFilter.parse("auto"),
+  All: "all",
+  NotPublished: "not-published",
+  Published: "published",
+  Auto: "auto",
 } as const);
+export type LocalSyncPublicationFilter = (typeof LocalSyncPublicationFilter)[keyof typeof LocalSyncPublicationFilter];
 export const AllLocalSyncPublicationFilters = Object.freeze([LocalSyncPublicationFilter.All, LocalSyncPublicationFilter.NotPublished, LocalSyncPublicationFilter.Published, LocalSyncPublicationFilter.Auto]) as readonly LocalSyncPublicationFilter[];
 export function isLocalSyncPublicationFilter(value: unknown): value is LocalSyncPublicationFilter {
   return zLocalSyncPublicationFilter.safeParse(value).success;
 }
 
-export type PageSize = PageSizeContract;
 export const PageSize = Object.freeze({
-  P25: zPageSize.parse(25),
-  P50: zPageSize.parse(50),
-  P100: zPageSize.parse(100),
+  P25: 25,
+  P50: 50,
+  P100: 100,
 } as const);
+export type PageSize = (typeof PageSize)[keyof typeof PageSize];
 export const AllPageSizes = Object.freeze([PageSize.P25, PageSize.P50, PageSize.P100]) as readonly PageSize[];
 export function isPageSize(value: unknown): value is PageSize {
   return zPageSize.safeParse(value).success;
 }
 
-export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({
-  Preserve: zPublishOperationKind.parse("preserve"),
-  Replace: zPublishOperationKind.parse("replace"),
-  Append: zPublishOperationKind.parse("append"),
+  Preserve: "preserve",
+  Replace: "replace",
+  Append: "append",
 } as const);
+export type PublishOperationKind = (typeof PublishOperationKind)[keyof typeof PublishOperationKind];
 export const AllPublishOperationKinds = Object.freeze([PublishOperationKind.Preserve, PublishOperationKind.Replace, PublishOperationKind.Append]) as readonly PublishOperationKind[];
 export function isPublishOperationKind(value: unknown): value is PublishOperationKind {
   return zPublishOperationKind.safeParse(value).success;
 }
 
-export type VisibilityIntent = VisibilityIntentContract;
 export const VisibilityIntent = Object.freeze({
-  Private: zVisibilityIntent.parse("private"),
-  Public: zVisibilityIntent.parse("public"),
+  Private: "private",
+  Public: "public",
 } as const);
+export type VisibilityIntent = (typeof VisibilityIntent)[keyof typeof VisibilityIntent];
 export const AllVisibilityIntents = Object.freeze([VisibilityIntent.Private, VisibilityIntent.Public]) as readonly VisibilityIntent[];
 export function isVisibilityIntent(value: unknown): value is VisibilityIntent {
   return zVisibilityIntent.safeParse(value).success;
 }
 
-export type AnnotationAxis = AnnotationAxisContract;
 export const AnnotationAxis = Object.freeze({
-  Type: zAnnotationAxis.parse("type"),
-  Session: zAnnotationAxis.parse("session"),
-  Project: zAnnotationAxis.parse("project"),
+  Type: "type",
+  Session: "session",
+  Project: "project",
 } as const);
+export type AnnotationAxis = (typeof AnnotationAxis)[keyof typeof AnnotationAxis];
 export const AllAnnotationAxes = Object.freeze([AnnotationAxis.Type, AnnotationAxis.Session, AnnotationAxis.Project]) as readonly AnnotationAxis[];
 export function isAnnotationAxis(value: unknown): value is AnnotationAxis {
   return zAnnotationAxis.safeParse(value).success;
 }
 
-export type AnnotationDatatype = AnnotationDatatypeContract;
 export const AnnotationDatatype = Object.freeze({
-  Text: zAnnotationDatatype.parse("text"),
-  Integer: zAnnotationDatatype.parse("integer"),
-  Real: zAnnotationDatatype.parse("real"),
-  Boolean: zAnnotationDatatype.parse("boolean"),
+  Text: "text",
+  Integer: "integer",
+  Real: "real",
+  Boolean: "boolean",
 } as const);
+export type AnnotationDatatype = (typeof AnnotationDatatype)[keyof typeof AnnotationDatatype];
 export const AllAnnotationDatatypes = Object.freeze([AnnotationDatatype.Text, AnnotationDatatype.Integer, AnnotationDatatype.Real, AnnotationDatatype.Boolean]) as readonly AnnotationDatatype[];
 export function isAnnotationDatatype(value: unknown): value is AnnotationDatatype {
   return zAnnotationDatatype.safeParse(value).success;
 }
 
-export type AnnotationPushStatus = AnnotationPushStatusContract;
 export const AnnotationPushStatus = Object.freeze({
-  Created: zAnnotationPushStatus.parse("created"),
-  Updated: zAnnotationPushStatus.parse("updated"),
-  Skipped: zAnnotationPushStatus.parse("skipped"),
-  Error: zAnnotationPushStatus.parse("error"),
+  Created: "created",
+  Updated: "updated",
+  Skipped: "skipped",
+  Error: "error",
 } as const);
+export type AnnotationPushStatus = (typeof AnnotationPushStatus)[keyof typeof AnnotationPushStatus];
 export const AllAnnotationPushStatuses = Object.freeze([AnnotationPushStatus.Created, AnnotationPushStatus.Updated, AnnotationPushStatus.Skipped, AnnotationPushStatus.Error]) as readonly AnnotationPushStatus[];
 export function isAnnotationPushStatus(value: unknown): value is AnnotationPushStatus {
   return zAnnotationPushStatus.safeParse(value).success;
 }
 
-export type AnnotationStatus = AnnotationStatusContract;
 export const AnnotationStatus = Object.freeze({
-  Proposed: zAnnotationStatus.parse("proposed"),
-  Active: zAnnotationStatus.parse("active"),
-  Deprecated: zAnnotationStatus.parse("deprecated"),
-  Retired: zAnnotationStatus.parse("retired"),
+  Proposed: "proposed",
+  Active: "active",
+  Deprecated: "deprecated",
+  Retired: "retired",
 } as const);
+export type AnnotationStatus = (typeof AnnotationStatus)[keyof typeof AnnotationStatus];
 export const AllAnnotationStatuses = Object.freeze([AnnotationStatus.Proposed, AnnotationStatus.Active, AnnotationStatus.Deprecated, AnnotationStatus.Retired]) as readonly AnnotationStatus[];
 export function isAnnotationStatus(value: unknown): value is AnnotationStatus {
   return zAnnotationStatus.safeParse(value).success;
 }
 
-export type AnnotatorKind = AnnotatorKindContract;
 export const AnnotatorKind = Object.freeze({
-  Human: zAnnotatorKind.parse("human"),
-  Agent: zAnnotatorKind.parse("agent"),
-  Rule: zAnnotatorKind.parse("rule"),
+  Human: "human",
+  Agent: "agent",
+  Rule: "rule",
 } as const);
+export type AnnotatorKind = (typeof AnnotatorKind)[keyof typeof AnnotatorKind];
 export const AllAnnotatorKinds = Object.freeze([AnnotatorKind.Human, AnnotatorKind.Agent, AnnotatorKind.Rule]) as readonly AnnotatorKind[];
 export function isAnnotatorKind(value: unknown): value is AnnotatorKind {
   return zAnnotatorKind.safeParse(value).success;
 }
 
-export type AssociationConclusion = AssociationConclusionContract;
 export const AssociationConclusion = Object.freeze({
-  Confirmed: zAssociationConclusion.parse("confirmed"),
-  Candidate: zAssociationConclusion.parse("candidate"),
+  Confirmed: "confirmed",
+  Candidate: "candidate",
 } as const);
+export type AssociationConclusion = (typeof AssociationConclusion)[keyof typeof AssociationConclusion];
 export const AllAssociationConclusions = Object.freeze([AssociationConclusion.Confirmed, AssociationConclusion.Candidate]) as readonly AssociationConclusion[];
 export function isAssociationConclusion(value: unknown): value is AssociationConclusion {
   return zAssociationConclusion.safeParse(value).success;
 }
 
-export type AssociationEvidenceKind = AssociationEvidenceKindContract;
 export const AssociationEvidenceKind = Object.freeze({
-  RecordedCommit: zAssociationEvidenceKind.parse("recorded_commit"),
-  TouchedFile: zAssociationEvidenceKind.parse("touched_file"),
-  BranchMembership: zAssociationEvidenceKind.parse("branch_membership"),
-  TimeWindow: zAssociationEvidenceKind.parse("time_window"),
+  RecordedCommit: "recorded_commit",
+  TouchedFile: "touched_file",
+  BranchMembership: "branch_membership",
+  TimeWindow: "time_window",
 } as const);
+export type AssociationEvidenceKind = (typeof AssociationEvidenceKind)[keyof typeof AssociationEvidenceKind];
 export const AllAssociationEvidenceKinds = Object.freeze([AssociationEvidenceKind.RecordedCommit, AssociationEvidenceKind.TouchedFile, AssociationEvidenceKind.BranchMembership, AssociationEvidenceKind.TimeWindow]) as readonly AssociationEvidenceKind[];
 export function isAssociationEvidenceKind(value: unknown): value is AssociationEvidenceKind {
   return zAssociationEvidenceKind.safeParse(value).success;
 }
 
-export type BuiltinCommand = BuiltinCommandContract;
 export const BuiltinCommand = Object.freeze({
-  Exit: zBuiltinCommand.parse("exit"),
-  Compact: zBuiltinCommand.parse("compact"),
-  Clear: zBuiltinCommand.parse("clear"),
-  New: zBuiltinCommand.parse("new"),
-  Model: zBuiltinCommand.parse("model"),
-  Usage: zBuiltinCommand.parse("usage"),
-  Cost: zBuiltinCommand.parse("cost"),
-  Context: zBuiltinCommand.parse("context"),
-  Plugin: zBuiltinCommand.parse("plugin"),
-  Permissions: zBuiltinCommand.parse("permissions"),
-  Login: zBuiltinCommand.parse("login"),
-  Resume: zBuiltinCommand.parse("resume"),
-  Plan: zBuiltinCommand.parse("plan"),
-  Fast: zBuiltinCommand.parse("fast"),
-  Voice: zBuiltinCommand.parse("voice"),
-  Todos: zBuiltinCommand.parse("todos"),
-  ReloadPlugins: zBuiltinCommand.parse("reload-plugins"),
-  Sandbox: zBuiltinCommand.parse("sandbox"),
-  Config: zBuiltinCommand.parse("config"),
-  Statusline: zBuiltinCommand.parse("statusline"),
-  Upgrade: zBuiltinCommand.parse("upgrade"),
-  ExtraUsage: zBuiltinCommand.parse("extra-usage"),
-  RateLimitOptions: zBuiltinCommand.parse("rate-limit-options"),
-  PrivacySettings: zBuiltinCommand.parse("privacy-settings"),
-  Help: zBuiltinCommand.parse("help"),
-  Commands: zBuiltinCommand.parse("commands"),
+  Exit: "exit",
+  Compact: "compact",
+  Clear: "clear",
+  New: "new",
+  Model: "model",
+  Usage: "usage",
+  Cost: "cost",
+  Context: "context",
+  Plugin: "plugin",
+  Permissions: "permissions",
+  Login: "login",
+  Resume: "resume",
+  Plan: "plan",
+  Fast: "fast",
+  Voice: "voice",
+  Todos: "todos",
+  ReloadPlugins: "reload-plugins",
+  Sandbox: "sandbox",
+  Config: "config",
+  Statusline: "statusline",
+  Upgrade: "upgrade",
+  ExtraUsage: "extra-usage",
+  RateLimitOptions: "rate-limit-options",
+  PrivacySettings: "privacy-settings",
+  Help: "help",
+  Commands: "commands",
 } as const);
+export type BuiltinCommand = (typeof BuiltinCommand)[keyof typeof BuiltinCommand];
 export const AllClaudeBuiltinCmds = Object.freeze([BuiltinCommand.Exit, BuiltinCommand.Compact, BuiltinCommand.Clear, BuiltinCommand.New, BuiltinCommand.Model, BuiltinCommand.Usage, BuiltinCommand.Cost, BuiltinCommand.Context, BuiltinCommand.Plugin, BuiltinCommand.Permissions, BuiltinCommand.Login, BuiltinCommand.Resume, BuiltinCommand.Plan, BuiltinCommand.Fast, BuiltinCommand.Voice, BuiltinCommand.Todos, BuiltinCommand.ReloadPlugins, BuiltinCommand.Sandbox, BuiltinCommand.Config, BuiltinCommand.Statusline, BuiltinCommand.Upgrade, BuiltinCommand.ExtraUsage, BuiltinCommand.RateLimitOptions, BuiltinCommand.PrivacySettings, BuiltinCommand.Help, BuiltinCommand.Commands]) as readonly BuiltinCommand[];
 export function isBuiltinCommand(value: unknown): value is BuiltinCommand {
   return zBuiltinCommand.safeParse(value).success;
 }
 
-export type ChangeBinding = ChangeBindingContract;
 export const ChangeBinding = Object.freeze({
-  Bound: zChangeBinding.parse("bound"),
-  Candidate: zChangeBinding.parse("candidate"),
+  Bound: "bound",
+  Candidate: "candidate",
 } as const);
+export type ChangeBinding = (typeof ChangeBinding)[keyof typeof ChangeBinding];
 export const AllChangeBindings = Object.freeze([ChangeBinding.Bound, ChangeBinding.Candidate]) as readonly ChangeBinding[];
 export function isChangeBinding(value: unknown): value is ChangeBinding {
   return zChangeBinding.safeParse(value).success;
 }
 
-export type ChannelTopic = ChannelTopicContract;
 export const ChannelTopic = Object.freeze({
-  Dashboard: zChannelTopic.parse("dashboard"),
-  Sessions: zChannelTopic.parse("sessions"),
-  SessionDetail: zChannelTopic.parse("session_detail"),
-  Trends: zChannelTopic.parse("trends"),
-  Quality: zChannelTopic.parse("quality"),
-  Annotations: zChannelTopic.parse("annotations"),
-  ProjectFamiliarity: zChannelTopic.parse("project_familiarity"),
-  Kickstart: zChannelTopic.parse("kickstart"),
+  Dashboard: "dashboard",
+  Sessions: "sessions",
+  SessionDetail: "session_detail",
+  Trends: "trends",
+  Quality: "quality",
+  Annotations: "annotations",
+  ProjectFamiliarity: "project_familiarity",
+  Kickstart: "kickstart",
 } as const);
+export type ChannelTopic = (typeof ChannelTopic)[keyof typeof ChannelTopic];
 export const AllChannelTopics = Object.freeze([ChannelTopic.Dashboard, ChannelTopic.Sessions, ChannelTopic.SessionDetail, ChannelTopic.Trends, ChannelTopic.Quality, ChannelTopic.Annotations, ChannelTopic.ProjectFamiliarity, ChannelTopic.Kickstart]) as readonly ChannelTopic[];
 export function isChannelTopic(value: unknown): value is ChannelTopic {
   return zChannelTopic.safeParse(value).success;
 }
 
-export type Confidence = ConfidenceContract;
 export const Confidence = Object.freeze({
-  High: zConfidence.parse("high"),
-  Medium: zConfidence.parse("medium"),
-  Low: zConfidence.parse("low"),
+  High: "high",
+  Medium: "medium",
+  Low: "low",
 } as const);
+export type Confidence = (typeof Confidence)[keyof typeof Confidence];
 export const AllConfidences = Object.freeze([Confidence.High, Confidence.Medium, Confidence.Low]) as readonly Confidence[];
 export function isConfidence(value: unknown): value is Confidence {
   return zConfidence.safeParse(value).success;
 }
 
-export type ContentKind = ContentKindContract;
 export const ContentKind = Object.freeze({
-  SessionDetail: zContentKind.parse("session_detail"),
+  SessionDetail: "session_detail",
 } as const);
+export type ContentKind = (typeof ContentKind)[keyof typeof ContentKind];
 export const AllContentKinds = Object.freeze([ContentKind.SessionDetail]) as readonly ContentKind[];
 export function isContentKind(value: unknown): value is ContentKind {
   return zContentKind.safeParse(value).success;
 }
 
-export type DecayLevel = DecayLevelContract;
 export const DecayLevel = Object.freeze({
-  Fresh: zDecayLevel.parse("fresh"),
-  Fading: zDecayLevel.parse("fading"),
-  Stale: zDecayLevel.parse("stale"),
-  Unexplored: zDecayLevel.parse("unexplored"),
+  Fresh: "fresh",
+  Fading: "fading",
+  Stale: "stale",
+  Unexplored: "unexplored",
 } as const);
+export type DecayLevel = (typeof DecayLevel)[keyof typeof DecayLevel];
 export const AllDecayLevels = Object.freeze([DecayLevel.Fresh, DecayLevel.Fading, DecayLevel.Stale, DecayLevel.Unexplored]) as readonly DecayLevel[];
 export function isDecayLevel(value: unknown): value is DecayLevel {
   return zDecayLevel.safeParse(value).success;
 }
 
-export type DiffLineKind = DiffLineKindContract;
 export const DiffLineKind = Object.freeze({
-  Context: zDiffLineKind.parse("context"),
-  Add: zDiffLineKind.parse("add"),
-  Delete: zDiffLineKind.parse("del"),
+  Context: "context",
+  Add: "add",
+  Delete: "del",
 } as const);
+export type DiffLineKind = (typeof DiffLineKind)[keyof typeof DiffLineKind];
 export const AllDiffLineKinds = Object.freeze([DiffLineKind.Context, DiffLineKind.Add, DiffLineKind.Delete]) as readonly DiffLineKind[];
 export function isDiffLineKind(value: unknown): value is DiffLineKind {
   return zDiffLineKind.safeParse(value).success;
 }
 
-export type EdgeViolationKind = EdgeViolationKindContract;
 export const EdgeViolationKind = Object.freeze({
-  Cycle: zEdgeViolationKind.parse("cycle"),
-  WrongWay: zEdgeViolationKind.parse("wrong_way"),
+  Cycle: "cycle",
+  WrongWay: "wrong_way",
 } as const);
+export type EdgeViolationKind = (typeof EdgeViolationKind)[keyof typeof EdgeViolationKind];
 export const AllEdgeViolationKinds = Object.freeze([EdgeViolationKind.Cycle, EdgeViolationKind.WrongWay]) as readonly EdgeViolationKind[];
 export function isEdgeViolationKind(value: unknown): value is EdgeViolationKind {
   return zEdgeViolationKind.safeParse(value).success;
 }
 
-export type EntryType = EntryTypeContract;
 export const EntryType = Object.freeze({
-  Text: zEntryType.parse("text"),
-  ToolUse: zEntryType.parse("tool_use"),
-  ToolResult: zEntryType.parse("tool_result"),
-  Thinking: zEntryType.parse("thinking"),
-  System: zEntryType.parse("system"),
-  Error: zEntryType.parse("error"),
-  Result: zEntryType.parse("result"),
-  Image: zEntryType.parse("image"),
+  Text: "text",
+  ToolUse: "tool_use",
+  ToolResult: "tool_result",
+  Thinking: "thinking",
+  System: "system",
+  Error: "error",
+  Result: "result",
+  Image: "image",
 } as const);
+export type EntryType = (typeof EntryType)[keyof typeof EntryType];
 export const AllEntryTypes = Object.freeze([EntryType.Text, EntryType.ToolUse, EntryType.ToolResult, EntryType.Thinking, EntryType.System, EntryType.Error, EntryType.Result, EntryType.Image]) as readonly EntryType[];
 export function isEntryType(value: unknown): value is EntryType {
   return zEntryType.safeParse(value).success;
 }
 
-export type TurnPartType = TurnPartTypeContract;
 export const TurnPartType = Object.freeze({
-  Text: zTurnPartType.parse("text"),
-  Image: zTurnPartType.parse("image"),
+  Text: "text",
+  Image: "image",
 } as const);
+export type TurnPartType = (typeof TurnPartType)[keyof typeof TurnPartType];
 export const AllTurnPartTypes = Object.freeze([TurnPartType.Text, TurnPartType.Image]) as readonly TurnPartType[];
 export function isTurnPartType(value: unknown): value is TurnPartType {
   return zTurnPartType.safeParse(value).success;
 }
 
-export type ImageMediaType = ImageMediaTypeContract;
 export const ImageMediaType = Object.freeze({
-  Png: zImageMediaType.parse("image/png"),
-  Jpeg: zImageMediaType.parse("image/jpeg"),
+  Png: "image/png",
+  Jpeg: "image/jpeg",
 } as const);
+export type ImageMediaType = (typeof ImageMediaType)[keyof typeof ImageMediaType];
 export const AllImageMediaTypes = Object.freeze([ImageMediaType.Png, ImageMediaType.Jpeg]) as readonly ImageMediaType[];
 export function isImageMediaType(value: unknown): value is ImageMediaType {
   return zImageMediaType.safeParse(value).success;
 }
 
-export type OmittedReason = OmittedReasonContract;
 export const OmittedReason = Object.freeze({
-  TooLarge: zOmittedReason.parse("too_large"),
-  Unsupported: zOmittedReason.parse("unsupported"),
-  Missing: zOmittedReason.parse("missing"),
-  NotPublished: zOmittedReason.parse("not_published"),
+  TooLarge: "too_large",
+  Unsupported: "unsupported",
+  Missing: "missing",
+  NotPublished: "not_published",
 } as const);
+export type OmittedReason = (typeof OmittedReason)[keyof typeof OmittedReason];
 export const AllOmittedReasons = Object.freeze([OmittedReason.TooLarge, OmittedReason.Unsupported, OmittedReason.Missing, OmittedReason.NotPublished]) as readonly OmittedReason[];
 export function isOmittedReason(value: unknown): value is OmittedReason {
   return zOmittedReason.safeParse(value).success;
 }
 
-export type FileChangeStatus = FileChangeStatusContract;
 export const FileChangeStatus = Object.freeze({
-  Modified: zFileChangeStatus.parse("M"),
-  Added: zFileChangeStatus.parse("A"),
-  Deleted: zFileChangeStatus.parse("D"),
-  Renamed: zFileChangeStatus.parse("R"),
+  Modified: "M",
+  Added: "A",
+  Deleted: "D",
+  Renamed: "R",
 } as const);
+export type FileChangeStatus = (typeof FileChangeStatus)[keyof typeof FileChangeStatus];
 export const AllFileChangeStatuses = Object.freeze([FileChangeStatus.Modified, FileChangeStatus.Added, FileChangeStatus.Deleted, FileChangeStatus.Renamed]) as readonly FileChangeStatus[];
 export function isFileChangeStatus(value: unknown): value is FileChangeStatus {
   return zFileChangeStatus.safeParse(value).success;
 }
 
-export type Harness = HarnessContract;
 export const Harness = Object.freeze({
-  ClaudeCode: zHarness.parse("claude-code"),
-  GeminiCLI: zHarness.parse("gemini-cli"),
-  Codex: zHarness.parse("codex"),
-  OpenCode: zHarness.parse("opencode"),
-  Cursor: zHarness.parse("cursor"),
-  Antigravity: zHarness.parse("antigravity"),
-  Strike: zHarness.parse("strike"),
-  Pi: zHarness.parse("pi"),
-  GrokBuild: zHarness.parse("grok-build"),
-  DevinDesktop: zHarness.parse("devin-desktop"),
-  Cline: zHarness.parse("cline"),
-  Kiro: zHarness.parse("kiro"),
-  KiroCLI: zHarness.parse("kiro-cli"),
-  KiroCrew: zHarness.parse("kiro-crew"),
-  AntigravityCLI: zHarness.parse("antigravity-cli"),
-  AntigravityIDE: zHarness.parse("antigravity-ide"),
+  ClaudeCode: "claude-code",
+  GeminiCLI: "gemini-cli",
+  Codex: "codex",
+  OpenCode: "opencode",
+  Cursor: "cursor",
+  Antigravity: "antigravity",
+  Strike: "strike",
+  Pi: "pi",
+  GrokBuild: "grok-build",
+  DevinDesktop: "devin-desktop",
+  Cline: "cline",
+  Kiro: "kiro",
+  KiroCLI: "kiro-cli",
+  KiroCrew: "kiro-crew",
+  AntigravityCLI: "antigravity-cli",
+  AntigravityIDE: "antigravity-ide",
 } as const);
+export type Harness = (typeof Harness)[keyof typeof Harness];
 /**
  * AllHarnesses is the declared subset of Harness, not the full
  * known set. It includes archived Gemini CLI, which has no harvester. Each
@@ -733,1059 +733,1059 @@ export function isHarness(value: unknown): value is Harness {
   return zHarness.safeParse(value).success;
 }
 
-export type InsightKind = InsightKindContract;
 export const InsightKind = Object.freeze({
-  Decision: zInsightKind.parse("decision"),
-  Friction: zInsightKind.parse("friction"),
-  Unusual: zInsightKind.parse("unusual"),
-  RetryLoop: zInsightKind.parse("retry_loop"),
+  Decision: "decision",
+  Friction: "friction",
+  Unusual: "unusual",
+  RetryLoop: "retry_loop",
 } as const);
+export type InsightKind = (typeof InsightKind)[keyof typeof InsightKind];
 export const AllInsightKinds = Object.freeze([InsightKind.Decision, InsightKind.Friction, InsightKind.Unusual, InsightKind.RetryLoop]) as readonly InsightKind[];
 export function isInsightKind(value: unknown): value is InsightKind {
   return zInsightKind.safeParse(value).success;
 }
 
-export type InsightProvenance = InsightProvenanceContract;
 export const InsightProvenance = Object.freeze({
-  Mechanical: zInsightProvenance.parse("mechanical"),
-  Mined: zInsightProvenance.parse("mined"),
+  Mechanical: "mechanical",
+  Mined: "mined",
 } as const);
+export type InsightProvenance = (typeof InsightProvenance)[keyof typeof InsightProvenance];
 export const AllInsightProvenances = Object.freeze([InsightProvenance.Mechanical, InsightProvenance.Mined]) as readonly InsightProvenance[];
 export function isInsightProvenance(value: unknown): value is InsightProvenance {
   return zInsightProvenance.safeParse(value).success;
 }
 
-export type InteractionType = InteractionTypeContract;
 export const InteractionType = Object.freeze({
-  Mentioned: zInteractionType.parse("mentioned"),
-  Read: zInteractionType.parse("read"),
-  Discussed: zInteractionType.parse("discussed"),
-  Questioned: zInteractionType.parse("questioned"),
+  Mentioned: "mentioned",
+  Read: "read",
+  Discussed: "discussed",
+  Questioned: "questioned",
 } as const);
+export type InteractionType = (typeof InteractionType)[keyof typeof InteractionType];
 export const AllInteractionTypes = Object.freeze([InteractionType.Mentioned, InteractionType.Read, InteractionType.Discussed, InteractionType.Questioned]) as readonly InteractionType[];
 export function isInteractionType(value: unknown): value is InteractionType {
   return zInteractionType.safeParse(value).success;
 }
 
-export type License = LicenseContract;
 export const License = Object.freeze({
-  CC0: zLicense.parse("CC0-1.0"),
-  CCBY: zLicense.parse("CC-BY-4.0"),
-  CCBYSA: zLicense.parse("CC-BY-SA-4.0"),
+  CC0: "CC0-1.0",
+  CCBY: "CC-BY-4.0",
+  CCBYSA: "CC-BY-SA-4.0",
 } as const);
+export type License = (typeof License)[keyof typeof License];
 export const AllLicenses = Object.freeze([License.CC0, License.CCBY, License.CCBYSA]) as readonly License[];
 export function isLicense(value: unknown): value is License {
   return zLicense.safeParse(value).success;
 }
 
-export type MapNodeKind = MapNodeKindContract;
 export const MapNodeKind = Object.freeze({
-  Module: zMapNodeKind.parse("module"),
-  Package: zMapNodeKind.parse("package"),
-  File: zMapNodeKind.parse("file"),
+  Module: "module",
+  Package: "package",
+  File: "file",
 } as const);
+export type MapNodeKind = (typeof MapNodeKind)[keyof typeof MapNodeKind];
 export const AllMapNodeKinds = Object.freeze([MapNodeKind.Module, MapNodeKind.Package, MapNodeKind.File]) as readonly MapNodeKind[];
 export function isMapNodeKind(value: unknown): value is MapNodeKind {
   return zMapNodeKind.safeParse(value).success;
 }
 
-export type MessageType = MessageTypeContract;
 export const MessageType = Object.freeze({
-  Subscribe: zMessageType.parse("subscribe"),
-  Unsubscribe: zMessageType.parse("unsubscribe"),
-  Dashboard: zMessageType.parse("dashboard"),
-  Sessions: zMessageType.parse("sessions"),
-  SessionDetail: zMessageType.parse("session_detail"),
-  Trends: zMessageType.parse("trends"),
-  Quality: zMessageType.parse("quality"),
-  Annotations: zMessageType.parse("annotations"),
-  ProjectFamiliarity: zMessageType.parse("project_familiarity"),
-  Connected: zMessageType.parse("connected"),
-  Error: zMessageType.parse("error"),
-  Kickstart: zMessageType.parse("kickstart"),
+  Subscribe: "subscribe",
+  Unsubscribe: "unsubscribe",
+  Dashboard: "dashboard",
+  Sessions: "sessions",
+  SessionDetail: "session_detail",
+  Trends: "trends",
+  Quality: "quality",
+  Annotations: "annotations",
+  ProjectFamiliarity: "project_familiarity",
+  Connected: "connected",
+  Error: "error",
+  Kickstart: "kickstart",
 } as const);
+export type MessageType = (typeof MessageType)[keyof typeof MessageType];
 export const AllMessageTypes = Object.freeze([MessageType.Subscribe, MessageType.Unsubscribe, MessageType.Dashboard, MessageType.Sessions, MessageType.SessionDetail, MessageType.Trends, MessageType.Quality, MessageType.Annotations, MessageType.ProjectFamiliarity, MessageType.Connected, MessageType.Error, MessageType.Kickstart]) as readonly MessageType[];
 export function isMessageType(value: unknown): value is MessageType {
   return zMessageType.safeParse(value).success;
 }
 
-export type ReadAttributionState = ReadAttributionStateContract;
 export const ReadAttributionState = Object.freeze({
-  Complete: zReadAttributionState.parse("complete"),
-  Partial: zReadAttributionState.parse("partial"),
-  Unavailable: zReadAttributionState.parse("unavailable"),
+  Complete: "complete",
+  Partial: "partial",
+  Unavailable: "unavailable",
 } as const);
+export type ReadAttributionState = (typeof ReadAttributionState)[keyof typeof ReadAttributionState];
 export const AllReadAttributionStates = Object.freeze([ReadAttributionState.Complete, ReadAttributionState.Partial, ReadAttributionState.Unavailable]) as readonly ReadAttributionState[];
 export function isReadAttributionState(value: unknown): value is ReadAttributionState {
   return zReadAttributionState.safeParse(value).success;
 }
 
-export type ReadStateGrade = ReadStateGradeContract;
 export const ReadStateGrade = Object.freeze({
-  None: zReadStateGrade.parse("none"),
-  Viewed: zReadStateGrade.parse("viewed"),
-  Reviewed: zReadStateGrade.parse("reviewed"),
-  ReviewedInDetail: zReadStateGrade.parse("reviewed_in_detail"),
+  None: "none",
+  Viewed: "viewed",
+  Reviewed: "reviewed",
+  ReviewedInDetail: "reviewed_in_detail",
 } as const);
+export type ReadStateGrade = (typeof ReadStateGrade)[keyof typeof ReadStateGrade];
 export const AllReadStateGrades = Object.freeze([ReadStateGrade.None, ReadStateGrade.Viewed, ReadStateGrade.Reviewed, ReadStateGrade.ReviewedInDetail]) as readonly ReadStateGrade[];
 export function isReadStateGrade(value: unknown): value is ReadStateGrade {
   return zReadStateGrade.safeParse(value).success;
 }
 
-export type RewriteMethod = RewriteMethodContract;
 export const RewriteMethod = Object.freeze({
-  Hash: zRewriteMethod.parse("hash"),
-  PatchID: zRewriteMethod.parse("patch_id"),
-  AuthorIdentity: zRewriteMethod.parse("author_identity"),
-  MessageEmbedded: zRewriteMethod.parse("message_embedded"),
-  Temporal: zRewriteMethod.parse("temporal"),
-  None: zRewriteMethod.parse("none"),
+  Hash: "hash",
+  PatchID: "patch_id",
+  AuthorIdentity: "author_identity",
+  MessageEmbedded: "message_embedded",
+  Temporal: "temporal",
+  None: "none",
 } as const);
+export type RewriteMethod = (typeof RewriteMethod)[keyof typeof RewriteMethod];
 export const AllRewriteMethods = Object.freeze([RewriteMethod.Hash, RewriteMethod.PatchID, RewriteMethod.AuthorIdentity, RewriteMethod.MessageEmbedded, RewriteMethod.Temporal, RewriteMethod.None]) as readonly RewriteMethod[];
 export function isRewriteMethod(value: unknown): value is RewriteMethod {
   return zRewriteMethod.safeParse(value).success;
 }
 
-export type RewriteResolution = RewriteResolutionContract;
 export const RewriteResolution = Object.freeze({
-  Live: zRewriteResolution.parse("live"),
-  Rewritten: zRewriteResolution.parse("rewritten"),
-  Unresolved: zRewriteResolution.parse("unresolved"),
+  Live: "live",
+  Rewritten: "rewritten",
+  Unresolved: "unresolved",
 } as const);
+export type RewriteResolution = (typeof RewriteResolution)[keyof typeof RewriteResolution];
 export const AllRewriteResolutions = Object.freeze([RewriteResolution.Live, RewriteResolution.Rewritten, RewriteResolution.Unresolved]) as readonly RewriteResolution[];
 export function isRewriteResolution(value: unknown): value is RewriteResolution {
   return zRewriteResolution.safeParse(value).success;
 }
 
-export type Role = RoleContract;
 export const Role = Object.freeze({
-  User: zRole.parse("user"),
-  Assistant: zRole.parse("assistant"),
-  Tool: zRole.parse("tool"),
-  System: zRole.parse("system"),
+  User: "user",
+  Assistant: "assistant",
+  Tool: "tool",
+  System: "system",
 } as const);
+export type Role = (typeof Role)[keyof typeof Role];
 export const AllRoles = Object.freeze([Role.User, Role.Assistant, Role.Tool, Role.System]) as readonly Role[];
 export function isRole(value: unknown): value is Role {
   return zRole.safeParse(value).success;
 }
 
-export type ScaleKind = ScaleKindContract;
 export const ScaleKind = Object.freeze({
-  Nominal: zScaleKind.parse("nominal"),
-  Ordinal: zScaleKind.parse("ordinal"),
-  Continuous: zScaleKind.parse("continuous"),
+  Nominal: "nominal",
+  Ordinal: "ordinal",
+  Continuous: "continuous",
 } as const);
+export type ScaleKind = (typeof ScaleKind)[keyof typeof ScaleKind];
 export const AllScaleKinds = Object.freeze([ScaleKind.Nominal, ScaleKind.Ordinal, ScaleKind.Continuous]) as readonly ScaleKind[];
 export function isScaleKind(value: unknown): value is ScaleKind {
   return zScaleKind.safeParse(value).success;
 }
 
-export type SessionOrigin = SessionOriginContract;
 export const SessionOrigin = Object.freeze({
-  User: zSessionOrigin.parse("user"),
-  Agent: zSessionOrigin.parse("agent"),
-  Unknown: zSessionOrigin.parse("unknown"),
+  User: "user",
+  Agent: "agent",
+  Unknown: "unknown",
 } as const);
+export type SessionOrigin = (typeof SessionOrigin)[keyof typeof SessionOrigin];
 export const AllSessionOrigins = Object.freeze([SessionOrigin.User, SessionOrigin.Agent, SessionOrigin.Unknown]) as readonly SessionOrigin[];
 export function isSessionOrigin(value: unknown): value is SessionOrigin {
   return zSessionOrigin.safeParse(value).success;
 }
 
-export type SessionOutcome = SessionOutcomeContract;
 export const SessionOutcome = Object.freeze({
-  Resolved: zSessionOutcome.parse("resolved"),
-  Partial: zSessionOutcome.parse("partial"),
-  Failed: zSessionOutcome.parse("failed"),
+  Resolved: "resolved",
+  Partial: "partial",
+  Failed: "failed",
 } as const);
+export type SessionOutcome = (typeof SessionOutcome)[keyof typeof SessionOutcome];
 export const AllOutcomes = Object.freeze([SessionOutcome.Resolved, SessionOutcome.Partial, SessionOutcome.Failed]) as readonly SessionOutcome[];
 export function isSessionOutcome(value: unknown): value is SessionOutcome {
   return zSessionOutcome.safeParse(value).success;
 }
 
-export type SourceFormat = SourceFormatContract;
 export const SourceFormat = Object.freeze({
-  JSONL: zSourceFormat.parse("jsonl"),
-  JSON: zSourceFormat.parse("json"),
+  JSONL: "jsonl",
+  JSON: "json",
 } as const);
+export type SourceFormat = (typeof SourceFormat)[keyof typeof SourceFormat];
 export const AllSourceFormats = Object.freeze([SourceFormat.JSONL, SourceFormat.JSON]) as readonly SourceFormat[];
 export function isSourceFormat(value: unknown): value is SourceFormat {
   return zSourceFormat.safeParse(value).success;
 }
 
-export type StopReason = StopReasonContract;
 export const StopReason = Object.freeze({
-  EndTurn: zStopReason.parse("end_turn"),
-  Cancelled: zStopReason.parse("cancelled"),
-  MaxTokens: zStopReason.parse("max_tokens"),
-  MaxTurnRequests: zStopReason.parse("max_turn_requests"),
-  Refusal: zStopReason.parse("refusal"),
+  EndTurn: "end_turn",
+  Cancelled: "cancelled",
+  MaxTokens: "max_tokens",
+  MaxTurnRequests: "max_turn_requests",
+  Refusal: "refusal",
 } as const);
+export type StopReason = (typeof StopReason)[keyof typeof StopReason];
 export const AllStopReasons = Object.freeze([StopReason.EndTurn, StopReason.Cancelled, StopReason.MaxTokens, StopReason.MaxTurnRequests, StopReason.Refusal]) as readonly StopReason[];
 export function isStopReason(value: unknown): value is StopReason {
   return zStopReason.safeParse(value).success;
 }
 
-export type TargetKind = TargetKindContract;
 export const TargetKind = Object.freeze({
-  Session: zTargetKind.parse("session"),
-  Entry: zTargetKind.parse("entry"),
-  Annotation: zTargetKind.parse("annotation"),
-  Project: zTargetKind.parse("project"),
-  FileVersion: zTargetKind.parse("file_version"),
-  Association: zTargetKind.parse("association"),
+  Session: "session",
+  Entry: "entry",
+  Annotation: "annotation",
+  Project: "project",
+  FileVersion: "file_version",
+  Association: "association",
 } as const);
+export type TargetKind = (typeof TargetKind)[keyof typeof TargetKind];
 export const AllTargetKinds = Object.freeze([TargetKind.Session, TargetKind.Entry, TargetKind.Annotation, TargetKind.Project, TargetKind.FileVersion, TargetKind.Association]) as readonly TargetKind[];
 export function isTargetKind(value: unknown): value is TargetKind {
   return zTargetKind.safeParse(value).success;
 }
 
-export type ToolCallKind = ToolCallKindContract;
 export const ToolCallKind = Object.freeze({
-  Read: zToolCallKind.parse("read"),
-  Edit: zToolCallKind.parse("edit"),
-  Delete: zToolCallKind.parse("delete"),
-  Move: zToolCallKind.parse("move"),
-  Search: zToolCallKind.parse("search"),
-  Execute: zToolCallKind.parse("execute"),
-  Think: zToolCallKind.parse("think"),
-  Fetch: zToolCallKind.parse("fetch"),
-  Other: zToolCallKind.parse("other"),
+  Read: "read",
+  Edit: "edit",
+  Delete: "delete",
+  Move: "move",
+  Search: "search",
+  Execute: "execute",
+  Think: "think",
+  Fetch: "fetch",
+  Other: "other",
 } as const);
+export type ToolCallKind = (typeof ToolCallKind)[keyof typeof ToolCallKind];
 export const AllToolCallKinds = Object.freeze([ToolCallKind.Read, ToolCallKind.Edit, ToolCallKind.Delete, ToolCallKind.Move, ToolCallKind.Search, ToolCallKind.Execute, ToolCallKind.Think, ToolCallKind.Fetch, ToolCallKind.Other]) as readonly ToolCallKind[];
 export function isToolCallKind(value: unknown): value is ToolCallKind {
   return zToolCallKind.safeParse(value).success;
 }
 
-export type TypeOrigin = TypeOriginContract;
 export const TypeOrigin = Object.freeze({
-  System: zTypeOrigin.parse("system"),
-  User: zTypeOrigin.parse("user"),
-  Group: zTypeOrigin.parse("group"),
+  System: "system",
+  User: "user",
+  Group: "group",
 } as const);
+export type TypeOrigin = (typeof TypeOrigin)[keyof typeof TypeOrigin];
 export const AllTypeOrigins = Object.freeze([TypeOrigin.System, TypeOrigin.User, TypeOrigin.Group]) as readonly TypeOrigin[];
 export function isTypeOrigin(value: unknown): value is TypeOrigin {
   return zTypeOrigin.safeParse(value).success;
 }
 
-export type ValueDomainKind = ValueDomainKindContract;
 export const ValueDomainKind = Object.freeze({
-  Enumerated: zValueDomainKind.parse("enumerated"),
-  Described: zValueDomainKind.parse("described"),
+  Enumerated: "enumerated",
+  Described: "described",
 } as const);
+export type ValueDomainKind = (typeof ValueDomainKind)[keyof typeof ValueDomainKind];
 export const AllValueDomainKinds = Object.freeze([ValueDomainKind.Enumerated, ValueDomainKind.Described]) as readonly ValueDomainKind[];
 export function isValueDomainKind(value: unknown): value is ValueDomainKind {
   return zValueDomainKind.safeParse(value).success;
 }
 
-export type TranscriptUpdateLicense = TranscriptUpdateLicenseContract;
 export const TranscriptUpdateLicense = Object.freeze({
-  Clear: zTranscriptUpdateLicense.parse(""),
-  CC0: zTranscriptUpdateLicense.parse("CC0-1.0"),
-  CCBY: zTranscriptUpdateLicense.parse("CC-BY-4.0"),
-  CCBYSA: zTranscriptUpdateLicense.parse("CC-BY-SA-4.0"),
+  Clear: "",
+  CC0: "CC0-1.0",
+  CCBY: "CC-BY-4.0",
+  CCBYSA: "CC-BY-SA-4.0",
 } as const);
+export type TranscriptUpdateLicense = (typeof TranscriptUpdateLicense)[keyof typeof TranscriptUpdateLicense];
 export const AllTranscriptUpdateLicenses = Object.freeze([TranscriptUpdateLicense.Clear, TranscriptUpdateLicense.CC0, TranscriptUpdateLicense.CCBY, TranscriptUpdateLicense.CCBYSA]) as readonly TranscriptUpdateLicense[];
 export function isTranscriptUpdateLicense(value: unknown): value is TranscriptUpdateLicense {
   return zTranscriptUpdateLicense.safeParse(value).success;
 }
 
-export type TranscriptUpdateVisibility = TranscriptUpdateVisibilityContract;
 export const TranscriptUpdateVisibility = Object.freeze({
-  Private: zTranscriptUpdateVisibility.parse("private"),
-  Public: zTranscriptUpdateVisibility.parse("public"),
+  Private: "private",
+  Public: "public",
 } as const);
+export type TranscriptUpdateVisibility = (typeof TranscriptUpdateVisibility)[keyof typeof TranscriptUpdateVisibility];
 export const AllTranscriptUpdateVisibilities = Object.freeze([TranscriptUpdateVisibility.Private, TranscriptUpdateVisibility.Public]) as readonly TranscriptUpdateVisibility[];
 export function isTranscriptUpdateVisibility(value: unknown): value is TranscriptUpdateVisibility {
   return zTranscriptUpdateVisibility.safeParse(value).success;
 }
 
-export type VillageAssignableCollectiveRole = VillageAssignableCollectiveRoleContract;
 export const VillageAssignableCollectiveRole = Object.freeze({
-  Contributor: zVillageAssignableCollectiveRole.parse("contributor"),
-  Member: zVillageAssignableCollectiveRole.parse("member"),
+  Contributor: "contributor",
+  Member: "member",
 } as const);
+export type VillageAssignableCollectiveRole = (typeof VillageAssignableCollectiveRole)[keyof typeof VillageAssignableCollectiveRole];
 export const AllVillageAssignableCollectiveRoles = Object.freeze([VillageAssignableCollectiveRole.Contributor, VillageAssignableCollectiveRole.Member]) as readonly VillageAssignableCollectiveRole[];
 export function isVillageAssignableCollectiveRole(value: unknown): value is VillageAssignableCollectiveRole {
   return zVillageAssignableCollectiveRole.safeParse(value).success;
 }
 
-export type VillageContributionStatus = VillageContributionStatusContract;
 export const VillageContributionStatus = Object.freeze({
-  Approved: zVillageContributionStatus.parse("approved"),
-  Pending: zVillageContributionStatus.parse("pending"),
+  Approved: "approved",
+  Pending: "pending",
 } as const);
+export type VillageContributionStatus = (typeof VillageContributionStatus)[keyof typeof VillageContributionStatus];
 export const AllVillageContributionStatuses = Object.freeze([VillageContributionStatus.Approved, VillageContributionStatus.Pending]) as readonly VillageContributionStatus[];
 export function isVillageContributionStatus(value: unknown): value is VillageContributionStatus {
   return zVillageContributionStatus.safeParse(value).success;
 }
 
-export type VillageCollectiveAcceptanceMode = VillageCollectiveAcceptanceModeContract;
 export const VillageCollectiveAcceptanceMode = Object.freeze({
-  Open: zVillageCollectiveAcceptanceMode.parse("open"),
-  VerifiedOnly: zVillageCollectiveAcceptanceMode.parse("verified_only"),
-  Curated: zVillageCollectiveAcceptanceMode.parse("curated"),
+  Open: "open",
+  VerifiedOnly: "verified_only",
+  Curated: "curated",
 } as const);
+export type VillageCollectiveAcceptanceMode = (typeof VillageCollectiveAcceptanceMode)[keyof typeof VillageCollectiveAcceptanceMode];
 export const AllVillageCollectiveAcceptanceModes = Object.freeze([VillageCollectiveAcceptanceMode.Open, VillageCollectiveAcceptanceMode.VerifiedOnly, VillageCollectiveAcceptanceMode.Curated]) as readonly VillageCollectiveAcceptanceMode[];
 export function isVillageCollectiveAcceptanceMode(value: unknown): value is VillageCollectiveAcceptanceMode {
   return zVillageCollectiveAcceptanceMode.safeParse(value).success;
 }
 
-export type VillageCollectiveDataAccess = VillageCollectiveDataAccessContract;
 export const VillageCollectiveDataAccess = Object.freeze({
-  MembersOnly: zVillageCollectiveDataAccess.parse("members_only"),
-  Contributors: zVillageCollectiveDataAccess.parse("contributors"),
-  Public: zVillageCollectiveDataAccess.parse("public"),
+  MembersOnly: "members_only",
+  Contributors: "contributors",
+  Public: "public",
 } as const);
+export type VillageCollectiveDataAccess = (typeof VillageCollectiveDataAccess)[keyof typeof VillageCollectiveDataAccess];
 export const AllVillageCollectiveDataAccessPolicies = Object.freeze([VillageCollectiveDataAccess.MembersOnly, VillageCollectiveDataAccess.Contributors, VillageCollectiveDataAccess.Public]) as readonly VillageCollectiveDataAccess[];
 export function isVillageCollectiveDataAccess(value: unknown): value is VillageCollectiveDataAccess {
   return zVillageCollectiveDataAccess.safeParse(value).success;
 }
 
-export type VillageCollectiveRole = VillageCollectiveRoleContract;
 export const VillageCollectiveRole = Object.freeze({
-  Owner: zVillageCollectiveRole.parse("owner"),
-  Member: zVillageCollectiveRole.parse("member"),
-  Contributor: zVillageCollectiveRole.parse("contributor"),
-  Pending: zVillageCollectiveRole.parse("pending"),
+  Owner: "owner",
+  Member: "member",
+  Contributor: "contributor",
+  Pending: "pending",
 } as const);
+export type VillageCollectiveRole = (typeof VillageCollectiveRole)[keyof typeof VillageCollectiveRole];
 export const AllVillageCollectiveRoles = Object.freeze([VillageCollectiveRole.Owner, VillageCollectiveRole.Member, VillageCollectiveRole.Contributor, VillageCollectiveRole.Pending]) as readonly VillageCollectiveRole[];
 export function isVillageCollectiveRole(value: unknown): value is VillageCollectiveRole {
   return zVillageCollectiveRole.safeParse(value).success;
 }
 
-export type VillageCollectiveViewerRole = VillageCollectiveViewerRoleContract;
 export const VillageCollectiveViewerRole = Object.freeze({
-  None: zVillageCollectiveViewerRole.parse(""),
-  Owner: zVillageCollectiveViewerRole.parse("owner"),
-  Member: zVillageCollectiveViewerRole.parse("member"),
-  Contributor: zVillageCollectiveViewerRole.parse("contributor"),
-  Pending: zVillageCollectiveViewerRole.parse("pending"),
+  None: "",
+  Owner: "owner",
+  Member: "member",
+  Contributor: "contributor",
+  Pending: "pending",
 } as const);
+export type VillageCollectiveViewerRole = (typeof VillageCollectiveViewerRole)[keyof typeof VillageCollectiveViewerRole];
 export const AllVillageCollectiveViewerRoles = Object.freeze([VillageCollectiveViewerRole.None, VillageCollectiveViewerRole.Owner, VillageCollectiveViewerRole.Member, VillageCollectiveViewerRole.Contributor, VillageCollectiveViewerRole.Pending]) as readonly VillageCollectiveViewerRole[];
 export function isVillageCollectiveViewerRole(value: unknown): value is VillageCollectiveViewerRole {
   return zVillageCollectiveViewerRole.safeParse(value).success;
 }
 
-export type VillageProjectNameSource = VillageProjectNameSourceContract;
 export const VillageProjectNameSource = Object.freeze({
-  Override: zVillageProjectNameSource.parse("override"),
-  Consented: zVillageProjectNameSource.parse("consented"),
-  Remote: zVillageProjectNameSource.parse("remote"),
-  Path: zVillageProjectNameSource.parse("path"),
-  Privacy: zVillageProjectNameSource.parse("privacy"),
+  Override: "override",
+  Consented: "consented",
+  Remote: "remote",
+  Path: "path",
+  Privacy: "privacy",
 } as const);
+export type VillageProjectNameSource = (typeof VillageProjectNameSource)[keyof typeof VillageProjectNameSource];
 export const AllVillageProjectNameSources = Object.freeze([VillageProjectNameSource.Override, VillageProjectNameSource.Consented, VillageProjectNameSource.Remote, VillageProjectNameSource.Path, VillageProjectNameSource.Privacy]) as readonly VillageProjectNameSource[];
 export function isVillageProjectNameSource(value: unknown): value is VillageProjectNameSource {
   return zVillageProjectNameSource.safeParse(value).success;
 }
 
-export type VillageReviewDecision = VillageReviewDecisionContract;
 export const VillageReviewDecision = Object.freeze({
-  Approved: zVillageReviewDecision.parse("approved"),
-  Rejected: zVillageReviewDecision.parse("rejected"),
+  Approved: "approved",
+  Rejected: "rejected",
 } as const);
+export type VillageReviewDecision = (typeof VillageReviewDecision)[keyof typeof VillageReviewDecision];
 export const AllVillageReviewDecisions = Object.freeze([VillageReviewDecision.Approved, VillageReviewDecision.Rejected]) as readonly VillageReviewDecision[];
 export function isVillageReviewDecision(value: unknown): value is VillageReviewDecision {
   return zVillageReviewDecision.safeParse(value).success;
 }
 
-export type VillageShareEventActor = VillageShareEventActorContract;
 export const VillageShareEventActor = Object.freeze({
-  None: zVillageShareEventActor.parse(""),
-  Owner: zVillageShareEventActor.parse("owner"),
-  Collective: zVillageShareEventActor.parse("collective"),
-  Moderator: zVillageShareEventActor.parse("moderator"),
+  None: "",
+  Owner: "owner",
+  Collective: "collective",
+  Moderator: "moderator",
 } as const);
+export type VillageShareEventActor = (typeof VillageShareEventActor)[keyof typeof VillageShareEventActor];
 export const AllVillageShareEventActors = Object.freeze([VillageShareEventActor.None, VillageShareEventActor.Owner, VillageShareEventActor.Collective, VillageShareEventActor.Moderator]) as readonly VillageShareEventActor[];
 export function isVillageShareEventActor(value: unknown): value is VillageShareEventActor {
   return zVillageShareEventActor.safeParse(value).success;
 }
 
-export type VillageShareStatus = VillageShareStatusContract;
 export const VillageShareStatus = Object.freeze({
-  Pending: zVillageShareStatus.parse("pending"),
-  Approved: zVillageShareStatus.parse("approved"),
-  Rejected: zVillageShareStatus.parse("rejected"),
-  Retracted: zVillageShareStatus.parse("retracted"),
-  Revoked: zVillageShareStatus.parse("revoked"),
+  Pending: "pending",
+  Approved: "approved",
+  Rejected: "rejected",
+  Retracted: "retracted",
+  Revoked: "revoked",
 } as const);
+export type VillageShareStatus = (typeof VillageShareStatus)[keyof typeof VillageShareStatus];
 export const AllVillageShareStatuses = Object.freeze([VillageShareStatus.Pending, VillageShareStatus.Approved, VillageShareStatus.Rejected, VillageShareStatus.Retracted, VillageShareStatus.Revoked]) as readonly VillageShareStatus[];
 export function isVillageShareStatus(value: unknown): value is VillageShareStatus {
   return zVillageShareStatus.safeParse(value).success;
 }
 
-export type VillageTranscriptDeletionPolicy = VillageTranscriptDeletionPolicyContract;
 export const VillageTranscriptDeletionPolicy = Object.freeze({
-  UserChoice: zVillageTranscriptDeletionPolicy.parse("user_choice"),
-  Mandatory: zVillageTranscriptDeletionPolicy.parse("mandatory"),
+  UserChoice: "user_choice",
+  Mandatory: "mandatory",
 } as const);
+export type VillageTranscriptDeletionPolicy = (typeof VillageTranscriptDeletionPolicy)[keyof typeof VillageTranscriptDeletionPolicy];
 export const AllVillageTranscriptDeletionPolicies = Object.freeze([VillageTranscriptDeletionPolicy.UserChoice, VillageTranscriptDeletionPolicy.Mandatory]) as readonly VillageTranscriptDeletionPolicy[];
 export function isVillageTranscriptDeletionPolicy(value: unknown): value is VillageTranscriptDeletionPolicy {
   return zVillageTranscriptDeletionPolicy.safeParse(value).success;
 }
 
-export type VillageTranscriptVisibility = VillageTranscriptVisibilityContract;
 export const VillageTranscriptVisibility = Object.freeze({
-  Private: zVillageTranscriptVisibility.parse("private"),
-  Shared: zVillageTranscriptVisibility.parse("shared"),
-  Public: zVillageTranscriptVisibility.parse("public"),
+  Private: "private",
+  Shared: "shared",
+  Public: "public",
 } as const);
+export type VillageTranscriptVisibility = (typeof VillageTranscriptVisibility)[keyof typeof VillageTranscriptVisibility];
 export const AllVillageTranscriptVisibilities = Object.freeze([VillageTranscriptVisibility.Private, VillageTranscriptVisibility.Shared, VillageTranscriptVisibility.Public]) as readonly VillageTranscriptVisibility[];
 export function isVillageTranscriptVisibility(value: unknown): value is VillageTranscriptVisibility {
   return zVillageTranscriptVisibility.safeParse(value).success;
 }
 
-export type Visibility = VisibilityContract;
 export const Visibility = Object.freeze({
-  Private: zVisibility.parse("private"),
-  Group: zVisibility.parse("group"),
-  Public: zVisibility.parse("public"),
+  Private: "private",
+  Group: "group",
+  Public: "public",
 } as const);
+export type Visibility = (typeof Visibility)[keyof typeof Visibility];
 export const AllVisibilities = Object.freeze([Visibility.Private, Visibility.Group, Visibility.Public]) as readonly Visibility[];
 export function isVisibility(value: unknown): value is Visibility {
   return zVisibility.safeParse(value).success;
 }
 
-export type UsageScope = UsageScopeContract;
 export const UsageScope = Object.freeze({
-  Assistant: zUsageScope.parse("assistant"),
-  Tool: zUsageScope.parse("tool"),
-  Summary: zUsageScope.parse("summary"),
+  Assistant: "assistant",
+  Tool: "tool",
+  Summary: "summary",
 } as const);
+export type UsageScope = (typeof UsageScope)[keyof typeof UsageScope];
 export const AllUsageScopes = Object.freeze([UsageScope.Assistant, UsageScope.Tool, UsageScope.Summary]) as readonly UsageScope[];
 export function isUsageScope(value: unknown): value is UsageScope {
   return zUsageScope.safeParse(value).success;
 }
 
-export type UsageCompleteness = UsageCompletenessContract;
 export const UsageCompleteness = Object.freeze({
-  Complete: zUsageCompleteness.parse("complete"),
-  Partial: zUsageCompleteness.parse("partial"),
-  Unknown: zUsageCompleteness.parse("unknown"),
+  Complete: "complete",
+  Partial: "partial",
+  Unknown: "unknown",
 } as const);
+export type UsageCompleteness = (typeof UsageCompleteness)[keyof typeof UsageCompleteness];
 export const AllUsageCompleteness = Object.freeze([UsageCompleteness.Complete, UsageCompleteness.Partial, UsageCompleteness.Unknown]) as readonly UsageCompleteness[];
 export function isUsageCompleteness(value: unknown): value is UsageCompleteness {
   return zUsageCompleteness.safeParse(value).success;
 }
 
-export type NativeMetadataKind = NativeMetadataKindContract;
 export const NativeMetadataKind = Object.freeze({
-  PiCustomData: zNativeMetadataKind.parse("pi.custom.data"),
-  PiCustomMessageDetails: zNativeMetadataKind.parse("pi.custommessage.details"),
-  PiToolResultDetails: zNativeMetadataKind.parse("pi.toolresult.details"),
-  PiCompactionDetails: zNativeMetadataKind.parse("pi.compaction.details"),
-  PiBranchSummaryDetails: zNativeMetadataKind.parse("pi.branchsummary.details"),
+  PiCustomData: "pi.custom.data",
+  PiCustomMessageDetails: "pi.custommessage.details",
+  PiToolResultDetails: "pi.toolresult.details",
+  PiCompactionDetails: "pi.compaction.details",
+  PiBranchSummaryDetails: "pi.branchsummary.details",
 } as const);
+export type NativeMetadataKind = (typeof NativeMetadataKind)[keyof typeof NativeMetadataKind];
 export const AllNativeMetadataKinds = Object.freeze([NativeMetadataKind.PiCustomData, NativeMetadataKind.PiCustomMessageDetails, NativeMetadataKind.PiToolResultDetails, NativeMetadataKind.PiCompactionDetails, NativeMetadataKind.PiBranchSummaryDetails]) as readonly NativeMetadataKind[];
 export function isNativeMetadataKind(value: unknown): value is NativeMetadataKind {
   return zNativeMetadataKind.safeParse(value).success;
 }
 
-export type NativeMetadataSourceType = NativeMetadataSourceTypeContract;
 export const NativeMetadataSourceType = Object.freeze({
-  PiCustom: zNativeMetadataSourceType.parse("pi.custom"),
-  PiCustomMessage: zNativeMetadataSourceType.parse("pi.custom_message"),
-  PiMessage: zNativeMetadataSourceType.parse("pi.message"),
-  PiCompaction: zNativeMetadataSourceType.parse("pi.compaction"),
-  PiBranchSummary: zNativeMetadataSourceType.parse("pi.branch_summary"),
+  PiCustom: "pi.custom",
+  PiCustomMessage: "pi.custom_message",
+  PiMessage: "pi.message",
+  PiCompaction: "pi.compaction",
+  PiBranchSummary: "pi.branch_summary",
 } as const);
+export type NativeMetadataSourceType = (typeof NativeMetadataSourceType)[keyof typeof NativeMetadataSourceType];
 export const AllNativeMetadataSourceTypes = Object.freeze([NativeMetadataSourceType.PiCustom, NativeMetadataSourceType.PiCustomMessage, NativeMetadataSourceType.PiMessage, NativeMetadataSourceType.PiCompaction, NativeMetadataSourceType.PiBranchSummary]) as readonly NativeMetadataSourceType[];
 export function isNativeMetadataSourceType(value: unknown): value is NativeMetadataSourceType {
   return zNativeMetadataSourceType.safeParse(value).success;
 }
 
-export type NativePiMessageRole = NativePiMessageRoleContract;
 export const NativePiMessageRole = Object.freeze({
-  ToolResult: zNativePiMessageRole.parse("toolResult"),
+  ToolResult: "toolResult",
 } as const);
+export type NativePiMessageRole = (typeof NativePiMessageRole)[keyof typeof NativePiMessageRole];
 export const AllNativePiMessageRoles = Object.freeze([NativePiMessageRole.ToolResult]) as readonly NativePiMessageRole[];
 export function isNativePiMessageRole(value: unknown): value is NativePiMessageRole {
   return zNativePiMessageRole.safeParse(value).success;
 }
 
-export type DigestItemKind = DigestItemKindContract;
 export const DigestItemKind = Object.freeze({
-  Session: zDigestItemKind.parse("session"),
-  Prompt: zDigestItemKind.parse("prompt"),
-  Skill: zDigestItemKind.parse("skill"),
-  Commit: zDigestItemKind.parse("commit"),
+  Session: "session",
+  Prompt: "prompt",
+  Skill: "skill",
+  Commit: "commit",
 } as const);
+export type DigestItemKind = (typeof DigestItemKind)[keyof typeof DigestItemKind];
 export const AllDigestItemKinds = Object.freeze([DigestItemKind.Session, DigestItemKind.Prompt, DigestItemKind.Skill, DigestItemKind.Commit]) as readonly DigestItemKind[];
 export function isDigestItemKind(value: unknown): value is DigestItemKind {
   return zDigestItemKind.safeParse(value).success;
 }
 
-export type VillagePullRequestAttachmentState = VillagePullRequestAttachmentStateContract;
 export const VillagePullRequestAttachmentState = Object.freeze({
-  Requested: zVillagePullRequestAttachmentState.parse("requested"),
-  Waiting: zVillagePullRequestAttachmentState.parse("waiting"),
-  Preview: zVillagePullRequestAttachmentState.parse("preview"),
-  Attached: zVillagePullRequestAttachmentState.parse("attached"),
-  Detached: zVillagePullRequestAttachmentState.parse("detached"),
+  Requested: "requested",
+  Waiting: "waiting",
+  Preview: "preview",
+  Attached: "attached",
+  Detached: "detached",
 } as const);
+export type VillagePullRequestAttachmentState = (typeof VillagePullRequestAttachmentState)[keyof typeof VillagePullRequestAttachmentState];
 export const AllVillagePullRequestAttachmentStates = Object.freeze([VillagePullRequestAttachmentState.Requested, VillagePullRequestAttachmentState.Waiting, VillagePullRequestAttachmentState.Preview, VillagePullRequestAttachmentState.Attached, VillagePullRequestAttachmentState.Detached]) as readonly VillagePullRequestAttachmentState[];
 export function isVillagePullRequestAttachmentState(value: unknown): value is VillagePullRequestAttachmentState {
   return zVillagePullRequestAttachmentState.safeParse(value).success;
 }
 
-export type VillagePromptsCheckMode = VillagePromptsCheckModeContract;
 export const VillagePromptsCheckMode = Object.freeze({
-  Informational: zVillagePromptsCheckMode.parse("informational"),
-  Required: zVillagePromptsCheckMode.parse("required"),
+  Informational: "informational",
+  Required: "required",
 } as const);
+export type VillagePromptsCheckMode = (typeof VillagePromptsCheckMode)[keyof typeof VillagePromptsCheckMode];
 export const AllVillagePromptsCheckModes = Object.freeze([VillagePromptsCheckMode.Informational, VillagePromptsCheckMode.Required]) as readonly VillagePromptsCheckMode[];
 export function isVillagePromptsCheckMode(value: unknown): value is VillagePromptsCheckMode {
   return zVillagePromptsCheckMode.safeParse(value).success;
 }
 
-export type VillagePublicOwnerKind = VillagePublicOwnerKindContract;
 export const VillagePublicOwnerKind = Object.freeze({
-  Profile: zVillagePublicOwnerKind.parse("profile"),
-  Anonymous: zVillagePublicOwnerKind.parse("anonymous"),
+  Profile: "profile",
+  Anonymous: "anonymous",
 } as const);
+export type VillagePublicOwnerKind = (typeof VillagePublicOwnerKind)[keyof typeof VillagePublicOwnerKind];
 export const AllVillagePublicOwnerKinds = Object.freeze([VillagePublicOwnerKind.Profile, VillagePublicOwnerKind.Anonymous]) as readonly VillagePublicOwnerKind[];
 export function isVillagePublicOwnerKind(value: unknown): value is VillagePublicOwnerKind {
   return zVillagePublicOwnerKind.safeParse(value).success;
 }
 
-export type SessionRelationshipKind = SessionRelationshipKindContract;
 export const SessionRelationshipKind = Object.freeze({
-  StartedBy: zSessionRelationshipKind.parse("started_by"),
-  ContextFrom: zSessionRelationshipKind.parse("context_from"),
+  StartedBy: "started_by",
+  ContextFrom: "context_from",
 } as const);
+export type SessionRelationshipKind = (typeof SessionRelationshipKind)[keyof typeof SessionRelationshipKind];
 export const AllSessionRelationshipKinds = Object.freeze([SessionRelationshipKind.StartedBy, SessionRelationshipKind.ContextFrom]) as readonly SessionRelationshipKind[];
 export function isSessionRelationshipKind(value: unknown): value is SessionRelationshipKind {
   return zSessionRelationshipKind.safeParse(value).success;
 }
 
-export type RelationshipTargetState = RelationshipTargetStateContract;
 export const RelationshipTargetState = Object.freeze({
-  Known: zRelationshipTargetState.parse("target_known"),
-  KnownRetained: zRelationshipTargetState.parse("target_known_retained"),
-  ExplicitNone: zRelationshipTargetState.parse("explicit_none"),
-  Unknown: zRelationshipTargetState.parse("unknown"),
-  ConflictingCurrentNativeEvidence: zRelationshipTargetState.parse("conflicting_current_native_evidence"),
+  Known: "target_known",
+  KnownRetained: "target_known_retained",
+  ExplicitNone: "explicit_none",
+  Unknown: "unknown",
+  ConflictingCurrentNativeEvidence: "conflicting_current_native_evidence",
 } as const);
+export type RelationshipTargetState = (typeof RelationshipTargetState)[keyof typeof RelationshipTargetState];
 export const AllRelationshipTargetStates = Object.freeze([RelationshipTargetState.Known, RelationshipTargetState.KnownRetained, RelationshipTargetState.ExplicitNone, RelationshipTargetState.Unknown, RelationshipTargetState.ConflictingCurrentNativeEvidence]) as readonly RelationshipTargetState[];
 export function isRelationshipTargetState(value: unknown): value is RelationshipTargetState {
   return zRelationshipTargetState.safeParse(value).success;
 }
 
-export type EvidenceKind = EvidenceKindContract;
 export const EvidenceKind = Object.freeze({
-  NativeTyped: zEvidenceKind.parse("native_typed"),
-  LifecycleTyped: zEvidenceKind.parse("lifecycle_typed"),
-  ExistingAdapter: zEvidenceKind.parse("existing_adapter"),
-  RetainedLastGood: zEvidenceKind.parse("retained_last_good"),
-  Unknown: zEvidenceKind.parse("unknown"),
-  Conflict: zEvidenceKind.parse("conflict"),
+  NativeTyped: "native_typed",
+  LifecycleTyped: "lifecycle_typed",
+  ExistingAdapter: "existing_adapter",
+  RetainedLastGood: "retained_last_good",
+  Unknown: "unknown",
+  Conflict: "conflict",
 } as const);
+export type EvidenceKind = (typeof EvidenceKind)[keyof typeof EvidenceKind];
 export const AllEvidenceKinds = Object.freeze([EvidenceKind.NativeTyped, EvidenceKind.LifecycleTyped, EvidenceKind.ExistingAdapter, EvidenceKind.RetainedLastGood, EvidenceKind.Unknown, EvidenceKind.Conflict]) as readonly EvidenceKind[];
 export function isEvidenceKind(value: unknown): value is EvidenceKind {
   return zEvidenceKind.safeParse(value).success;
 }
 
-export type SessionTeammateEvidence = SessionTeammateEvidenceContract;
 export const SessionTeammateEvidence = Object.freeze({
-  NativeDynamicWorkflow: zSessionTeammateEvidence.parse("native_dynamic_workflow"),
+  NativeDynamicWorkflow: "native_dynamic_workflow",
 } as const);
+export type SessionTeammateEvidence = (typeof SessionTeammateEvidence)[keyof typeof SessionTeammateEvidence];
 export const AllSessionTeammateEvidences = Object.freeze([SessionTeammateEvidence.NativeDynamicWorkflow]) as readonly SessionTeammateEvidence[];
 export function isSessionTeammateEvidence(value: unknown): value is SessionTeammateEvidence {
   return zSessionTeammateEvidence.safeParse(value).success;
 }
 
-export type SessionPurpose = SessionPurposeContract;
 export const SessionPurpose = Object.freeze({
-  Interaction: zSessionPurpose.parse("interaction"),
-  DelegatedWork: zSessionPurpose.parse("delegated_work"),
-  HelperReview: zSessionPurpose.parse("helper_review"),
-  Unknown: zSessionPurpose.parse("unknown"),
+  Interaction: "interaction",
+  DelegatedWork: "delegated_work",
+  HelperReview: "helper_review",
+  Unknown: "unknown",
 } as const);
+export type SessionPurpose = (typeof SessionPurpose)[keyof typeof SessionPurpose];
 export const AllSessionPurposes = Object.freeze([SessionPurpose.Interaction, SessionPurpose.DelegatedWork, SessionPurpose.HelperReview, SessionPurpose.Unknown]) as readonly SessionPurpose[];
 export function isSessionPurpose(value: unknown): value is SessionPurpose {
   return zSessionPurpose.safeParse(value).success;
 }
 
-export type ContentOrigin = ContentOriginContract;
 export const ContentOrigin = Object.freeze({
-  SubmittedInput: zContentOrigin.parse("submitted_input"),
-  HarnessContext: zContentOrigin.parse("harness_context"),
-  AgentOutput: zContentOrigin.parse("agent_output"),
-  AgentCommunication: zContentOrigin.parse("agent_communication"),
-  ToolActivity: zContentOrigin.parse("tool_activity"),
-  SystemControl: zContentOrigin.parse("system_control"),
-  GeneratedSummary: zContentOrigin.parse("generated_summary"),
-  Unknown: zContentOrigin.parse("unknown"),
+  SubmittedInput: "submitted_input",
+  HarnessContext: "harness_context",
+  AgentOutput: "agent_output",
+  AgentCommunication: "agent_communication",
+  ToolActivity: "tool_activity",
+  SystemControl: "system_control",
+  GeneratedSummary: "generated_summary",
+  Unknown: "unknown",
 } as const);
+export type ContentOrigin = (typeof ContentOrigin)[keyof typeof ContentOrigin];
 export const AllContentOrigins = Object.freeze([ContentOrigin.SubmittedInput, ContentOrigin.HarnessContext, ContentOrigin.AgentOutput, ContentOrigin.AgentCommunication, ContentOrigin.ToolActivity, ContentOrigin.SystemControl, ContentOrigin.GeneratedSummary, ContentOrigin.Unknown]) as readonly ContentOrigin[];
 export function isContentOrigin(value: unknown): value is ContentOrigin {
   return zContentOrigin.safeParse(value).success;
 }
 
-export type ActorOrigin = ActorOriginContract;
 export const ActorOrigin = Object.freeze({
-  Operator: zActorOrigin.parse("operator"),
-  AgentDelegate: zActorOrigin.parse("agent_delegate"),
-  Harness: zActorOrigin.parse("harness"),
-  Unknown: zActorOrigin.parse("unknown"),
+  Operator: "operator",
+  AgentDelegate: "agent_delegate",
+  Harness: "harness",
+  Unknown: "unknown",
 } as const);
+export type ActorOrigin = (typeof ActorOrigin)[keyof typeof ActorOrigin];
 export const AllActorOrigins = Object.freeze([ActorOrigin.Operator, ActorOrigin.AgentDelegate, ActorOrigin.Harness, ActorOrigin.Unknown]) as readonly ActorOrigin[];
 export function isActorOrigin(value: unknown): value is ActorOrigin {
   return zActorOrigin.safeParse(value).success;
 }
 
-export type DeliveryOrigin = DeliveryOriginContract;
 export const DeliveryOrigin = Object.freeze({
-  SessionAdmission: zDeliveryOrigin.parse("session_admission"),
-  GuardianReview: zDeliveryOrigin.parse("guardian_review"),
-  SubagentDelivery: zDeliveryOrigin.parse("subagent_delivery"),
-  InheritedContext: zDeliveryOrigin.parse("inherited_context"),
-  ToolDelivery: zDeliveryOrigin.parse("tool_delivery"),
-  SystemLifecycle: zDeliveryOrigin.parse("system_lifecycle"),
-  Unknown: zDeliveryOrigin.parse("unknown"),
+  SessionAdmission: "session_admission",
+  GuardianReview: "guardian_review",
+  SubagentDelivery: "subagent_delivery",
+  InheritedContext: "inherited_context",
+  ToolDelivery: "tool_delivery",
+  SystemLifecycle: "system_lifecycle",
+  Unknown: "unknown",
 } as const);
+export type DeliveryOrigin = (typeof DeliveryOrigin)[keyof typeof DeliveryOrigin];
 export const AllDeliveryOrigins = Object.freeze([DeliveryOrigin.SessionAdmission, DeliveryOrigin.GuardianReview, DeliveryOrigin.SubagentDelivery, DeliveryOrigin.InheritedContext, DeliveryOrigin.ToolDelivery, DeliveryOrigin.SystemLifecycle, DeliveryOrigin.Unknown]) as readonly DeliveryOrigin[];
 export function isDeliveryOrigin(value: unknown): value is DeliveryOrigin {
   return zDeliveryOrigin.safeParse(value).success;
 }
 
-export type ContentOwnership = ContentOwnershipContract;
 export const ContentOwnership = Object.freeze({
-  Local: zContentOwnership.parse("local"),
-  Inherited: zContentOwnership.parse("inherited"),
-  Uncertain: zContentOwnership.parse("uncertain"),
+  Local: "local",
+  Inherited: "inherited",
+  Uncertain: "uncertain",
 } as const);
+export type ContentOwnership = (typeof ContentOwnership)[keyof typeof ContentOwnership];
 export const AllContentOwnerships = Object.freeze([ContentOwnership.Local, ContentOwnership.Inherited, ContentOwnership.Uncertain]) as readonly ContentOwnership[];
 export function isContentOwnership(value: unknown): value is ContentOwnership {
   return zContentOwnership.safeParse(value).success;
 }
 
-export type InputModality = InputModalityContract;
 export const InputModality = Object.freeze({
-  None: zInputModality.parse("none"),
-  Text: zInputModality.parse("text"),
-  Media: zInputModality.parse("media"),
-  UserAction: zInputModality.parse("user_action"),
-  Mixed: zInputModality.parse("mixed"),
-  Unknown: zInputModality.parse("unknown"),
+  None: "none",
+  Text: "text",
+  Media: "media",
+  UserAction: "user_action",
+  Mixed: "mixed",
+  Unknown: "unknown",
 } as const);
+export type InputModality = (typeof InputModality)[keyof typeof InputModality];
 export const AllInputModalities = Object.freeze([InputModality.None, InputModality.Text, InputModality.Media, InputModality.UserAction, InputModality.Mixed, InputModality.Unknown]) as readonly InputModality[];
 export function isInputModality(value: unknown): value is InputModality {
   return zInputModality.safeParse(value).success;
 }
 
-export type PublicSourceAnchorKind = PublicSourceAnchorKindContract;
 export const PublicSourceAnchorKind = Object.freeze({
-  General: zPublicSourceAnchorKind.parse("general_source_session"),
-  Before: zPublicSourceAnchorKind.parse("before_redacted_entry"),
-  Through: zPublicSourceAnchorKind.parse("through_redacted_entry"),
+  General: "general_source_session",
+  Before: "before_redacted_entry",
+  Through: "through_redacted_entry",
 } as const);
+export type PublicSourceAnchorKind = (typeof PublicSourceAnchorKind)[keyof typeof PublicSourceAnchorKind];
 export const AllPublicSourceAnchorKinds = Object.freeze([PublicSourceAnchorKind.General, PublicSourceAnchorKind.Before, PublicSourceAnchorKind.Through]) as readonly PublicSourceAnchorKind[];
 export function isPublicSourceAnchorKind(value: unknown): value is PublicSourceAnchorKind {
   return zPublicSourceAnchorKind.safeParse(value).success;
 }
 
-export type EarlierHistoryState = EarlierHistoryStateContract;
 export const EarlierHistoryState = Object.freeze({
-  UncertainMigrated: zEarlierHistoryState.parse("uncertain_migrated"),
-  UncertainUnresolved: zEarlierHistoryState.parse("uncertain_unresolved"),
+  UncertainMigrated: "uncertain_migrated",
+  UncertainUnresolved: "uncertain_unresolved",
 } as const);
+export type EarlierHistoryState = (typeof EarlierHistoryState)[keyof typeof EarlierHistoryState];
 export const AllEarlierHistoryStates = Object.freeze([EarlierHistoryState.UncertainMigrated, EarlierHistoryState.UncertainUnresolved]) as readonly EarlierHistoryState[];
 export function isEarlierHistoryState(value: unknown): value is EarlierHistoryState {
   return zEarlierHistoryState.safeParse(value).success;
 }
 
-export type RelationshipNavigationStatus = RelationshipNavigationStatusContract;
 export const RelationshipNavigationStatus = Object.freeze({
-  Resolved: zRelationshipNavigationStatus.parse("resolved"),
-  GeneralLinkOnly: zRelationshipNavigationStatus.parse("general_link_only"),
-  KnownUnavailable: zRelationshipNavigationStatus.parse("known_unavailable"),
-  Inaccessible: zRelationshipNavigationStatus.parse("inaccessible"),
-  Unknown: zRelationshipNavigationStatus.parse("unknown"),
-  Conflicting: zRelationshipNavigationStatus.parse("conflicting"),
+  Resolved: "resolved",
+  GeneralLinkOnly: "general_link_only",
+  KnownUnavailable: "known_unavailable",
+  Inaccessible: "inaccessible",
+  Unknown: "unknown",
+  Conflicting: "conflicting",
 } as const);
+export type RelationshipNavigationStatus = (typeof RelationshipNavigationStatus)[keyof typeof RelationshipNavigationStatus];
 export const AllRelationshipNavigationStatuses = Object.freeze([RelationshipNavigationStatus.Resolved, RelationshipNavigationStatus.GeneralLinkOnly, RelationshipNavigationStatus.KnownUnavailable, RelationshipNavigationStatus.Inaccessible, RelationshipNavigationStatus.Unknown, RelationshipNavigationStatus.Conflicting]) as readonly RelationshipNavigationStatus[];
 export function isRelationshipNavigationStatus(value: unknown): value is RelationshipNavigationStatus {
   return zRelationshipNavigationStatus.safeParse(value).success;
 }
 
-export type SessionListItemKind = SessionListItemKindContract;
 export const SessionListItemKind = Object.freeze({
-  Transcript: zSessionListItemKind.parse("transcript"),
-  ContextContainer: zSessionListItemKind.parse("context_container"),
+  Transcript: "transcript",
+  ContextContainer: "context_container",
 } as const);
+export type SessionListItemKind = (typeof SessionListItemKind)[keyof typeof SessionListItemKind];
 export const AllSessionListItemKinds = Object.freeze([SessionListItemKind.Transcript, SessionListItemKind.ContextContainer]) as readonly SessionListItemKind[];
 export function isSessionListItemKind(value: unknown): value is SessionListItemKind {
   return zSessionListItemKind.safeParse(value).success;
 }
 
-export type SyncStatus = SyncStatusContract;
 export const SyncStatus = Object.freeze({
-  New: zSyncStatus.parse("new"),
-  Updated: zSyncStatus.parse("updated"),
-  Synced: zSyncStatus.parse("synced"),
-  Held: zSyncStatus.parse("held"),
+  New: "new",
+  Updated: "updated",
+  Synced: "synced",
+  Held: "held",
 } as const);
+export type SyncStatus = (typeof SyncStatus)[keyof typeof SyncStatus];
 export const AllSyncStatuses = Object.freeze([SyncStatus.New, SyncStatus.Updated, SyncStatus.Synced, SyncStatus.Held]) as readonly SyncStatus[];
 export function isSyncStatus(value: unknown): value is SyncStatus {
   return zSyncStatus.safeParse(value).success;
 }
 
-export type SyncHoldReason = SyncHoldReasonContract;
 export const SyncHoldReason = Object.freeze({
-  MetricsMissing: zSyncHoldReason.parse("metrics_missing"),
-  MetadataMissing: zSyncHoldReason.parse("metadata_missing"),
+  MetricsMissing: "metrics_missing",
+  MetadataMissing: "metadata_missing",
 } as const);
+export type SyncHoldReason = (typeof SyncHoldReason)[keyof typeof SyncHoldReason];
 export const AllSyncHoldReasons = Object.freeze([SyncHoldReason.MetricsMissing, SyncHoldReason.MetadataMissing]) as readonly SyncHoldReason[];
 export function isSyncHoldReason(value: unknown): value is SyncHoldReason {
   return zSyncHoldReason.safeParse(value).success;
 }
 
-export type SyncPushSessionStatus = SyncPushSessionStatusContract;
 export const SyncPushSessionStatus = Object.freeze({
-  New: zSyncPushSessionStatus.parse("new"),
-  Updated: zSyncPushSessionStatus.parse("updated"),
-  Skipped: zSyncPushSessionStatus.parse("skipped"),
-  Error: zSyncPushSessionStatus.parse("error"),
-  Held: zSyncPushSessionStatus.parse("held"),
+  New: "new",
+  Updated: "updated",
+  Skipped: "skipped",
+  Error: "error",
+  Held: "held",
 } as const);
+export type SyncPushSessionStatus = (typeof SyncPushSessionStatus)[keyof typeof SyncPushSessionStatus];
 export const AllSyncPushSessionStatuses = Object.freeze([SyncPushSessionStatus.New, SyncPushSessionStatus.Updated, SyncPushSessionStatus.Skipped, SyncPushSessionStatus.Error, SyncPushSessionStatus.Held]) as readonly SyncPushSessionStatus[];
 export function isSyncPushSessionStatus(value: unknown): value is SyncPushSessionStatus {
   return zSyncPushSessionStatus.safeParse(value).success;
 }
 
-export type SyncPushStep = SyncPushStepContract;
 export const SyncPushStep = Object.freeze({
-  Content: zSyncPushStep.parse("content"),
-  AddCollective: zSyncPushStep.parse("add_collective"),
-  RemoveCollective: zSyncPushStep.parse("remove_collective"),
+  Content: "content",
+  AddCollective: "add_collective",
+  RemoveCollective: "remove_collective",
 } as const);
+export type SyncPushStep = (typeof SyncPushStep)[keyof typeof SyncPushStep];
 export const AllSyncPushSteps = Object.freeze([SyncPushStep.Content, SyncPushStep.AddCollective, SyncPushStep.RemoveCollective]) as readonly SyncPushStep[];
 export function isSyncPushStep(value: unknown): value is SyncPushStep {
   return zSyncPushStep.safeParse(value).success;
 }
 
-export type SyncPushStepOutcome = SyncPushStepOutcomeContract;
 export const SyncPushStepOutcome = Object.freeze({
-  Succeeded: zSyncPushStepOutcome.parse("succeeded"),
-  PendingApproval: zSyncPushStepOutcome.parse("pending_approval"),
-  Skipped: zSyncPushStepOutcome.parse("skipped"),
-  Failed: zSyncPushStepOutcome.parse("failed"),
-  NotAttempted: zSyncPushStepOutcome.parse("not_attempted"),
+  Succeeded: "succeeded",
+  PendingApproval: "pending_approval",
+  Skipped: "skipped",
+  Failed: "failed",
+  NotAttempted: "not_attempted",
 } as const);
+export type SyncPushStepOutcome = (typeof SyncPushStepOutcome)[keyof typeof SyncPushStepOutcome];
 export const AllSyncPushStepOutcomes = Object.freeze([SyncPushStepOutcome.Succeeded, SyncPushStepOutcome.PendingApproval, SyncPushStepOutcome.Skipped, SyncPushStepOutcome.Failed, SyncPushStepOutcome.NotAttempted]) as readonly SyncPushStepOutcome[];
 export function isSyncPushStepOutcome(value: unknown): value is SyncPushStepOutcome {
   return zSyncPushStepOutcome.safeParse(value).success;
 }
 
-export type SyncLoginStatus = SyncLoginStatusContract;
 export const SyncLoginStatus = Object.freeze({
-  Pending: zSyncLoginStatus.parse("pending"),
-  AlreadyAuthenticated: zSyncLoginStatus.parse("already_authenticated"),
+  Pending: "pending",
+  AlreadyAuthenticated: "already_authenticated",
 } as const);
+export type SyncLoginStatus = (typeof SyncLoginStatus)[keyof typeof SyncLoginStatus];
 export const AllSyncLoginStatuses = Object.freeze([SyncLoginStatus.Pending, SyncLoginStatus.AlreadyAuthenticated]) as readonly SyncLoginStatus[];
 export function isSyncLoginStatus(value: unknown): value is SyncLoginStatus {
   return zSyncLoginStatus.safeParse(value).success;
 }
 
-export type SyncLogoutStatus = SyncLogoutStatusContract;
 export const SyncLogoutStatus = Object.freeze({
-  LoggedOut: zSyncLogoutStatus.parse("logged_out"),
-  AlreadyLoggedOut: zSyncLogoutStatus.parse("already_logged_out"),
+  LoggedOut: "logged_out",
+  AlreadyLoggedOut: "already_logged_out",
 } as const);
+export type SyncLogoutStatus = (typeof SyncLogoutStatus)[keyof typeof SyncLogoutStatus];
 export const AllSyncLogoutStatuses = Object.freeze([SyncLogoutStatus.LoggedOut, SyncLogoutStatus.AlreadyLoggedOut]) as readonly SyncLogoutStatus[];
 export function isSyncLogoutStatus(value: unknown): value is SyncLogoutStatus {
   return zSyncLogoutStatus.safeParse(value).success;
 }
 
-export type LocalPublicationState = LocalPublicationStateContract;
 export const LocalPublicationState = Object.freeze({
-  Unpublished: zLocalPublicationState.parse("unpublished"),
-  Published: zLocalPublicationState.parse("published"),
+  Unpublished: "unpublished",
+  Published: "published",
 } as const);
+export type LocalPublicationState = (typeof LocalPublicationState)[keyof typeof LocalPublicationState];
 export const AllLocalPublicationStates = Object.freeze([LocalPublicationState.Unpublished, LocalPublicationState.Published]) as readonly LocalPublicationState[];
 export function isLocalPublicationState(value: unknown): value is LocalPublicationState {
   return zLocalPublicationState.safeParse(value).success;
 }
 
-export type LocalCollectiveSuggestionReason = LocalCollectiveSuggestionReasonContract;
 export const LocalCollectiveSuggestionReason = Object.freeze({
-  LinkedRepository: zLocalCollectiveSuggestionReason.parse("linked_repository"),
-  LinkedGithubOrg: zLocalCollectiveSuggestionReason.parse("linked_github_org"),
+  LinkedRepository: "linked_repository",
+  LinkedGithubOrg: "linked_github_org",
 } as const);
+export type LocalCollectiveSuggestionReason = (typeof LocalCollectiveSuggestionReason)[keyof typeof LocalCollectiveSuggestionReason];
 export const AllLocalCollectiveSuggestionReasons = Object.freeze([LocalCollectiveSuggestionReason.LinkedRepository, LocalCollectiveSuggestionReason.LinkedGithubOrg]) as readonly LocalCollectiveSuggestionReason[];
 export function isLocalCollectiveSuggestionReason(value: unknown): value is LocalCollectiveSuggestionReason {
   return zLocalCollectiveSuggestionReason.safeParse(value).success;
 }
 
-export type LocalSettingKind = LocalSettingKindContract;
 export const LocalSettingKind = Object.freeze({
-  Boolean: zLocalSettingKind.parse("boolean"),
-  Integer: zLocalSettingKind.parse("integer"),
-  String: zLocalSettingKind.parse("string"),
-  StringList: zLocalSettingKind.parse("string_list"),
-  Choice: zLocalSettingKind.parse("choice"),
-  Structured: zLocalSettingKind.parse("structured"),
+  Boolean: "boolean",
+  Integer: "integer",
+  String: "string",
+  StringList: "string_list",
+  Choice: "choice",
+  Structured: "structured",
 } as const);
+export type LocalSettingKind = (typeof LocalSettingKind)[keyof typeof LocalSettingKind];
 export const AllLocalSettingKinds = Object.freeze([LocalSettingKind.Boolean, LocalSettingKind.Integer, LocalSettingKind.String, LocalSettingKind.StringList, LocalSettingKind.Choice, LocalSettingKind.Structured]) as readonly LocalSettingKind[];
 export function isLocalSettingKind(value: unknown): value is LocalSettingKind {
   return zLocalSettingKind.safeParse(value).success;
 }
 
-export type LocalKickstartScope = LocalKickstartScopeContract;
 export const LocalKickstartScope = Object.freeze({
-  Full: zLocalKickstartScope.parse("full"),
-  Selection: zLocalKickstartScope.parse("selection"),
+  Full: "full",
+  Selection: "selection",
 } as const);
+export type LocalKickstartScope = (typeof LocalKickstartScope)[keyof typeof LocalKickstartScope];
 export const AllLocalKickstartScopes = Object.freeze([LocalKickstartScope.Full, LocalKickstartScope.Selection]) as readonly LocalKickstartScope[];
 export function isLocalKickstartScope(value: unknown): value is LocalKickstartScope {
   return zLocalKickstartScope.safeParse(value).success;
 }
 
-export type LocalKickstartStopKind = LocalKickstartStopKindContract;
 export const LocalKickstartStopKind = Object.freeze({
-  Connection: zLocalKickstartStopKind.parse("connection"),
-  Config: zLocalKickstartStopKind.parse("config"),
-  Review: zLocalKickstartStopKind.parse("review"),
-  Ingest: zLocalKickstartStopKind.parse("ingest"),
+  Connection: "connection",
+  Config: "config",
+  Review: "review",
+  Ingest: "ingest",
 } as const);
+export type LocalKickstartStopKind = (typeof LocalKickstartStopKind)[keyof typeof LocalKickstartStopKind];
 export const AllLocalKickstartStopKinds = Object.freeze([LocalKickstartStopKind.Connection, LocalKickstartStopKind.Config, LocalKickstartStopKind.Review, LocalKickstartStopKind.Ingest]) as readonly LocalKickstartStopKind[];
 export function isLocalKickstartStopKind(value: unknown): value is LocalKickstartStopKind {
   return zLocalKickstartStopKind.safeParse(value).success;
 }
 
-export type LocalKickstartFieldKind = LocalKickstartFieldKindContract;
 export const LocalKickstartFieldKind = Object.freeze({
-  Toggle: zLocalKickstartFieldKind.parse("toggle"),
-  Choice: zLocalKickstartFieldKind.parse("choice"),
-  Action: zLocalKickstartFieldKind.parse("action"),
-  Tree: zLocalKickstartFieldKind.parse("tree"),
-  Notice: zLocalKickstartFieldKind.parse("notice"),
+  Toggle: "toggle",
+  Choice: "choice",
+  Action: "action",
+  Tree: "tree",
+  Notice: "notice",
 } as const);
+export type LocalKickstartFieldKind = (typeof LocalKickstartFieldKind)[keyof typeof LocalKickstartFieldKind];
 export const AllLocalKickstartFieldKinds = Object.freeze([LocalKickstartFieldKind.Toggle, LocalKickstartFieldKind.Choice, LocalKickstartFieldKind.Action, LocalKickstartFieldKind.Tree, LocalKickstartFieldKind.Notice]) as readonly LocalKickstartFieldKind[];
 export function isLocalKickstartFieldKind(value: unknown): value is LocalKickstartFieldKind {
   return zLocalKickstartFieldKind.safeParse(value).success;
 }
 
-export type LocalKickstartLineKind = LocalKickstartLineKindContract;
 export const LocalKickstartLineKind = Object.freeze({
-  Text: zLocalKickstartLineKind.parse("text"),
-  Label: zLocalKickstartLineKind.parse("label"),
-  Before: zLocalKickstartLineKind.parse("before"),
-  After: zLocalKickstartLineKind.parse("after"),
-  Spacer: zLocalKickstartLineKind.parse("spacer"),
+  Text: "text",
+  Label: "label",
+  Before: "before",
+  After: "after",
+  Spacer: "spacer",
 } as const);
+export type LocalKickstartLineKind = (typeof LocalKickstartLineKind)[keyof typeof LocalKickstartLineKind];
 export const AllLocalKickstartLineKinds = Object.freeze([LocalKickstartLineKind.Text, LocalKickstartLineKind.Label, LocalKickstartLineKind.Before, LocalKickstartLineKind.After, LocalKickstartLineKind.Spacer]) as readonly LocalKickstartLineKind[];
 export function isLocalKickstartLineKind(value: unknown): value is LocalKickstartLineKind {
   return zLocalKickstartLineKind.safeParse(value).success;
 }
 
-export type LocalKickstartNodeKind = LocalKickstartNodeKindContract;
 export const LocalKickstartNodeKind = Object.freeze({
-  Project: zLocalKickstartNodeKind.parse("project"),
-  Group: zLocalKickstartNodeKind.parse("group"),
-  Branch: zLocalKickstartNodeKind.parse("branch"),
-  Session: zLocalKickstartNodeKind.parse("session"),
+  Project: "project",
+  Group: "group",
+  Branch: "branch",
+  Session: "session",
 } as const);
+export type LocalKickstartNodeKind = (typeof LocalKickstartNodeKind)[keyof typeof LocalKickstartNodeKind];
 export const AllLocalKickstartNodeKinds = Object.freeze([LocalKickstartNodeKind.Project, LocalKickstartNodeKind.Group, LocalKickstartNodeKind.Branch, LocalKickstartNodeKind.Session]) as readonly LocalKickstartNodeKind[];
 export function isLocalKickstartNodeKind(value: unknown): value is LocalKickstartNodeKind {
   return zLocalKickstartNodeKind.safeParse(value).success;
 }
 
-export type LocalKickstartNodeState = LocalKickstartNodeStateContract;
 export const LocalKickstartNodeState = Object.freeze({
-  None: zLocalKickstartNodeState.parse("none"),
-  Some: zLocalKickstartNodeState.parse("some"),
-  All: zLocalKickstartNodeState.parse("all"),
+  None: "none",
+  Some: "some",
+  All: "all",
 } as const);
+export type LocalKickstartNodeState = (typeof LocalKickstartNodeState)[keyof typeof LocalKickstartNodeState];
 export const AllLocalKickstartNodeStates = Object.freeze([LocalKickstartNodeState.None, LocalKickstartNodeState.Some, LocalKickstartNodeState.All]) as readonly LocalKickstartNodeState[];
 export function isLocalKickstartNodeState(value: unknown): value is LocalKickstartNodeState {
   return zLocalKickstartNodeState.safeParse(value).success;
 }
 
-export type LocalKickstartScanState = LocalKickstartScanStateContract;
 export const LocalKickstartScanState = Object.freeze({
-  Idle: zLocalKickstartScanState.parse("idle"),
-  Running: zLocalKickstartScanState.parse("running"),
-  Done: zLocalKickstartScanState.parse("done"),
-  Error: zLocalKickstartScanState.parse("error"),
+  Idle: "idle",
+  Running: "running",
+  Done: "done",
+  Error: "error",
 } as const);
+export type LocalKickstartScanState = (typeof LocalKickstartScanState)[keyof typeof LocalKickstartScanState];
 export const AllLocalKickstartScanStates = Object.freeze([LocalKickstartScanState.Idle, LocalKickstartScanState.Running, LocalKickstartScanState.Done, LocalKickstartScanState.Error]) as readonly LocalKickstartScanState[];
 export function isLocalKickstartScanState(value: unknown): value is LocalKickstartScanState {
   return zLocalKickstartScanState.safeParse(value).success;
 }
 
-export type LocalKickstartIngestState = LocalKickstartIngestStateContract;
 export const LocalKickstartIngestState = Object.freeze({
-  Idle: zLocalKickstartIngestState.parse("idle"),
-  Running: zLocalKickstartIngestState.parse("running"),
-  Busy: zLocalKickstartIngestState.parse("busy"),
-  Failed: zLocalKickstartIngestState.parse("failed"),
+  Idle: "idle",
+  Running: "running",
+  Busy: "busy",
+  Failed: "failed",
 } as const);
+export type LocalKickstartIngestState = (typeof LocalKickstartIngestState)[keyof typeof LocalKickstartIngestState];
 export const AllLocalKickstartIngestStates = Object.freeze([LocalKickstartIngestState.Idle, LocalKickstartIngestState.Running, LocalKickstartIngestState.Busy, LocalKickstartIngestState.Failed]) as readonly LocalKickstartIngestState[];
 export function isLocalKickstartIngestState(value: unknown): value is LocalKickstartIngestState {
   return zLocalKickstartIngestState.safeParse(value).success;
 }
 
-export type LocalKickstartResolution = LocalKickstartResolutionContract;
 export const LocalKickstartResolution = Object.freeze({
-  Mine: zLocalKickstartResolution.parse("mine"),
-  Theirs: zLocalKickstartResolution.parse("theirs"),
+  Mine: "mine",
+  Theirs: "theirs",
 } as const);
+export type LocalKickstartResolution = (typeof LocalKickstartResolution)[keyof typeof LocalKickstartResolution];
 export const AllLocalKickstartResolutions = Object.freeze([LocalKickstartResolution.Mine, LocalKickstartResolution.Theirs]) as readonly LocalKickstartResolution[];
 export function isLocalKickstartResolution(value: unknown): value is LocalKickstartResolution {
   return zLocalKickstartResolution.safeParse(value).success;
 }
 
-export type LocalKickstartNextStep = LocalKickstartNextStepContract;
 export const LocalKickstartNextStep = Object.freeze({
-  Config: zLocalKickstartNextStep.parse("config"),
-  WebStart: zLocalKickstartNextStep.parse("web-start"),
-  VillageLogin: zLocalKickstartNextStep.parse("village-login"),
-  VillagePush: zLocalKickstartNextStep.parse("village-push"),
-  AutoPublish: zLocalKickstartNextStep.parse("auto-publish-settings"),
+  Config: "config",
+  WebStart: "web-start",
+  VillageLogin: "village-login",
+  VillagePush: "village-push",
+  AutoPublish: "auto-publish-settings",
 } as const);
+export type LocalKickstartNextStep = (typeof LocalKickstartNextStep)[keyof typeof LocalKickstartNextStep];
 export const AllLocalKickstartNextSteps = Object.freeze([LocalKickstartNextStep.Config, LocalKickstartNextStep.WebStart, LocalKickstartNextStep.VillageLogin, LocalKickstartNextStep.VillagePush, LocalKickstartNextStep.AutoPublish]) as readonly LocalKickstartNextStep[];
 export function isLocalKickstartNextStep(value: unknown): value is LocalKickstartNextStep {
   return zLocalKickstartNextStep.safeParse(value).success;
 }
 
-export type LocalKickstartDiffLineType = LocalKickstartDiffLineTypeContract;
 export const LocalKickstartDiffLineType = Object.freeze({
-  Add: zLocalKickstartDiffLineType.parse("add"),
-  Del: zLocalKickstartDiffLineType.parse("del"),
-  Ctx: zLocalKickstartDiffLineType.parse("ctx"),
+  Add: "add",
+  Del: "del",
+  Ctx: "ctx",
 } as const);
+export type LocalKickstartDiffLineType = (typeof LocalKickstartDiffLineType)[keyof typeof LocalKickstartDiffLineType];
 export const AllLocalKickstartDiffLineTypes = Object.freeze([LocalKickstartDiffLineType.Add, LocalKickstartDiffLineType.Del, LocalKickstartDiffLineType.Ctx]) as readonly LocalKickstartDiffLineType[];
 export function isLocalKickstartDiffLineType(value: unknown): value is LocalKickstartDiffLineType {
   return zLocalKickstartDiffLineType.safeParse(value).success;
 }
 
-export type LocalKickstartEventKind = LocalKickstartEventKindContract;
 export const LocalKickstartEventKind = Object.freeze({
-  Session: zLocalKickstartEventKind.parse("session"),
-  Answers: zLocalKickstartEventKind.parse("answers"),
-  Conflicts: zLocalKickstartEventKind.parse("conflicts"),
-  Scan: zLocalKickstartEventKind.parse("scan"),
-  Ingest: zLocalKickstartEventKind.parse("ingest"),
-  Closed: zLocalKickstartEventKind.parse("closed"),
+  Session: "session",
+  Answers: "answers",
+  Conflicts: "conflicts",
+  Scan: "scan",
+  Ingest: "ingest",
+  Closed: "closed",
 } as const);
+export type LocalKickstartEventKind = (typeof LocalKickstartEventKind)[keyof typeof LocalKickstartEventKind];
 export const AllLocalKickstartEventKinds = Object.freeze([LocalKickstartEventKind.Session, LocalKickstartEventKind.Answers, LocalKickstartEventKind.Conflicts, LocalKickstartEventKind.Scan, LocalKickstartEventKind.Ingest, LocalKickstartEventKind.Closed]) as readonly LocalKickstartEventKind[];
 export function isLocalKickstartEventKind(value: unknown): value is LocalKickstartEventKind {
   return zLocalKickstartEventKind.safeParse(value).success;
 }
 
-export type LocalKickstartCloseReason = LocalKickstartCloseReasonContract;
 export const LocalKickstartCloseReason = Object.freeze({
-  Committed: zLocalKickstartCloseReason.parse("committed"),
-  Expired: zLocalKickstartCloseReason.parse("expired"),
+  Committed: "committed",
+  Expired: "expired",
 } as const);
+export type LocalKickstartCloseReason = (typeof LocalKickstartCloseReason)[keyof typeof LocalKickstartCloseReason];
 export const AllLocalKickstartCloseReasons = Object.freeze([LocalKickstartCloseReason.Committed, LocalKickstartCloseReason.Expired]) as readonly LocalKickstartCloseReason[];
 export function isLocalKickstartCloseReason(value: unknown): value is LocalKickstartCloseReason {
   return zLocalKickstartCloseReason.safeParse(value).success;
 }
 
-export type LocalKickstartConnectAnswer = LocalKickstartConnectAnswerContract;
 export const LocalKickstartConnectAnswer = Object.freeze({
-  Accept: zLocalKickstartConnectAnswer.parse("accept"),
-  Skip: zLocalKickstartConnectAnswer.parse("skip"),
+  Accept: "accept",
+  Skip: "skip",
 } as const);
+export type LocalKickstartConnectAnswer = (typeof LocalKickstartConnectAnswer)[keyof typeof LocalKickstartConnectAnswer];
 export const AllLocalKickstartConnectAnswers = Object.freeze([LocalKickstartConnectAnswer.Accept, LocalKickstartConnectAnswer.Skip]) as readonly LocalKickstartConnectAnswer[];
 export function isLocalKickstartConnectAnswer(value: unknown): value is LocalKickstartConnectAnswer {
   return zLocalKickstartConnectAnswer.safeParse(value).success;
 }
 
-export type LocalKickstartErrorCode = LocalKickstartErrorCodeContract;
 export const LocalKickstartErrorCode = Object.freeze({
-  BodyMissing: zLocalKickstartErrorCode.parse("kickstart_body_missing"),
-  BodyInvalid: zLocalKickstartErrorCode.parse("kickstart_body_invalid"),
-  ScopeInvalid: zLocalKickstartErrorCode.parse("kickstart_scope_invalid"),
-  AnswersInvalid: zLocalKickstartErrorCode.parse("kickstart_answers_invalid"),
-  SessionCommitting: zLocalKickstartErrorCode.parse("kickstart_session_committing"),
-  RevisionAhead: zLocalKickstartErrorCode.parse("kickstart_revision_ahead"),
-  AnswerRefused: zLocalKickstartErrorCode.parse("kickstart_answer_refused"),
-  ScanNotDone: zLocalKickstartErrorCode.parse("kickstart_scan_not_done"),
-  FieldUnknown: zLocalKickstartErrorCode.parse("kickstart_field_unknown"),
-  FieldOutOfScope: zLocalKickstartErrorCode.parse("kickstart_field_out_of_scope"),
-  FieldHidden: zLocalKickstartErrorCode.parse("kickstart_field_hidden"),
-  TreeAnswerShape: zLocalKickstartErrorCode.parse("kickstart_tree_answer_shape"),
-  ConnectOutOfScope: zLocalKickstartErrorCode.parse("kickstart_connect_out_of_scope"),
-  ConnectNotConnected: zLocalKickstartErrorCode.parse("kickstart_connect_not_connected"),
-  ConnectUnknown: zLocalKickstartErrorCode.parse("kickstart_connect_unknown"),
-  CommitRefused: zLocalKickstartErrorCode.parse("kickstart_commit_refused"),
-  SessionNotFound: zLocalKickstartErrorCode.parse("kickstart_session_not_found"),
-  PreviewRowNotFound: zLocalKickstartErrorCode.parse("kickstart_preview_row_not_found"),
-  Failed: zLocalKickstartErrorCode.parse("kickstart_failed"),
-  StatusUnreadable: zLocalKickstartErrorCode.parse("kickstart_status_unreadable"),
-  ConfigUnreadable: zLocalKickstartErrorCode.parse("kickstart_config_unreadable"),
-  ConfigUnwritable: zLocalKickstartErrorCode.parse("kickstart_config_unwritable"),
-  SessionUnbuildable: zLocalKickstartErrorCode.parse("kickstart_session_unbuildable"),
-  AnswerUnencodable: zLocalKickstartErrorCode.parse("kickstart_answer_unencodable"),
-  PreviewUnreadable: zLocalKickstartErrorCode.parse("kickstart_preview_unreadable"),
-  ContractBreach: zLocalKickstartErrorCode.parse("publishing_contract_breach"),
-  Unavailable: zLocalKickstartErrorCode.parse("kickstart_unavailable"),
-  ConfigBusy: zLocalKickstartErrorCode.parse("kickstart_config_busy"),
-  ConfigChanging: zLocalKickstartErrorCode.parse("kickstart_config_changing"),
+  BodyMissing: "kickstart_body_missing",
+  BodyInvalid: "kickstart_body_invalid",
+  ScopeInvalid: "kickstart_scope_invalid",
+  AnswersInvalid: "kickstart_answers_invalid",
+  SessionCommitting: "kickstart_session_committing",
+  RevisionAhead: "kickstart_revision_ahead",
+  AnswerRefused: "kickstart_answer_refused",
+  ScanNotDone: "kickstart_scan_not_done",
+  FieldUnknown: "kickstart_field_unknown",
+  FieldOutOfScope: "kickstart_field_out_of_scope",
+  FieldHidden: "kickstart_field_hidden",
+  TreeAnswerShape: "kickstart_tree_answer_shape",
+  ConnectOutOfScope: "kickstart_connect_out_of_scope",
+  ConnectNotConnected: "kickstart_connect_not_connected",
+  ConnectUnknown: "kickstart_connect_unknown",
+  CommitRefused: "kickstart_commit_refused",
+  SessionNotFound: "kickstart_session_not_found",
+  PreviewRowNotFound: "kickstart_preview_row_not_found",
+  Failed: "kickstart_failed",
+  StatusUnreadable: "kickstart_status_unreadable",
+  ConfigUnreadable: "kickstart_config_unreadable",
+  ConfigUnwritable: "kickstart_config_unwritable",
+  SessionUnbuildable: "kickstart_session_unbuildable",
+  AnswerUnencodable: "kickstart_answer_unencodable",
+  PreviewUnreadable: "kickstart_preview_unreadable",
+  ContractBreach: "publishing_contract_breach",
+  Unavailable: "kickstart_unavailable",
+  ConfigBusy: "kickstart_config_busy",
+  ConfigChanging: "kickstart_config_changing",
 } as const);
+export type LocalKickstartErrorCode = (typeof LocalKickstartErrorCode)[keyof typeof LocalKickstartErrorCode];
 export const AllLocalKickstartErrorCodes = Object.freeze([LocalKickstartErrorCode.BodyMissing, LocalKickstartErrorCode.BodyInvalid, LocalKickstartErrorCode.ScopeInvalid, LocalKickstartErrorCode.AnswersInvalid, LocalKickstartErrorCode.SessionCommitting, LocalKickstartErrorCode.RevisionAhead, LocalKickstartErrorCode.AnswerRefused, LocalKickstartErrorCode.ScanNotDone, LocalKickstartErrorCode.FieldUnknown, LocalKickstartErrorCode.FieldOutOfScope, LocalKickstartErrorCode.FieldHidden, LocalKickstartErrorCode.TreeAnswerShape, LocalKickstartErrorCode.ConnectOutOfScope, LocalKickstartErrorCode.ConnectNotConnected, LocalKickstartErrorCode.ConnectUnknown, LocalKickstartErrorCode.CommitRefused, LocalKickstartErrorCode.SessionNotFound, LocalKickstartErrorCode.PreviewRowNotFound, LocalKickstartErrorCode.Failed, LocalKickstartErrorCode.StatusUnreadable, LocalKickstartErrorCode.ConfigUnreadable, LocalKickstartErrorCode.ConfigUnwritable, LocalKickstartErrorCode.SessionUnbuildable, LocalKickstartErrorCode.AnswerUnencodable, LocalKickstartErrorCode.PreviewUnreadable, LocalKickstartErrorCode.ContractBreach, LocalKickstartErrorCode.Unavailable, LocalKickstartErrorCode.ConfigBusy, LocalKickstartErrorCode.ConfigChanging]) as readonly LocalKickstartErrorCode[];
 export function isLocalKickstartErrorCode(value: unknown): value is LocalKickstartErrorCode {
   return zLocalKickstartErrorCode.safeParse(value).success;
 }
 
-export type AutoPublishEvent = AutoPublishEventContract;
 export const AutoPublishEvent = Object.freeze({
-  PrePush: zAutoPublishEvent.parse("pre-push"),
-  PostCommit: zAutoPublishEvent.parse("post-commit"),
+  PrePush: "pre-push",
+  PostCommit: "post-commit",
 } as const);
+export type AutoPublishEvent = (typeof AutoPublishEvent)[keyof typeof AutoPublishEvent];
 export const AllAutoPublishEvents = Object.freeze([AutoPublishEvent.PrePush, AutoPublishEvent.PostCommit]) as readonly AutoPublishEvent[];
 export function isAutoPublishEvent(value: unknown): value is AutoPublishEvent {
   return zAutoPublishEvent.safeParse(value).success;
 }
 
-export type AutoPublishHookStatus = AutoPublishHookStatusContract;
 export const AutoPublishHookStatus = Object.freeze({
-  Absent: zAutoPublishHookStatus.parse("absent"),
-  Installed: zAutoPublishHookStatus.parse("installed"),
-  Blocked: zAutoPublishHookStatus.parse("blocked"),
-  Failed: zAutoPublishHookStatus.parse("failed"),
+  Absent: "absent",
+  Installed: "installed",
+  Blocked: "blocked",
+  Failed: "failed",
 } as const);
+export type AutoPublishHookStatus = (typeof AutoPublishHookStatus)[keyof typeof AutoPublishHookStatus];
 export const AllAutoPublishHookStatuses = Object.freeze([AutoPublishHookStatus.Absent, AutoPublishHookStatus.Installed, AutoPublishHookStatus.Blocked, AutoPublishHookStatus.Failed]) as readonly AutoPublishHookStatus[];
 export function isAutoPublishHookStatus(value: unknown): value is AutoPublishHookStatus {
   return zAutoPublishHookStatus.safeParse(value).success;
 }
 
-export type AutoPublishRuleKind = AutoPublishRuleKindContract;
 export const AutoPublishRuleKind = Object.freeze({
-  Folder: zAutoPublishRuleKind.parse("folder"),
-  Remote: zAutoPublishRuleKind.parse("remote"),
+  Folder: "folder",
+  Remote: "remote",
 } as const);
+export type AutoPublishRuleKind = (typeof AutoPublishRuleKind)[keyof typeof AutoPublishRuleKind];
 export const AllAutoPublishRuleKinds = Object.freeze([AutoPublishRuleKind.Folder, AutoPublishRuleKind.Remote]) as readonly AutoPublishRuleKind[];
 export function isAutoPublishRuleKind(value: unknown): value is AutoPublishRuleKind {
   return zAutoPublishRuleKind.safeParse(value).success;
 }
 
-export type ThinkingLevel = ThinkingLevelContract;
 export const ThinkingLevel = Object.freeze({
-  Off: zThinkingLevel.parse("off"),
-  Minimal: zThinkingLevel.parse("minimal"),
-  Low: zThinkingLevel.parse("low"),
-  Medium: zThinkingLevel.parse("medium"),
-  High: zThinkingLevel.parse("high"),
-  XHigh: zThinkingLevel.parse("xhigh"),
-  Max: zThinkingLevel.parse("max"),
-  Ultra: zThinkingLevel.parse("ultra"),
-  Ultracode: zThinkingLevel.parse("ultracode"),
+  Off: "off",
+  Minimal: "minimal",
+  Low: "low",
+  Medium: "medium",
+  High: "high",
+  XHigh: "xhigh",
+  Max: "max",
+  Ultra: "ultra",
+  Ultracode: "ultracode",
 } as const);
+export type ThinkingLevel = (typeof ThinkingLevel)[keyof typeof ThinkingLevel];
 export const AllThinkingLevels = Object.freeze([ThinkingLevel.Off, ThinkingLevel.Minimal, ThinkingLevel.Low, ThinkingLevel.Medium, ThinkingLevel.High, ThinkingLevel.XHigh, ThinkingLevel.Max, ThinkingLevel.Ultra, ThinkingLevel.Ultracode]) as readonly ThinkingLevel[];
 export function isThinkingLevel(value: unknown): value is ThinkingLevel {
   return zThinkingLevel.safeParse(value).success;
 }
 
-export type ScryVerdict = ScryVerdictContract;
 export const ScryVerdict = Object.freeze({
-  Checked: zScryVerdict.parse("checked"),
-  Unchecked: zScryVerdict.parse("unchecked"),
+  Checked: "checked",
+  Unchecked: "unchecked",
 } as const);
+export type ScryVerdict = (typeof ScryVerdict)[keyof typeof ScryVerdict];
 export const AllScryVerdicts = Object.freeze([ScryVerdict.Checked, ScryVerdict.Unchecked]) as readonly ScryVerdict[];
 export function isScryVerdict(value: unknown): value is ScryVerdict {
   return zScryVerdict.safeParse(value).success;
