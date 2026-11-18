@@ -1,3 +1,4 @@
+// Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
 import type * as Schema from "../../index.js";
 export interface paths {
     "/api/v1/annotation-types": {

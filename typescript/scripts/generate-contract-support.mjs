@@ -97,7 +97,7 @@ async function refineRootZodContract() {
   });
   const refined = applySessionTeammateZodRefinements(applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))), sessionTeammateBound);
   const contentPartsRefined = applyContentPartsZodRefinements(refined);
-  await writeFile(zodPath, applyUnverifiedPullRequestZodRefinements(applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(contentPartsRefined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username)));
+  await writeFile(zodPath, `${header()}${applyUnverifiedPullRequestZodRefinements(applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(contentPartsRefined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username))}`);
 }
 
 // readGeneratorOutput reads a file the preceding openapi-ts step must have
@@ -471,7 +471,7 @@ async function generateOperationContracts(surface, filename, outputName) {
       return rootName === undefined ? undefined : schemaTypeReference(rootName);
     },
   });
-  await writeFile(join(generatedRoot, outputName), astToString(ast));
+  await writeFile(join(generatedRoot, outputName), `${header()}${astToString(ast)}`);
 }
 
 function schemaTypeReference(name) {

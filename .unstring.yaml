@@ -7,5 +7,5 @@ exempt:
   - rule: "*"
     paths:
       - route/routes_gen.go
-      - typescript/src/internal/generated/*.gen.ts
+      - typescript/src/internal/generated/**
     reason: generated code, not hand-edited
