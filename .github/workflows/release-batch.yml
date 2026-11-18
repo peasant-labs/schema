@@ -69,46 +69,13 @@ jobs:
       gate: ${{ steps.gate.outputs.gate }}
       stale: ${{ steps.stale.outputs.number }}
     steps:
-      - name: Check out the repository (full history and tags)
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
-
-      - name: Check out the release-intent tool
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          repository: peasant-labs/infra
-          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
-          path: infra-tool
-          sparse-checkout: |
-            tools/release
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
-        with:
-          go-version-file: infra-tool/tools/release/go.mod
-          cache-dependency-path: infra-tool/tools/release/go.sum
-
-      - name: Build release-intent
-        working-directory: infra-tool/tools/release
-        run: |
-          go build -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
-          echo "${RUNNER_TEMP}" >> "${GITHUB_PATH}"
-          cd "${GITHUB_WORKSPACE}"
-          rm -rf infra-tool
-
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
-
-      # Cheap first step: a scheduled run with no open release PR, or with one
-      # that is already armed, ends here and the release job never starts.
+      # A scheduled run with no open or unarmed release PR needs no checkout
+      # or toolchain setup. GH_REPO lets gh resolve the repository without Git.
       - name: Check whether a scheduled run has work to do
         id: precheck
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
@@ -130,15 +97,57 @@ jobs:
           fi
           echo "proceed=true" >> "${GITHUB_OUTPUT}"
 
+      - name: Check out the repository (full history and tags)
+        if: steps.precheck.outputs.proceed == 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Check out the release-intent tool
+        if: steps.precheck.outputs.proceed == 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: peasant-labs/infra
+          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          path: infra-tool
+          sparse-checkout: |
+            tools/release
+          persist-credentials: false
+
+      - name: Set up Go
+        if: steps.precheck.outputs.proceed == 'true'
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: infra-tool/tools/release/go.mod
+          cache-dependency-path: infra-tool/tools/release/go.sum
+
+      - name: Build release-intent
+        if: steps.precheck.outputs.proceed == 'true'
+        working-directory: infra-tool/tools/release
+        run: |
+          go build -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
+          echo "${RUNNER_TEMP}" >> "${GITHUB_PATH}"
+          cd "${GITHUB_WORKSPACE}"
+          rm -rf infra-tool
+
+      - name: Install Nix
+        if: steps.precheck.outputs.proceed == 'true'
+        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
+
       - name: Plan from the branch tip
         id: plan
         if: steps.precheck.outputs.proceed == 'true'
+        env:
+          MODE: ${{ vars.RELEASE_BATCH_MODE }}
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin develop
           SOURCE="$(git rev-parse origin/develop)"
           echo "source=${SOURCE}" >> "${GITHUB_OUTPUT}"
-          release-intent plan --branch origin/develop --mode "${{ vars.RELEASE_BATCH_MODE }}" --floor "${{ vars.RELEASE_BATCH_FLOOR }}" | tee -a "${GITHUB_STEP_SUMMARY}"
+          release-intent plan --branch origin/develop --mode "${MODE}" --floor "${FLOOR}" | tee -a "${GITHUB_STEP_SUMMARY}"
 
       - name: Build the candidate contract report
         if: steps.precheck.outputs.proceed == 'true' && steps.plan.outputs.action == 'verify'
@@ -162,7 +171,10 @@ jobs:
       - name: Plan with the contract verdict
         id: verdict
         if: "!cancelled() && steps.precheck.outputs.proceed == 'true'"
-        run: release-intent plan --branch origin/develop --mode "${{ vars.RELEASE_BATCH_MODE }}" --verdict ${{ (steps.verify-contract.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${{ vars.RELEASE_BATCH_FLOOR }}"
+        env:
+          MODE: ${{ vars.RELEASE_BATCH_MODE }}
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
+        run: release-intent plan --branch origin/develop --mode "${MODE}" --verdict ${{ (steps.verify-contract.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${FLOOR}"
 
       # The annotated tag object is made here, without a credential, and
       # handed to the release job as a bundle. The bundle excludes the
@@ -188,10 +200,13 @@ jobs:
       - name: Plan again after the tag
         id: replan
         if: "!cancelled() && steps.precheck.outputs.proceed == 'true'"
+        env:
+          MODE: ${{ vars.RELEASE_BATCH_MODE }}
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin develop
-          release-intent plan --branch origin/develop --mode "${{ vars.RELEASE_BATCH_MODE }}" --verdict ${{ (steps.verify-contract.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${{ vars.RELEASE_BATCH_FLOOR }}" | tee -a "${GITHUB_STEP_SUMMARY}"
+          release-intent plan --branch origin/develop --mode "${MODE}" --verdict ${{ (steps.verify-contract.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${FLOOR}" | tee -a "${GITHUB_STEP_SUMMARY}"
 
       - name: Check the pending range before preparing a release PR
         id: range-contract
@@ -209,6 +224,8 @@ jobs:
       - name: Prepare the release commit
         id: write
         if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.replan.outputs.action == 'open-pr' && steps.range-contract.outcome == 'success'"
+        env:
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin develop
@@ -219,7 +236,7 @@ jobs:
           git checkout -q -B automation/release origin/develop
           SOURCE="$(git rev-parse HEAD)"
           echo "source=${SOURCE}" >> "${GITHUB_OUTPUT}"
-          release-intent release-pr --commit --branch origin/develop "${current[@]}" --floor "${{ vars.RELEASE_BATCH_FLOOR }}"
+          release-intent release-pr --commit --branch origin/develop "${current[@]}" --floor "${FLOOR}"
 
       - name: Bundle the release branch
         if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.replan.outputs.action == 'open-pr' && steps.write.outputs.push == 'true'"
@@ -364,13 +381,15 @@ jobs:
           TAG: ${{ needs.plan.outputs.tag }}
           CANDIDATE: ${{ needs.plan.outputs.candidate }}
           PLAN_SOURCE: ${{ needs.plan.outputs.plan-source }}
+          MODE: ${{ vars.RELEASE_BATCH_MODE }}
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin develop
           git fetch --tags origin
           TIP="$(git rev-parse origin/develop)"
           plan_file="${RUNNER_TEMP}/verified-plan.txt"
-          "${RUNNER_TEMP}/release-intent" plan --branch origin/develop --mode "${{ vars.RELEASE_BATCH_MODE }}" --floor "${{ vars.RELEASE_BATCH_FLOOR }}" | tee "${plan_file}"
+          "${RUNNER_TEMP}/release-intent" plan --branch origin/develop --mode "${MODE}" --floor "${FLOOR}" | tee "${plan_file}"
           plan_value() {
             awk -v key="$1" '
               index($0, key "=") == 1 { count++; value = substr($0, length(key) + 2) }
@@ -404,6 +423,7 @@ jobs:
         env:
           SOURCE: ${{ needs.plan.outputs.source }}
           EXPECTED_TITLE: "release${{ needs.plan.outputs.breaking == 'true' && '!' || '' }}[${{ needs.plan.outputs.level }}]: ${{ needs.plan.outputs.release-tag }}"
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin develop
@@ -423,7 +443,7 @@ jobs:
           test "${TITLE}" = "${EXPECTED_TITLE}" || { echo "::error::Prepared release commit title differs from the intended PR title"; exit 1; }
           printf '%s\n' "${TITLE}" | "${RUNNER_TEMP}/release-intent" check-title --base "${TIP}" --head "${RELEASE}" --author "${AUTHOR}" --head-branch "${BRANCH}"
           git checkout --detach "${RELEASE}"
-          "${RUNNER_TEMP}/release-intent" release-pr --check --branch "${TIP}" --floor "${{ vars.RELEASE_BATCH_FLOOR }}"
+          "${RUNNER_TEMP}/release-intent" release-pr --check --branch "${TIP}" --floor "${FLOOR}"
 
   release:
     needs: [plan, verify]

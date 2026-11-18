@@ -296,7 +296,8 @@ jobs:
           RELEASE: ${{ needs.changes.outputs.release }}
         run: |
           set -euo pipefail
-          jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$RESULTS"
+          case "$RELEASE" in true|false) ;; *) echo "::error::release classification is missing or invalid"; exit 1 ;; esac
+          jq -e --arg release "$RELEASE" 'to_entries | all(.[]; .value.result == "success" or .value.result == "skipped" or (.key == "vendor-hash" and $release == "false" and .value.result == "failure"))' <<< "$RESULTS"
           test "$(jq -r '.changes.result' <<< "$RESULTS")" = success
           if [ "$CODE" = true ]; then test "$(jq -r '.check.result' <<< "$RESULTS")" = success; fi
           if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then

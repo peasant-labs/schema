@@ -245,6 +245,21 @@ with the base; it does not include uncommitted changes:
   pinned tool on `PATH` to judge the same report as CI.
 
 A gate that can never fail is worthless, so the gates have their own tests.
+`TestContractGatesAllAndReleaseVerdict` runs the real `all` path, including
+vacuum, go-apidiff, `go run ./cmd/schema-gen report`, and oasdiff, in a
+temporary repository with two-commit ranges. It verifies the requested output
+and head, ERR-level break, immutable-file refusal, and independently written
+report. It builds `release-intent` from the workflow's pinned infra commit,
+checks the config and full workflow policy, and runs tag-time
+`check-contract --until ... --floor ... --report ...` on declared and
+undeclared breaking subjects. The latter must report `under-declared-breaking`.
+The first uncached run needs network access to download the pinned tool module.
+The report tests skip without oasdiff locally, but fail if `CI` is set.
+`TestPreTagPolicyResolvesChecks` also resolves policy step IDs through the
+release job's needed jobs and asserts the exact declared pre-tag command.
+`TestMergeGateVendorHash` runs the mounted merge-gate shell with fixture needs,
+including failed and skipped vendor-hash results for both release and content.
+
 `internal/contractgates/synthetic_break_test.go` proves they fire:
 `TestOasdiffSyntheticBreak` removes an endpoint from a committed golden spec and
 asserts `oasdiff breaking --fail-on ERR` exits non-zero, while

@@ -1,15 +1,45 @@
 required:
   - break-in-new-version-across-multiple-commits
+  - warning-change-is-not-breaking
+script_required:
+  - declared-break
+  - undeclared-break
+  - immutable-file-mutation
+subjects:
+  - {name: declared-break, tag: v0.2.0, title: "feat(village-api)![minor]: remove fixture endpoint", expected_exit: 0}
+  - {name: undeclared-break, tag: v0.3.0, title: "feat(village-api)[minor]: remove fixture endpoint", expected_exit: 2, expected_output: under-declared-breaking}
+stem_required:
+  - exact-versioned-spec
+  - exact-versioned-schema
+  - unrelated-prefixed-spec
+stem_cases:
+  - {name: exact-versioned-spec, path: "types-1.2.3.json", expected: types}
+  - {name: exact-versioned-schema, path: "publish-request-1.2.3.schema.json", expected: publish-request}
+  - {name: unrelated-prefixed-spec, path: "types-other-1.2.3.json", expected: ""}
 cases:
   - name: break-in-new-version-across-multiple-commits
     base_version: "0.1.0"
     head_version: "0.2.0"
     base_spec: |
-      {"openapi":"3.0.0","info":{"title":"fixture","version":"0.1.0"},"paths":{"/removed":{"get":{"operationId":"getRemoved","responses":{"200":{"description":"ok"}}}}}}
+      {"openapi":"3.0.0","info":{"title":"fixture","description":"fixture contract","version":"0.1.0"},"paths":{"/removed":{"get":{"operationId":"getRemoved","responses":{"200":{"description":"ok"}}}}}}
     head_spec: |
-      {"openapi":"3.0.0","info":{"title":"fixture","version":"0.2.0"},"paths":{}}
+      {"openapi":"3.0.0","info":{"title":"fixture","description":"fixture contract","version":"0.2.0"},"paths":{}}
     request_schema: |
       {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:fixture","type":"object"}
     expected_surface: village-api
     expected_change: functional
     expected_breaking: true
+  - name: warning-change-is-not-breaking
+    base_version: "0.1.0"
+    head_version: "0.2.0"
+    base_spec: |
+      {"openapi":"3.0.0","info":{"title":"fixture","description":"fixture contract","version":"0.1.0"},"paths":{"/removed":{"get":{"operationId":"getRemoved","parameters":[{"name":"filter","in":"query","required":false,"schema":{"type":"string"}}],"responses":{"200":{"description":"ok"}}}}}}
+    head_spec: |
+      {"openapi":"3.0.0","info":{"title":"fixture","description":"fixture contract","version":"0.2.0"},"paths":{"/removed":{"get":{"operationId":"getRemoved","responses":{"200":{"description":"ok"}}}}}}
+    request_schema: |
+      {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:fixture","type":"object"}
+    expected_surface: village-api
+    expected_change: functional
+    expected_breaking: false
+    expected_oasdiff_id: request-parameter-removed
+    expected_oasdiff_level: 2

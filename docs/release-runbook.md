@@ -44,7 +44,8 @@ the hash without credentials, confirms that the only change is one
 `vendorHash` line, and hands a Git bundle to a separate credentialed job. That
 job pushes only `automation/vendor-hash`, opens or updates its bot PR, and
 enables auto-merge. If no change is needed, it closes an open hash PR. It never
-pushes `develop`.
+pushes `develop`. This workflow is independent of `RELEASE_BATCH_MODE`: even
+with tag mode off it can open, update, arm, or close a vendor-hash PR.
 
 On ordinary PRs the hash check is informational. The release PR's merge-group
 requires a current hash, and the tag-time check is the final backstop. A stale
@@ -58,6 +59,9 @@ Pull requests write. Existing repository secrets
 token. `RELEASE_BATCH_MODE` is unset for plan-only operation; the maintainer
 sets it to `tag` only after the plan-only checks below. `RELEASE_BATCH_FLOOR`
 is normally unset; it is a recovery boundary, not a release version.
+The App must be allowed to push its `automation/*` branches, including the
+force-with-lease updates, under the applicable branch rules. That permission
+does not bypass the merge queue or permit a push to `develop`.
 
 The reviewed go-apidiff comment job uses the existing organization secret
 `JOURNEY_GITHUB_USER_PAT`. Confirm that its owner can read pull requests and
@@ -76,9 +80,11 @@ Before merging the adoption, the maintainer should:
    Verify the sticky-comment update on an existing bot-authored comment and
    on a fork PR after the workflow is on the default branch.
 3. Configure and compare the `Merge queue` ruleset with
-   `.github/release-queue.policy.yml`; protect release tags so only the
-   releaser App creates them. Confirm the queue ruleset coexists with the
-   existing `develop` and `releases/**/*` rules.
+    `.github/release-queue.policy.yml`; protect release tags so only the
+    releaser App creates them. Confirm the queue ruleset coexists with the
+    existing `develop` and `releases/**/*` rules. If the effective required
+    contexts or rules differ, stop: do not enqueue a release PR or enable tag
+    mode until the maintainer resolves and rechecks the rulesets.
 4. Leave tag mode off for the first group. Inspect the plan and independently
    read back that no release branch, PR, or tag was written. Check the group
    SHA and queue behavior before the maintainer enables tag mode.
@@ -133,3 +139,8 @@ excluded history. A forced release uses the `cut-release` dispatch or a PR
 containing only an empty commit titled `release[patch]: cut a release`; do not
 push a tag manually. The tag-triggered contract job and the pre-tag check use
 the same floor and range.
+
+If the release job fails to push a tag, inspect the job and remote tag first.
+After fixing the cause, dispatch `release-batch` on the default branch so it
+replans and verifies the current candidate. If the tag already exists, do not
+move or recreate it; investigate its target and the tag-triggered run instead.

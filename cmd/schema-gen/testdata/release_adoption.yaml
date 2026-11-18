@@ -1,4 +1,59 @@
 tool_pin: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+merge_gate_required:
+  - release-vendor-failed
+  - release-vendor-skipped
+  - release-vendor-success
+  - content-vendor-failed
+  - content-vendor-skipped
+  - content-vendor-success
+  - content-other-job-failed
+  - unknown-release-is-refused
+merge_gate_cases:
+  - name: release-vendor-failed
+    release: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    expected_exit: 1
+  - name: release-vendor-skipped
+    release: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+  - name: release-vendor-success
+    release: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 0
+  - name: content-vendor-failed
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    expected_exit: 0
+  - name: content-vendor-skipped
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
+  - name: content-vendor-success
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 0
+  - name: content-other-job-failed
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"failure"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    expected_exit: 1
+  - name: unknown-release-is-refused
+    release: ""
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+pre_tag_commands:
+  contract: 'release-intent check-contract --report "${RUNNER_TEMP}/candidate-report.yaml" --until "${CANDIDATE}" --floor "${FLOOR}"'
+precheck:
+  id: precheck
+  setup_if: "steps.precheck.outputs.proceed == 'true'"
+  setup_steps:
+    - Check out the repository (full history and tags)
+    - Check out the release-intent tool
+    - Set up Go
+    - Build release-intent
+    - Install Nix
+cut_default_branch_if: "github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && vars.RELEASE_BATCH_MODE == 'tag'"
+cut_jobs: [prepare, cut]
 required:
   - pr-and-group-live-title
   - pr-and-group-contract-report
@@ -10,6 +65,11 @@ required:
   - tag-range-has-floor
   - tag-judges-contract
   - npm-tag-matches-version
+  - vendor-hash-mints-only-for-work
+  - precheck-identifies-repository
+  - plan-mode-and-floor-env
+  - cut-commit-uses-default-branch
+  - cut-pr-targets-default-branch
 cases:
   - name: pr-and-group-live-title
     workflow: tests.yml
@@ -62,3 +122,36 @@ cases:
     job: npm-publish
     step: Guard tag and package version consistency
     run_contains: ["typescript/package.json", "${TAG#v}", '"${version}" = "${pkg_version}"']
+  - name: vendor-hash-mints-only-for-work
+    workflow: nix-vendor-hash.yml
+    job: update
+    step: Mint the releaser App token
+    if_value: "needs.prepare.outputs.changed == 'true' || needs.prepare.outputs.number != ''"
+  - name: precheck-identifies-repository
+    workflow: release-batch.yml
+    job: plan
+    step: Check whether a scheduled run has work to do
+    env_values:
+      GH_REPO: "${{ github.repository }}"
+  - name: plan-mode-and-floor-env
+    workflow: release-batch.yml
+    job: plan
+    step: Plan from the branch tip
+    env_values:
+      MODE: "${{ vars.RELEASE_BATCH_MODE }}"
+      FLOOR: "${{ vars.RELEASE_BATCH_FLOOR }}"
+    run_contains: ['--mode "${MODE}"', '--floor "${FLOOR}"']
+  - name: cut-commit-uses-default-branch
+    workflow: cut-release.yml
+    job: prepare
+    step: Commit an empty release commit on the bot branch
+    env_values:
+      DEFAULT_BRANCH: "${{ github.event.repository.default_branch }}"
+    run_contains: ['origin/${DEFAULT_BRANCH}']
+    run_excludes: [origin/develop]
+  - name: cut-pr-targets-default-branch
+    workflow: cut-release.yml
+    job: cut
+    step: Open the cut-release PR
+    run_contains: [gh pr create, automation/cut-release]
+    run_excludes: [--base]

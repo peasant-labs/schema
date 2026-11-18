@@ -2,12 +2,13 @@ package main
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -19,8 +20,22 @@ import (
 var contractReportFixture []byte
 
 type reportFixture struct {
-	Required []string `yaml:"required"`
-	Cases    []struct {
+	Required       []string `yaml:"required"`
+	ScriptRequired []string `yaml:"script_required"`
+	StemRequired   []string `yaml:"stem_required"`
+	Subjects       []struct {
+		Name           string `yaml:"name"`
+		Tag            string `yaml:"tag"`
+		Title          string `yaml:"title"`
+		ExpectedExit   int    `yaml:"expected_exit"`
+		ExpectedOutput string `yaml:"expected_output"`
+	} `yaml:"subjects"`
+	StemCases []struct {
+		Name     string `yaml:"name"`
+		Path     string `yaml:"path"`
+		Expected string `yaml:"expected"`
+	} `yaml:"stem_cases"`
+	Cases []struct {
 		Name            string `yaml:"name"`
 		BaseVersion     string `yaml:"base_version"`
 		HeadVersion     string `yaml:"head_version"`
@@ -30,6 +45,8 @@ type reportFixture struct {
 		ExpectedSurface string `yaml:"expected_surface"`
 		ExpectedChange  string `yaml:"expected_change"`
 		Breaking        bool   `yaml:"expected_breaking"`
+		OasdiffID       string `yaml:"expected_oasdiff_id"`
+		OasdiffLevel    int    `yaml:"expected_oasdiff_level"`
 	} `yaml:"cases"`
 }
 
@@ -65,34 +82,52 @@ func TestReportSurfacesMatchConfigAndGenerator(t *testing.T) {
 	}
 	generated := make(map[string]bool)
 	for path := range artifacts {
-		for stem := range stems {
-			if strings.HasPrefix(path, stem+"-") {
-				generated[stem] = true
-				break
-			}
-		}
-		if !generatedStemMatches(path, stems) {
+		stem := generatedStem(path, stems)
+		if stem == "" {
 			t.Errorf("generated contract %s has no report surface", path)
+		} else {
+			generated[stem] = true
 		}
 	}
 	if !reflect.DeepEqual(stems, generated) {
 		t.Fatalf("report stems differ from generator: report=%v generator=%v", stems, generated)
 	}
-}
-
-func generatedStemMatches(path string, stems map[string]bool) bool {
-	for stem := range stems {
-		if strings.HasPrefix(path, stem+"-") {
-			return true
+	var fixture reportFixture
+	if err := yaml.Unmarshal(contractReportFixture, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	seen := make(map[string]bool)
+	for _, c := range fixture.StemCases {
+		if c.Name == "" || seen[c.Name] {
+			t.Fatalf("empty or duplicate stem case %q", c.Name)
+		}
+		seen[c.Name] = true
+		t.Run(c.Name, func(t *testing.T) {
+			if got := generatedStem(c.Path, stems); got != c.Expected {
+				t.Errorf("stem for %q = %q, want %q", c.Path, got, c.Expected)
+			}
+		})
+	}
+	for _, name := range fixture.StemRequired {
+		if !seen[name] {
+			t.Errorf("required stem case %q missing", name)
 		}
 	}
-	return false
+}
+
+var generatedVersionedSuffix = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(\.schema)?\.(json|yaml)$`)
+
+func generatedStem(path string, stems map[string]bool) string {
+	for stem := range stems {
+		if suffix, ok := strings.CutPrefix(path, stem+"-"); ok && generatedVersionedSuffix.MatchString(suffix) {
+			return stem
+		}
+	}
+	return ""
 }
 
 func TestReportFindsBreakInNewNumberedFileAcrossRange(t *testing.T) {
-	if _, err := exec.LookPath("oasdiff"); err != nil {
-		t.Skip("oasdiff is supplied by nix develop")
-	}
+	requireReportOasdiff(t)
 	var fixture reportFixture
 	if err := yaml.Unmarshal(contractReportFixture, &fixture); err != nil {
 		t.Fatal(err)
@@ -151,6 +186,32 @@ func TestReportFindsBreakInNewNumberedFileAcrossRange(t *testing.T) {
 			git("commit", "-qm", "later change")
 			head := git("rev-parse", "HEAD")
 			write("apidiff.txt", "")
+			if c.OasdiffID != "" {
+				write("warning-base.json", c.BaseSpec)
+				write("warning-head.json", c.HeadSpec)
+				cmd := exec.Command("oasdiff", "breaking", filepath.Join(dir, "warning-base.json"),
+					filepath.Join(dir, "warning-head.json"), "--fail-on", "ERR", "--format", "json")
+				out, err := cmd.CombinedOutput()
+				if err != nil {
+					t.Fatalf("non-ERR fixture must not fail oasdiff: %v\n%s", err, out)
+				}
+				var changes []struct {
+					ID    string `json:"id"`
+					Level int    `json:"level"`
+				}
+				if err := json.Unmarshal(out, &changes); err != nil {
+					t.Fatalf("decode oasdiff warnings: %v\n%s", err, out)
+				}
+				found := false
+				for _, change := range changes {
+					if change.ID == c.OasdiffID && change.Level == c.OasdiffLevel {
+						found = true
+					}
+				}
+				if !found {
+					t.Fatalf("fixture did not produce oasdiff %q at level %d:\n%s", c.OasdiffID, c.OasdiffLevel, out)
+				}
+			}
 			report, err := buildContractReport(dir, base, head, filepath.Join(dir, "apidiff.txt"))
 			if err != nil {
 				t.Fatal(err)
@@ -169,10 +230,19 @@ func TestReportFindsBreakInNewNumberedFileAcrossRange(t *testing.T) {
 			t.Fatalf("surface %q missing from report", c.ExpectedSurface)
 		})
 	}
-	sort.Strings(fixture.Required)
 	for _, name := range fixture.Required {
 		if !seen[name] {
 			t.Errorf("required report case %q missing", name)
 		}
+	}
+}
+
+func requireReportOasdiff(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("oasdiff"); err != nil {
+		if _, ci := os.LookupEnv("CI"); ci {
+			t.Fatal("oasdiff is required in CI; run the report tests in nix develop")
+		}
+		t.Skip("oasdiff is supplied by nix develop")
 	}
 }

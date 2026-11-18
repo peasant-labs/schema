@@ -36,7 +36,7 @@ jobs:
   prepare:
     # A dispatch on any other branch would run that branch's copy of this file,
     # and a run while tag mode is off must change nothing.
-    if: github.ref == 'refs/heads/develop' && vars.RELEASE_BATCH_MODE == 'tag'
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && vars.RELEASE_BATCH_MODE == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -55,10 +55,11 @@ jobs:
       - name: Commit an empty release commit on the bot branch
         env:
           LEVEL: ${{ inputs.level }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
-          git fetch --no-tags origin develop
-          git checkout -B automation/cut-release origin/develop
+          git fetch --no-tags origin "${DEFAULT_BRANCH}"
+          git checkout -B automation/cut-release "origin/${DEFAULT_BRANCH}"
           git config user.name peasant-release-bot
           git config user.email bots@peasant-labs.invalid
           git commit --allow-empty -m "release[${LEVEL}]: cut a release"
@@ -93,7 +94,7 @@ jobs:
 
   cut:
     needs: [prepare]
-    if: github.ref == 'refs/heads/develop' && vars.RELEASE_BATCH_MODE == 'tag'
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && vars.RELEASE_BATCH_MODE == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -143,7 +144,7 @@ jobs:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
           TITLE: "release[${{ inputs.level }}]: cut a release"
           BODY: "Forced ${{ inputs.level }} release requested by @${{ github.triggering_actor }} through the cut-release button. Landing this empty commit makes the release job build the release PR."
-        run: gh pr create --head automation/cut-release --base develop --title "${TITLE}" --body "${BODY}"
+        run: gh pr create --head automation/cut-release --title "${TITLE}" --body "${BODY}"
 
       - name: Arm auto-merge on the cut-release PR
         if: vars.RELEASE_BATCH_MODE == 'tag'

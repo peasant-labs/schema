@@ -18,13 +18,17 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 		ToolPin  string   `yaml:"tool_pin"`
 		Required []string `yaml:"required"`
 		Cases    []struct {
-			Name             string   `yaml:"name"`
-			Workflow         string   `yaml:"workflow"`
-			Job              string   `yaml:"job"`
-			Step             string   `yaml:"step"`
-			ID               string   `yaml:"id"`
-			RunContains      []string `yaml:"run_contains"`
-			ContinueContains []string `yaml:"continue_contains"`
+			Name             string            `yaml:"name"`
+			Workflow         string            `yaml:"workflow"`
+			Job              string            `yaml:"job"`
+			Step             string            `yaml:"step"`
+			ID               string            `yaml:"id"`
+			RunContains      []string          `yaml:"run_contains"`
+			RunExcludes      []string          `yaml:"run_excludes"`
+			ContinueContains []string          `yaml:"continue_contains"`
+			IfContains       []string          `yaml:"if_contains"`
+			IfValue          string            `yaml:"if_value"`
+			EnvValues        map[string]string `yaml:"env_values"`
 		} `yaml:"cases"`
 	}
 	if err := yaml.Unmarshal(releaseAdoptionFixture, &fixture); err != nil {
@@ -63,7 +67,27 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 					}
 				}
 				checkWorkflowFragments(t, step, "run", c.RunContains)
+				if run := workflowMappingChild(step, "run"); run != nil {
+					for _, fragment := range c.RunExcludes {
+						if strings.Contains(run.Value, fragment) {
+							t.Errorf("run unexpectedly contains %q", fragment)
+						}
+					}
+				}
 				checkWorkflowFragments(t, step, "continue-on-error", c.ContinueContains)
+				checkWorkflowFragments(t, step, "if", c.IfContains)
+				if c.IfValue != "" {
+					condition := workflowMappingChild(step, "if")
+					if condition == nil || condition.Value != c.IfValue {
+						t.Errorf("step if must equal %q", c.IfValue)
+					}
+				}
+				for key, expected := range c.EnvValues {
+					value := workflowMappingChild(workflowMappingChild(step, "env"), key)
+					if value == nil || value.Value != expected {
+						t.Errorf("step env %s must equal %q", key, expected)
+					}
+				}
 				return
 			}
 			t.Fatalf("step %q not found in %s", c.Step, c.Workflow)
