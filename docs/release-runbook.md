@@ -25,7 +25,9 @@ Consumers re-pin only after the schema tag exists.
    the release job requires a successful plan. The tag names that release
    PR's merge commit; later commits belong to the next release. The independent
    verifier checks the prepared tag against the recorded candidate and branch
-   ancestry without replanning against the current tip.
+   ancestry without replanning against the current tip. If the run's event
+   commit predates the candidate, the ancestry check fails closed; a later
+   default-branch run can retry.
 4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
    and the contract check precede the independent GitHub Release and npm
    publishers. The GitHub Release is created as a draft, the generated JSON
@@ -33,11 +35,31 @@ Consumers re-pin only after the schema tag exists.
    release immutability. The npm job checks that the committed package version
    matches the tag and removes `private` only in its working copy.
 
+On 2026-11-18, a read-only check of GitHub's commit-to-pulls API returned the
+merged bot release PR, its merge commit, `automation/release` head, and
+releaser App author for the merge-queue squash commit `cf9f3b7189d00a1ac841a75c413299d15c6fa257`.
+The same check for ordinary merge commit `24323466e020c223cf9750bd0606774c104b4b76`
+returned a human-authored PR. This is live evidence, not a guarantee of future
+API behavior: the provenance test stubs Git, yq, and gh.
+
 On a rerun, a published release with assets is left unchanged. A failed upload
-or publish can leave a draft; a rerun fails if the release is still a draft or
-has no assets, and does not resume publication or upload missing assets. Fix
-forward through the release process with a new tag. Do not attempt to repair a
-published immutable release or reuse its tag.
+or publish can leave an unpublished draft; the workflow fails on rerun and does
+not resume or upload missing assets. Drafts are not immutable. Confirm that
+the release is a draft, set `TAG` to its existing tag and
+`GITHUB_REPOSITORY` to `peasant-labs/schema`, then delete the draft:
+
+```sh
+gh release delete "$TAG" --repo "$GITHUB_REPOSITORY"
+```
+
+Do not pass `--cleanup-tag`: keep the existing tag and rerun the release
+workflow for that same tag. Do not create a new tag to recover a draft. If an
+already-published release has no assets, fix forward with a new tag instead;
+do not attempt to repair a published immutable release or reuse its tag.
+
+A failed `gh release view`, including a network or authentication failure, is
+treated as no release. If a release actually exists, the create step fails
+loudly, so this fallback cannot report a false success.
 
 Tags are append-only. Never push, move, or delete a public tag by hand. Old
 `pkg/schema/v*` tags remain intact. The old tag parser still recognizes
@@ -179,8 +201,8 @@ Release recovery rules:
 - An immutable GitHub Release cannot be updated. Older publisher runs failed
   with `tag_name was used by an immutable release` or `target_commitish cannot
   be changed`. The current publisher leaves complete releases alone and fails
-  on incomplete releases. Fix forward with a new tag rather than attempting
-  to repair or reuse an immutable release.
+  on incomplete releases. Delete an unpublished draft as described above; for
+  an already-published release without assets, fix forward with a new tag.
 - The npm version guard reads `typescript/package.json` with `jq`. The dev-shell
   banner polluted the old `nix develop -c node -p` capture; do not reintroduce
   a stdout-captured dev-shell command.

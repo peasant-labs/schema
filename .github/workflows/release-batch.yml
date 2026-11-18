@@ -429,6 +429,8 @@ jobs:
             git fetch --no-tags origin "${PLAN_SOURCE}" || { echo "::error::could not fetch the recorded plan source"; exit 1; }
           fi
           git merge-base --is-ancestor "${CANDIDATE}" "${PLAN_SOURCE}" || { echo "::error::release candidate is not an ancestor of the plan source"; exit 1; }
+          # The release job repeats the tag ancestry guard beside the App
+          # token mint, before pushing the tag.
           git merge-base --is-ancestor "${CANDIDATE}" "${GITHUB_SHA}" || { echo "::error::release candidate is not on the default-branch run"; exit 1; }
 
       - name: Verify the prepared release commit

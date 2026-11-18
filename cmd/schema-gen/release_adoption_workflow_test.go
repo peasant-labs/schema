@@ -216,8 +216,8 @@ func checkWorkflowFragments(t *testing.T, step *yaml.Node, key string, fragments
 	}
 }
 
-// TestReleaseTagVersionGuard runs the actual workflow step with a simulated Nix
-// banner. A matching manifest must pass and a mismatched one must fail.
+// TestReleaseTagVersionGuard runs the jq-based workflow step. A matching
+// manifest must pass and a mismatched one must fail.
 func TestReleaseTagVersionGuard(t *testing.T) {
 	var fixture struct {
 		Required []string `yaml:"version_guard_required"`
@@ -260,15 +260,16 @@ func TestReleaseTagVersionGuard(t *testing.T) {
 	if run == "" {
 		t.Fatal("npm tag version guard has no script")
 	}
+	if !strings.Contains(run, "jq -r '.version' typescript/package.json") {
+		t.Fatal("npm tag version guard must read the manifest with jq")
+	}
 	seen := make(map[string]bool)
 	for _, c := range fixture.Cases {
 		seen[c.Name] = true
 		t.Run(c.Name, func(t *testing.T) {
 			dir := t.TempDir()
-			for _, path := range []string{"typescript", "bin"} {
-				if err := os.Mkdir(filepath.Join(dir, path), 0o755); err != nil {
-					t.Fatal(err)
-				}
+			if err := os.Mkdir(filepath.Join(dir, "typescript"), 0o755); err != nil {
+				t.Fatal(err)
 			}
 			manifest, err := json.Marshal(map[string]string{"version": c.PackageVersion})
 			if err != nil {
@@ -277,13 +278,9 @@ func TestReleaseTagVersionGuard(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(dir, "typescript", "package.json"), manifest, 0o644); err != nil {
 				t.Fatal(err)
 			}
-			nix := "#!/bin/sh\nprintf 'Go go1.26.3 dev shell\\n%s\\n' \"$TEST_NIX_VERSION\"\n"
-			if err := os.WriteFile(filepath.Join(dir, "bin", "nix"), []byte(nix), 0o755); err != nil {
-				t.Fatal(err)
-			}
 			cmd := exec.Command("bash", "-e", "-c", run)
 			cmd.Dir = dir
-			cmd.Env = append(os.Environ(), "TAG="+c.Tag, "TEST_NIX_VERSION="+c.PackageVersion, "PATH="+filepath.Join(dir, "bin")+string(os.PathListSeparator)+os.Getenv("PATH"))
+			cmd.Env = append(os.Environ(), "TAG="+c.Tag)
 			output, err := cmd.CombinedOutput()
 			exit := 0
 			if err != nil {

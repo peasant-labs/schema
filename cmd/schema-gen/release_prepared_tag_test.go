@@ -32,6 +32,8 @@ func TestPreparedTagSnapshot(t *testing.T) {
 			UnavailableSource  bool   `yaml:"unavailable_source"`
 			Success            bool   `yaml:"success"`
 			ErrorContains      string `yaml:"error_contains"`
+			AncestryAtBase     bool   `yaml:"ancestry_at_base"`
+			AncestryExit       int    `yaml:"expected_ancestry_exit"`
 		} `yaml:"prepared_tag_cases"`
 	}
 	if err := yaml.Unmarshal(releaseAdoptionFixture, &fixture); err != nil {
@@ -168,11 +170,11 @@ func TestPreparedTagSnapshot(t *testing.T) {
 				source = strings.Repeat("a", len(runCommit))
 			}
 			env = append(env, "TAG="+tag, "CANDIDATE="+candidate, "PLAN_SOURCE="+source, "GITHUB_SHA="+runCommit, "RUNNER_TEMP="+dir, "MODE=tag", "FLOOR=")
-			run := func(step string) (string, error) {
+			run := func(step string, overrides ...string) (string, error) {
 				t.Helper()
 				cmd := exec.Command("bash", "-e", "-c", step)
 				cmd.Dir = verify
-				cmd.Env = env
+				cmd.Env = append(append([]string(nil), env...), overrides...)
 				output, err := cmd.CombinedOutput()
 				return string(output), err
 			}
@@ -181,8 +183,23 @@ func TestPreparedTagSnapshot(t *testing.T) {
 				if runErr != nil {
 					t.Fatalf("snapshot verification failed: %v\n%s", runErr, output)
 				}
-				if guardOutput, err := run(ancestryScript); err != nil {
-					t.Fatalf("release job's branch-ancestry check failed: %v\n%s", err, guardOutput)
+				var overrides []string
+				if c.AncestryAtBase {
+					// The jobs normally share GITHUB_SHA. Override it only
+					// here to exercise the release guard independently.
+					overrides = append(overrides, "GITHUB_SHA="+base)
+				}
+				guardOutput, guardErr := run(ancestryScript, overrides...)
+				guardExit := 0
+				if guardErr != nil {
+					if failure, ok := guardErr.(*exec.ExitError); ok {
+						guardExit = failure.ExitCode()
+					} else {
+						t.Fatalf("execute release job's branch-ancestry check: %v\n%s", guardErr, guardOutput)
+					}
+				}
+				if guardExit != c.AncestryExit {
+					t.Fatalf("release job's branch-ancestry check exit %d, want %d:\n%s", guardExit, c.AncestryExit, guardOutput)
 				}
 			} else if runErr == nil || c.ErrorContains == "" || !strings.Contains(output, c.ErrorContains) {
 				t.Fatalf("snapshot verification error = %v, want failure containing %q:\n%s", runErr, c.ErrorContains, output)

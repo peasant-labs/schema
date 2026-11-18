@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -28,13 +29,14 @@ func TestReleaseCandidateProvenance(t *testing.T) {
 		Config    provenanceConfig `yaml:"provenance_config"`
 		Required  []string         `yaml:"provenance_required"`
 		Cases     []struct {
-			Name         string             `yaml:"name"`
-			Candidate    string             `yaml:"candidate"`
-			Config       *provenanceConfig  `yaml:"config"`
-			Pages        [][]map[string]any `yaml:"pages"`
-			RawOutput    string             `yaml:"raw_output"`
-			APIExit      int                `yaml:"api_exit"`
-			ExpectedExit int                `yaml:"expected_exit"`
+			Name          string             `yaml:"name"`
+			Candidate     string             `yaml:"candidate"`
+			Config        *provenanceConfig  `yaml:"config"`
+			Pages         [][]map[string]any `yaml:"pages"`
+			RawOutput     string             `yaml:"raw_output"`
+			APIExit       int                `yaml:"api_exit"`
+			ExpectedExit  int                `yaml:"expected_exit"`
+			ErrorContains string             `yaml:"error_contains"`
 		} `yaml:"provenance_cases"`
 	}
 	if err := yaml.Unmarshal(releaseAdoptionFixture, &fixture); err != nil {
@@ -75,6 +77,9 @@ func TestReleaseCandidateProvenance(t *testing.T) {
 		}
 		seen[c.Name] = true
 		t.Run(c.Name, func(t *testing.T) {
+			if c.ExpectedExit != 0 && !strings.HasPrefix(c.ErrorContains, "::error::") {
+				t.Fatal("failure case must name its workflow error")
+			}
 			dir := t.TempDir()
 			bin := filepath.Join(dir, "bin")
 			if err := os.Mkdir(bin, 0o755); err != nil {
@@ -130,8 +135,8 @@ func TestReleaseCandidateProvenance(t *testing.T) {
 					t.Fatalf("execute provenance step: %v\n%s", err, actual)
 				}
 			}
-			if exit != c.ExpectedExit {
-				t.Fatalf("provenance step exit %d, want %d:\n%s", exit, c.ExpectedExit, actual)
+			if exit != c.ExpectedExit || (c.ExpectedExit != 0 && (c.ErrorContains == "" || !strings.Contains(string(actual), c.ErrorContains))) {
+				t.Fatalf("provenance step exit %d, want %d with %q:\n%s", exit, c.ExpectedExit, c.ErrorContains, actual)
 			}
 		})
 	}

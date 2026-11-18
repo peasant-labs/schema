@@ -237,6 +237,8 @@ jobs:
           name: release-dist
           path: dist
 
+      # Any view failure, including network or authentication errors, is
+      # treated as no release. Create fails loudly if the release exists.
       - name: Look for an existing release
         id: view
         continue-on-error: true
@@ -244,11 +246,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY"
 
+      # \u0024 prints a dollar sign in the jq message without a jq variable.
       - name: Verify the existing release is complete
         if: steps.view.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq 'if (.isDraft | type) != "boolean" or (.assets | type) != "array" or .isDraft or (.assets | length == 0) then error("release is incomplete; tags are immutable, so fix forward with a new tag") else "existing release is published and has assets" end'
+        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq 'if (.isDraft | type) != "boolean" then error("release draft status is invalid; inspect the release before retrying") elif .isDraft then error("release is an unpublished draft; delete it with gh release delete \"\u0024TAG\" --repo \"\u0024GITHUB_REPOSITORY\" (without --cleanup-tag), then rerun; do not create a new tag") elif (.assets | type) != "array" then error("published release assets are invalid; inspect the release before retrying") elif (.assets | length == 0) then error("published release has no assets; tags are immutable, so fix forward with a new tag") else "existing release is published and has assets" end'
 
       - name: Create the draft release
         id: create
