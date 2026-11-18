@@ -3,6 +3,10 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.56.0
+
+- emit precise TypeScript member types for enums (#248)
+
 ## 0.55.0
 
 - declare 410 for retracted and unavailable transcript reads (#246)
