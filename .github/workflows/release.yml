@@ -244,6 +244,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY"
 
+      - name: Verify the existing release is complete
+        if: steps.view.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq 'if (.isDraft | type) != "boolean" or (.assets | type) != "array" or .isDraft or (.assets | length == 0) then error("release is incomplete; tags are immutable, so fix forward with a new tag") else "existing release is published and has assets" end'
+
       - name: Create the draft release
         id: create
         if: steps.view.outcome == 'failure'

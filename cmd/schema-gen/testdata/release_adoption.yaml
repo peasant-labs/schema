@@ -13,6 +13,43 @@ version_guard_cases:
     package_version: 1.2.4
     expected_exit: 1
     expected_output: "tag v1.2.3 does not match typescript/package.json version 1.2.4; tags are immutable, so fix forward"
+existing_release_required:
+  - complete-published-release
+  - draft-with-assets
+  - draft-without-assets
+  - published-without-assets
+  - missing-draft-state
+  - invalid-assets
+  - api-failure
+existing_release_cases:
+  - name: complete-published-release
+    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 0
+    expected_output: "existing release is published and has assets"
+  - name: draft-with-assets
+    response: '{"isDraft":true,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "release is incomplete; tags are immutable, so fix forward with a new tag"
+  - name: draft-without-assets
+    response: '{"isDraft":true,"assets":[]}'
+    expected_exit: 1
+    expected_output: "release is incomplete; tags are immutable, so fix forward with a new tag"
+  - name: published-without-assets
+    response: '{"isDraft":false,"assets":[]}'
+    expected_exit: 1
+    expected_output: "release is incomplete; tags are immutable, so fix forward with a new tag"
+  - name: missing-draft-state
+    response: '{"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "release is incomplete; tags are immutable, so fix forward with a new tag"
+  - name: invalid-assets
+    response: '{"isDraft":false,"assets":null}'
+    expected_exit: 1
+    expected_output: "release is incomplete; tags are immutable, so fix forward with a new tag"
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
 merge_gate_required:
   - release-vendor-failed
   - release-vendor-skipped
@@ -183,6 +220,7 @@ required:
   - npm-tag-matches-version
   - npm-published-version-has-no-shell-banner
   - release-checks-for-existing
+  - existing-release-must-be-complete
   - release-creates-a-draft
   - release-uploads-before-publishing
   - release-publishes-after-upload
@@ -280,12 +318,23 @@ cases:
     job_run_only:
       gh release create: Create the draft release
       gh release edit: Publish the release
+  - name: existing-release-must-be-complete
+    workflow: release.yml
+    job: release
+    step: Verify the existing release is complete
+    after: Look for an existing release
+    if_value: "steps.view.outcome == 'success'"
+    no_continue: true
+    no_job_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"', '--json isDraft,assets', '--jq', 'error(', 'tags are immutable', 'fix forward with a new tag']
   - name: release-creates-a-draft
     workflow: release.yml
     job: release
     step: Create the draft release
     id: create
-    after: Look for an existing release
+    after: Verify the existing release is complete
     if_value: "steps.view.outcome == 'failure'"
     env_values:
       PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"

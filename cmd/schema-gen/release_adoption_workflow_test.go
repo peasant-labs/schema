@@ -32,6 +32,8 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 			JobRunExcludes   []string          `yaml:"job_run_excludes"`
 			JobRunOnly       map[string]string `yaml:"job_run_only"`
 			ContinueContains []string          `yaml:"continue_contains"`
+			NoContinue       bool              `yaml:"no_continue"`
+			NoJobContinue    bool              `yaml:"no_job_continue"`
 			IfContains       []string          `yaml:"if_contains"`
 			IfValue          string            `yaml:"if_value"`
 			EnvValues        map[string]string `yaml:"env_values"`
@@ -59,6 +61,9 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 				t.Fatal(err)
 			}
 			job := workflowMappingChild(workflowMappingChild(doc.Content[0], "jobs"), c.Job)
+			if c.NoJobContinue && workflowMappingChild(job, "continue-on-error") != nil {
+				t.Error("job must not set continue-on-error")
+			}
 			steps := workflowMappingChild(job, "steps")
 			if steps == nil {
 				t.Fatalf("job %s has no steps", c.Job)
@@ -115,6 +120,9 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 					}
 				}
 				checkWorkflowFragments(t, step, "continue-on-error", c.ContinueContains)
+				if c.NoContinue && workflowMappingChild(step, "continue-on-error") != nil {
+					t.Error("step must not set continue-on-error")
+				}
 				checkWorkflowFragments(t, step, "if", c.IfContains)
 				if c.IfValue != "" {
 					condition := workflowMappingChild(step, "if")

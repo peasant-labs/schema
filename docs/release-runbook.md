@@ -28,11 +28,11 @@ Consumers re-pin only after the schema tag exists.
    release immutability. The npm job checks that the committed package version
    matches the tag and removes `private` only in its working copy.
 
-On a rerun, an existing release is left unchanged, whether it is mutable or
-immutable. A rerun does not resume an incomplete draft or upload missing
-assets. Investigate a failed draft before proceeding; an immutable release
-cannot gain assets, so a published failure is fixed forward with a new
-release.
+On a rerun, a published release with assets is left unchanged. A failed upload
+or publish can leave a draft; a rerun fails if the release is still a draft or
+has no assets, and does not resume publication or upload missing assets. Fix
+forward through the release process with a new tag. Do not attempt to repair a
+published immutable release or reuse its tag.
 
 Tags are append-only. Never push, move, or delete a public tag by hand. Old
 `pkg/schema/v*` tags remain intact. The old tag parser still recognizes
