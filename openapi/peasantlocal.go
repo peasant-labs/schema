@@ -364,11 +364,11 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 
 	// GET /api/v1/annotations?session_id={id}
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/annotations",
-		"listAnnotations", "List annotations for a session.", []string{"annotations"},
+		"listAnnotations", "List annotations for a session, each with the optional local owner and author projections kept distinct from the shared annotation summary.", []string{"annotations"},
 		new(struct {
 			SessionID string `query:"session_id" required:"true" description:"Session ID to filter annotations"`
 		}),
-		new([]schema.AnnotationSummary)); err != nil {
+		new([]schema.LocalAnnotationRow)); err != nil {
 		return nil, err
 	}
 
@@ -514,6 +514,11 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		errorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError, http.StatusServiceUnavailable},
 		errorResponse: new(LocalErrorResponse),
 	}}); err != nil {
+		return nil, err
+	}
+
+	// Local owner read and claim controls: local-only state, no Village call.
+	if err := addLocalOwnerOperations(r); err != nil {
 		return nil, err
 	}
 

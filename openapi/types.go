@@ -47,6 +47,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"AnnotationPushRequest", new(schema.AnnotationPushRequest)}, {"AnnotationPushResponse", new(schema.AnnotationPushResponse)},
 		{"AnnotationPushResult", new(schema.AnnotationPushResult)}, {"AnnotationPushStatus", new(schema.AnnotationPushStatus)},
 		{"AnnotationStatus", new(schema.AnnotationStatus)}, {"AnnotationSummary", new(schema.AnnotationSummary)},
+		{"LocalAnnotationRow", new(schema.LocalAnnotationRow)},
 		{"AnnotationTypeSummary", new(schema.AnnotationTypeSummary)}, {"AnnotationsPayload", new(schema.AnnotationsPayload)},
 		{"AnnotatorKind", new(schema.AnnotatorKind)},
 		{"AnnotatorSummary", new(schema.AnnotatorSummary)}, {"AssociationConclusion", new(schema.AssociationConclusion)},
@@ -176,6 +177,13 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"TranscriptRetainedState", new(schema.TranscriptRetainedState)},
 		{"TranscriptViewerProjection", new(schema.TranscriptViewerProjection)},
 		{"SessionTeammate", new(schema.SessionTeammate)}, {"SessionTeammateEvidence", new(schema.SessionTeammateEvidence)},
+		{"LocalOwner", new(schema.LocalOwner)}, {"LocalClaimSource", new(schema.LocalClaimSource)},
+		{"LocalClaimEntry", new(schema.LocalClaimEntry)},
+		{"LocalOwnerClaimRequest", new(schema.LocalOwnerClaimRequest)}, {"LocalOwnerClaimResult", new(schema.LocalOwnerClaimResult)},
+		{"LocalOwnerPromptState", new(schema.LocalOwnerPromptState)}, {"LocalOwnerClaimPrompt", new(schema.LocalOwnerClaimPrompt)},
+		{"LocalOwnerStatus", new(schema.LocalOwnerStatus)},
+		{"LocalOwnerOwnership", new(schema.LocalOwnerOwnership)}, {"LocalOwnerOwnershipCounts", new(schema.LocalOwnerOwnershipCounts)},
+		{"LocalArtifactIdentityKind", new(schema.LocalArtifactIdentityKind)}, {"LocalArtifactIdentity", new(schema.LocalArtifactIdentity)},
 		{"LocalSyncSummary", new(schema.LocalSyncSummary)}, {"LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)},
 		{"LocalSessionRow", new(schema.LocalSessionRow)}, {"LocalSessionListItem", new(schema.LocalSessionListItem)},
 		{"LocalSessionListPayload", new(schema.LocalSessionListPayload)}, {"LocalHelperMembersPayload", new(schema.LocalHelperMembersPayload)},
@@ -430,6 +438,7 @@ var expandedEmbeddedRequired = map[string]struct{}{
 	"SessionDetailReadPayload":   {},
 	"SessionDetailHeaderPayload": {},
 	"TranscriptTurn":             {},
+	"LocalAnnotationRow":         {},
 }
 
 // applyGoRequiredFields preserves Go's JSON presence contract in the canonical

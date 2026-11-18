@@ -46,9 +46,9 @@ func TestUnverifiedPullRequestWire(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			var v interface{ Validate() error }
 			switch c.Input.Kind {
-			case "local":
+			case "local-session":
 				v = &schema.SessionPullRequestsResponse{}
-			case "village":
+			case "village-transcript":
 				v = &schema.VillageTranscriptPullRequestsResponse{}
 			default:
 				t.Fatalf("unknown kind %s", c.Input.Kind)

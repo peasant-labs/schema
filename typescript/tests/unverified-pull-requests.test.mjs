@@ -11,7 +11,7 @@ test("unverified pull request read envelopes retain their optional nonnull evide
   for (const name of fixture.required_names) assert.ok(fixture.cases.some((c) => c.name === name), name);
   for (const row of fixture.cases) await t.test(row.name, () => {
     const input = JSON.parse(row.input.json);
-    const validator = row.input.kind === "local" ? schema.zSessionPullRequestsResponse : schema.zVillageTranscriptPullRequestsResponse;
+    const validator = row.input.kind === "local-session" ? schema.zSessionPullRequestsResponse : schema.zVillageTranscriptPullRequestsResponse;
     const result = validator.safeParse(input);
     assert.equal(result.success, row.expected.valid);
     if (result.success) assert.deepEqual(result.data, input);
