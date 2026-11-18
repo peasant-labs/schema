@@ -111,7 +111,9 @@ test("existing formatted and publication validators match the pre-change source"
     assert.equal(source.split(prefix).length, 2, `one generated declaration is required for ${name}`);
     const [body, rest] = source.split(prefix)[1].split(`\n\nexport type ${name} =`);
     assert.notEqual(rest, undefined, `the generated type is required for ${name}`);
-    return body;
+    // The closed-set wrapper only retypes the schema; compare the runtime validator it wraps.
+    const wrapped = new RegExp(`^closedSet<ClosedSets\\.${name}>\\(\\)\\(([\\s\\S]*)\\);$`).exec(body);
+    return wrapped === null ? body : `${wrapped[1]};`;
   };
   const hash = (text) => createHash("sha256").update(text).digest("hex");
 

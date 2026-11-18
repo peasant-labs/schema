@@ -5,7 +5,7 @@ info:
     discovery, content, annotations, currency checks, collectives, shares, contributions,
     review, and linked repositories.
   title: Transcript Publish API
-  version: 0.41.0
+  version: 0.42.0
 paths:
   /api/v1/annotations:
     post:
@@ -3903,7 +3903,9 @@ paths:
         A reader highlights turns only when the content read's Village-Content-Hash
         header equals transcript.content_hash. An empty list means the flag stands
         with no turn flagged in the current copy. A clean, pending or failed check
-        adds nothing.
+        adds nothing. A transcript its publisher retracted answers 410 to its last
+        audience, and 404 to every other viewer and to a retracted private transcript;
+        the pull reads answer 404 in every such case.
       operationId: getTranscriptMetadata
       parameters:
       - description: Transcript identifier
@@ -3932,6 +3934,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Not Found
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Gone. The transcript was retracted by its publisher; its content
+            has been deleted and cannot be shown. Only the last audience of the transcript
+            sees this answer; every other viewer receives the same 404 as an unknown
+            id.
         "500":
           content:
             application/json:
@@ -4052,7 +4063,9 @@ paths:
         includes authorized relationship navigation. When the transcript''s owner
         is anonymous to this viewer, sessionDetail is served without its repository
         identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project
-        are absent. Text inside the conversation is content and is not covered.'
+        are absent. Text inside the conversation is content and is not covered. A
+        transcript whose stored content an operator recorded as lost answers 410 after
+        access is decided.'
       operationId: getTranscriptContent
       parameters:
       - description: Transcript identifier
@@ -4093,6 +4106,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Not Found
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Gone. The transcript's stored content has been lost and cannot
+            be loaded; an operator recorded the loss. Access is decided first, so
+            a viewer who may not read the transcript receives 404.
       tags:
       - transcripts
   /api/v1/transcripts/{id}/header:
@@ -4106,7 +4127,9 @@ paths:
         Access, owner visibility and integrity are checked before conditional revalidation;
         denied viewers receive 404, stale revision or representation receives 409,
         and a temporary load refusal receives 503 with Retry-After. Successful headers
-        require private revalidation with ETag; refusal responses are no-store.
+        require private revalidation with ETag; refusal responses are no-store. A
+        transcript whose stored content an operator recorded as lost answers 410 after
+        access is decided.
       operationId: getTranscriptHeader
       parameters:
       - description: Optional revision to read; omission selects the current revision.
@@ -4233,6 +4256,26 @@ paths:
               schema:
                 type: string
               style: simple
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Gone. The transcript's stored content has been lost and cannot
+            be loaded; an operator recorded the loss. Access is decided first, so
+            a viewer who may not read the transcript receives 404.
+          headers:
+            Cache-Control:
+              description: private, no-store for a successful read; no-store for a
+                refusal.
+              schema:
+                type: string
+              style: simple
+            Vary:
+              description: Authorization, Cookie
+              schema:
+                type: string
+              style: simple
         "500":
           content:
             application/json:
@@ -4335,7 +4378,7 @@ paths:
   /api/v1/transcripts/{id}/segments:
     get:
       description: |-
-        Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. The positioned protocol serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.
+        Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. The positioned protocol serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
 
         Protocol generation selectors (omission is v=0):
         - v=0 -> 0.1.0
@@ -4474,6 +4517,26 @@ paths:
               schema:
                 type: string
               style: simple
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Gone. The transcript's stored content has been lost and cannot
+            be loaded; an operator recorded the loss. Access is decided first, so
+            a viewer who may not read the transcript receives 404.
+          headers:
+            Cache-Control:
+              description: private, no-store for a successful read; no-store for a
+                refusal.
+              schema:
+                type: string
+              style: simple
+            Vary:
+              description: Authorization, Cookie
+              schema:
+                type: string
+              style: simple
         "500":
           content:
             application/json:
@@ -4520,7 +4583,7 @@ paths:
   /api/v1/transcripts/{id}/segments/{index}:
     get:
       description: |-
-        Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.
+        Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
 
         Protocol generation selectors (omission is v=0):
         - v=0 -> 0.1.0
@@ -4660,6 +4723,26 @@ paths:
               schema:
                 type: string
               style: simple
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Gone. The transcript's stored content has been lost and cannot
+            be loaded; an operator recorded the loss. Access is decided first, so
+            a viewer who may not read the transcript receives 404.
+          headers:
+            Cache-Control:
+              description: private, no-store for a successful read; no-store for a
+                refusal.
+              schema:
+                type: string
+              style: simple
+            Vary:
+              description: Authorization, Cookie
+              schema:
+                type: string
+              style: simple
         "500":
           content:
             application/json:
@@ -4711,7 +4794,8 @@ paths:
         exact source, tool call or tool result member in served order wins. A denied
         viewer and a missing reference receive the same non-disclosing 404; the reference
         is never echoed. A stale revision or representation is 409, and a temporary
-        load refusal is 503 with Retry-After.
+        load refusal is 503 with Retry-After. A transcript whose stored content an
+        operator recorded as lost answers 410 after access is decided.
       operationId: locateTranscriptEntry
       parameters:
       - description: Transcript identifier
@@ -4788,6 +4872,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Conflict
+          headers:
+            Cache-Control:
+              description: private, no-store for a successful read; no-store for a
+                refusal.
+              schema:
+                type: string
+              style: simple
+            Vary:
+              description: Authorization, Cookie
+              schema:
+                type: string
+              style: simple
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Gone. The transcript's stored content has been lost and cannot
+            be loaded; an operator recorded the loss. Access is decided first, so
+            a viewer who may not read the transcript receives 404.
           headers:
             Cache-Control:
               description: private, no-store for a successful read; no-store for a
@@ -4968,7 +5072,7 @@ paths:
   /api/v1/transcripts/{id}/window:
     get:
       description: |-
-        Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. The positioned protocol is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared positioned resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the positioned route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.
+        Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. The positioned protocol is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared positioned resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the positioned route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
 
         Protocol generation selectors (omission is v=0):
         - v=0 -> 0.1.0
@@ -5107,6 +5211,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Conflict
+          headers:
+            Cache-Control:
+              description: private, no-store for a successful read; no-store for a
+                refusal.
+              schema:
+                type: string
+              style: simple
+            Vary:
+              description: Authorization, Cookie
+              schema:
+                type: string
+              style: simple
+        "410":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Gone. The transcript's stored content has been lost and cannot
+            be loaded; an operator recorded the loss. Access is decided first, so
+            a viewer who may not read the transcript receives 404.
           headers:
             Cache-Control:
               description: private, no-store for a successful read; no-store for a

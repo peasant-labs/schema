@@ -140,7 +140,15 @@ const (
 	// Bumped to 0.40.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
 	// Bumped to 0.41.0 for the additive positioned segmented transcript reads.
-	VillageAPIVersion = "0.41.0"
+	// Bumped to 0.42.0 when the transcript metadata read declared 410 for a
+	// transcript its publisher retracted, and the content, header, segment
+	// directory, segment, window and locator reads declared 410 for a
+	// transcript whose stored content an operator recorded as lost (additive
+	// statuses on the existing error envelope = minor bump). The locator
+	// answers the lost-content 410 and never the retracted one. The pull reads
+	// declare no 410. No type, protocol version or segmented read document
+	// changes.
+	VillageAPIVersion = "0.42.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git

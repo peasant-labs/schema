@@ -1,3 +1,4 @@
+// Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
 import type * as Schema from "../../index.js";
 export interface paths {
     "/api/v1/annotations": {
@@ -1135,7 +1136,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays. integrity is present only when the transcript is flagged, for any reader allowed to read the transcript, whatever its visibility; its presence is the flag. Its flagged_turns are zero-based positions in the top-level sessionDetail.turns array (never TurnDetail.index values, never earlierHistory or child sessions) of the content whose bare hash is transcript.content_hash. The header read's flaggedTurns use served main-partition positions after filtering instead. A reader highlights turns only when the content read's Village-Content-Hash header equals transcript.content_hash. An empty list means the flag stands with no turn flagged in the current copy. A clean, pending or failed check adds nothing. */
+        /** @description Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays. integrity is present only when the transcript is flagged, for any reader allowed to read the transcript, whatever its visibility; its presence is the flag. Its flagged_turns are zero-based positions in the top-level sessionDetail.turns array (never TurnDetail.index values, never earlierHistory or child sessions) of the content whose bare hash is transcript.content_hash. The header read's flaggedTurns use served main-partition positions after filtering instead. A reader highlights turns only when the content read's Village-Content-Hash header equals transcript.content_hash. An empty list means the flag stands with no turn flagged in the current copy. A clean, pending or failed check adds nothing. A transcript its publisher retracted answers 410 to its last audience, and 404 to every other viewer and to a retracted private transcript; the pull reads answer 404 in every such case. */
         get: operations["getTranscriptMetadata"];
         put?: never;
         post?: never;
@@ -1170,7 +1171,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered. */
+        /** @description Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered. A transcript whose stored content an operator recorded as lost answers 410 after access is decided. */
         get: operations["getTranscriptContent"];
         put?: never;
         post?: never;
@@ -1187,7 +1188,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read bounded session metadata without turns or retained records. The header carries its revision and representation, optional stored-content hash, served-position integrity marks and retained-evidence availability. A mark's turn identity is omitted when the served row has no usable recorded index. The hash and marks are omitted for migrated or repository-withheld projections. Repository fields follow getTranscriptContent's withholding rule. Access, owner visibility and integrity are checked before conditional revalidation; denied viewers receive 404, stale revision or representation receives 409, and a temporary load refusal receives 503 with Retry-After. Successful headers require private revalidation with ETag; refusal responses are no-store. */
+        /** @description Read bounded session metadata without turns or retained records. The header carries its revision and representation, optional stored-content hash, served-position integrity marks and retained-evidence availability. A mark's turn identity is omitted when the served row has no usable recorded index. The hash and marks are omitted for migrated or repository-withheld projections. Repository fields follow getTranscriptContent's withholding rule. Access, owner visibility and integrity are checked before conditional revalidation; denied viewers receive 404, stale revision or representation receives 409, and a temporary load refusal receives 503 with Retry-After. Successful headers require private revalidation with ETag; refusal responses are no-store. A transcript whose stored content an operator recorded as lost answers 410 after access is decided. */
         get: operations["getTranscriptHeader"];
         put?: never;
         post?: never;
@@ -1222,7 +1223,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. The positioned protocol serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.
+         * @description Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. The positioned protocol serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
          *
          *     Protocol generation selectors (omission is v=0):
          *     - v=0 -> 0.1.0
@@ -1247,7 +1248,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Locate a reference in the served main partition. The request carries the expected revision, representation and public content hash, but no location kind or partition selector. After access and hash verification, the first exact source, tool call or tool result member in served order wins. A denied viewer and a missing reference receive the same non-disclosing 404; the reference is never echoed. A stale revision or representation is 409, and a temporary load refusal is 503 with Retry-After. */
+        /** @description Locate a reference in the served main partition. The request carries the expected revision, representation and public content hash, but no location kind or partition selector. After access and hash verification, the first exact source, tool call or tool result member in served order wins. A denied viewer and a missing reference receive the same non-disclosing 404; the reference is never echoed. A stale revision or representation is 409, and a temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided. */
         post: operations["locateTranscriptEntry"];
         delete?: never;
         options?: never;
@@ -1263,7 +1264,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.
+         * @description Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
          *
          *     Protocol generation selectors (omission is v=0):
          *     - v=0 -> 0.1.0
@@ -1321,7 +1322,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. The positioned protocol is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared positioned resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the positioned route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After.
+         * @description Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. The positioned protocol is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared positioned resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the positioned route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
          *
          *     Protocol generation selectors (omission is v=0):
          *     - v=0 -> 0.1.0
@@ -6677,6 +6678,15 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
+            /** @description Gone. The transcript was retracted by its publisher; its content has been deleted and cannot be shown. Only the last audience of the transcript sees this answer; every other viewer receives the same 404 as an unknown id. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
             /** @description Internal Server Error */
             500: {
                 headers: {
@@ -6851,6 +6861,15 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
         };
     };
     getTranscriptHeader: {
@@ -6929,6 +6948,19 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
                 headers: {
                     /** @description private, no-store for a successful read; no-store for a refusal. */
                     "Cache-Control"?: string;
@@ -7111,6 +7143,19 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
             /** @description Internal Server Error */
             500: {
                 headers: {
@@ -7198,6 +7243,19 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
                 headers: {
                     /** @description private, no-store for a successful read; no-store for a refusal. */
                     "Cache-Control"?: string;
@@ -7310,6 +7368,19 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
                 headers: {
                     /** @description private, no-store for a successful read; no-store for a refusal. */
                     "Cache-Control"?: string;
@@ -7566,6 +7637,19 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
                 headers: {
                     /** @description private, no-store for a successful read; no-store for a refusal. */
                     "Cache-Control"?: string;

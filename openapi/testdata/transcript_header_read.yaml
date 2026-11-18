@@ -9,6 +9,6 @@ cases:
       operationId: getTranscriptHeader
     expected:
       responseRef: "#/components/schemas/SchemaTranscriptContentHeader"
-      statuses: [200, 304, 400, 404, 409, 500, 503]
+      statuses: [200, 304, 400, 404, 409, 410, 500, 503]
       parameters: [path:id, query:revision, query:representation, header:If-None-Match]
       headerFields: [contractVersion, kind, revision, representation, sessionHeader, canonical, omittedImages, flaggedTurns, retainedEvidence, contentHash]

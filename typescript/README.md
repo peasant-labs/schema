@@ -34,6 +34,14 @@ same closed-set shape as Go (`Role.User`, `AllRoles`, `isRole`) without
 maintaining a handwritten second contract. The retired `@peasant-labs/types`
 package must not receive new wire definitions.
 
+Generated enum members now retain their literal types: for example, `Role.User`
+is `"user"`, not the whole `Role` union. Generated schemas such as `zRole` have
+the structural type `ClosedSet<...>`, not a nominal `ZodEnum` type; `ClosedSet`
+is internal to the generated declarations and is not a public export.
+One-member sets still narrow to their single literal, but TypeScript does not
+retain a named field alias for them. Runtime validation and wire values are
+unchanged.
+
 The generated root Zod schemas enforce the wire's structural shape and selected
 generator-owned local cross-field invariants, including association evidence and
 annotation target rules. The Go `Validate` methods remain authoritative at the
