@@ -14,10 +14,20 @@ import (
 
 func main() {
 	if len(os.Args) > 1 {
-		if os.Args[1] != "report" {
-			log.Fatalf("unknown schema-gen command %q; use report or omit the command to generate", os.Args[1])
+		var err error
+		switch os.Args[1] {
+		case "report":
+			err = runReport(os.Args[2:])
+		case "status":
+			err = runStatus(os.Args[2:])
+		case "freeze":
+			err = runFreeze(os.Args[2:])
+		case "freeze-render":
+			err = runFreezeRender(os.Args[2:])
+		default:
+			log.Fatalf("unknown schema-gen command %q; use report, status, freeze or omit the command to generate", os.Args[1])
 		}
-		if err := runReport(os.Args[2:]); err != nil {
+		if err != nil {
 			log.Fatal(err)
 		}
 		return
@@ -50,7 +60,7 @@ func main() {
 		log.Fatal(err)
 	}
 	for filename, data := range artifacts {
-		path := filepath.Join(generatedDir, filename)
+		path := filepath.Join(generatedDir, workingArtifactName(filename))
 		if err := os.WriteFile(path, data, 0644); err != nil {
 			log.Fatal(err)
 		}

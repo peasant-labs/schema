@@ -141,6 +141,27 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 	}
 }
 
+func TestReleaseTitleComesFromPreparedCommit(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, ".github", "workflows", "release-batch.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	jobs := workflowMappingChild(doc.Content[0], "jobs")
+	outputs := workflowMappingChild(workflowMappingChild(jobs, "plan"), "outputs")
+	title := workflowMappingChild(outputs, "title")
+	if title == nil || title.Value != "${{ steps.write.outputs.title }}" {
+		t.Fatal("the plan job must expose the title from release-pr --commit")
+	}
+}
+
 func checkWorkflowFragments(t *testing.T, step *yaml.Node, key string, fragments []string) {
 	t.Helper()
 	if len(fragments) == 0 {

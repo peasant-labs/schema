@@ -94,7 +94,6 @@ rules:
     testcase/require_valid_test.go: 2
     testdata_timeline_internal_test.go: 1
     usage_metadata_test.go: 1
-    village_components_in_local_api_test.go: 1
     village_grouped_contract_test.go: 1
   go-endpoint-literal:
     attachment_route.go: 1

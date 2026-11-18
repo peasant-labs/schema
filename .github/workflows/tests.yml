@@ -33,39 +33,43 @@ jobs:
           fetch-tags: true
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        if: github.event_name == 'merge_group'
+        if: github.event_name == 'merge_group' || github.event_name == 'pull_request'
         with:
           repository: peasant-labs/infra
-          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          ref: 0f1446b776dd6604391077fc85c39cdd8168c074
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
-        if: github.event_name == 'merge_group'
+        if: github.event_name == 'merge_group' || github.event_name == 'pull_request'
         with:
           go-version-file: infra-tool/tools/release/go.mod
           cache: false
       - name: Build release-intent
-        if: github.event_name == 'merge_group'
+        if: github.event_name == 'merge_group' || github.event_name == 'pull_request'
         env:
           GOWORK: "off"
         run: go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
-      - name: Classify the merge-group entry
+      - name: Classify the entry PR
         id: entry
         env:
           EVENT: ${{ github.event_name }}
+          EVENT_NUMBER: ${{ github.event.pull_request.number }}
           GROUP_REF: ${{ github.ref }}
-          GROUP_BASE: ${{ github.event.merge_group.base_sha }}
+          GROUP_BASE: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [ "$EVENT" != merge_group ]; then
+          if [ "$EVENT" != merge_group ] && [ "$EVENT" != pull_request ]; then
             echo "release=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          result="$("$RUNNER_TEMP/release-intent" group-pr --ref "$GROUP_REF")"
-          number="${result#pr=}"
-          test -n "$number" || { echo "::error::cannot identify merge-group entry"; exit 1; }
+          number="$EVENT_NUMBER"
+          if [ "$EVENT" = merge_group ]; then
+            result="$("$RUNNER_TEMP/release-intent" group-pr --ref "$GROUP_REF")"
+            number="${result#pr=}"
+          fi
+          test -n "$number" || { echo "::error::cannot identify the entry PR"; exit 1; }
           payload="$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" --json author,headRefName)"
           author="$(jq -r '.author.login' <<< "$payload")"
           branch="$(jq -r '.headRefName' <<< "$payload")"
@@ -87,7 +91,7 @@ jobs:
           RELEASE: ${{ steps.entry.outputs.release }}
         run: |
           set -euo pipefail
-          if [ "$EVENT" = workflow_dispatch ] || [ "$RELEASE" = true ] || [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
+          if [ "$EVENT" = workflow_dispatch ] || { [ "$EVENT" = merge_group ] && [ "$RELEASE" = true ]; } || [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
             echo "code=true" >> "$GITHUB_OUTPUT"
             echo "deps=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -154,7 +158,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          ref: 0f1446b776dd6604391077fc85c39cdd8168c074
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -228,6 +232,22 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  release-tree:
+    name: release tree freeze
+    needs: [changes, determine-runner]
+    if: (github.event_name == 'pull_request' || github.event_name == 'merge_group') && needs.changes.outputs.release == 'true'
+    runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
+      - name: Check the release tree
+        run: nix develop -c go run ./cmd/schema-gen freeze --check
+
   # Always publish one artifact for a PR, even when contract-gates is skipped.
   # The placeholder is not an established API-diff signal.
   apidiff-payload:
@@ -258,7 +278,7 @@ jobs:
 
   vendor-hash:
     needs: changes
-    if: (github.event_name == 'pull_request' && needs.changes.outputs.deps == 'true') || needs.changes.outputs.release == 'true'
+    if: (github.event_name == 'pull_request' && needs.changes.outputs.deps == 'true') || (github.event_name == 'merge_group' && needs.changes.outputs.release == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -269,7 +289,7 @@ jobs:
           persist-credentials: false
       - uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
       - name: Check vendor hash
-        continue-on-error: ${{ needs.changes.outputs.release != 'true' }}
+        continue-on-error: ${{ github.event_name != 'merge_group' || needs.changes.outputs.release != 'true' }}
         run: |
           set -euo pipefail
           nix develop -c make nix-vendor-hash
@@ -281,7 +301,7 @@ jobs:
 
   merge-gate:
     name: merge-gate
-    needs: [changes, determine-runner, check, contract-gates, vendor-hash]
+    needs: [changes, determine-runner, check, contract-gates, release-tree, vendor-hash]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -297,10 +317,13 @@ jobs:
         run: |
           set -euo pipefail
           case "$RELEASE" in true|false) ;; *) echo "::error::release classification is missing or invalid"; exit 1 ;; esac
-          jq -e --arg release "$RELEASE" 'to_entries | all(.[]; .value.result == "success" or .value.result == "skipped" or (.key == "vendor-hash" and $release == "false" and .value.result == "failure"))' <<< "$RESULTS"
+          jq -e --arg release "$RELEASE" --arg event "$EVENT" 'to_entries | all(.[]; .value.result == "success" or .value.result == "skipped" or (.key == "vendor-hash" and ($release == "false" or $event != "merge_group") and .value.result == "failure"))' <<< "$RESULTS"
           test "$(jq -r '.changes.result' <<< "$RESULTS")" = success
           if [ "$CODE" = true ]; then test "$(jq -r '.check.result' <<< "$RESULTS")" = success; fi
           if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
             test "$(jq -r '."contract-gates".result' <<< "$RESULTS")" = success
           fi
-          if [ "$RELEASE" = true ]; then test "$(jq -r '."vendor-hash".result' <<< "$RESULTS")" = success; fi
+          if [ "$RELEASE" = true ] && { [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; }; then
+            test "$(jq -r '."release-tree".result' <<< "$RESULTS")" = success
+          fi
+          if [ "$RELEASE" = true ] && [ "$EVENT" = merge_group ]; then test "$(jq -r '."vendor-hash".result' <<< "$RESULTS")" = success; fi

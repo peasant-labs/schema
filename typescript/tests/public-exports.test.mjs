@@ -21,9 +21,7 @@ const fixtureSource = await readFile(new URL("../../testdata/typescript/public_e
 const fixture = parse(fixtureSource);
 assert.deepEqual(Object.keys(fixture).sort(), ["aliases", "constants", "forbidden", "functions"]);
 
-const typesVersion = fixture.constants.find((constant) => constant.name === "TypesVersion")?.value;
-assert.equal(typeof typesVersion, "string", "public_exports.yaml must declare the TypesVersion string used to locate the canonical OpenAPI catalog");
-const specSource = await readFile(new URL(`../../generated/types-${typesVersion}.json`, import.meta.url), "utf8");
+const specSource = await readFile(new URL("../../generated/types-next.json", import.meta.url), "utf8");
 const spec = JSON.parse(specSource);
 const catalogNames = Object.keys(spec.components?.schemas ?? {});
 assert.ok(catalogNames.length > 0, "the Types OpenAPI catalog backing the canonical type entries is empty");

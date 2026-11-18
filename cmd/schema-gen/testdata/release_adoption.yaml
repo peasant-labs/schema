@@ -1,4 +1,4 @@
-tool_pin: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+tool_pin: 0f1446b776dd6604391077fc85c39cdd8168c074
 merge_gate_required:
   - release-vendor-failed
   - release-vendor-skipped
@@ -8,18 +8,20 @@ merge_gate_required:
   - content-vendor-success
   - content-other-job-failed
   - unknown-release-is-refused
+  - release-tree-failed
+  - release-tree-skipped
 merge_gate_cases:
   - name: release-vendor-failed
     release: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"failure"}}'
     expected_exit: 1
   - name: release-vendor-skipped
     release: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
   - name: release-vendor-success
     release: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
     expected_exit: 0
   - name: content-vendor-failed
     release: "false"
@@ -41,8 +43,17 @@ merge_gate_cases:
     release: ""
     results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
+  - name: release-tree-failed
+    release: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"failure"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+  - name: release-tree-skipped
+    release: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
 pre_tag_commands:
   contract: 'release-intent check-contract --report "${RUNNER_TEMP}/candidate-report.yaml" --until "${CANDIDATE}" --floor "${FLOOR}"'
+  freeze: 'nix develop -c schema-gen freeze --check --plan "${RUNNER_TEMP}/candidate-freeze-plan.yaml" --state "${RUNNER_TEMP}/candidate-surface-state.yaml"'
 precheck:
   id: precheck
   setup_if: "steps.precheck.outputs.proceed == 'true'"
@@ -70,6 +81,15 @@ required:
   - plan-mode-and-floor-env
   - cut-commit-uses-default-branch
   - cut-pr-targets-default-branch
+  - release-assets-numbered-only
+  - prepared-title-verified
+  - release-pr-create-uses-tool-title
+  - release-pr-edit-uses-tool-title
+  - candidate-freeze-uses-parent
+  - candidate-freeze-is-checked
+  - release-tree-job-checks-mounted-tree
+  - freeze-floor-from-migration
+  - release-freeze-plan-uses-migration-floor
 cases:
   - name: pr-and-group-live-title
     workflow: tests.yml
@@ -155,3 +175,58 @@ cases:
     step: Open the cut-release PR
     run_contains: [gh pr create, automation/cut-release]
     run_excludes: [--base]
+  - name: release-assets-numbered-only
+    workflow: release.yml
+    job: build
+    step: Prepare the generated contracts and release notes
+    run_contains: ["./scripts/collect-release-assets.sh generated dist"]
+    run_excludes: ["cp generated/*.json"]
+  - name: prepared-title-verified
+    workflow: release-batch.yml
+    job: verify
+    step: Verify the prepared release commit
+    env_values: {EXPECTED_TITLE: "${{ needs.plan.outputs.title }}"}
+    run_contains: ['"${TITLE}" = "${EXPECTED_TITLE}"']
+  - name: release-pr-create-uses-tool-title
+    workflow: release-batch.yml
+    job: release
+    step: Open the release PR
+    env_values: {TITLE: "${{ needs.plan.outputs.title }}"}
+    run_contains: ['--title "${TITLE}"']
+  - name: release-pr-edit-uses-tool-title
+    workflow: release-batch.yml
+    job: release
+    step: Update the release PR
+    env_values: {TITLE: "${{ needs.plan.outputs.title }}"}
+    run_contains: ['--title "${TITLE}"']
+  - name: candidate-freeze-uses-parent
+    workflow: release-batch.yml
+    job: plan
+    step: Prepare the candidate freeze evidence
+    if_contains: ["!cancelled()", "steps.plan.outputs.action == 'verify'"]
+    env_values: {FREEZE_FLOOR: "${{ steps.freeze-floor.outputs.freeze_floor }}"}
+    run_contains: ['git checkout --detach "${CANDIDATE}^"', 'status --write', 'freeze-plan --branch origin/develop --until "${CANDIDATE}^"', '--freeze-floor "${FREEZE_FLOOR}"', 'git checkout --detach "${CANDIDATE}"']
+  - name: candidate-freeze-is-checked
+    workflow: release-batch.yml
+    job: plan
+    step: Verify the candidate freeze
+    id: verify-freeze
+    if_contains: ["!cancelled()", "steps.plan.outputs.action == 'verify'"]
+    run_contains: ["schema-gen freeze --check", "--plan", "--state"]
+  - name: release-tree-job-checks-mounted-tree
+    workflow: tests.yml
+    job: release-tree
+    step: Check the release tree
+    run_contains: ["schema-gen freeze --check"]
+  - name: freeze-floor-from-migration
+    workflow: release-batch.yml
+    job: plan
+    step: Find the spec-freeze migration
+    id: freeze-floor
+    run_contains: ["git log --first-parent", "-S 'spec_freeze: true'", 'freeze_floor=${freeze_floor}']
+  - name: release-freeze-plan-uses-migration-floor
+    workflow: release-batch.yml
+    job: plan
+    step: Prepare the release commit
+    env_values: {FREEZE_FLOOR: "${{ steps.freeze-floor.outputs.freeze_floor }}"}
+    run_contains: ['freeze-plan --branch origin/develop', '--freeze-floor "${FREEZE_FLOOR}"', 'release-pr --commit', '--freeze-plan "${RUNNER_TEMP}/freeze-plan.yaml"']

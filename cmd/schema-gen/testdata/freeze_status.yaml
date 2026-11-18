@@ -1,0 +1,55 @@
+cases:
+  - name: clean-tree
+    input: {edit: unchanged}
+    expected: {surface: local-api, state: clean}
+    classification: must-pass
+    provenance: &p {source: requirement, ref: "computed surface state"}
+    mutation: &m {description: "Change one working document."}
+  - name: openapi-description-only
+    input: {edit: openapi-description}
+    expected: {surface: local-api, state: docs-ahead}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: openapi-new-field
+    input: {edit: openapi-new-field, sibling: clean-tree}
+    expected: {surface: local-api, state: ahead}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: openapi-changed-type
+    input: {edit: openapi-changed-type, sibling: clean-tree}
+    expected: {surface: local-api, state: ahead}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: openapi-removed-path
+    input: {edit: openapi-removed-path, sibling: clean-tree}
+    expected: {surface: local-api, state: ahead}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: request-description-only
+    input: {edit: request-description}
+    expected: {surface: village-api, state: docs-ahead}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: request-new-field
+    input: {edit: request-new-field, sibling: clean-tree}
+    expected: {surface: village-api, state: ahead}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: request-changed-type
+    input: {edit: request-changed-type, sibling: clean-tree}
+    expected: {surface: village-api, state: ahead}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: request-removed-field
+    input: {edit: request-removed-field, sibling: clean-tree}
+    expected: {surface: village-api, state: ahead}
+    classification: must-fail
+    provenance: *p
+    mutation: *m

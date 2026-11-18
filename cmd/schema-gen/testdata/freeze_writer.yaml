@@ -1,0 +1,26 @@
+cases:
+  - name: every-writer-output-is-authorized
+    input:
+      edits:
+        - path: map_api.go
+          find: "type ActivityEdge struct {\n"
+          replace: "type ActivityEdge struct {\n\tFreezeCoverage string `json:\"freezeCoverage,omitempty\" description:\"Coverage test field.\"`\n"
+        - path: publish.go
+          find: "type AnnotationPushRequest struct {\n"
+          replace: "type AnnotationPushRequest struct {\n\tFreezeCoverage string `json:\"freezeCoverage,omitempty\"`\n"
+      ahead: [types, village-api, local-api]
+      required_paths:
+        - versions.go
+        - cmd/schema-gen/testdata/frozen_specs.yaml
+        - cmd/schema-gen/testdata/frozen_specs_manifest.yaml
+        - typescript/src/internal/generated/versions.gen.ts
+        - testdata/typescript/public_exports.yaml
+        - generated/types-next.json
+        - generated/village-api-next.json
+        - generated/publish-request-next.schema.json
+        - generated/annotation-push-request-next.schema.json
+        - generated/peasantlocal-api-next.json
+    expected: {check: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "release-intent freeze-writer coverage"}
+    mutation: {description: "Generate content changes in all supported freeze surfaces."}

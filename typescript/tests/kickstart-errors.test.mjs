@@ -17,7 +17,7 @@ import * as localApi from "../dist/local-api.js";
 
 const errors = parse(await readFile(new URL("../../testdata/local-api/kickstart_errors.yaml", import.meta.url), "utf8"));
 const sets = parse(await readFile(new URL("../../testdata/local-api/kickstart_sets.yaml", import.meta.url), "utf8"));
-const localDocument = JSON.parse(await readFile(new URL(`../../generated/peasantlocal-api-${schema.PeasantLocalAPIVersion}.json`, import.meta.url), "utf8"));
+const localDocument = JSON.parse(await readFile(new URL("../../generated/peasantlocal-api-next.json", import.meta.url), "utf8"));
 
 test("the closed error-code set is exactly the codes the fixture pins to a status", () => {
   assert.deepEqual([...schema.AllLocalKickstartErrorCodes].sort(), Object.keys(errors.code_status).sort());

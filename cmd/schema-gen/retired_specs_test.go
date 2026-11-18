@@ -39,6 +39,9 @@ type retiredSpec struct {
 	// (they are JSON Schema documents, not OpenAPI specs), so freezing them must
 	// skip the .yaml present/hash check. yamlSHA256 is left empty for such entries.
 	JSONOnly bool `yaml:"json_only"`
+	// Regenerate preserves the independent source check for protocols that
+	// remain generated as numbered files.
+	Regenerate bool `yaml:"regenerate,omitempty"`
 }
 
 // retiredSpecRegistry is the set of RETIRED spec versions under the generic

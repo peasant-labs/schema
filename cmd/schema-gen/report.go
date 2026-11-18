@@ -22,15 +22,15 @@ import (
 // that names their current files. The config is checked against the actual
 // generator output by the repository tests.
 type reportSurface struct {
-	name, version string
-	stems         []string
+	name, label, version string
+	stems                []string
 }
 
 var reportSurfaces = []reportSurface{
-	{name: "types", version: "TypesVersion", stems: []string{"types"}},
-	{name: "village-api", version: "VillageAPIVersion", stems: []string{"village-api", "publish-request", "annotation-push-request"}},
-	{name: "local-api", version: "PeasantLocalAPIVersion", stems: []string{"peasantlocal-api"}},
-	{name: "segmented-read", version: "SegmentedReadAPIVersion", stems: []string{"segmented-read"}},
+	{name: "types", label: "Types", version: "TypesVersion", stems: []string{"types"}},
+	{name: "village-api", label: "Village API", version: "VillageAPIVersion", stems: []string{"village-api", "publish-request", "annotation-push-request"}},
+	{name: "local-api", label: "Local API", version: "PeasantLocalAPIVersion", stems: []string{"peasantlocal-api"}},
+	{name: "segmented-read", label: "Segmented Read", version: "SegmentedReadAPIVersion", stems: []string{"segmented-read"}},
 }
 
 type reportChange string
@@ -109,9 +109,13 @@ func versionsAt(root, rev string) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read versions.go at %s: %w", rev, err)
 	}
+	return parseReportVersions(data, rev)
+}
+
+func parseReportVersions(data []byte, location string) (map[string]string, error) {
 	file, err := parser.ParseFile(token.NewFileSet(), "versions.go", data, 0)
 	if err != nil {
-		return nil, fmt.Errorf("parse versions.go at %s: %w", rev, err)
+		return nil, fmt.Errorf("parse versions.go at %s: %w", location, err)
 	}
 	values := make(map[string]string)
 	for _, decl := range file.Decls {
@@ -135,10 +139,28 @@ func versionsAt(root, rev string) (map[string]string, error) {
 	}
 	for _, surface := range reportSurfaces {
 		if values[surface.version] == "" {
-			return nil, fmt.Errorf("versions.go at %s has no literal %s; cannot resolve the %s contract document", rev, surface.version, surface.name)
+			return nil, fmt.Errorf("versions.go at %s has no literal %s; cannot resolve the %s contract document", location, surface.version, surface.name)
 		}
 	}
 	return values, nil
+}
+
+func reportDocumentAt(root, rev, stem, version, extension string) ([]byte, string, bool, error) {
+	workingPath := "generated/" + stem + "-next" + extension
+	listed, err := gitOutput(root, "ls-tree", "--name-only", rev, "--", workingPath)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("inspect working document %s at %s: %w", workingPath, rev, err)
+	}
+	path := "generated/" + stem + "-" + version + extension
+	working := strings.TrimSpace(string(listed)) == workingPath
+	if working {
+		path = workingPath
+	}
+	data, err := gitOutput(root, "show", rev+":"+path)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("read contract %s at %s: %w", path, rev, err)
+	}
+	return data, path, working, nil
 }
 
 func buildContractReport(root, baseRef, headRef, apiFile string) (contractReport, error) {
@@ -176,15 +198,13 @@ func buildContractReport(root, baseRef, headRef, apiFile string) (contractReport
 			if requestSchema {
 				extension = ".schema.json"
 			}
-			basePath := "generated/" + stem + "-" + baseVersions[surface.version] + extension
-			headPath := "generated/" + stem + "-" + headVersions[surface.version] + extension
-			oldBytes, err := gitOutput(root, "show", base+":"+basePath)
+			oldBytes, basePath, baseWorking, err := reportDocumentAt(root, base, stem, baseVersions[surface.version], extension)
 			if err != nil {
-				return contractReport{}, fmt.Errorf("read base contract %s: %w", basePath, err)
+				return contractReport{}, err
 			}
-			newBytes, err := gitOutput(root, "show", head+":"+headPath)
+			newBytes, headPath, _, err := reportDocumentAt(root, head, stem, headVersions[surface.version], extension)
 			if err != nil {
-				return contractReport{}, fmt.Errorf("read head contract %s: %w", headPath, err)
+				return contractReport{}, err
 			}
 			change, breaking, err := compareReportDocument(temp, stem, oldBytes, newBytes, requestSchema)
 			if err != nil {
@@ -192,6 +212,18 @@ func buildContractReport(root, baseRef, headRef, apiFile string) (contractReport
 			}
 			result.Change = strongerReportChange(result.Change, change)
 			result.Breaking = result.Breaking || breaking
+			if baseWorking {
+				frozenPath := "generated/" + stem + "-" + baseVersions[surface.version] + extension
+				frozen, err := gitOutput(root, "show", base+":"+frozenPath)
+				if err != nil {
+					return contractReport{}, fmt.Errorf("read base frozen contract %s: %w", frozenPath, err)
+				}
+				baseChange, _, err := compareReportDocument(temp, stem, frozen, oldBytes, requestSchema)
+				if err != nil {
+					return contractReport{}, fmt.Errorf("compare base working and frozen %s: %w", stem, err)
+				}
+				result.AheadOnBase = result.AheadOnBase || baseChange == reportFunctional
+			}
 		}
 		if result.Breaking {
 			result.Change = reportFunctional

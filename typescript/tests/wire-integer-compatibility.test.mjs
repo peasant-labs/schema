@@ -5,7 +5,6 @@ import test from "node:test";
 import { parse } from "yaml";
 
 import {
-  TypesVersion,
   parseSessionDetailPayloadText,
   parseTranscriptContentText,
   zAuthoritativePublishRequest,
@@ -101,7 +100,7 @@ test("the adjacent endpoint lexemes are indistinguishable after JSON.parse", () 
 test("existing formatted and publication validators match the pre-change source", async () => {
   const baseline = parse(await readFile(new URL("../../testdata/typescript/wire_validator_baseline.yaml", import.meta.url), "utf8"), { uniqueKeys: true });
   const source = await readFile(new URL("../src/internal/generated/contract/zod.gen.ts", import.meta.url), "utf8");
-  const spec = JSON.parse(await readFile(new URL(`../../generated/types-${TypesVersion}.json`, import.meta.url), "utf8")).components.schemas;
+  const spec = JSON.parse(await readFile(new URL("../../generated/types-next.json", import.meta.url), "utf8")).components.schemas;
   assert.match(baseline.capturedFrom, /^[0-9a-f]{40}$/);
   for (const section of [baseline.publication, baseline.formatted]) {
     assert.ok(section.requiredNames.length > 0);

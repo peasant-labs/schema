@@ -2,3 +2,23 @@ specs:
   - name: segmented-read-0.1.0
     json_sha256: 4e4e0536b49b7c8e013c93fc7808a29cdf8d187f7e52a4193046b862145e1cda
     yaml_sha256: 549e14046eca790c6a00768bb9bad5ebf16e7d8de0046f2ff66dfbfe585e4ab4
+    regenerate: true
+  - name: segmented-read-0.2.0
+    json_sha256: 5f12159e8a45903d0da8421da10419ddff17ddb86abd1df708abaf5ff5c8d954
+    yaml_sha256: d921b0f20ccf50c371549727f6c94b7045a52b87c2b23f44de5ae4bc6843fef0
+    regenerate: true
+  - name: types-0.51.0
+    json_sha256: 6fd39874943d3b8dfeab08cf18ffdff7649bf0e2323e4f4621fce26bdac24120
+    yaml_sha256: 7c6cbacb7f3193d35abc59723ffae44d79af208b96edcf60a77c28e79f5c2d4f
+  - name: village-api-0.41.0
+    json_sha256: 3c282980db1f0ff5c78d3379fc879b026f86b5ef68b142bbba8655024cf110b4
+    yaml_sha256: b0c6c743300c2e10b3f5d7cfee7116ae7ccb460a3904da5adb5b833005a52dda
+  - name: publish-request-0.41.0.schema
+    json_sha256: 66f6ecd930c8dba2eb47858772c7f9bccc4d36d976bb2492f83ec58dc49ea487
+    json_only: true
+  - name: annotation-push-request-0.41.0.schema
+    json_sha256: c8e350b6b2fe0d224a1cf6922ef89668d7f3ac1854c4d5aa6d275726529ae7f0
+    json_only: true
+  - name: peasantlocal-api-0.38.0
+    json_sha256: 198cdb18265efc5f5d38b4ab1ca93adc3f964e2ea82852ecd3c7eaa9dfcc9c63
+    yaml_sha256: 95922139bfc1c9d8a1f10eb485876ca12c7bb752372eb0e1372aa5e3ba91b59d

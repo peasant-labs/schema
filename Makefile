@@ -1,4 +1,4 @@
-.PHONY: schema check fmt vet test freshness gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check check-unstring unstring-update
+.PHONY: schema check fmt vet test freshness freeze-check gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check check-unstring unstring-update
 
 GO ?= go
 UNSTRING ?= go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.4
@@ -80,6 +80,9 @@ freshness: typescript-deps
 		git --no-pager diff --stat -- generated/ route/routes_gen.go testdata/session-detail/redactions.yaml typescript/src/internal/generated/; \
 		exit 1; \
 	fi
+
+freeze-check:
+	$(GO) run ./cmd/schema-gen freeze --check
 
 # gates conservatively refuses a break without a title. With TITLE set it uses
 # release-intent to judge the report just as CI does. The binary must be on PATH.

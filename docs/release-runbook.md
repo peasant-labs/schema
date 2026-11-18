@@ -15,12 +15,16 @@ Consumers re-pin only after the schema tag exists.
    The merge group compares the entry PR's own diff, not the combined group.
 3. After landing, `release-batch.yml` plans from the last final tag. When tag
    mode is on, it checks the landed range and maintains the single
-   `automation/release` PR with a generated changelog section and the npm
-   version. The release PR is queued by the bot; do not edit or merge it by
-   hand. The bot tags only a fresh, verified release commit.
+   `automation/release` PR with a generated changelog section, the npm
+   version, and the freeze of every ahead supported surface. The tool's title
+   is passed unchanged to verification and the PR. The release PR is queued by
+   the bot; do not edit or merge it by hand. The bot tags only a fresh,
+   verified release commit.
 4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
    and the contract check precede the independent GitHub Release and npm
-   publishers. The GitHub Release carries the generated JSON and YAML specs.
+   publishers. The GitHub Release carries only numbered frozen JSON and YAML
+   specs, including numbered request schemas; `*-next` files never ship as
+   release assets.
    The npm job checks that the committed package version matches the tag and
    removes `private` only in its working copy.
 
@@ -29,13 +33,38 @@ Tags are append-only. Never push, move, or delete a public tag by hand. Old
 historical release candidates, but the automated planner creates final
 releases.
 
-Until the spec-freeze migration, content PRs continue to bump `versions.go`
-and generate numbered documents themselves. `protected_paths: []` deliberately
-does not block those edits. That migration must add protection for
-`versions.go` and `generated/*-[0-9]*` when the release bot takes ownership.
-The changelog and npm version field are already reserved to the release PR.
-The generator currently emits plain `## X.Y.Z` headings; changing that style
-is a separate follow-up.
+## Working and frozen specs
+
+Types, Village, and Local use committed `generated/<stem>-next.*` working
+files. Their numbered files are frozen, and `versions.go` points the public
+accessors and exported validators to the latest frozen bytes. The Village
+publish-request and annotation-push-request JSON Schemas follow the Village
+version. The TypeScript generator, module tests and contract report read
+working documents. Segmented read stays on its numbered path until its separate
+protocol-version decision.
+
+`schema-gen status --write state.yaml` computes `clean`, `docs-ahead`, or
+`ahead`. Description-only changes remain docs-ahead and are copied at the next
+functional freeze. `release-intent freeze-plan` chooses each ahead surface's
+level from landed titles after the spec-freeze migration boundary, while the
+ordinary release floor and the full module changelog range remain independent.
+`schema-gen freeze --plan plan.yaml --state state.yaml` checks the handoff,
+updates constants and mirrors, rebuilds the generator, and writes numbered
+copies and registry rows. The release PR's merge-group tree must pass
+`schema-gen freeze --check`. Before tagging, the candidate is also checked
+against a plan made from its parent state.
+
+A functional surface change requires a releasing title naming it; an
+unchanged or docs-only surface may be named only if it is already ahead on the
+base. `spec-change-needs-bump` and `surface-mismatch` identify these errors.
+A non-releasing `docs(local-api): clarify ...` is valid for docs-only work.
+
+At cutover, an open content PR that edited `versions.go` or numbered specs
+merges the updated base, removes those edits, regenerates working files, and
+lists every functionally changed surface in its title. If a wrong stale freeze
+bypasses the queue check, pre-tag verification rejects it; the next release
+freezes the next number and retains the wrong numbered file in the registry.
+That burns one spec number without moving a tag.
 
 ## Vendor hash
 

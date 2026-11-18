@@ -48,7 +48,7 @@ const versions = {
   MetadataSchemaVersion: Number(requiredMatch(metadataSource, /MetadataSchemaVersion\s*=\s*(\d+)/, "MetadataSchemaVersion", "metadata.go")),
 };
 
-const specPath = join(moduleRoot, "generated", `types-${versions.TypesVersion}.json`);
+const specPath = join(moduleRoot, "generated", "types-next.json");
 const spec = JSON.parse(await readFile(specPath, "utf8"));
 const enumCatalog = parse(await readFile(join(moduleRoot, "testdata", "typescript", "enums.yaml"), "utf8"));
 const contentCapabilityCatalog = parse(await readFile(join(moduleRoot, "testdata", "typescript", "content_capabilities.yaml"), "utf8"));
@@ -84,8 +84,8 @@ await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineF
 await writeFile(join(generatedRoot, "session-graph-fixtures.gen.ts"), renderFixtureConstant("canonicalSessionGraphFixtures", { ...sessionGraphSource, grouped_read: groupedReadSource }));
 await writeFile(join(generatedRoot, "session-graph-capability-fixtures.gen.ts"), renderFixtureConstant("canonicalSessionGraphCapabilityFixtures", sessionGraphCapabilitySource));
 await writeFile(join(generatedRoot, "testcase.gen.ts"), renderTestcaseModel(testcaseSource));
-await generateOperationContracts("local", `peasantlocal-api-${versions.PeasantLocalAPIVersion}.json`, "local-api.ts");
-await generateOperationContracts("village", `village-api-${versions.VillageAPIVersion}.json`, "village-api.ts");
+await generateOperationContracts("local", "peasantlocal-api-next.json", "local-api.ts");
+await generateOperationContracts("village", "village-api-next.json", "village-api.ts");
 
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
