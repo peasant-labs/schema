@@ -58,38 +58,93 @@ func loadVillageAbsenteeGoneFixtures(t *testing.T) villageAbsenteeGoneFixtures {
 	return fixtures
 }
 
-// villageOperationsDeclaring410 returns the operation ids of every operation in
-// the document that declares a 410 response, keyed by operation id with the
-// path as the value. It reads the document as served JSON, so it holds what a
-// client of the document sees.
-func villageOperationsDeclaring410(t *testing.T, document map[string]any) map[string]string {
+// goneDocument is the part of an OpenAPI document this test reads: each
+// operation's id and the statuses it declares, with the schema of each body.
+type goneDocument struct {
+	Paths map[string]goneEntry `json:"paths"`
+}
+
+type goneEntry struct {
+	Get    *goneOperation `json:"get"`
+	Put    *goneOperation `json:"put"`
+	Post   *goneOperation `json:"post"`
+	Patch  *goneOperation `json:"patch"`
+	Delete *goneOperation `json:"delete"`
+}
+
+type goneOperation struct {
+	OperationID string                  `json:"operationId"`
+	Responses   map[string]goneResponse `json:"responses"`
+}
+
+type goneResponse struct {
+	Description string `json:"description"`
+	Content     map[string]struct {
+		Schema struct {
+			Ref string `json:"$ref"`
+		} `json:"schema"`
+	} `json:"content"`
+}
+
+func (e goneEntry) operations() []*goneOperation {
+	var operations []*goneOperation
+	for _, operation := range []*goneOperation{e.Get, e.Put, e.Post, e.Patch, e.Delete} {
+		if operation != nil {
+			operations = append(operations, operation)
+		}
+	}
+	return operations
+}
+
+func decodeGoneDocument(t *testing.T, raw []byte) goneDocument {
 	t.Helper()
+	var document goneDocument
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatalf("decode the Village API document: %v", err)
+	}
+	return document
+}
+
+func builtGoneDocument(t *testing.T) goneDocument {
+	t.Helper()
+	spec, err := specpkg.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return decodeGoneDocument(t, raw)
+}
+
+// operationsDeclaring410 maps the operation id of every operation that
+// declares a 410 response to its path.
+func (d goneDocument) operationsDeclaring410() map[string]string {
 	found := map[string]string{}
-	paths, _ := document["paths"].(map[string]any)
-	for path, rawItem := range paths {
-		item, _ := rawItem.(map[string]any)
-		for _, rawOperation := range item {
-			operation, ok := rawOperation.(map[string]any)
-			if !ok {
-				continue
-			}
-			responses, _ := operation["responses"].(map[string]any)
-			if _, declares := responses["410"]; declares {
-				id, _ := operation["operationId"].(string)
-				found[id] = path
+	for path, entry := range d.Paths {
+		for _, operation := range entry.operations() {
+			if _, declares := operation.Responses["410"]; declares {
+				found[operation.OperationID] = path
 			}
 		}
 	}
 	return found
 }
 
-func decodeServedVillageDocument(t *testing.T) map[string]any {
+func (d goneDocument) operation(t *testing.T, in villageAbsenteeGoneInput) *goneOperation {
 	t.Helper()
-	var document map[string]any
-	if err := json.Unmarshal(schema.VillageAPISpecJSON(), &document); err != nil {
-		t.Fatalf("decode the served Village API document: %v", err)
+	entry, ok := d.Paths[in.Path]
+	if !ok {
+		t.Fatalf("the Village API declares no path %s", in.Path)
 	}
-	return document
+	for _, operation := range entry.operations() {
+		if operation.OperationID == in.OperationID {
+			return operation
+		}
+	}
+	t.Fatalf("path %s declares no operation %s", in.Path, in.OperationID)
+	return nil
 }
 
 // TestVillageAbsenteeGoneIsDeclared holds the six transcript reads to a 410
@@ -99,49 +154,32 @@ func decodeServedVillageDocument(t *testing.T) map[string]any {
 // against the document the module serves, so a stale embedded copy fails too.
 func TestVillageAbsenteeGoneIsDeclared(t *testing.T) {
 	fixtures := loadVillageAbsenteeGoneFixtures(t)
-	documents := map[string]map[string]any{
-		"built":  builtSpecDocument(t, specpkg.BuildVillageAPISpec),
-		"served": decodeServedVillageDocument(t),
+	documents := map[string]goneDocument{
+		"built":  builtGoneDocument(t),
+		"served": decodeGoneDocument(t, schema.VillageAPISpecJSON()),
 	}
 	for source, document := range documents {
 		t.Run(source, func(t *testing.T) {
-			paths := document["paths"].(map[string]any)
-			operationFor := func(t *testing.T, in villageAbsenteeGoneInput) map[string]any {
-				t.Helper()
-				item, ok := paths[in.Path].(map[string]any)
-				if !ok {
-					t.Fatalf("the Village API declares no path %s", in.Path)
-				}
-				for _, raw := range item {
-					if operation, ok := raw.(map[string]any); ok && operation["operationId"] == in.OperationID {
-						return operation
-					}
-				}
-				t.Fatalf("path %s declares no operation %s", in.Path, in.OperationID)
-				return nil
-			}
 			for _, c := range fixtures.Declared.Cases {
 				t.Run(c.Name, func(t *testing.T) {
-					responses := operationFor(t, c.Input)["responses"].(map[string]any)
-					response, ok := responses["410"].(map[string]any)
+					operation := document.operation(t, c.Input)
+					response, ok := operation.Responses["410"]
 					if !ok {
-						t.Fatalf("%s declares no 410; statuses are %v", c.Input.OperationID, responseStatuses(responses))
+						t.Fatalf("%s declares no 410; statuses are %v", c.Input.OperationID, responseStatuses(operation.Responses))
 					}
-					if got := declaredResponseRef(t, responses, 410); got != "#/components/schemas/SchemaVillageErrorResponse" {
-						t.Fatalf("%s 410 body is %s, want the shared Village error envelope", c.Input.OperationID, got)
+					if got := response.Content["application/json"].Schema.Ref; got != "#/components/schemas/SchemaVillageErrorResponse" {
+						t.Fatalf("%s 410 body is %q, want the shared Village error envelope", c.Input.OperationID, got)
 					}
-					description, _ := response["description"].(string)
 					for _, phrase := range c.Expected.Contains {
-						if !strings.Contains(description, phrase) {
-							t.Fatalf("%s 410 description %q does not contain %q", c.Input.OperationID, description, phrase)
+						if !strings.Contains(response.Description, phrase) {
+							t.Fatalf("%s 410 description %q does not contain %q", c.Input.OperationID, response.Description, phrase)
 						}
 					}
 				})
 			}
 			for _, c := range fixtures.Absent.Cases {
 				t.Run(c.Name, func(t *testing.T) {
-					responses := operationFor(t, c.Input)["responses"].(map[string]any)
-					if _, declared := responses["410"]; declared {
+					if _, declared := document.operation(t, c.Input).Responses["410"]; declared {
 						t.Fatalf("%s declares 410; this operation must keep its 404", c.Input.OperationID)
 					}
 				})
@@ -151,9 +189,8 @@ func TestVillageAbsenteeGoneIsDeclared(t *testing.T) {
 				for _, c := range fixtures.Declared.Cases {
 					want = append(want, c.Input.OperationID)
 				}
-				found := villageOperationsDeclaring410(t, document)
 				var got []string
-				for id, path := range found {
+				for id, path := range document.operationsDeclaring410() {
 					got = append(got, id)
 					if strings.Contains(path, "/pulls") || strings.Contains(path, "/pull/") || strings.Contains(id, "Pull") {
 						t.Errorf("%s at %s declares 410; no pull operation may", id, path)
@@ -169,7 +206,7 @@ func TestVillageAbsenteeGoneIsDeclared(t *testing.T) {
 	}
 }
 
-func responseStatuses(responses map[string]any) []string {
+func responseStatuses(responses map[string]goneResponse) []string {
 	statuses := make([]string, 0, len(responses))
 	for status := range responses {
 		statuses = append(statuses, status)
