@@ -4,8 +4,12 @@ import {
   PageSize,
   Role,
   VillageCollectiveRole,
+  type AuthoritativeQualityMetrics,
   type EntryType as EntryTypeValue,
+  type License as LicenseValue,
   type PageSize as PageSizeValue,
+  type PublishLicenseOperation,
+  type SessionOutcome as SessionOutcomeValue,
   type TurnDetail,
   type VillageCollectiveRole as VillageCollectiveRoleValue,
   type Role as RoleValue,
@@ -36,6 +40,13 @@ const parsedRole: RoleValue = zRole.parse("user");
 const schemaOptions: readonly RoleValue[] = zRole.options;
 const memberIsAssignableToSet: RoleValue = Role.Tool;
 
+// Optional, nullable and nullish fields keep the named set too.
+const turnEntryTypeIsEntryType: ExactType<TurnDetail["entryType"], EntryTypeValue | undefined> = true;
+const turnEntryType: EntryTypeValue | undefined = turn.entryType;
+const turnIsThinking: boolean = turn.entryType === EntryType.Thinking;
+const nullableLicenseIsLicense: ExactType<PublishLicenseOperation["license"], LicenseValue | null> = true;
+const nullishOutcomeIsSessionOutcome: ExactType<AuthoritativeQualityMetrics["outcome"], SessionOutcomeValue | null | undefined> = true;
+
 // A wrong literal is rejected through the set, the schema, and a field.
 // @ts-expect-error "operator" is not a Role.
 const wrongSetLiteral: RoleValue = "operator";
@@ -45,5 +56,7 @@ const crossSetMember: RoleValue = VillageCollectiveRole.Owner;
 const wrongFieldLiteral: TurnDetail["role"] = "operator";
 // @ts-expect-error the member is the literal "user", never "assistant".
 const wrongMemberLiteral: typeof Role.User = "assistant";
+// @ts-expect-error an optional field typed EntryType refuses a literal outside the set.
+const wrongOptionalFieldLiteral: TurnDetail["entryType"] = "reasoning";
 
-void [roleUserIsLiteral, roleAssistantIsLiteral, userMember, pageSizeMemberIsNumberLiteral, entryTypeMemberIsNotTheSet, collectiveRoleOwnerIsLiteral, roleIsTableValues, pageSizeIsTableValues, inventoryIsNamed, collectiveRoleIsTableValues, turnRoleIsRole, turnRole, parsedRole, schemaOptions, memberIsAssignableToSet, wrongSetLiteral, crossSetMember, wrongFieldLiteral, wrongMemberLiteral];
+void [roleUserIsLiteral, roleAssistantIsLiteral, userMember, pageSizeMemberIsNumberLiteral, entryTypeMemberIsNotTheSet, collectiveRoleOwnerIsLiteral, roleIsTableValues, pageSizeIsTableValues, inventoryIsNamed, collectiveRoleIsTableValues, turnRoleIsRole, turnRole, parsedRole, schemaOptions, memberIsAssignableToSet, turnEntryTypeIsEntryType, turnEntryType, turnIsThinking, nullableLicenseIsLicense, nullishOutcomeIsSessionOutcome, wrongSetLiteral, crossSetMember, wrongFieldLiteral, wrongMemberLiteral, wrongOptionalFieldLiteral];
