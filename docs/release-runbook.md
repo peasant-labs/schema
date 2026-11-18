@@ -22,7 +22,10 @@ Consumers re-pin only after the schema tag exists.
    commit, the configured release bot branch as its head, and the releaser App
    as its author. A failed lookup or provenance check makes the shell exit
    nonzero; neither the step nor the plan job sets `continue-on-error`, and
-   the release job requires a successful plan.
+   the release job requires a successful plan. The tag names that release
+   PR's merge commit; later commits belong to the next release. The independent
+   verifier checks the prepared tag against the recorded candidate and branch
+   ancestry without replanning against the current tip.
 4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
    and the contract check precede the independent GitHub Release and npm
    publishers. The GitHub Release is created as a draft, the generated JSON

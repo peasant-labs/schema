@@ -25,8 +25,10 @@ func TestReleaseSetupGates(t *testing.T) {
 			JobNeeds        map[string][]string `yaml:"job_needs"`
 			PullRequests    string              `yaml:"pull_requests"`
 		} `yaml:"provenance_gates"`
-		CutIf   string   `yaml:"cut_default_branch_if"`
-		CutJobs []string `yaml:"cut_jobs"`
+		PublicationRequired []string            `yaml:"publication_required"`
+		PublicationNeeds    map[string][]string `yaml:"publication_needs"`
+		CutIf               string              `yaml:"cut_default_branch_if"`
+		CutJobs             []string            `yaml:"cut_jobs"`
 	}
 	if err := yaml.Unmarshal(releaseAdoptionFixture, &fixture); err != nil {
 		t.Fatal(err)
@@ -131,6 +133,26 @@ func TestReleaseSetupGates(t *testing.T) {
 				(strings.Contains(run.Value, "vars.RELEASE_BATCH_MODE") || strings.Contains(run.Value, "vars.RELEASE_BATCH_FLOOR")) {
 				t.Error("release mode and floor must enter shell steps through env")
 			}
+		}
+	}
+	publishJobs := readJobs("release.yml")
+	for _, name := range fixture.PublicationRequired {
+		expected, ok := fixture.PublicationNeeds[name]
+		if !ok {
+			t.Errorf("publication fixture must require %s job dependencies", name)
+			continue
+		}
+		needs := workflowMappingChild(workflowMappingChild(publishJobs, name), "needs")
+		var actual []string
+		if needs == nil || needs.Decode(&actual) != nil {
+			t.Errorf("%s publication job must declare its dependencies", name)
+			continue
+		}
+		want := slices.Clone(expected)
+		slices.Sort(want)
+		slices.Sort(actual)
+		if !slices.Equal(actual, want) {
+			t.Errorf("%s publication job dependencies = %v, want %v", name, actual, want)
 		}
 	}
 	cutJobs := readJobs("cut-release.yml")

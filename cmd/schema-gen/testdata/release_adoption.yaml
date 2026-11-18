@@ -50,6 +50,59 @@ existing_release_cases:
     api_exit: 1
     expected_exit: 1
     expected_output: "mock API unavailable"
+prepared_tag_required:
+  - release-commit-snapshot
+  - branch-advances-after-plan
+  - branch-advances-before-plan
+  - tag-points-at-wrong-commit
+  - lightweight-tag
+  - unexpected-tag-ref
+  - multiple-tag-refs
+  - candidate-outside-plan-source
+  - candidate-outside-run-branch
+  - corrupt-bundle
+  - invalid-candidate-sha
+  - invalid-plan-source-sha
+  - unavailable-plan-source
+prepared_tag_cases:
+  - name: release-commit-snapshot
+    success: true
+  - name: branch-advances-after-plan
+    advance_after_plan: true
+    success: true
+  - name: branch-advances-before-plan
+    advance_before_plan: true
+    success: true
+  - name: tag-points-at-wrong-commit
+    tag_at_base: true
+    error_contains: "prepared tag does not point at the planned release candidate"
+  - name: lightweight-tag
+    lightweight: true
+    error_contains: "prepared release tag must be annotated"
+  - name: unexpected-tag-ref
+    unexpected_ref: true
+    error_contains: "prepared tag bundle must contain only the planned tag"
+  - name: multiple-tag-refs
+    extra_ref: true
+    error_contains: "prepared tag bundle must contain only the planned tag"
+  - name: candidate-outside-plan-source
+    source_at_base: true
+    error_contains: "release candidate is not an ancestor of the plan source"
+  - name: candidate-outside-run-branch
+    candidate_off_branch: true
+    error_contains: "release candidate is not on the default-branch run"
+  - name: corrupt-bundle
+    corrupt_bundle: true
+    error_contains: "prepared tag bundle is invalid"
+  - name: invalid-candidate-sha
+    invalid_candidate: true
+    error_contains: "release candidate is not a full commit SHA"
+  - name: invalid-plan-source-sha
+    invalid_source: true
+    error_contains: "plan source is not a full commit SHA"
+  - name: unavailable-plan-source
+    unavailable_source: true
+    error_contains: "could not fetch the recorded plan source"
 merge_gate_required:
   - release-vendor-failed
   - release-vendor-skipped
@@ -112,6 +165,11 @@ provenance_gates:
   job_needs:
     verify: [plan]
     release: [plan, verify]
+publication_required: [build, release, npm-publish]
+publication_needs:
+  build: [guard, nix-vendor-hash, contract-gates, verify-tag]
+  release: [guard, nix-vendor-hash, contract-gates, verify-tag, build]
+  npm-publish: [guard, nix-vendor-hash, contract-gates, verify-tag]
 provenance_candidate: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 provenance_config:
   automation_author: app/peasant-labs-releaser
@@ -217,6 +275,9 @@ required:
   - pre-tag-contract-has-floor
   - tag-requires-verified-release-pr
   - tag-creation-requires-provenance
+  - prepared-tag-is-snapshot-verified
+  - tag-push-checks-default-branch-ancestry
+  - tag-push-follows-default-branch-check
   - pending-range-has-floor
   - tag-range-has-floor
   - tag-judges-contract
@@ -284,6 +345,36 @@ cases:
     step: Make the annotated release tag
     after: Verify the release candidate PR provenance
     if_value: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag' && steps.provenance.outcome == 'success'"
+  - name: prepared-tag-is-snapshot-verified
+    workflow: release-batch.yml
+    job: verify
+    step: Verify the prepared tag
+    if_value: "!cancelled() && needs.plan.outputs.tag-action == 'tag'"
+    no_continue: true
+    no_job_continue: true
+    env_values:
+      TAG: "${{ needs.plan.outputs.tag }}"
+      CANDIDATE: "${{ needs.plan.outputs.candidate }}"
+      PLAN_SOURCE: "${{ needs.plan.outputs.plan-source }}"
+    run_contains: ['git bundle verify', 'git bundle list-heads', 'refs/tags/${TAG}^{commit}', '${CANDIDATE}', '${PLAN_SOURCE}', '${GITHUB_SHA}']
+    run_excludes: ["origin/develop", 'release-intent" plan', 'TIP=', FRESH_ACTION]
+  - name: tag-push-checks-default-branch-ancestry
+    workflow: release-batch.yml
+    job: release
+    step: Check the release tag is on the default branch
+    after: Fetch the release tag
+    if_value: "needs.plan.outputs.tag-action == 'tag'"
+    no_continue: true
+    no_job_continue: true
+    run_contains: ['git merge-base --is-ancestor "refs/tags/${TAG}" "${GITHUB_SHA}"']
+  - name: tag-push-follows-default-branch-check
+    workflow: release-batch.yml
+    job: release
+    step: Tag the fresh release candidate
+    after: Check the release tag is on the default branch
+    if_value: "needs.plan.outputs.tag-action == 'tag'"
+    no_continue: true
+    no_job_continue: true
   - name: pending-range-has-floor
     workflow: release-batch.yml
     job: plan
