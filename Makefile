@@ -49,10 +49,11 @@ vet:
 #
 # The release-workflow guard (release-guard check-workflow) keeps publication
 # behind the required gates; the race suite is the authoritative test run.
+# The root package needs headroom beyond Go's default 10-minute timeout in CI.
 check: fmt vet freshness typescript-check
 	$(UNSTRING) check
 	$(GO) run ./cmd/release-guard check-workflow --policy .github/release-guard.policy.yml --release .github/workflows/release.yml
-	$(GO) test -race ./...
+	$(GO) test -race -timeout 20m ./...
 	cd tools/redaction-categories && GOWORK=off $(GO) test -race ./...
 
 check-unstring:
@@ -62,7 +63,8 @@ unstring-update:
 	$(UNSTRING) update
 
 test:
-	$(GO) test -race ./...
+	# Match check's CI headroom for the root package race suite.
+	$(GO) test -race -timeout 20m ./...
 
 # freshness is the git-diff backstop: regenerate the specs and fail
 # if the committed generated/ artifacts drift from the Go source. It is largely
