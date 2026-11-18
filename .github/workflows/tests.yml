@@ -36,7 +36,7 @@ jobs:
         if: github.event_name == 'merge_group'
         with:
           repository: peasant-labs/infra
-          ref: cb913e71af97d6070ed80224ecc0b6cb865644eb
+          ref: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -154,7 +154,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: cb913e71af97d6070ed80224ecc0b6cb865644eb
+          ref: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false

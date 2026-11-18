@@ -1,4 +1,4 @@
-tool_pin: cb913e71af97d6070ed80224ecc0b6cb865644eb
+tool_pin: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
 version_guard_required:
   - matching-version-with-shell-banner
   - mismatched-version-is-refused
