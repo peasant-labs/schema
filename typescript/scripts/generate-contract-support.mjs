@@ -26,6 +26,7 @@ import { normalizeAutoPublishTargetZod, applyAutoPublishTargetZodRefinements } f
 import { applySessionTeammateZodRefinements } from "./lib/session-teammate-zod-refinements.mjs";
 import { applyContentPartsZodRefinements } from "./lib/content-parts-zod-refinements.mjs";
 import { renderEnumInventoryDoc } from "./lib/enum-inventory-doc.mjs";
+import { applyClosedSetZodTypes } from "./lib/closed-set-zod-types.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
@@ -97,7 +98,8 @@ async function refineRootZodContract() {
   });
   const refined = applySessionTeammateZodRefinements(applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))), sessionTeammateBound);
   const contentPartsRefined = applyContentPartsZodRefinements(refined);
-  await writeFile(zodPath, `${header()}${applyUnverifiedPullRequestZodRefinements(applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(contentPartsRefined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username))}`);
+  const refinedSource = applyUnverifiedPullRequestZodRefinements(applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(contentPartsRefined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username));
+  await writeFile(zodPath, `${header()}${applyClosedSetZodTypes(refinedSource, enumCatalog)}`);
 }
 
 // readGeneratorOutput reads a file the preceding openapi-ts step must have
@@ -191,11 +193,14 @@ function renderEnums(openapi, catalog) {
       }
       return `${enumCase.name}.${name}`;
     });
-    imports.push(`import { z${enumCase.name}, type ${enumCase.name} as ${enumCase.name}Contract } from "./contract/zod.gen.js";`);
-    const renderedMembers = members.map((member) => `  ${member.name}: z${enumCase.name}.parse(${JSON.stringify(member.value)}),`).join("\n");
+    imports.push(`import { z${enumCase.name} } from "./contract/zod.gen.js";`);
+    // Literal member values keep each member's own type, and the named type is
+    // derived from the table. contract/zod.gen.ts checks the schema against this
+    // alias at compile time, so the table and the schema cannot drift apart.
+    const renderedMembers = members.map((member) => `  ${member.name}: ${JSON.stringify(member.value)},`).join("\n");
     // Document a subset from its catalog entry, or use a generic explanation.
     const allDoc = renderEnumInventoryDoc(enumCase);
-    blocks.push(`export type ${enumCase.name} = ${enumCase.name}Contract;\nexport const ${enumCase.name} = Object.freeze({\n${renderedMembers}\n} as const);\n${allDoc}export const ${enumCase.all_name} = Object.freeze([${allMembers.join(", ")}]) as readonly ${enumCase.name}[];\nexport function is${enumCase.name}(value: unknown): value is ${enumCase.name} {\n  return z${enumCase.name}.safeParse(value).success;\n}`);
+    blocks.push(`export const ${enumCase.name} = Object.freeze({\n${renderedMembers}\n} as const);\nexport type ${enumCase.name} = (typeof ${enumCase.name})[keyof typeof ${enumCase.name}];\n${allDoc}export const ${enumCase.all_name} = Object.freeze([${allMembers.join(", ")}]) as readonly ${enumCase.name}[];\nexport function is${enumCase.name}(value: unknown): value is ${enumCase.name} {\n  return z${enumCase.name}.safeParse(value).success;\n}`);
   }
   return `${header()}${imports.join("\n")}\n\n${blocks.join("\n\n")}\n`;
 }

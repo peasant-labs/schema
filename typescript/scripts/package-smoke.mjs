@@ -178,6 +178,9 @@ try {
   const tsc = join(consumerDir, "node_modules", ".bin", "tsc");
   execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
 
+  await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/enum-member-types.ts", import.meta.url), "utf8"));
+  execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
+
   await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/invalid-enum-consumer.ts", import.meta.url), "utf8"));
   const invalid = spawnSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, encoding: "utf8" });
   assert.notEqual(invalid.status, 0, "invalid enum sentinel unexpectedly compiled");
