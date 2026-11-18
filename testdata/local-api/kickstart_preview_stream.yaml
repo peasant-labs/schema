@@ -1,0 +1,264 @@
+frames:
+  opened: &opened
+    kind: opened
+    sessionId: setup
+    requestId: request
+    captureId: AAAAAAAAAAAAAAAAAAAAAA
+    seq: 0
+    header: &header
+      id: ses_test
+      harness: claude-code
+      startTime: "2026-01-01T00:00:00Z"
+      endTime: "2026-01-01T00:00:00Z"
+      durationMins: 0
+      totalTokens: 0
+      tokensIn: 0
+      tokensOut: 0
+      turnCount: 0
+      toolCallCount: 0
+      turns: []
+    directory: {sessionId: ses_test, revision: "1", complete: false, loadedSegments: 0, loadedTurns: 0, segments: []}
+    continuation: more
+  first: &first
+    kind: segment
+    sessionId: setup
+    captureId: AAAAAAAAAAAAAAAAAAAAAA
+    seq: 1
+    header: *header
+    directory:
+      sessionId: ses_test
+      revision: "1"
+      complete: false
+      loadedSegments: 1
+      loadedTurns: 1
+      segments: &refs
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 2}
+    segment:
+      index: 0
+      revision: "1"
+      firstTurn: 0
+      lastTurn: 0
+      byteLength: 2
+      hasOlder: false
+      hasNewer: true
+      turns:
+        - {index: 0, role: user, content: "", timestamp: "2026-01-01T00:00:00Z", depth: 0, entryType: text, truncated: false, byteLength: 2}
+    continuation: more
+  final: &final
+    kind: segment
+    sessionId: setup
+    captureId: AAAAAAAAAAAAAAAAAAAAAA
+    seq: 2
+    header: *header
+    directory: {sessionId: ses_test, revision: "1", complete: true, loadedSegments: 1, loadedTurns: 1, totalSegments: 1, totalTurns: 1, segments: *refs}
+    continuation: end
+  cut:
+    <<: *final
+    continuation: cut
+    cutReason: source_budget
+  closed:
+    kind: closed
+    sessionId: setup
+    captureId: AAAAAAAAAAAAAAAAAAAAAA
+    seq: 2
+    reason: source_changed
+    code: kickstart_preview_source_changed
+    message: "the source changed; open the preview again"
+  badTruncated:
+    <<: *first
+    segment:
+      index: 0
+      revision: "1"
+      firstTurn: 0
+      lastTurn: 0
+      byteLength: 2
+      hasOlder: false
+      hasNewer: true
+      turns:
+        - {index: 0, role: user, content: "longer", timestamp: "2026-01-01T00:00:00Z", depth: 0, truncated: true, byteLength: 2}
+  oversized:
+    kind: segment
+    sessionId: setup
+    captureId: AAAAAAAAAAAAAAAAAAAAAA
+    seq: 1
+    header: *header
+    directory:
+      sessionId: ses_test
+      revision: "1"
+      complete: true
+      loadedSegments: 1
+      loadedTurns: 1
+      totalSegments: 1
+      totalTurns: 1
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 1048577}
+    segment:
+      index: 0
+      revision: "1"
+      firstTurn: 0
+      lastTurn: 0
+      byteLength: 1048577
+      hasOlder: false
+      hasNewer: true
+      turns:
+        - {index: 0, role: user, content: "", timestamp: "2026-01-01T00:00:00Z", depth: 0, truncated: true, byteLength: 1048577}
+    continuation: end
+  openedPartial:
+    <<: *opened
+    header: &partialHeader
+      <<: *header
+      diagnostics: {partial: true}
+  firstUnknown:
+    <<: *first
+    header: *partialHeader
+    segment:
+      index: 0
+      revision: "1"
+      firstTurn: 0
+      lastTurn: 0
+      byteLength: 2
+      hasOlder: false
+      hasNewer: true
+      turns:
+        - {index: 0, role: user, content: "", timestamp: "2026-01-01T00:00:00Z", depth: 0, truncated: false, byteLength: 2}
+      retainedUnknown:
+        - {sourceRef: source, recordIndex: 0, position: 0, pointer: /a, namespace: block, kind: unknown, payload: "{}"}
+  secondUnknown:
+    kind: segment
+    sessionId: setup
+    captureId: AAAAAAAAAAAAAAAAAAAAAA
+    seq: 2
+    header: *partialHeader
+    directory:
+      sessionId: ses_test
+      revision: "1"
+      complete: false
+      loadedSegments: 2
+      loadedTurns: 2
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 2}
+        - {index: 1, firstTurn: 1, lastTurn: 1, byteLength: 2}
+    segment:
+      index: 1
+      revision: "1"
+      firstTurn: 1
+      lastTurn: 1
+      byteLength: 2
+      hasOlder: true
+      hasNewer: true
+      turns:
+        - {index: 1, role: assistant, content: "", timestamp: "2026-01-01T00:00:00Z", depth: 0, truncated: false, byteLength: 2}
+      retainedUnknown:
+        - {sourceRef: source, recordIndex: 0, position: 1, pointer: /b, namespace: block, kind: unknown, payload: "{}"}
+    continuation: more
+  openedPi:
+    <<: *opened
+    header: &piHeader
+      <<: *header
+      harness: pi
+  firstPi:
+    <<: *first
+    header: *piHeader
+    segment:
+      index: 0
+      revision: "1"
+      firstTurn: 0
+      lastTurn: 0
+      byteLength: 2
+      hasOlder: false
+      hasNewer: true
+      turns:
+        - {index: 0, role: system, content: "", timestamp: "2026-01-01T00:00:00Z", depth: 0, truncated: false, byteLength: 2, sourceEntryRef: entry}
+      nativeMetadata:
+        - id: metadata
+          kind: pi.custommessage.details
+          source: {entryRef: entry, sourceType: pi.custom_message}
+          attachment: {turnIndex: 0}
+          customType: custom
+          data: {}
+  firstConversation:
+    <<: *first
+    directory:
+      sessionId: ses_test
+      revision: "1"
+      complete: false
+      loadedSegments: 1
+      loadedTurns: 1
+      loadedConversationTurns: 1
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 2, conversationTurns: {before: 0, count: 1}}
+cases:
+  - {name: merge-applies-in-seq, frames: [opened, first, final], valid: true}
+  - {name: final-frame-without-segment-preserves-snapshot, frames: [opened, first, final], valid: true, expectSegments: 1, expectHasNewer: true}
+  - {name: merge-refuses-seq-gap, frames: [opened, first], mutate: {frame: 1, path: seq, value: 2}, valid: false}
+  - {name: merge-refuses-revision-change, frames: [opened, first], mutate: {frame: 1, path: directory.revision, value: "2"}, valid: false}
+  - {name: merge-refuses-totals-before-complete, frames: [opened, first], mutate: {frame: 1, path: directory.totalTurns, value: 1}, valid: false}
+  - {name: directory-complete-iff-end-or-cut, frames: [opened, first], mutate: {frame: 1, path: continuation, value: end}, valid: false}
+  - {name: directory-refs-contiguous-from-zero, frames: [opened, first], mutate: {frame: 1, path: directory.segments.0.index, value: 1}, valid: false}
+  - {name: directory-totals-equal-loaded-when-complete, frames: [opened, first, final], mutate: {frame: 2, path: directory.totalTurns, value: 2}, valid: false}
+  - {name: final-ref-must-not-change, frames: [opened, first, final], mutate: {frame: 2, path: directory.segments.0.byteLength, value: 3}, valid: false}
+  - {name: segment-has-newer-while-open, frames: [opened, first], mutate: {frame: 1, path: segment.hasNewer, value: false}, valid: false}
+  - {name: segment-byte-length-is-turn-sum, frames: [opened, first], mutate: {frame: 1, path: segment.turns.0.byteLength, value: 4}, valid: false}
+  - {name: merge-refuses-header-for-another-session, frames: [opened, first], mutate: {frame: 1, path: header.id, value: ses_other}, valid: false}
+  - {name: cut-carries-a-reason, frames: [opened, first, final], mutate: {frame: 2, path: continuation, value: cut}, valid: false}
+  - {name: opened-is-seq-zero, frames: [opened], mutate: {frame: 0, path: seq, value: 1}, valid: false}
+  - {name: retained-unknown-shared-record-distinct-positions, frames: [openedPartial, firstUnknown, secondUnknown], valid: true, expectUnknown: 2, expectSegments: 2}
+  - {name: retained-unknown-refuses-position-replay, frames: [openedPartial, firstUnknown, secondUnknown], mutate: {frame: 2, path: segment.retainedUnknown.0.position, value: 0}, valid: false}
+  - {name: directory-grows-by-exactly-one-ref, frames: [openedPartial, secondUnknown], mutate: {frame: 1, path: seq, value: 1}, valid: false}
+  - {name: merge-refuses-partial-turning-false, frames: [openedPartial, firstUnknown, secondUnknown], mutate: {frame: 2, path: header.diagnostics.partial, value: false}, valid: false}
+  - {name: merge-refuses-turn-at-or-below-held, frames: [openedPartial, firstUnknown, secondUnknown], mutate: {frame: 2, path: directory.segments.1.firstTurn, value: 0}, valid: false}
+  - {name: oversized-turn-alone-and-truncated, frames: [opened, oversized], valid: true}
+  - {name: oversized-turn-must-be-truncated, frames: [opened, oversized], mutate: {frame: 1, path: segment.turns.0.truncated, value: false}, valid: false, tsValid: true, producerOnly: "Go enforces the producer segment budget; TypeScript checks the declared sum."}
+  - {name: cut-source-budget, frames: [opened, first, cut], valid: true}
+  - {name: cut-serialized-budget, frames: [opened, first, cut], mutate: {frame: 2, path: cutReason, value: serialized_budget}, valid: true}
+  - {name: cut-turn-budget, frames: [opened, first, cut], mutate: {frame: 2, path: cutReason, value: turn_budget}, valid: true}
+  - {name: cut-oversized-record, frames: [opened, first, cut], mutate: {frame: 2, path: cutReason, value: oversized_record}, valid: true}
+  - {name: cut-origin-not-resumable, frames: [opened, first, cut], mutate: {frame: 2, path: cutReason, value: origin_not_resumable}, valid: true}
+  - {name: cut-rejects-unknown-reason, frames: [opened, first, cut], mutate: {frame: 2, path: cutReason, value: unknown}, valid: false}
+  - {name: attached-native-metadata-rides-its-page, frames: [openedPi, firstPi], valid: true, expectMetadata: 1}
+  - {name: metadata-refuses-target-outside-page, frames: [openedPi, firstPi], mutate: {frame: 1, path: segment.nativeMetadata.0.attachment.turnIndex, value: 9}, valid: false}
+  - {name: closed-preserves-held-content, frames: [opened, first, closed], valid: true}
+  - {name: closed-reasons-are-closed, frames: [opened, first, closed], mutate: {frame: 2, path: reason, value: unknown}, valid: false}
+  - {name: closed-refuses-page-object, frames: [opened, first, final], mutate: {frame: 2, path: kind, value: closed}, valid: false}
+  - {name: segment-refuses-open-request-id, frames: [opened, first], mutate: {frame: 1, path: requestId, value: r}, valid: false}
+  - {name: complete-is-monotone, frames: [opened, first, final, first], valid: false}
+  - {name: conversation-turns-present-together, frames: [opened, firstConversation], valid: true}
+  - {name: conversation-turns-refuses-inconsistent-total, frames: [opened, firstConversation], mutate: {frame: 1, path: directory.loadedConversationTurns, value: 2}, valid: false}
+  - {name: conversation-turns-refuses-inconsistent-span, frames: [opened, firstConversation], mutate: {frame: 1, path: directory.segments.0.conversationTurns.count, value: 2}, valid: false}
+  - name: producer-rejects-mismeasured-untruncated-turn
+    frames: [opened, first]
+    mutate: {frame: 1, path: segment.turns.0.content, value: "longer"}
+    valid: false
+    tsValid: true
+    producerOnly: "Go checks the canonical byte measure; TypeScript checks declared lengths and their sum without remeasuring."
+  - name: producer-rejects-truncated-turn-exceeding-declared
+    frames: [opened, badTruncated]
+    valid: false
+    tsValid: true
+    producerOnly: "Go checks the served measure is no greater than the pre-bound length; TypeScript does not remeasure."
+requestCases:
+  - name: request-open-valid
+    request: {op: open, requestId: r, sessionId: setup, nodeId: node}
+    valid: true
+  - name: request-op-is-closed
+    request: {op: unknown, requestId: r, sessionId: setup, nodeId: node}
+    valid: false
+  - name: request-fits-read-limit
+    request: {op: open, requestId: r, sessionId: setup}
+    repeatedNodeBytes: 512
+    maxEnvelope: true
+    valid: true
+  - name: node-id-bound-arithmetic
+    request: {op: open, requestId: r, sessionId: setup}
+    repeatedNodeBytes: 513
+    valid: false
+  - name: capture-id-shape
+    request: {op: more, requestId: r, sessionId: setup, captureId: too-short}
+    valid: false
+  - name: cursor-surface-is-withdrawn
+    request: {op: open, requestId: r, sessionId: setup, nodeId: node, cursor: withdrawn}
+    valid: false
+previewCases:
+  - {name: http-preview-lines-only, preview: {lines: []}, valid: true}
+  - {name: http-preview-has-no-detail, preview: {lines: [], detail: {}}, valid: false}
+  - {name: http-preview-has-no-cursor, preview: {lines: [], nextCursor: token}, valid: false}
