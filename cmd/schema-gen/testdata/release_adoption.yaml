@@ -1,4 +1,4 @@
-tool_pin: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
+tool_pin: 6a15bbbd87457dacc65a4048aee16017f22dc716
 version_guard_required:
   - matching-version
   - mismatched-version-is-refused
