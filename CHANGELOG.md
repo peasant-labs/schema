@@ -3,6 +3,10 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.57.0
+
+- document the precise enum member types and release recovery (#254)
+
 ## 0.56.0
 
 - emit precise TypeScript member types for enums (#248)

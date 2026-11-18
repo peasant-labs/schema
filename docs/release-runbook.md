@@ -156,3 +156,28 @@ If the release job fails to push a tag, inspect the job and remote tag first.
 After fixing the cause, dispatch `release-batch` on the default branch so it
 replans and verifies the current candidate. If the tag already exists, do not
 move or recreate it; investigate its target and the tag-triggered run instead.
+
+Release recovery rules:
+
+- The `Protect release tags` ruleset has exactly one bypass actor: the
+  `peasant-labs-releaser` GitHub App (Integration id 3988034). A human
+  `git push` of a release tag is refused. Fix a failed batch; do not change the
+  ruleset to work around it.
+- `RELEASE_BATCH_MODE` must be `tag` for the batch to write. When unset, the
+  batch runs plan-only and returns `action=none` for pending releases. After any
+  runner, permission, or release-config change, confirm the variable is `tag`
+  with `gh variable list -R peasant-labs/schema` before treating a plan as
+  authoritative.
+- In the 0.56.0 incident, the batch returned `action=none` because
+  `RELEASE_BATCH_MODE` was unset; that alone prevented a write. A later
+  non-releasing fix also moved the tip after the release PR merged. Do not
+  treat `none` as success or move a tag; set the mode to `tag`, then cut a new
+  release that includes the fix.
+- An immutable GitHub Release cannot be updated. Older publisher runs failed
+  with `tag_name was used by an immutable release` or `target_commitish cannot
+  be changed`. The current publisher leaves complete releases alone and fails
+  on incomplete releases. Fix forward with a new tag rather than attempting
+  to repair or reuse an immutable release.
+- The npm version guard reads `typescript/package.json` with `jq`. The dev-shell
+  banner polluted the old `nix develop -c node -p` capture; do not reintroduce
+  a stdout-captured dev-shell command.
