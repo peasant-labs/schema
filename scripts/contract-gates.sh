@@ -1,64 +1,27 @@
 #!/usr/bin/env bash
 # Contract gates for the peasant-labs/schema OpenAPI contract.
 #
-# Three gates, all provisioned from the flake dev shell (oasdiff / go-apidiff /
-# vacuum-go — NEVER go.mod requires; the leaf-audit test enforces that). CI
-# (.github/workflows/tests.yml `contract-gates` job) invokes these against the
-# PR base ref; run locally with `nix develop -c make gates BASE_REF=origin/develop`.
+# Lint fails on its own. Numbered files already present on the base are immutable.
+# The comparison writes a report; an incompatible change is evidence, not a
+# verdict. release-intent check-contract judges that evidence against titles.
+# go-apidiff runs in a standalone clone because go-git cannot safely inspect a
+# linked worktree. Its tri-state signal is absent on failure, empty when clean,
+# and non-empty when a non-exempt incompatible change is found.
 #
-#   vacuum     lint every generated OpenAPI spec; fail on `error` severity.
-#              Hermetic (no git) — also wired into `make check` indirectly via the
-#              synthetic-break tests, but run standalone here for the real specs.
-#   oasdiff    breaking-change diff of each generated spec vs the SAME file on the
-#              base ref (the "prior released golden"); fail on ERR-level breaks.
-#              New version files (absent on base) have nothing to diff and skip.
-#   go-apidiff exported-Go-API breaking-change diff of the module vs the base ref.
-#              PRE-1.0 POLICY: incompatible changes are ADVISORY — they surface as a
-#              ::warning:: (and, in CI, a sticky PR comment) but DO NOT fail the gate
-#              (exit 0). An intentional spec-version stamp bump (VillageAPIVersion /
-#              PeasantLocalAPIVersion / TypesVersion value change) stays fully exempt
-#              (no warning). The diff runs WITH --print-compatible so additive
-#              (non-breaking) changes are surfaced to reviewers on a SEPARATE
-#              informational channel; the DECISION still consumes only the incompatible
-#              section. An unparseable "Incompatible changes" section FAILS CLOSED
-#              (exit 1) — a blind gate must stop the line. See gate_go_apidiff /
-#              stamp_exempt_regex for the full rationale. go-apidiff's go-git
-#              implementation cannot safely inspect a linked Git worktree, so the gate
-#              resolves immutable commits in the caller repository and performs the diff
-#              in a temporary standalone --no-local clone instead.
-#
-#              CI hand-off (env-gated; the vars are unset locally, so nothing is written
-#              off-CI): after go-apidiff completes its comparison, the runner encodes its
-#              outcome as a TRI-STATE in APIDIFF_CHANGES_FILE — a non-empty file = WARN
-#              (the incompatible payload), an EMPTY file = cleanliness established, an
-#              ABSENT file = fail-closed / gate blind — and writes the compatible bullets
-#              to APIDIFF_COMPATIBLE_FILE. An unexpected non-zero go-apidiff exit, including
-#              exit 1 without the required incompatible-report header, is fail-closed even
-#              when it emitted output that looks otherwise parseable.
-#
-# Usage:
-#   contract-gates.sh vacuum
-#   contract-gates.sh oasdiff            <BASE_REF>
-#   contract-gates.sh go-apidiff         <BASE_REF>
-#   contract-gates.sh evaluate-apidiff   # reads go-apidiff output on stdin; the pure
-#                                        # incompatible decision — non-exempt bullets on
-#                                        # stdout (empty = clean), exit 0 warn/clean or
-#                                        # 1 fail-closed (for tests)
-#   contract-gates.sh extract-compatible # reads go-apidiff output on stdin; prints the
-#                                        # compatible (additive) bullets on stdout,
-#                                        # exit 0 always — informational (for tests)
-#   contract-gates.sh all                <BASE_REF>
+# Usage: contract-gates.sh vacuum | immutable BASE [HEAD] | go-apidiff BASE |
+#        report BASE [--head HEAD] [--out FILE] | all BASE [--head HEAD] [--out FILE]
+# evaluate-apidiff and extract-compatible remain available for parser tests.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_root}"
 
-# OpenAPI specs under generated/ (the *-api-*.yaml surfaces + the types catalog).
+# OpenAPI specs under generated/ (the API surfaces and the types catalog).
 # The publish-request-*.schema.json file is a JSON Schema, not an OpenAPI doc, so
 # it is excluded from the OpenAPI gates.
 openapi_specs() {
   find generated -maxdepth 1 -type f \
-    \( -name '*-api-*.yaml' -o -name 'types-*.yaml' \) | sort
+    \( -name '*-api-*.yaml' -o -name 'types-*.yaml' -o -name 'segmented-read-*.yaml' \) | sort
 }
 
 require_bin() {
@@ -88,34 +51,24 @@ gate_vacuum() {
   return "${rc}"
 }
 
-gate_oasdiff() {
-  require_bin oasdiff
-  local base_ref="$1"
-  if [[ -z "${base_ref}" ]]; then
-    # No base to diff against (e.g. the very first release tag). The breaking
-    # gate has nothing to compare, so it is a no-op — vacuum still lints the
-    # published specs.
-    echo ">> oasdiff: no BASE_REF given; skipping the breaking-change diff (nothing prior to compare)."
-    return 0
-  fi
-  local rc=0 spec
+gate_immutable() {
+  local base_ref="$1" head_ref="${2:-HEAD}" spec rc=0 list
+  [[ -n "${base_ref}" ]] || { echo "::error::immutable check needs a base revision" >&2; return 1; }
+  list="$(git ls-tree -r --name-only "${base_ref}" -- generated/)" || return 1
   while IFS= read -r spec; do
-    if git cat-file -e "${base_ref}:${spec}" 2>/dev/null; then
-      echo ">> oasdiff breaking ${base_ref}:${spec} -> ${spec}"
-      if ! oasdiff breaking "${base_ref}:${spec}" "${spec}" --fail-on ERR; then
-        echo "::error::oasdiff found ERR-level breaking changes in ${spec} vs ${base_ref}. If intentional, publish a NEW spec version instead of mutating the released one." >&2
-        rc=1
-      fi
-    else
-      echo ">> oasdiff: ${spec} is new on this branch (absent at ${base_ref}); nothing to diff."
+    [[ "${spec}" =~ -[0-9]+\.[0-9]+\.[0-9]+(\.schema)?\.(json|yaml)$ ]] || continue
+    if ! git diff --quiet "${base_ref}" "${head_ref}" -- "${spec}"; then
+      echo "::error::released numbered spec ${spec} changed or was removed; retain its bytes and generate a new version." >&2
+      rc=1
     fi
-  done < <(openapi_specs)
+  done <<< "${list}"
   return "${rc}"
 }
 
 # stamp_exempt_regex matches — and ONLY matches — a go-apidiff "Incompatible
-# changes" bullet reporting a VALUE CHANGE of a spec-version STAMP const. These three
-# consts (VillageAPIVersion / PeasantLocalAPIVersion / TypesVersion, from versions.go)
+# changes" bullet reporting a VALUE CHANGE of a spec-version STAMP const. These
+# constants (VillageAPIVersion, PeasantLocalAPIVersion, TypesVersion and
+# SegmentedReadAPIVersion, from versions.go)
 # are version MARKERS, not part of the behavioural API surface: their value is the pin
 # target a consumer asserts against and the trigger that names the newly-generated
 # golden spec files. A bump is therefore an INTENTIONAL, expected "change" that
@@ -137,7 +90,7 @@ gate_oasdiff() {
 # through this same decision), with TestGoAPIDiffStampExemption anchoring those
 # strings to go-apidiff's real output format — together the proof that this exemption
 # cannot mask a real break.
-stamp_exempt_regex='^[[:space:]]*-[[:space:]]+(VillageAPIVersion|PeasantLocalAPIVersion|TypesVersion): value changed from "[^"]*" to "[^"]*"$'
+stamp_exempt_regex='^[[:space:]]*-[[:space:]]+(VillageAPIVersion|PeasantLocalAPIVersion|TypesVersion|SegmentedReadAPIVersion): value changed from "[^"]*" to "[^"]*"$'
 
 # evaluate_go_apidiff reads raw go-apidiff output on stdin and is the PURE incompatible
 # decision of the go-apidiff gate (no process invocation), so it can be exercised
@@ -181,10 +134,10 @@ evaluate_go_apidiff() {
   local remaining
   remaining="$(printf '%s\n' "${incompatible}" | grep -vE "${stamp_exempt_regex}" || true)"
   if [[ -z "$(printf '%s' "${remaining}" | tr -d '[:space:]')" ]]; then
-    echo "go-apidiff: the only incompatible change(s) are intentional spec-version stamp bump(s) (VillageAPIVersion/PeasantLocalAPIVersion/TypesVersion); exempted." >&2
+    echo "go-apidiff: the only incompatible changes are intentional spec-version stamp bumps; exempted." >&2
     return 0
   fi
-  echo "::warning::go-apidiff reports incompatible exported-Go-API change(s) beyond the exempt spec-version stamps. Pre-1.0 policy: WARNING, not a failure — ship a version bump when releasing. Changed API(s):" >&2
+  echo "::warning::go-apidiff reports incompatible exported-Go-API changes beyond the exempt spec-version stamps. The contract verdict requires a title declaring the break. Changed API(s):" >&2
   printf '%s\n' "${remaining}" >&2
   printf '%s\n' "${remaining}"
   return 0
@@ -344,7 +297,7 @@ gate_go_apidiff() {
   if ! base_hash="$(resolve_go_apidiff_commit "${base_ref}" "BASE_REF")"; then
     return 1
   fi
-  if ! head_hash="$(resolve_go_apidiff_commit "HEAD" "HEAD")"; then
+  if ! head_hash="$(resolve_go_apidiff_commit "${CONTRACT_HEAD:-HEAD}" "HEAD")"; then
     return 1
   fi
   if ! timeout_seconds="$(go_apidiff_timeout_seconds)"; then
@@ -409,7 +362,7 @@ gate_go_apidiff() {
       mkdir -p "$(dirname "${APIDIFF_CHANGES_FILE}")"
       printf '%s\n' "${payload}" > "${APIDIFF_CHANGES_FILE}"
     fi
-    echo "go-apidiff: incompatible exported-API change(s) vs ${base_ref} reported as a WARNING (pre-release policy); gate does not block."
+    echo "go-apidiff: incompatible exported-API changes vs ${base_ref} recorded for the contract verdict."
     return 0
   fi
 
@@ -424,12 +377,41 @@ gate_go_apidiff() {
   return 0
 }
 
+gate_report() (
+  local base_ref="${1:-}" head_ref="HEAD" out="" tmp
+  shift || true
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --head) [[ $# -ge 2 ]] || return 2; head_ref="$2"; shift 2 ;;
+      --out) [[ $# -ge 2 ]] || return 2; out="$2"; shift 2 ;;
+      *) echo "::error::unknown contract report argument $1" >&2; return 2 ;;
+    esac
+  done
+  [[ -n "${base_ref}" ]] || { echo "::error::contract report needs a base revision" >&2; return 1; }
+  require_bin go
+  require_bin oasdiff
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/schema-contract-gates.XXXXXXXX")"
+  trap 'rm -rf -- "${tmp}"' EXIT
+  export CONTRACT_HEAD="${head_ref}"
+  export APIDIFF_CHANGES_FILE="${APIDIFF_CHANGES_FILE:-${tmp}/apidiff.txt}"
+  # A pre-existing signal must not hide a failed comparison.
+  rm -f -- "${APIDIFF_CHANGES_FILE}"
+  gate_go_apidiff "${base_ref}"
+  [[ -f "${APIDIFF_CHANGES_FILE}" ]] || { echo "::error::go-apidiff produced no signal; refusing a blind report" >&2; return 1; }
+  if [[ -z "${out}" ]]; then
+    out="$(mktemp "${TMPDIR:-/tmp}/schema-contract-report.XXXXXXXX.yaml")"
+  fi
+  go run ./cmd/schema-gen report --base "${base_ref}" --head "${head_ref}" --apidiff "${APIDIFF_CHANGES_FILE}" --write "${out}"
+  echo ">> contract report: ${out}"
+)
+
 main() {
   local cmd="${1:-}"
   case "${cmd}" in
     vacuum)     gate_vacuum ;;
-    oasdiff)    gate_oasdiff "${2:-}" ;;
+    immutable)  gate_immutable "${2:-}" "${3:-HEAD}" ;;
     go-apidiff) gate_go_apidiff "${2:-}" ;;
+    report)     shift; gate_report "$@" ;;
     # evaluate-apidiff reads go-apidiff output on stdin and applies ONLY the pure
     # incompatible decision (the stamp-exemption filter) — the seam the synthetic-break
     # test drives with real go-apidiff output from a throwaway repo. STDOUT is the
@@ -440,14 +422,26 @@ main() {
     # evaluate-apidiff and never on the decision path (exit 0 always).
     extract-compatible) extract_go_apidiff_compatible ;;
     all)
-      local base_ref="${2:-}" rc=0
-      gate_vacuum || rc=1
-      gate_oasdiff "${base_ref}" || rc=1
-      gate_go_apidiff "${base_ref}" || rc=1
+      local base_ref="${2:-}" head_ref="HEAD" arg rc=0
+      shift 2
+      # The immutable check compares the same endpoints as the report.
+      local -a args=("$@")
+      for ((arg=0; arg<${#args[@]}; arg++)); do
+        if [[ "${args[$arg]}" == "--head" ]]; then
+          ((arg+1 < ${#args[@]})) || return 2
+          head_ref="${args[$((arg+1))]}"
+        fi
+      done
+      # Each command gets its own errexit-enabled shell. A failed lint or
+      # immutability check must not hide an independently established API diff,
+      # but every failed stage still fails the aggregate gate.
+      "${BASH}" "${repo_root}/scripts/contract-gates.sh" vacuum || rc=1
+      "${BASH}" "${repo_root}/scripts/contract-gates.sh" immutable "${base_ref}" "${head_ref}" || rc=1
+      "${BASH}" "${repo_root}/scripts/contract-gates.sh" report "${base_ref}" "$@" || rc=1
       return "${rc}"
       ;;
     *)
-      echo "usage: contract-gates.sh <vacuum|oasdiff <BASE_REF>|go-apidiff <BASE_REF>|evaluate-apidiff|extract-compatible|all <BASE_REF>>" >&2
+      echo "usage: contract-gates.sh <vacuum|immutable BASE [HEAD]|go-apidiff BASE|report BASE [--head HEAD] [--out FILE]|all BASE [--head HEAD] [--out FILE]|evaluate-apidiff|extract-compatible>" >&2
       exit 2
       ;;
   esac

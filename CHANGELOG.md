@@ -3,7 +3,7 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## Contract changes shipped in v0.41.0 through v0.54.0
 
 ### Added
 

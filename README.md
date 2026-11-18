@@ -345,13 +345,16 @@ or from the tag.
 
 | Gate | Tool | Consequence |
 |---|---|---|
-| OpenAPI breaking diff | `oasdiff breaking --fail-on ERR` | **Hard** - fails on an ERR-level breaking change vs the prior golden. |
+| OpenAPI breaking diff | `oasdiff breaking --fail-on ERR` | Reports an ERR-level change between the base and head versions. A break must be declared in the PR title. |
 | OpenAPI lint | `vacuum lint -r .vacuum.yaml` | **Hard** - fails on `error`-severity findings in the generated specs. |
-| Exported-Go-API diff | `go-apidiff` | **Advisory while pre-1.0** - an incompatible exported-Go-API change surfaces a workflow warning + a single sticky PR comment listing the changed/removed symbols (and any additive changes), then exits success. Detection is unchanged; only the consequence is. An unrecognizable diff-tool output still fails closed. |
+| Exported-Go-API diff | `go-apidiff` | Reports incompatible changes and compatible additions. A break must be declared in the PR title; unreadable output fails closed. |
 
-The advisory posting runs in a write-scoped companion workflow
-(`go-apidiff-comment.yml`) so the read-only Tests workflow can be reused as a gate.
-Alongside these, `make check` runs the codegen-freshness gate, the retired-versions
+`release-intent check-contract` judges the report against the live title on the
+PR and in the merge group, and against landed titles before a tag. A reviewed
+`workflow_run` comment job posts the Go API diff, including for fork and
+Dependabot PRs, after resolving the target from the run's head. See the runbook
+for its credential and rollout checks. Alongside these, `make check`
+runs the codegen-freshness gate, the retired-versions
 immutability guard, the leaf-audit, the `vendorHash`-stability proof, and the
 synthetic-break tests that prove the `oasdiff` / `go-apidiff` gates actually fire.
 
@@ -498,20 +501,15 @@ gate.
 
 ## Releasing
 
-Releases are cut by **merging a PR titled `release(vX.Y.Z[-rcN]): <summary>` into
-`develop`**. Never by hand-tagging. The title/tag grammar and final-release guard
-live once in `internal/release`, exposed through **`cmd/release-guard`**, the single
-canonical release-gating tool (built on `go-github`; it also serves peasant via a
-per-repo `.github/release-guard.policy.yml`). On merge, the release workflow mints
-the annotated tag and publishes a GitHub Release (prerelease for `-rcN`) with the
-`generated/` OpenAPI specs attached as assets.
-
-The maintainer-approval assertion in the release PR is **deferred to the public
-flip** (a single active maintainer plus GitHub's no-self-approval rule make it
-unsatisfiable today); the `release-guard check-approval` guard code stays live and
-tested, re-enabled alongside branch protection at the flip. The full operator guide
-(secrets, the GitHub App, the ceremony, and the public-flip checklist) is in
-[`docs/release-runbook.md`](docs/release-runbook.md).
+Content PR titles declare intent, for example
+`feat(local-api)[minor]: add an endpoint`; below 1.0, declare a breaking change
+with `![minor]`. The pinned `release-intent` computes the module version and
+maintains a standing release PR through the merge queue. Once that commit is
+fresh, the release workflow tags it and publishes the generated specs and npm
+package. Never push a release tag by hand. The prior maintainer-approval
+assertion remains deferred; restoring it needs a reviewed queued-bot-compatible
+design. See [`docs/release-runbook.md`](docs/release-runbook.md) for credentials,
+cutover and recovery.
 
 ---
 
@@ -527,7 +525,7 @@ tested, re-enabled alongside branch protection at the flip. The full operator gu
 | `typescript/` | Published `@peasant-labs/schema` package source: generated named wire types, testcase helpers, typed fixtures, and package gates |
 | `external/`, `testdata/`, `fixtures.go` | Vendored external schemas + typed test fixtures |
 | `cmd/schema-gen/` | Regenerates `generated/` and the route members; hosts the freshness / immutability / surface gate tests |
-| `cmd/release-guard/` + `internal/release/` | The PR-title/tag grammar + release-gating CLI |
+| `cmd/release-guard/` + `internal/release/` | Tag classification, tag-workflow guard, and retained legacy commands used by consumers |
 | `docs/release-runbook.md` · `CONTRIBUTING.md` · `CHANGELOG.md` | Operator + contributor references |
 | `docs/content-capability-negotiation.md` | Authoritative optional-content negotiation protocol and contributor decision policy |
 

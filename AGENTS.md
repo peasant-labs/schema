@@ -123,40 +123,28 @@ verification rules.
 
 ## Releases and tags (reserved)
 
-Releases are PR-title driven. Open a PR to `develop` titled
-`release(vX.Y.Z[-rcN]): <summary>` (for example
-`release(v0.1.0-rc1): first release candidate`). The title grammar is the single
-source enforced by `cmd/release-guard parse-title`, and the release workflow gate
-keys on the title, so it runs regardless of which files the PR touches (a
-content-carrying release PR is supported). On merge,
-`.github/workflows/release-pr.yml` mints the annotated tag using the
-`peasant-labs-releaser` GitHub App token (the default CI token cannot push a tag
-that re-triggers `release.yml`), and the tag drives `release.yml` to publish a
-GitHub Release with the OpenAPI specs as assets (a prerelease for `-rcN`). A final
-`vX.Y.Z` does not require a preceding rc, but it still runs the release gates and
-diffs against the prior release when one exists.
+Titles carry release intent as `type(scope)[level]: subject`; below 1.0 a
+breaking change uses `![minor]`. The pinned `release-intent` checks the live
+title against the Go and OpenAPI contract report. Content PRs still choose and
+write spec version stamps until the freeze migration. They must not edit
+`CHANGELOG.md` or the `typescript/package.json` version: the standing bot
+release PR writes those files and lands through the merge queue.
 
-**Minting a public tag is a reserved maintainer action.** An agent must not push
-a public release tag or perform the cut. Prepare and queue the release PR; the
-maintainer merges it and CI mints the tag. Tags are append-only: never move or
-delete a release tag, and the old nested `pkg/schema/v*` tags (from when this
-lived inside peasant) are retained forever.
+`release-batch.yml` computes the module version and pushes an annotated tag on a
+fresh release PR commit using the releaser App. The tag triggers `release.yml`,
+which checks the contract, the Nix vendor hash and the npm version before
+publishing the generated specs and npm package. The vendor-hash bot opens its
+own queued PR; no workflow pushes `develop`.
+
+Agents never push public tags or edit, stack on, or merge bot release PRs by
+hand. Enqueueing a releasing content PR is the release decision. Tags are
+append-only: never move or delete them, including the historical nested
+`pkg/schema/v*` tags.
 
 When reading an `rc` number, disambiguate three things that look alike: a peasant
 product release version, the schema module's own release tag, and an internal
 codename that merely looks version-like. Only a real tag on this module gates a
 release here.
-
-**Explicit human delegation:** a maintainer may authorize an agent to merge a
-specific release PR. The instruction must unambiguously identify the release PR;
-generic implementation or ordinary PR-merge approval is insufficient. The agent
-records the authorization in a PR comment before merging.
-
-Delegation does not waive required reviews, CI, contract gates, or dependency
-ordering, UNLESS stated by the maintainer.
-CI must mint the tag through the existing release workflow; agents
-must not create or push public release tags directly.
-
 
 ## Spec versioning: bump, do not mutate
 
@@ -181,7 +169,7 @@ An older version has one of two freeze states:
 
 Keep the corresponding required-name manifests in step with an intentional
 state transition. An intentional stamp bump is exempt from the exported-Go-API
-advisory gate; every other incompatible change is reported.
+diff; every other incompatible change must be declared in the PR title.
 
 ## Leaf purity
 

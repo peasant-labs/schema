@@ -16,7 +16,7 @@
 //	    Assert a GitHub user is a release maintainer (admin/maintain collaborator
 //	    on $GITHUB_REPOSITORY). Reads the collaborator permission via the
 //	    GitHubClient and applies release.IsMaintainer — the single source of the
-//	    maintainer predicate consumed by both release-pr.yml gates.
+//	    maintainer predicate formerly consumed by both release-pr.yml gates.
 //
 //	release-guard check-approval --pr <number>
 //	    Assert a release PR has at least one standing APPROVED review from a

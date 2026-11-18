@@ -1,7 +1,7 @@
 name: Release
 
 # Tag-triggered release pipeline for the contract LIBRARY. The tag is pushed by
-# release-pr.yml's App token (the default GITHUB_TOKEN cannot push a tag that
+# release-batch.yml's App token (the default GITHUB_TOKEN cannot push a tag that
 # re-triggers a workflow), so this runs automatically when a release PR merges.
 #
 # MIRRORS peasant's release.yml gate chain (guard -> nix-vendor-hash -> gates ->
@@ -40,12 +40,15 @@ jobs:
     # re-detecting rc-ness with an untested shell substring match.
     outputs:
       kind: ${{ steps.parse.outputs.kind }}
+      prerelease: ${{ steps.parse.outputs.kind == 'rc' }}
+      latest: ${{ steps.parse.outputs.kind == 'final' }}
     steps:
       - name: Checkout repository (full history + tags)
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -56,6 +59,38 @@ jobs:
       - name: Parse + classify the tag
         id: parse
         run: go run ./cmd/release-guard parse-tag "$TAG"
+
+  verify-tag:
+    name: verify the tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: peasant-labs/infra
+          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          path: infra-tool
+          sparse-checkout: tools/release
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: infra-tool/tools/release/go.mod
+          cache: false
+      - name: Build release-intent
+        env:
+          GOWORK: "off"
+        run: go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
+      - name: Verify the tag is on the default branch
+        run: '"${RUNNER_TEMP}/release-intent" verify-tag --tag "${GITHUB_REF_NAME}" --branch "origin/${DEFAULT_BRANCH}"'
 
   nix-vendor-hash:
     name: assert nix vendorHash current
@@ -69,6 +104,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -102,89 +138,148 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
+
+      - name: Check out release-intent
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: peasant-labs/infra
+          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          path: infra-tool
+          sparse-checkout: tools/release
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: infra-tool/tools/release/go.mod
+          cache: false
+
+      - name: Build release-intent
+        env:
+          GOWORK: "off"
+        run: go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Determine prior release tag (the released golden to diff against)
+      - name: Determine the previous final tag
         id: prior
+        env:
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
-          # Prereleases (kind == "rc", classified once by the guard job's tested
-          # `release-guard parse-tag`) are unstable: they may carry breaking changes
-          # vs the prior release as they converge toward a final vX.Y.Z, so the
-          # vs-prior breaking diff (oasdiff + go-apidiff) does NOT apply to an rc.
-          # The compatibility guarantee is enforced only at a FINAL release here;
-          # PR-time gates already cover breaks vs develop. For an rc, leave
-          # BASE_REF empty so contract-gates.sh runs vacuum lint only (its
-          # empty-base behaviour skips the breaking diffs).
-          if [ "${{ needs.guard.outputs.kind }}" = "rc" ]; then
-            echo "base_ref=" >> "$GITHUB_OUTPUT"
-            echo "::notice::prerelease ${TAG}: skipping the vs-prior breaking diff (rc tags may break); vacuum lint only."
-          else
-            # The nearest ancestor tag that is a final/stable release, excluding
-            # the current tag. RC tags are deliberately ignored: a final must
-            # prove compatibility against the prior stable contract, not a
-            # release candidate that may have skipped the vs-prior breaking diff.
-            prior="$(git describe --tags --abbrev=0 --match 'v*' --exclude 'v*-*' "${TAG}^" 2>/dev/null || true)"
-            echo "base_ref=${prior}" >> "$GITHUB_OUTPUT"
-            if [ -n "${prior}" ]; then
-              echo "::notice::diffing the contract against prior release ${prior}"
-            else
-              echo "::notice::no prior release tag; running vacuum lint only (first release)"
-            fi
-          fi
+          "${RUNNER_TEMP}/release-intent" check-contract --until "${TAG}" --print-range-base --floor "${FLOOR}" | tee "${RUNNER_TEMP}/range-base.txt"
+          prior="$(sed -n 's/^range_base=//p' "${RUNNER_TEMP}/range-base.txt")"
+          test -n "${prior}" || { echo "::error::no prior final tag for ${TAG}; cannot establish the contract range"; exit 1; }
+          echo "base_ref=${prior}" >> "$GITHUB_OUTPUT"
 
-      - name: Run contract gates
-        run: nix develop -c make gates BASE_REF="${{ steps.prior.outputs.base_ref }}"
+      - name: Build the tag contract report
+        env:
+          BASE: ${{ steps.prior.outputs.base_ref }}
+        run: nix develop -c ./scripts/contract-gates.sh all "${BASE}" --head "${TAG}" --out "${RUNNER_TEMP}/contract-report.yaml"
 
-  # Publish: a single GitHub Release carrying the generated OpenAPI specs as
-  # assets. Prerelease for -rcN; full release for a final vX.Y.Z.
+      - name: Check the tag contract
+        env:
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
+        run: '"${RUNNER_TEMP}/release-intent" check-contract --report "${RUNNER_TEMP}/contract-report.yaml" --until "${TAG}" --floor "${FLOOR}"'
+
+  build:
+    name: prepare release assets
+    needs: [guard, nix-vendor-hash, contract-gates, verify-tag]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Prepare the generated contracts and release notes
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp generated/*.json generated/*.yaml dist/
+          awk -v tag="$TAG" -v version="${TAG#v}" '
+            /^## / {
+              if (found) exit
+              heading=substr($0, 4)
+              sub(/ - .*/, "", heading)
+              if (heading == tag || heading == version || heading == "[" tag "]" || heading == "[" version "]") { found=1; next }
+            }
+            found { print }
+            END { if (!found) exit 1 }
+          ' CHANGELOG.md > dist/release-notes.md
+          test -s dist/release-notes.md || { echo "::error::no changelog notes for ${TAG}; fix forward with a new release"; exit 1; }
+      - name: Hand the assets to the publisher
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 1
+
   release:
     name: publish GitHub Release
-    needs: [guard, nix-vendor-hash, contract-gates]
+    needs: [guard, nix-vendor-hash, contract-gates, verify-tag, build]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write # create the GitHub Release + upload assets
     env:
       TAG: ${{ github.ref_name }}
-      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - name: Download the release assets
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          fetch-depth: 1
+          name: release-dist
+          path: dist
 
-      - name: Create the GitHub Release with the OpenAPI specs as assets
-        run: |
-          set -euo pipefail
-          # Prerelease iff the guard job classified the tag as an rc — the single
-          # tested source of truth (release-guard parse-tag -> internal/release Kind()),
-          # not a re-derived shell substring match.
-          prerelease_flag=""
-          if [ "${{ needs.guard.outputs.kind }}" = "rc" ]; then
-            prerelease_flag="--prerelease"
-          fi
-          # Assets: every generated contract artifact (OpenAPI specs + the publish
-          # JSON Schema), both JSON and YAML.
-          assets=(generated/*.json generated/*.yaml)
-          gh release create "$TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "$TAG" \
-            --generate-notes \
-            $prerelease_flag \
-            "${assets[@]}"
-          echo "::notice::published GitHub Release $TAG with ${#assets[@]} contract assets"
+      - name: Look for an existing release
+        id: view
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY"
+
+      - name: Create the release for the existing tag
+        id: create
+        if: steps.view.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}
+          LATEST: ${{ needs.guard.outputs.kind == 'final' }}
+        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" --latest="$LATEST"
+
+      - name: Update the release notes
+        if: steps.view.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}
+          LATEST: ${{ needs.guard.outputs.kind == 'final' }}
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" --latest="$LATEST"
+
+      - name: Upload the release assets
+        if: steps.view.outcome == 'success' || steps.create.outcome == 'success'
+        uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2.4.2
+        with:
+          tag_name: ${{ github.ref_name }}
+          repository: ${{ github.repository }}
+          files: dist/*
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          prerelease: ${{ needs.guard.outputs.prerelease }}
+          make_latest: ${{ needs.guard.outputs.latest }}
 
   # Publish the generated @peasant-labs/schema TypeScript package to npm. Sits
   # behind the SAME three gates as the GitHub Release publish job above (guard ->
   # nix-vendor-hash -> contract-gates), but is otherwise independent of it: an npm
   # publish failure here must never block the GitHub Release, and a GitHub
-  # Release asset failure must never block this job. The committed
-  # typescript/package.json stays "0.0.0-development" + "private": true as the
-  # local safety; this job stamps the real version and drops "private" in the CI
-  # working copy only, never committing either change back to the repo.
+  # Release asset failure must never block this job. The release PR writes the
+  # committed version; this job checks it against the tag and removes "private"
+  # only in the CI working copy.
   #
   # Authentication is npm Trusted Publishing (OIDC) - NOT a long-lived NPM_TOKEN
   # secret. `permissions.id-token: write` lets GitHub mint a short-lived OIDC
@@ -203,7 +298,7 @@ jobs:
   # docs/release-runbook.md, "npm publication".
   npm-publish:
     name: publish npm package
-    needs: [guard, nix-vendor-hash, contract-gates]
+    needs: [guard, nix-vendor-hash, contract-gates, verify-tag]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: npm-publish
@@ -217,6 +312,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -224,19 +320,23 @@ jobs:
       - name: Install locked TypeScript dependencies
         run: nix develop -c pnpm --dir typescript install --frozen-lockfile --ignore-scripts
 
-      - name: Stamp the package version (working copy only, never committed)
+      - name: Guard tag and package version consistency
         run: |
           set -euo pipefail
           version="${TAG#v}"
+          pkg_version="$(nix develop -c node -p "require('./typescript/package.json').version")"
+          test "${version}" = "${pkg_version}" || { echo "::error::tag ${TAG} does not match typescript/package.json version ${pkg_version}; tags are immutable, so fix forward"; exit 1; }
+
+      - name: Remove the private flag in the publish working copy
+        run: |
+          set -euo pipefail
           nix develop -c node -e '
             const fs = require("fs");
             const pkgPath = "typescript/package.json";
             const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-            pkg.version = process.argv[1];
             delete pkg.private;
             fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-          ' "$version"
-          echo "::notice::stamped typescript/package.json to version ${version} for this publish only; develop keeps 0.0.0-development / private"
+          '
 
       - name: Run the TypeScript package gates against the staged publish manifest (typecheck, test, package:audit, package:smoke)
         run: |

@@ -68,7 +68,6 @@ rules:
     cmd/schema-gen/frozen_specs_test.go: 2
     cmd/schema-gen/peasantlocal_surface_test.go: 1
     cmd/schema-gen/redactions.go: 1
-    cmd/schema-gen/release_pr_workflow_test.go: 1
     cmd/schema-gen/retired_specs_test.go: 2
     cmd/schema-gen/routes_test.go: 1
     cmd/schema-gen/workflow_paths_test.go: 1
