@@ -17,7 +17,7 @@
 // would return `ZodOptional<ZodEnum<...>>` and drop the alias from every optional
 // field. So the helper re-declares the wrappers Hey API emits on a named schema
 // (`optional`, `nullable`, `nullish`) to wrap the `ClosedSet` itself, and the
-// pass fails generation if the output calls any other method on a closed-set
+// pass fails generation if the output reaches any other member of a closed-set
 // schema, because that method would silently drop the alias the same way.
 // `Extract<..., z.ZodType>` defers the wrapper's constraint check until the
 // helper is instantiated; it resolves to the `ClosedSet` itself.
@@ -44,12 +44,28 @@ export function applyClosedSetZodTypes(source, catalog) {
     }
     rendered = rendered.replace(pattern, () => `export const z${name} = closedSet<ClosedSets.${name}>()(${match[1]});\n${match[2]}`);
   }
-  const names = catalog.enums.map(({ name }) => name).join("|");
-  for (const call of rendered.matchAll(new RegExp(`\\bz(${names})\\.([A-Za-z_$][\\w$]*)\\(`, "g"))) {
-    if (!RE_DECLARED_WRAPPERS.has(call[2])) {
-      throw new Error(`TypeScript closed-set generation found "z${call[1]}.${call[2]}(" in src/internal/generated/contract/zod.gen.ts; the ClosedSet helper re-declares only ${[...RE_DECLARED_WRAPPERS].map((method) => `.${method}()`).join(", ")}, so .${call[2]}() would resolve against the unwrapped schema and the field would lose the named ${call[1]} set; add .${call[2]}() to the ClosedSet helper in typescript/scripts/lib/closed-set-zod-types.mjs (and to tests/closed-set-drift.ts) with a return type that wraps the ClosedSet itself.`);
-    }
-  }
+  assertOnlyReDeclaredWrappers(rendered, catalog.enums.map(({ name }) => name));
   const at = importMatch.index + importMatch[0].length;
   return `${rendered.slice(0, at)}${HELPER}${rendered.slice(at)}`;
+}
+
+// Every member access on a closed-set schema must name a re-declared wrapper.
+// The match tolerates whitespace (including a newline) around the dot and an
+// optional-chaining `?.`, and it covers a member read as well as a call, since a
+// wrapper passed by reference drops the alias the same way. A computed member
+// (`zRole[...]` or `zRole?.[...]`) cannot be resolved by a text scan, so it fails
+// instead of passing unseen.
+function assertOnlyReDeclaredWrappers(rendered, names) {
+  const alternatives = names.join("|");
+  const computed = new RegExp(`\\bz(${alternatives})\\s*(?:\\?\\.\\s*)?\\[`).exec(rendered);
+  if (computed !== null) {
+    throw new Error(`TypeScript closed-set generation found the computed member access "${computed[0]}" in src/internal/generated/contract/zod.gen.ts; the closed-set guard cannot tell which method a computed member names, so it cannot verify that the field keeps the named ${computed[1]} set; emit a plain ".method()" access instead, or extend the guard in typescript/scripts/lib/closed-set-zod-types.mjs to resolve this form.`);
+  }
+  const wrappers = [...RE_DECLARED_WRAPPERS].map((method) => `.${method}()`).join(", ");
+  for (const access of rendered.matchAll(new RegExp(`\\bz(${alternatives})\\s*(?:\\?\\.|\\.)\\s*([A-Za-z_$][\\w$]*)`, "g"))) {
+    const [, name, method] = access;
+    if (!RE_DECLARED_WRAPPERS.has(method)) {
+      throw new Error(`TypeScript closed-set generation found "${access[0]}" in src/internal/generated/contract/zod.gen.ts; the ClosedSet helper re-declares only ${wrappers}, so .${method}() would resolve against the unwrapped schema and the field would lose the named ${name} set; add .${method}() to the ClosedSet helper in typescript/scripts/lib/closed-set-zod-types.mjs (and to tests/closed-set-drift.ts) with a return type that wraps the ClosedSet itself.`);
+    }
+  }
 }
