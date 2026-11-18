@@ -109,11 +109,6 @@ func configuredSurfaces(root string) ([]reportSurface, error) {
 	return result, nil
 }
 
-func workingSurface(surface reportSurface) bool {
-	// The segmented-read protocol has a separately pending versioning decision.
-	return surface.name != "segmented-read"
-}
-
 func requestStem(stem string) bool {
 	return stem == "publish-request" || stem == "annotation-push-request"
 }
@@ -169,7 +164,7 @@ func calculateSurfaceStates(root string) (surfaceStates, error) {
 	if err != nil {
 		return surfaceStates{}, fmt.Errorf("read versions.go for surface state: %w", err)
 	}
-	versions, err := parseReportVersions(data, "working tree")
+	versions, err := parseReportVersions(data, "working tree", false)
 	if err != nil {
 		return surfaceStates{}, err
 	}
@@ -193,9 +188,6 @@ func calculateSurfaceStates(root string) (surfaceStates, error) {
 				}
 				if err := validateDocumentStamp(frozen, stem, extension, row.Frozen); err != nil {
 					return surfaceStates{}, fmt.Errorf("invalid frozen document %s: %w", frozenPath, err)
-				}
-				if !workingSurface(surface) {
-					continue
 				}
 				workingPath := filepath.Join(root, "generated", stem+"-next"+extension)
 				working, err := os.ReadFile(workingPath)

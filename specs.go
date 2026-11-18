@@ -20,9 +20,9 @@ func workingSpec(name string) ([]byte, error) {
 	return generatedFS.ReadFile("generated/" + name)
 }
 
-// SegmentedReadSpecJSON returns the newest declared segmented read document.
+// SegmentedReadSpecJSON returns the current frozen segmented read document.
 func SegmentedReadSpecJSON() []byte {
-	return segmentedReadSpecJSON(SegmentedReadAPIVersion)
+	return segmentedReadSpecJSON(SegmentedReadSpecVersion)
 }
 
 // SegmentedReadMinSpecJSON returns the oldest still-served read document.

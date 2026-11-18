@@ -71,6 +71,7 @@ func TestFreezeHandoffValidation(t *testing.T) {
 				plan.Surfaces[i].Freeze = true
 				plan.Surfaces[i].Level = freezeMinor
 				plan.Surfaces[i].To = "1.3.0"
+				candidate.Surfaces[i].Frozen = "1.3.0"
 			case "wrong-candidate":
 				candidate.Surfaces[0].Frozen = "1.4.0"
 			default:

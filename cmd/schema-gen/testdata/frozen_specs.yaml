@@ -6,7 +6,6 @@ specs:
   - name: segmented-read-0.2.0
     json_sha256: 5f12159e8a45903d0da8421da10419ddff17ddb86abd1df708abaf5ff5c8d954
     yaml_sha256: d921b0f20ccf50c371549727f6c94b7045a52b87c2b23f44de5ae4bc6843fef0
-    regenerate: true
   - name: types-0.51.0
     json_sha256: 6fd39874943d3b8dfeab08cf18ffdff7649bf0e2323e4f4621fce26bdac24120
     yaml_sha256: 7c6cbacb7f3193d35abc59723ffae44d79af208b96edcf60a77c28e79f5c2d4f

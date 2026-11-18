@@ -35,13 +35,17 @@ releases.
 
 ## Working and frozen specs
 
-Types, Village, and Local use committed `generated/<stem>-next.*` working
+Types, Village, Local, and segmented read use committed `generated/<stem>-next.*` working
 files. Their numbered files are frozen, and `versions.go` points the public
 accessors and exported validators to the latest frozen bytes. The Village
 publish-request and annotation-push-request JSON Schemas follow the Village
 version. The TypeScript generator, module tests and contract report read
-working documents. Segmented read stays on its numbered path until its separate
-protocol-version decision.
+working documents. For segmented read, `SegmentedReadSpecVersion` names the
+frozen document, while `SegmentedReadAPIVersion` names the current wire
+protocol and `SegmentedReadMinVersion` the oldest served protocol. A document
+freeze moves only the spec version; it does not change the selector table, the
+minimum document, or a protocol echo. A breaking protocol change requiring a
+new `v=` generation is separate P1 work, not a document freeze.
 
 `schema-gen status --write state.yaml` computes `clean`, `docs-ahead`, or
 `ahead`. Description-only changes remain docs-ahead and are copied at the next

@@ -30,7 +30,7 @@ var reportSurfaces = []reportSurface{
 	{name: "types", label: "Types", version: "TypesVersion", stems: []string{"types"}},
 	{name: "village-api", label: "Village API", version: "VillageAPIVersion", stems: []string{"village-api", "publish-request", "annotation-push-request"}},
 	{name: "local-api", label: "Local API", version: "PeasantLocalAPIVersion", stems: []string{"peasantlocal-api"}},
-	{name: "segmented-read", label: "Segmented Read", version: "SegmentedReadAPIVersion", stems: []string{"segmented-read"}},
+	{name: "segmented-read", label: "Segmented Read", version: "SegmentedReadSpecVersion", stems: []string{"segmented-read"}},
 }
 
 type reportChange string
@@ -109,10 +109,14 @@ func versionsAt(root, rev string) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read versions.go at %s: %w", rev, err)
 	}
-	return parseReportVersions(data, rev)
+	working, err := gitOutput(root, "ls-tree", "--name-only", rev, "--", "generated/segmented-read-next.json")
+	if err != nil {
+		return nil, fmt.Errorf("inspect segmented-read migration at %s: %w", rev, err)
+	}
+	return parseReportVersions(data, rev, len(bytes.TrimSpace(working)) == 0)
 }
 
-func parseReportVersions(data []byte, location string) (map[string]string, error) {
+func parseReportVersions(data []byte, location string, allowLegacySegmentedVersion bool) (map[string]string, error) {
 	file, err := parser.ParseFile(token.NewFileSet(), "versions.go", data, 0)
 	if err != nil {
 		return nil, fmt.Errorf("parse versions.go at %s: %w", location, err)
@@ -136,6 +140,9 @@ func parseReportVersions(data []byte, location string) (map[string]string, error
 				values[value.Names[0].Name] = s
 			}
 		}
+	}
+	if allowLegacySegmentedVersion && values["SegmentedReadSpecVersion"] == "" {
+		values["SegmentedReadSpecVersion"] = values["SegmentedReadAPIVersion"]
 	}
 	for _, surface := range reportSurfaces {
 		if values[surface.version] == "" {

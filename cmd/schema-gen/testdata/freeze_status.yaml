@@ -53,3 +53,15 @@ cases:
     classification: must-fail
     provenance: *p
     mutation: *m
+  - name: segmented-description-only
+    input: {edit: segmented-description}
+    expected: {surface: segmented-read, state: docs-ahead}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: segmented-new-field
+    input: {edit: segmented-new-field, sibling: clean-tree}
+    expected: {surface: segmented-read, state: ahead}
+    classification: must-fail
+    provenance: *p
+    mutation: *m

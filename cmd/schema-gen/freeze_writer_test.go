@@ -34,9 +34,11 @@ type freezeWriterEdit struct {
 }
 
 type freezeWriterInput struct {
-	Edits         []freezeWriterEdit `yaml:"edits"`
-	Ahead         []string           `yaml:"ahead"`
-	RequiredPaths []string           `yaml:"required_paths"`
+	Edits          []freezeWriterEdit `yaml:"edits"`
+	Ahead          []string           `yaml:"ahead"`
+	RequiredPaths  []string           `yaml:"required_paths"`
+	PreservePaths  []string           `yaml:"preserve_paths"`
+	VerifyProtocol bool               `yaml:"verify_protocol"`
 }
 
 type freezeWriterExpected struct {
@@ -109,6 +111,14 @@ func TestFreezeWriterCoverage(t *testing.T) {
 				t.Fatal(err)
 			}
 			before := freezeFileSnapshot(t, dir)
+			versionBytes, err := os.ReadFile(filepath.Join(dir, "versions.go"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			beforeVersions, err := parseReportVersions(versionBytes, "before freeze", false)
+			if err != nil {
+				t.Fatal(err)
+			}
 			written := make(map[string]bool)
 			writeFile := func(filename string, data []byte, mode os.FileMode) error {
 				name, err := filepath.Rel(dir, filename)
@@ -122,6 +132,30 @@ func TestFreezeWriterCoverage(t *testing.T) {
 				t.Fatalf("freeze writer failed: %v", err)
 			}
 			after := freezeFileSnapshot(t, dir)
+			for _, name := range c.Input.PreservePaths {
+				old, ok := before[name]
+				if !ok || after[name] != old {
+					t.Errorf("document freeze changed or removed preserved file %s", name)
+				}
+			}
+			if c.Input.VerifyProtocol {
+				versionBytes, err = os.ReadFile(filepath.Join(dir, "versions.go"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				afterVersions, err := parseReportVersions(versionBytes, "after freeze", false)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, name := range []string{"SegmentedReadAPIVersion", "SegmentedReadMinVersion"} {
+					if afterVersions[name] != beforeVersions[name] {
+						t.Errorf("document freeze changed protocol constant %s", name)
+					}
+				}
+				if afterVersions["SegmentedReadSpecVersion"] == beforeVersions["SegmentedReadSpecVersion"] {
+					t.Error("document freeze did not advance the segmented document version")
+				}
+			}
 			var config struct {
 				Changelog      string   `yaml:"changelog"`
 				ProtectedPaths []string `yaml:"protected_paths"`
@@ -210,6 +244,10 @@ func TestFreezeWriterCoverage(t *testing.T) {
 				}
 			}
 			runFreezeFixtureCommand(t, dir, "go", "run", "./cmd/schema-gen", "freeze", "--check", "--plan", planFile, "--state", stateFile)
+			if c.Input.VerifyProtocol {
+				runFreezeFixtureCommand(t, dir, "go", "test", ".", "-run", "^(TestSegmentedReadProtocolVersion|TestTranscriptReadContextProtocolVersion|TestSegmentedReadSpecAccessors)$", "-count=1")
+				runFreezeFixtureCommand(t, dir, "go", "test", "./openapi", "-run", "^(TestSegmentedReadSpec|TestSegmentedReadSpec_GenerationTableMatches|TestSegmentedReadHostGenerationParametersMatch)$", "-count=1")
+			}
 		})
 	}
 }

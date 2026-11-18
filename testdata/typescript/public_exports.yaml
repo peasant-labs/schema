@@ -21,6 +21,9 @@ constants:
   - name: SegmentedReadAPIVersion
     value: 0.2.0
     surfaces: [root]
+  - name: SegmentedReadSpecVersion
+    value: 0.2.0
+    surfaces: [root]
   - name: SegmentedReadMinVersion
     value: 0.1.0
     surfaces: [root]

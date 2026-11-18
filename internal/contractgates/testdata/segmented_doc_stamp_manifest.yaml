@@ -1,0 +1,4 @@
+requiredNames:
+  - document-version-value-change-is-exempt
+  - document-version-removal-is-not-exempt
+  - unrelated-version-is-not-exempt

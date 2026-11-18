@@ -4,5 +4,5 @@ requiredNames:
   - wrong-next-version
   - missing-surface
   - unplanned-ahead
-  - numbered-segmented-cannot-freeze
+  - segmented-document-freezes
   - wrong-candidate-constant

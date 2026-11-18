@@ -156,8 +156,8 @@ release here.
 
 ## Spec versioning: working and frozen documents
 
-For Types, Village, and Local, `generated/<stem>-next.*` is the committed
-working document. `versions.go` names the latest frozen numbered document.
+For Types, Village, Local, and segmented read, `generated/<stem>-next.*` is
+the committed working document. `versions.go` names the latest frozen numbered document.
 The two Village request schemas follow the Village version. The public
 accessors and exported validators read the numbered frozen bytes; generators,
 contract reports, and current-document tests read working bytes. No public
@@ -173,9 +173,13 @@ candidate pre-tag check enforce this. A wrong stale freeze that bypasses the
 queue burns one spec number; the next freeze advances again and retains the
 wrong numbered file.
 
-Segmented read remains on its numbered, generated path pending its protocol
-versioning decision. Do not create a segmented working file or change its
-version usage as part of the other surfaces' freeze.
+Segmented read separates the frozen document version
+(`SegmentedReadSpecVersion`) from the selected wire protocol
+(`SegmentedReadAPIVersion`, with `SegmentedReadMinVersion` as the oldest
+served protocol). A document freeze moves only the document version. The
+minimum protocol document and the generation selector table remain unchanged.
+A breaking protocol change requiring a new `v=` generation is separate P1
+work, not a document freeze.
 
 When an open content PR predates this migration, merge the updated base,
 drop its numbered-file and constant changes, regenerate the working files,

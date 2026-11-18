@@ -8,3 +8,5 @@ requiredNames:
   - request-new-field
   - request-changed-type
   - request-removed-field
+  - segmented-description-only
+  - segmented-new-field

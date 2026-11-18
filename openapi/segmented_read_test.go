@@ -35,7 +35,8 @@ var segmentedReadDiscoveryYAML []byte
 var segmentedReadDiscoveryManifestYAML []byte
 
 type segmentedReadSpecInput struct {
-	Version string `yaml:"version"`
+	Version         string `yaml:"version"`
+	DocumentVersion string `yaml:"document_version"`
 }
 
 type segmentedReadSpecExpected struct {
@@ -43,6 +44,7 @@ type segmentedReadSpecExpected struct {
 	Absent                     []string `yaml:"absent"`
 	ErrorContains              string   `yaml:"errorContains"`
 	ProtocolVersionDescription string   `yaml:"protocolVersionDescription"`
+	SameAsDocument             string   `yaml:"same_as_document"`
 }
 
 func TestSegmentedReadSpec(t *testing.T) {
@@ -57,7 +59,11 @@ func TestSegmentedReadSpec(t *testing.T) {
 	caseassert.RequireManifestNames(t, "segmented read spec", segmentedReadSpecManifestYAML, names)
 	for _, c := range corpus.Cases {
 		t.Run(c.Name, func(t *testing.T) {
-			spec, err := openapi.BuildSegmentedReadSpec(c.Input.Version)
+			documentVersion := c.Input.DocumentVersion
+			if documentVersion == "" {
+				documentVersion = c.Input.Version
+			}
+			spec, err := openapi.BuildSegmentedReadSpec(c.Input.Version, documentVersion)
 			if c.Classification == testcase.MustFail {
 				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
 					t.Fatalf("error = %v, want %q", err, c.Expected.ErrorContains)
@@ -67,8 +73,11 @@ func TestSegmentedReadSpec(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if spec.Info.Version != c.Input.Version || spec.Paths != nil {
+			if spec.Info.Version != documentVersion || spec.Paths != nil {
 				t.Fatalf("unexpected version or paths: version=%q paths=%v", spec.Info.Version, spec.Paths)
+			}
+			if spec.Info.Title != "Peasant Segmented Read Protocol v"+documentVersion {
+				t.Fatalf("document title = %q, want document version %s", spec.Info.Title, documentVersion)
 			}
 			for _, name := range c.Expected.Roots {
 				if _, ok := spec.Components.Schemas[name]; !ok {
@@ -87,6 +96,28 @@ func TestSegmentedReadSpec(t *testing.T) {
 			var doc map[string]interface{}
 			if err := json.Unmarshal(wire, &doc); err != nil {
 				t.Fatal(err)
+			}
+			if c.Expected.SameAsDocument != "" {
+				baseline, err := openapi.BuildSegmentedReadSpec(c.Input.Version, c.Expected.SameAsDocument)
+				if err != nil {
+					t.Fatal(err)
+				}
+				baselineWire, err := baseline.MarshalJSON()
+				if err != nil {
+					t.Fatal(err)
+				}
+				var prior map[string]interface{}
+				if err := json.Unmarshal(baselineWire, &prior); err != nil {
+					t.Fatal(err)
+				}
+				for _, value := range []map[string]interface{}{doc, prior} {
+					info := value["info"].(map[string]interface{}) // unstring-allow: go-json-key-assert — normalize generated fixture documents
+					delete(info, "version")
+					delete(info, "title")
+				}
+				if !reflect.DeepEqual(doc, prior) {
+					t.Fatal("document version bump changed more than the document title and version")
+				}
 			}
 			components := doc["components"].(map[string]interface{})["schemas"].(map[string]interface{})
 			if c.Expected.ProtocolVersionDescription != "" {
@@ -136,7 +167,7 @@ func TestSegmentedReadSpec(t *testing.T) {
 }
 
 func TestSegmentedReadSpec_GenerationTableMatches(t *testing.T) {
-	spec, err := openapi.BuildSegmentedReadSpec(schema.SegmentedReadAPIVersion)
+	spec, err := openapi.BuildSegmentedReadSpec(schema.SegmentedReadAPIVersion, schema.SegmentedReadSpecVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,7 +285,7 @@ func TestSegmentedReadRenamePreservesProtocol(t *testing.T) {
 	caseassert.RequireManifestNames(t, "segmented read rename", segmentedReadRenameGoldenManifestYAML, names)
 	for _, c := range corpus.Cases {
 		t.Run(c.Name, func(t *testing.T) {
-			spec, err := openapi.BuildSegmentedReadSpec(c.Input.Version)
+			spec, err := openapi.BuildSegmentedReadSpec(c.Input.Version, c.Input.Version)
 			if err != nil {
 				t.Fatal(err)
 			}

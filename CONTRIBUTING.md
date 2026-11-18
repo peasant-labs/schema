@@ -156,11 +156,15 @@ Title a content PR `type(scope)[level]: description`. For example,
 `docs` and `chore` take no level. CI compares the live title with the contract
 report on the PR and in the merge group.
 
-For Types, Village, and Local, regenerate `generated/*-next.*` and never
+For Types, Village, Local, and segmented read, regenerate `generated/*-next.*` and never
 change a numbered spec or `versions.go` in a content PR. Public accessors and
 validators use the frozen numbered files; generators and internal tests use
 the working files. The two Village request schemas share the Village version.
-Segmented read remains numbered until its separate protocol decision.
+The segmented read document version is separate from its protocol versions:
+freezes move `SegmentedReadSpecVersion`, not the selected
+`SegmentedReadAPIVersion` or oldest served `SegmentedReadMinVersion`.
+A breaking protocol change that needs a new `v=` generation is separate P1
+work, not a document freeze.
 
 A functional change needs a releasing title naming every functionally changed
 surface; a releasing title cannot name a docs-only or unchanged surface unless

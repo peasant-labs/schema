@@ -77,7 +77,7 @@ func TestFreezeSurfaceStates(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(dir, ".github/release-intent.yaml"), config, 0o644); err != nil {
 				t.Fatal(err)
 			}
-			versionSource := "package schema\nconst (\nTypesVersion = \"1.2.3\"\nVillageAPIVersion = \"1.2.3\"\nPeasantLocalAPIVersion = \"1.2.3\"\nSegmentedReadAPIVersion = \"1.2.3\"\n)\n"
+			versionSource := "package schema\nconst (\nTypesVersion = \"1.2.3\"\nVillageAPIVersion = \"1.2.3\"\nPeasantLocalAPIVersion = \"1.2.3\"\nSegmentedReadAPIVersion = \"0.2.0\"\nSegmentedReadSpecVersion = \"1.2.3\"\n)\n"
 			if err := os.WriteFile(filepath.Join(dir, "versions.go"), []byte(versionSource), 0o644); err != nil {
 				t.Fatal(err)
 			}
@@ -103,10 +103,8 @@ func TestFreezeSurfaceStates(t *testing.T) {
 						if err := os.WriteFile(frozen, value, 0o644); err != nil {
 							t.Fatal(err)
 						}
-						if workingSurface(surface) {
-							if err := os.WriteFile(filepath.Join(dir, "generated", stem+"-next"+ext), value, 0o644); err != nil {
-								t.Fatal(err)
-							}
+						if err := os.WriteFile(filepath.Join(dir, "generated", stem+"-next"+ext), value, 0o644); err != nil {
+							t.Fatal(err)
 						}
 					}
 				}
@@ -132,6 +130,8 @@ func TestFreezeSurfaceStates(t *testing.T) {
 				stem := "peasantlocal-api"
 				if strings.HasPrefix(string(c.Input.Edit), "request-") {
 					stem = "publish-request"
+				} else if strings.HasPrefix(string(c.Input.Edit), "segmented-") {
+					stem = "segmented-read"
 				}
 				ext := ".json"
 				if requestStem(stem) {
@@ -163,11 +163,14 @@ func TestFreezeSurfaceStates(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, row := range state.Surfaces {
+				if row.Name == c.Expected.Surface && row.Frozen != "1.2.3" {
+					t.Fatalf("%s frozen version = %s, want document version 1.2.3", row.Name, row.Frozen)
+				}
 				if row.Name == c.Expected.Surface && row.State != c.Expected.State {
 					t.Fatalf("%s state = %s, want %s", row.Name, row.State, c.Expected.State)
 				}
-				if row.Name == "segmented-read" && row.State != surfaceClean {
-					t.Fatalf("numbered segmented-read is not clean: %s", row.State)
+				if row.Name == "segmented-read" && c.Expected.Surface != row.Name && row.State != surfaceClean {
+					t.Fatalf("unmodified segmented-read is not clean: %s", row.State)
 				}
 			}
 			err = checkReleaseTree(state)
@@ -212,7 +215,7 @@ func TestFreezeSurfaceStates(t *testing.T) {
 
 func mutateFreezeDocument(t *testing.T, doc map[string]any, edit freezeFixtureEdit) {
 	t.Helper()
-	if edit == "openapi-description" {
+	if edit == "openapi-description" || edit == "segmented-description" {
 		doc["info"].(map[string]any)["description"] = "A clarified description." // unstring-allow: go-json-key-assert — fixture mutates arbitrary documents
 		return
 	}
@@ -227,7 +230,7 @@ func mutateFreezeDocument(t *testing.T, doc map[string]any, edit freezeFixtureEd
 		properties = doc["components"].(map[string]any)["schemas"].(map[string]any)["Example"].(map[string]any)["properties"].(map[string]any) // unstring-allow: go-json-key-assert — fixture mutates arbitrary documents
 	}
 	switch edit {
-	case "openapi-new-field", "request-new-field":
+	case "openapi-new-field", "request-new-field", "segmented-new-field":
 		properties["newValue"] = properties["value"]
 	case "openapi-changed-type", "request-changed-type":
 		properties["value"].(map[string]any)["type"] = "boolean" // unstring-allow: go-json-key-assert — fixture mutates arbitrary documents

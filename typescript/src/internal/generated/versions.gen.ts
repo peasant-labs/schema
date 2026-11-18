@@ -3,5 +3,6 @@ export const VillageAPIVersion = "0.41.0" as const;
 export const PeasantLocalAPIVersion = "0.38.0" as const;
 export const TypesVersion = "0.51.0" as const;
 export const SegmentedReadAPIVersion = "0.2.0" as const;
+export const SegmentedReadSpecVersion = "0.2.0" as const;
 export const SegmentedReadMinVersion = "0.1.0" as const;
 export const MetadataSchemaVersion = 12 as const;

@@ -24,3 +24,31 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "release-intent freeze-writer coverage"}
     mutation: {description: "Generate content changes in all supported freeze surfaces."}
+  - name: segmented-document-freeze-retains-protocol
+    input:
+      edits:
+        - path: openapi/segmented_read.go
+          find: 'roots = []string{"PositionedDirectory", "PositionedSegment", "PositionedWindow"}'
+          replace: 'roots = []string{"PositionedDirectory", "PositionedSegment", "PositionedWindow", "MapEdge"}'
+      ahead: [segmented-read]
+      required_paths:
+        - versions.go
+        - cmd/schema-gen/testdata/frozen_specs.yaml
+        - cmd/schema-gen/testdata/frozen_specs_manifest.yaml
+        - typescript/src/internal/generated/versions.gen.ts
+        - testdata/typescript/public_exports.yaml
+        - generated/segmented-read-next.json
+        - generated/segmented-read-next.yaml
+      preserve_paths:
+        - generated/segmented-read-0.1.0.json
+        - generated/segmented-read-0.1.0.yaml
+        - generated/segmented-read-0.2.0.json
+        - generated/segmented-read-0.2.0.yaml
+        - generated/village-api-next.json
+        - generated/village-api-next.yaml
+        - transcript_positioned.go
+      verify_protocol: true
+    expected: {check: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "A document freeze does not change the wire protocol"}
+    mutation: {description: "Change only the segmented working document and freeze it."}

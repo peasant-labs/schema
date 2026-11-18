@@ -29,10 +29,10 @@ cases:
     classification: must-fail
     provenance: *p
     mutation: *m
-  - name: numbered-segmented-cannot-freeze
-    input: {edit: segmented-freeze, sibling: coherent-plan}
-    expected: {error_contains: "does not match the state"}
-    classification: must-fail
+  - name: segmented-document-freezes
+    input: {edit: segmented-freeze}
+    expected: {}
+    classification: must-pass
     provenance: *p
     mutation: *m
   - name: wrong-candidate-constant

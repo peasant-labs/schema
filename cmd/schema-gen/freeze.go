@@ -198,7 +198,7 @@ func validateFreezeHandoff(surfaces []reportSurface, state surfaceStates, plan f
 		if s.Name != surface.name || p.Name != surface.name || s.Label != surface.label || p.Label != surface.label || s.Frozen != p.From {
 			return fmt.Errorf("freeze handoffs disagree with config, label or frozen version for %s", surface.name)
 		}
-		if p.Freeze != (s.State == surfaceAhead) || (!workingSurface(surface) && p.Freeze) {
+		if p.Freeze != (s.State == surfaceAhead) {
 			return fmt.Errorf("freeze plan does not match the state of %s", surface.name)
 		}
 		next, err := nextFreezeVersion(p.From, p.Level)
@@ -336,6 +336,17 @@ func replaceVersionLine(data []byte, prefix, oldVersion, newVersion string) ([]b
 }
 
 func replaceDocumentVersion(data []byte, stem, extension, oldVersion, newVersion string) ([]byte, error) {
+	if stem == "segmented-read" {
+		prefix := `    "title": "Peasant Segmented Read Protocol v`
+		if extension == ".yaml" {
+			prefix = `  title: Peasant Segmented Read Protocol v`
+		}
+		var err error
+		data, err = replaceVersionLine(data, prefix, oldVersion, newVersion)
+		if err != nil {
+			return nil, err
+		}
+	}
 	switch {
 	case requestStem(stem):
 		return replaceVersionLine(data, `  "\$id": "urn:peasant:`+regexp.QuoteMeta(stem)+`:`, oldVersion, newVersion)

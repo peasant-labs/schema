@@ -7,13 +7,9 @@ import (
 )
 
 // workingArtifactName maps the generator's current contract documents to the
-// files content changes update. Segmented read remains numbered until its
-// protocol versioning is resolved.
+// files content changes update. The minimum segmented protocol stays numbered.
 func workingArtifactName(name string) string {
 	for _, surface := range reportSurfaces {
-		if surface.name == "segmented-read" {
-			continue
-		}
 		var version string
 		switch surface.version {
 		case "TypesVersion":
@@ -22,6 +18,8 @@ func workingArtifactName(name string) string {
 			version = openapi.VillageAPIVersion
 		case "PeasantLocalAPIVersion":
 			version = openapi.PeasantLocalAPIVersion
+		case "SegmentedReadSpecVersion":
+			version = openapi.SegmentedReadSpecVersion
 		}
 		for _, stem := range surface.stems {
 			prefix := stem + "-" + version + "."

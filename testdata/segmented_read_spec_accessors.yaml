@@ -1,13 +1,13 @@
 cases:
   - name: current-spec-accessor
     classification: must-pass
-    provenance: {source: requirement, ref: "The current embedded document comes from the generator"}
-    mutation: {description: "Read the current protocol document"}
+    provenance: {source: requirement, ref: "The current accessor serves the numbered frozen document"}
+    mutation: {description: "Read the current frozen document"}
     input: {role: current}
-    expected: {artifact: "segmented-read-0.2.0.json"}
+    expected: {version_source: document}
   - name: minimum-spec-accessor
     classification: must-pass
     provenance: {source: requirement, ref: "The still-served minimum document is embedded"}
     mutation: {description: "Read the minimum protocol document"}
     input: {role: minimum}
-    expected: {artifact: "segmented-read-0.1.0.json"}
+    expected: {version_source: minimum}

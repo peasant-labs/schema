@@ -388,15 +388,13 @@ const (
 	// Version 0.2.0 (breaking) adds the positioned protocol at v=2; this is
 	// a breaking-class change expressed as a minor bump before 1.0.
 	//
-	// Patch bumps describe documentation only. A declaration, member, bound,
-	// default, pattern, refusal or closed-set change needs a minor bump; before
-	// 1.0 this includes breaking changes. At and after 1.0 breaking changes
-	// require a major bump. Name each bump's class explicitly.
-	//
-	// A version that is still served after a bump is frozen while served and
-	// remains generated with its own hash pin. Retired versions stop being
-	// generated and move to the retired-spec registry.
+	// A breaking protocol change that needs a new v= generation is separate
+	// from freezing a document and requires its own protocol decision.
 	SegmentedReadAPIVersion = "0.2.0"
+
+	// SegmentedReadSpecVersion identifies the current frozen document. Release
+	// freezes advance it independently of the wire protocol and its selectors.
+	SegmentedReadSpecVersion = "0.2.0"
 
 	// SegmentedReadMinVersion is the oldest declared and served segmented read
 	// protocol. It moves only when the oldest served version is retired.
