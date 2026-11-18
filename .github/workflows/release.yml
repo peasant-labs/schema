@@ -239,34 +239,21 @@ jobs:
 
       - name: Look for an existing release
         id: view
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY"
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Create the release for the existing tag
-        id: create
-        if: steps.view.outcome == 'failure'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}
-          LATEST: ${{ needs.guard.outputs.kind == 'final' }}
-        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" --latest="$LATEST"
-
-      - name: Update the release notes
-        if: steps.view.outcome == 'success'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}
-          LATEST: ${{ needs.guard.outputs.kind == 'final' }}
-        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" --latest="$LATEST"
-
-      - name: Upload the release assets
-        if: steps.view.outcome == 'success' || steps.create.outcome == 'success'
+      - name: Create the release and upload assets
+        if: steps.view.outputs.exists != 'true'
         uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2.4.2
         with:
           tag_name: ${{ github.ref_name }}
           repository: ${{ github.repository }}
+          name: ${{ github.ref_name }}
+          body_path: dist/release-notes.md
           files: dist/*
           fail_on_unmatched_files: true
           overwrite_files: true
