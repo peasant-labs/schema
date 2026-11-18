@@ -1,4 +1,123 @@
-tool_pin: 0f1446b776dd6604391077fc85c39cdd8168c074
+tool_pin: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
+version_guard_required:
+  - matching-version
+  - mismatched-version-is-refused
+version_guard_cases:
+  - name: matching-version
+    tag: v1.2.3
+    package_version: 1.2.3
+    expected_exit: 0
+    expected_output: ""
+  - name: mismatched-version-is-refused
+    tag: v1.2.3
+    package_version: 1.2.4
+    expected_exit: 1
+    expected_output: "tag v1.2.3 does not match typescript/package.json version 1.2.4; tags are immutable, so fix forward"
+existing_release_required:
+  - complete-published-release
+  - draft-with-assets
+  - draft-without-assets
+  - draft-with-invalid-assets
+  - published-without-assets
+  - missing-draft-state
+  - invalid-assets
+  - non-json-response
+  - api-failure
+existing_release_cases:
+  - name: complete-published-release
+    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 0
+    expected_output: "existing release is published and has assets"
+  - name: draft-with-assets
+    response: '{"isDraft":true,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: 'release is an unpublished draft; delete it with gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" (without --cleanup-tag), then rerun; do not create a new tag'
+  - name: draft-without-assets
+    response: '{"isDraft":true,"assets":[]}'
+    expected_exit: 1
+    expected_output: 'release is an unpublished draft; delete it with gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" (without --cleanup-tag), then rerun; do not create a new tag'
+  - name: draft-with-invalid-assets
+    response: '{"isDraft":true,"assets":null}'
+    expected_exit: 1
+    expected_output: 'release is an unpublished draft; delete it with gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" (without --cleanup-tag), then rerun; do not create a new tag'
+  - name: published-without-assets
+    response: '{"isDraft":false,"assets":[]}'
+    expected_exit: 1
+    expected_output: "published release has no assets; tags are immutable, so fix forward with a new tag"
+  - name: missing-draft-state
+    response: '{"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "release draft status is invalid; inspect the release before retrying"
+  - name: invalid-assets
+    response: '{"isDraft":false,"assets":null}'
+    expected_exit: 1
+    expected_output: "published release assets are invalid; inspect the release before retrying"
+  - name: non-json-response
+    response: "not-json"
+    expected_exit: 1
+    expected_output: "parse error"
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
+prepared_tag_required:
+  - release-commit-snapshot
+  - branch-advances-after-plan
+  - branch-advances-before-plan
+  - tag-not-on-run-commit
+  - tag-points-at-wrong-commit
+  - lightweight-tag
+  - unexpected-tag-ref
+  - multiple-tag-refs
+  - candidate-outside-plan-source
+  - candidate-outside-run-branch
+  - corrupt-bundle
+  - invalid-candidate-sha
+  - invalid-plan-source-sha
+  - unavailable-plan-source
+prepared_tag_cases:
+  - name: release-commit-snapshot
+    success: true
+  - name: branch-advances-after-plan
+    advance_after_plan: true
+    success: true
+  - name: branch-advances-before-plan
+    advance_before_plan: true
+    success: true
+  - name: tag-not-on-run-commit
+    success: true
+    ancestry_at_base: true
+    expected_ancestry_exit: 1
+  - name: tag-points-at-wrong-commit
+    tag_at_base: true
+    error_contains: "prepared tag does not point at the planned release candidate"
+  - name: lightweight-tag
+    lightweight: true
+    error_contains: "prepared release tag must be annotated"
+  - name: unexpected-tag-ref
+    unexpected_ref: true
+    error_contains: "prepared tag bundle must contain only the planned tag"
+  - name: multiple-tag-refs
+    extra_ref: true
+    error_contains: "prepared tag bundle must contain only the planned tag"
+  - name: candidate-outside-plan-source
+    source_at_base: true
+    error_contains: "release candidate is not an ancestor of the plan source"
+  - name: candidate-outside-run-branch
+    candidate_off_branch: true
+    error_contains: "release candidate is not on the default-branch run"
+  - name: corrupt-bundle
+    corrupt_bundle: true
+    error_contains: "prepared tag bundle is invalid"
+  - name: invalid-candidate-sha
+    invalid_candidate: true
+    error_contains: "release candidate is not a full commit SHA"
+  - name: invalid-plan-source-sha
+    invalid_source: true
+    error_contains: "plan source is not a full commit SHA"
+  - name: unavailable-plan-source
+    unavailable_source: true
+    error_contains: "could not fetch the recorded plan source"
 merge_gate_required:
   - release-vendor-failed
   - release-vendor-skipped
@@ -63,6 +182,127 @@ precheck:
     - Set up Go
     - Build release-intent
     - Install Nix
+provenance_gates:
+  candidate_output: "${{ steps.verdict.outputs.candidate }}"
+  pull_requests: read
+  job_conditions:
+    verify: "!cancelled() && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true'"
+    release: "!cancelled() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true' && needs.verify.result == 'success'"
+  job_needs:
+    verify: [plan]
+    release: [plan, verify]
+publication_required: [build, release, npm-publish]
+publication_needs:
+  build: [guard, nix-vendor-hash, contract-gates, verify-tag]
+  release: [guard, nix-vendor-hash, contract-gates, verify-tag, build]
+  npm-publish: [guard, nix-vendor-hash, contract-gates, verify-tag]
+provenance_candidate: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+provenance_config:
+  automation_author: app/peasant-labs-releaser
+  bot_branches:
+    release: automation/release
+provenance_examples:
+  bot: &provenance-bot
+    merged_at: "2026-01-01T00:00:00Z"
+    merge_commit_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    head: {ref: automation/release}
+    user: {login: "peasant-labs-releaser[bot]"}
+  association_error: &provenance-association-error '::error::release candidate aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa must be the merge commit of exactly one merged release PR from automation/release by peasant-labs-releaser[bot]'
+provenance_required:
+  - merged-bot-release
+  - merged-app-author-form
+  - open-pr-ignored
+  - no-associated-pr
+  - unmerged-pr
+  - wrong-branch
+  - human-author
+  - wrong-merge-commit
+  - multiple-merged-prs
+  - multiple-prs-across-pages
+  - malformed-response
+  - empty-api-output
+  - failed-api
+  - invalid-candidate
+  - wrong-config-author
+provenance_cases:
+  - name: merged-bot-release
+    pages: [[*provenance-bot]]
+    expected_exit: 0
+  - name: merged-app-author-form
+    pages:
+      - - <<: *provenance-bot
+          user: {login: app/peasant-labs-releaser}
+    expected_exit: 0
+  - name: open-pr-ignored
+    pages:
+      - - *provenance-bot
+        - <<: *provenance-bot
+          merged_at: null
+    expected_exit: 0
+  - name: no-associated-pr
+    pages: [[]]
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: unmerged-pr
+    pages:
+      - - <<: *provenance-bot
+          merged_at: null
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: wrong-branch
+    pages:
+      - - <<: *provenance-bot
+          head: {ref: human/release}
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: human-author
+    pages:
+      - - <<: *provenance-bot
+          user: {login: human}
+          title: "release[patch]: update the changelog"
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: wrong-merge-commit
+    pages:
+      - - <<: *provenance-bot
+          merge_commit_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: multiple-merged-prs
+    pages: [[*provenance-bot, *provenance-bot]]
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: multiple-prs-across-pages
+    pages:
+      - [*provenance-bot]
+      - - <<: *provenance-bot
+          user: {login: human}
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: malformed-response
+    raw_output: "not-json"
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: empty-api-output
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: failed-api
+    pages: [[*provenance-bot]]
+    api_exit: 1
+    expected_exit: 1
+    error_contains: '::error::could not read pull requests associated with release candidate aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  - name: invalid-candidate
+    candidate: not-a-sha
+    pages: [[*provenance-bot]]
+    expected_exit: 1
+    error_contains: '::error::release candidate is not a full commit SHA'
+  - name: wrong-config-author
+    config:
+      automation_author: app/not-the-releaser
+      bot_branches: {release: automation/release}
+    pages: [[*provenance-bot]]
+    expected_exit: 1
+    error_contains: '::error::release configuration does not name the releaser App'
 cut_default_branch_if: "github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && vars.RELEASE_BATCH_MODE == 'tag'"
 cut_jobs: [prepare, cut]
 required:
@@ -72,10 +312,21 @@ required:
   - vendor-hash-is-advisory-on-content-pr
   - vendor-hash-diff-is-one-line
   - pre-tag-contract-has-floor
+  - tag-requires-verified-release-pr
+  - tag-creation-requires-provenance
+  - prepared-tag-is-snapshot-verified
+  - tag-push-checks-default-branch-ancestry
+  - tag-push-follows-default-branch-check
   - pending-range-has-floor
   - tag-range-has-floor
   - tag-judges-contract
   - npm-tag-matches-version
+  - npm-published-version-has-no-shell-banner
+  - release-checks-for-existing
+  - existing-release-must-be-complete
+  - release-creates-a-draft
+  - release-uploads-before-publishing
+  - release-publishes-after-upload
   - vendor-hash-mints-only-for-work
   - precheck-identifies-repository
   - plan-mode-and-floor-env
@@ -122,6 +373,56 @@ cases:
     step: Verify the candidate contract
     run_contains: ["check-contract", "--until", "--floor"]
     id: verify-contract
+  - name: tag-requires-verified-release-pr
+    workflow: release-batch.yml
+    job: plan
+    step: Verify the release candidate PR provenance
+    id: provenance
+    no_continue: true
+    no_job_continue: true
+    after: Plan with the candidate verdict
+    if_value: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag'"
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+      CANDIDATE: "${{ steps.verdict.outputs.candidate }}"
+      PLAN_SOURCE: "${{ steps.plan.outputs.source }}"
+    run_contains: ['git show "${PLAN_SOURCE}:.github/release-intent.yaml"', 'gh api --paginate', '/commits/${CANDIDATE}/pulls?per_page=100', 'merged_at', 'merge_commit_sha', '.head.ref', '.user.login']
+  - name: tag-creation-requires-provenance
+    workflow: release-batch.yml
+    job: plan
+    step: Make the annotated release tag
+    after: Verify the release candidate PR provenance
+    if_value: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag' && steps.provenance.outcome == 'success'"
+  - name: prepared-tag-is-snapshot-verified
+    workflow: release-batch.yml
+    job: verify
+    step: Verify the prepared tag
+    if_value: "!cancelled() && needs.plan.outputs.tag-action == 'tag'"
+    no_continue: true
+    no_job_continue: true
+    env_values:
+      TAG: "${{ needs.plan.outputs.tag }}"
+      CANDIDATE: "${{ needs.plan.outputs.candidate }}"
+      PLAN_SOURCE: "${{ needs.plan.outputs.plan-source }}"
+    run_contains: ['git bundle verify', 'git bundle list-heads', 'refs/tags/${TAG}^{commit}', '${CANDIDATE}', '${PLAN_SOURCE}', '${GITHUB_SHA}']
+    run_excludes: ["origin/develop", 'release-intent" plan', 'TIP=', FRESH_ACTION]
+  - name: tag-push-checks-default-branch-ancestry
+    workflow: release-batch.yml
+    job: release
+    step: Check the release tag is on the default branch
+    after: Fetch the release tag
+    if_value: "needs.plan.outputs.tag-action == 'tag'"
+    no_continue: true
+    no_job_continue: true
+    run_contains: ['git merge-base --is-ancestor "refs/tags/${TAG}" "${GITHUB_SHA}"']
+  - name: tag-push-follows-default-branch-check
+    workflow: release-batch.yml
+    job: release
+    step: Tag the fresh release candidate
+    after: Check the release tag is on the default branch
+    if_value: "needs.plan.outputs.tag-action == 'tag'"
+    no_continue: true
+    no_job_continue: true
   - name: pending-range-has-floor
     workflow: release-batch.yml
     job: plan
@@ -141,7 +442,74 @@ cases:
     workflow: release.yml
     job: npm-publish
     step: Guard tag and package version consistency
-    run_contains: ["typescript/package.json", "${TAG#v}", '"${version}" = "${pkg_version}"']
+    run_contains: ["jq -r '.version' typescript/package.json", "${TAG#v}", '"${version}" = "${pkg_version}"']
+    run_excludes: ["nix develop"]
+  - name: npm-published-version-has-no-shell-banner
+    workflow: release.yml
+    job: npm-publish
+    step: Publish @peasant-labs/schema to npm (OIDC trusted publishing)
+    run_contains: ['published_version="$(jq -r ''.version'' typescript/package.json)"']
+    run_excludes: ['published_version="$(nix develop']
+  - name: release-checks-for-existing
+    workflow: release.yml
+    job: release
+    step: Look for an existing release
+    id: view
+    continue_contains: ["true"]
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"']
+    run_excludes: ['--json', 'isImmutable']
+    job_run_excludes: ['gh release upload', 'isImmutable']
+    job_run_only:
+      gh release create: Create the draft release
+      gh release edit: Publish the release
+  - name: existing-release-must-be-complete
+    workflow: release.yml
+    job: release
+    step: Verify the existing release is complete
+    after: Look for an existing release
+    if_value: "steps.view.outcome == 'success'"
+    no_continue: true
+    no_job_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"', '--json isDraft,assets', '--jq', 'unpublished draft', 'gh release delete', '\u0024TAG', '\u0024GITHUB_REPOSITORY', 'without --cleanup-tag', 'do not create a new tag', 'published release has no assets', 'fix forward with a new tag']
+  - name: release-creates-a-draft
+    workflow: release.yml
+    job: release
+    step: Create the draft release
+    id: create
+    after: Verify the existing release is complete
+    if_value: "steps.view.outcome == 'failure'"
+    env_values:
+      PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"
+    run_contains: ['gh release create "$TAG"', '--repo "$GITHUB_REPOSITORY"', '--draft', '--verify-tag', '--title "$TAG"', '--notes-file dist/release-notes.md', '--prerelease="$PRERELEASE"']
+    run_excludes: ['dist/*', '--latest']
+  - name: release-uploads-before-publishing
+    workflow: release.yml
+    job: release
+    step: Upload the release assets
+    uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe
+    after: Create the draft release
+    if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
+    with_values:
+      tag_name: "${{ github.ref_name }}"
+      repository: "${{ github.repository }}"
+      files: "dist/*"
+      fail_on_unmatched_files: "true"
+      overwrite_files: "true"
+      draft: "true"
+      prerelease: "${{ needs.guard.outputs.prerelease }}"
+    with_excludes: [make_latest]
+  - name: release-publishes-after-upload
+    workflow: release.yml
+    job: release
+    step: Publish the release
+    after: Upload the release assets
+    if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
+    env_values:
+      PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"
+      LATEST: "${{ needs.guard.outputs.kind == 'final' }}"
+    run_contains: ['gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease="$PRERELEASE" --latest="$LATEST"']
   - name: vendor-hash-mints-only-for-work
     workflow: nix-vendor-hash.yml
     job: update

@@ -18,15 +18,51 @@ Consumers re-pin only after the schema tag exists.
    `automation/release` PR with a generated changelog section, the npm
    version, and the freeze of every ahead supported surface. The tool's title
    is passed unchanged to verification and the PR. The release PR is queued by
-   the bot; do not edit or merge it by hand. The bot tags only a fresh,
-   verified release commit.
+   the bot; do not edit or merge it by hand. Before making a tag, the plan job
+   uses its read-only token to require exactly one merged PR for the
+   candidate, with the candidate as its merge commit, the configured release
+   bot branch as its head, and the releaser App as its author. A failed lookup or provenance check makes the shell exit
+   nonzero; neither the step nor the plan job sets `continue-on-error`, and
+   the release job requires a successful plan. The tag names that release
+   PR's merge commit; later commits belong to the next release. The independent
+   verifier checks the prepared tag against the recorded candidate and branch
+   ancestry without replanning against the current tip. If the run's event
+   commit predates the candidate, the ancestry check fails closed; a later
+   default-branch run can retry.
 4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
    and the contract check precede the independent GitHub Release and npm
-   publishers. The GitHub Release carries only numbered frozen JSON and YAML
-   specs, including numbered request schemas; `*-next` files never ship as
-   release assets.
-   The npm job checks that the committed package version matches the tag and
-   removes `private` only in its working copy.
+   publishers. The GitHub Release is created as a draft, the numbered frozen
+   JSON and YAML specs, including numbered request schemas, are uploaded, and
+   only then is it published and protected by release immutability; `*-next`
+   files never ship as release assets. The npm job checks that the committed
+   package version matches the tag and removes `private` only in its working
+   copy.
+
+On 2026-11-18, a read-only check of GitHub's commit-to-pulls API returned the
+merged bot release PR, its merge commit, `automation/release` head, and
+releaser App author for the merge-queue squash commit `cf9f3b7189d00a1ac841a75c413299d15c6fa257`.
+The same check for ordinary merge commit `24323466e020c223cf9750bd0606774c104b4b76`
+returned a human-authored PR. This is live evidence, not a guarantee of future
+API behavior: the provenance test stubs Git, yq, and gh.
+
+On a rerun, a published release with assets is left unchanged. A failed upload
+or publish can leave an unpublished draft; the workflow fails on rerun and does
+not resume or upload missing assets. Drafts are not immutable. Confirm that
+the release is a draft, set `TAG` to its existing tag and
+`GITHUB_REPOSITORY` to `peasant-labs/schema`, then delete the draft:
+
+```sh
+gh release delete "$TAG" --repo "$GITHUB_REPOSITORY"
+```
+
+Do not pass `--cleanup-tag`: keep the existing tag and rerun the release
+workflow for that same tag. Do not create a new tag to recover a draft. If an
+already-published release has no assets, fix forward with a new tag instead;
+do not attempt to repair a published immutable release or reuse its tag.
+
+A failed `gh release view`, including a network or authentication failure, is
+treated as no release. If a release actually exists, the create step fails
+loudly, so this fallback cannot report a false success.
 
 Tags are append-only. Never push, move, or delete a public tag by hand. Old
 `pkg/schema/v*` tags remain intact. The old tag parser still recognizes
@@ -177,3 +213,28 @@ If the release job fails to push a tag, inspect the job and remote tag first.
 After fixing the cause, dispatch `release-batch` on the default branch so it
 replans and verifies the current candidate. If the tag already exists, do not
 move or recreate it; investigate its target and the tag-triggered run instead.
+
+Release recovery rules:
+
+- The `Protect release tags` ruleset has exactly one bypass actor: the
+  `peasant-labs-releaser` GitHub App (Integration id 3988034). A human
+  `git push` of a release tag is refused. Fix a failed batch; do not change the
+  ruleset to work around it.
+- `RELEASE_BATCH_MODE` must be `tag` for the batch to write. When unset, the
+  batch runs plan-only and returns `action=none` for pending releases. After any
+  runner, permission, or release-config change, confirm the variable is `tag`
+  with `gh variable list -R peasant-labs/schema` before treating a plan as
+  authoritative.
+- In the 0.56.0 incident, the batch returned `action=none` because
+  `RELEASE_BATCH_MODE` was unset; that alone prevented a write. A later
+  non-releasing fix also moved the tip after the release PR merged. Do not
+  treat `none` as success or move a tag; set the mode to `tag`, then cut a new
+  release that includes the fix.
+- An immutable GitHub Release cannot be updated. Older publisher runs failed
+  with `tag_name was used by an immutable release` or `target_commitish cannot
+  be changed`. The current publisher leaves complete releases alone and fails
+  on incomplete releases. Delete an unpublished draft as described above; for
+  an already-published release without assets, fix forward with a new tag.
+- The npm version guard reads `typescript/package.json` with `jq`. The dev-shell
+  banner polluted the old `nix develop -c node -p` capture; do not reintroduce
+  a stdout-captured dev-shell command.

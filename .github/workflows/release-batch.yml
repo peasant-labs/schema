@@ -111,7 +111,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 0f1446b776dd6604391077fc85c39cdd8168c074
+          ref: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
           path: infra-tool
           sparse-checkout: |
             tools/release
@@ -207,11 +207,46 @@ jobs:
           FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: release-intent plan --branch origin/develop --mode "${MODE}" --verdict ${{ (steps.verify-contract.outcome == 'success' && steps.verify-freeze.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${FLOOR}"
 
+      - name: Verify the release candidate PR provenance
+        id: provenance
+        if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag'"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE: ${{ steps.verdict.outputs.candidate }}
+          PLAN_SOURCE: ${{ steps.plan.outputs.source }}
+        run: |
+          set -euo pipefail
+          [[ "${CANDIDATE}" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || { echo "::error::release candidate is not a full commit SHA"; exit 1; }
+          config="${RUNNER_TEMP}/release-provenance-config.json"
+          pages="${RUNNER_TEMP}/release-provenance-prs.json"
+          if ! git show "${PLAN_SOURCE}:.github/release-intent.yaml" | yq -o=json '.' > "${config}"; then
+            echo "::error::could not read the release configuration from plan source ${PLAN_SOURCE}"
+            exit 1
+          fi
+          branch="$(jq -er '.bot_branches.release | select(type == "string" and length > 0)' "${config}")" || { echo "::error::release configuration has no bot release branch"; exit 1; }
+          author="$(jq -er '.automation_author | select(. == "app/peasant-labs-releaser")' "${config}")" || { echo "::error::release configuration does not name the releaser App"; exit 1; }
+          login="${author#app/}[bot]"
+          if ! gh api --paginate "repos/${GITHUB_REPOSITORY}/commits/${CANDIDATE}/pulls?per_page=100" > "${pages}"; then
+            echo "::error::could not read pull requests associated with release candidate ${CANDIDATE}"
+            exit 1
+          fi
+          if ! jq -es --arg candidate "${CANDIDATE}" --arg branch "${branch}" --arg author "${author}" --arg login "${login}" '
+            length > 0 and
+            all(.[]; type == "array") and
+            all(.[][]; type == "object" and has("merged_at") and (.merged_at == null or (.merged_at | type == "string" and length > 0))) and
+            ([.[][] | select(.merged_at != null)] |
+              length == 1 and .[0].merge_commit_sha == $candidate and .[0].head.ref == $branch and
+              (.[0].user.login == $login or .[0].user.login == $author))
+          ' "${pages}" > /dev/null; then
+            echo "::error::release candidate ${CANDIDATE} must be the merge commit of exactly one merged release PR from ${branch} by ${login}"
+            exit 1
+          fi
+
       # The annotated tag object is made here, without a credential, and
       # handed to the release job as a bundle. The bundle excludes the
       # commit this run checked out, which the release job's checkout has.
       - name: Make the annotated release tag
-        if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag'"
+        if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag' && steps.provenance.outcome == 'success'"
         env:
           TAG: ${{ steps.verdict.outputs.tag }}
           CANDIDATE: ${{ steps.verdict.outputs.candidate }}
@@ -368,7 +403,7 @@ jobs:
 
   verify:
     needs: [plan]
-    if: "!cancelled() && needs.plan.outputs.proceed == 'true'"
+    if: "!cancelled() && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true'"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -385,7 +420,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 0f1446b776dd6604391077fc85c39cdd8168c074
+          ref: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
           path: infra-tool
           sparse-checkout: |
             tools/release
@@ -409,50 +444,30 @@ jobs:
           name: release-bundles
           path: bundles
 
-      # Recompute before fetching the prepared tag: that local tag would
-      # otherwise change the tag set the independent plan reads.
+      # Verify the prepared tag against the recorded snapshot, not a new plan
+      # from the branch tip. Later commits belong to the next release.
       - name: Verify the prepared tag
         if: "!cancelled() && needs.plan.outputs.tag-action == 'tag'"
         env:
           TAG: ${{ needs.plan.outputs.tag }}
           CANDIDATE: ${{ needs.plan.outputs.candidate }}
           PLAN_SOURCE: ${{ needs.plan.outputs.plan-source }}
-          MODE: ${{ vars.RELEASE_BATCH_MODE }}
-          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
-          git fetch --no-tags origin develop
-          git fetch --tags origin
-          TIP="$(git rev-parse origin/develop)"
-          plan_file="${RUNNER_TEMP}/verified-plan.txt"
-          "${RUNNER_TEMP}/release-intent" plan --branch origin/develop --mode "${MODE}" --floor "${FLOOR}" | tee "${plan_file}"
-          plan_value() {
-            awk -v key="$1" '
-              index($0, key "=") == 1 { count++; value = substr($0, length(key) + 2) }
-              END {
-                if (count != 1 || value == "") {
-                  print "::error::Fresh release plan is missing or repeats " key > "/dev/stderr"
-                  exit 1
-                }
-                print value
-              }
-            ' "${plan_file}"
-          }
-          FRESH_ACTION="$(plan_value action)"
-          FRESH_CANDIDATE="$(plan_value candidate)"
-          FRESH_TAG="$(plan_value tag)"
-          FRESH_VERSION="$(plan_value version)"
-          test "${FRESH_ACTION}" = verify || { echo "::error::Fresh release plan does not identify a candidate to verify; wait for the next release run"; exit 1; }
-          test "${FRESH_CANDIDATE}" = "${CANDIDATE}" || { echo "::error::Fresh candidate differs from the prepared tag candidate; wait for the next release run"; exit 1; }
-          test "${FRESH_TAG}" = "${TAG}" || { echo "::error::Fresh tag differs from the prepared tag; wait for the next release run"; exit 1; }
-          echo "Verified ${FRESH_TAG} (${FRESH_VERSION}) against the current develop tip."
-          git bundle verify bundles/tag.bundle
-          git bundle list-heads bundles/tag.bundle | awk -v ref="refs/tags/${TAG}" 'NF != 2 || $2 != ref { exit 1 } END { if (NR != 1) exit 1 }'
+          [[ "${CANDIDATE}" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || { echo "::error::release candidate is not a full commit SHA"; exit 1; }
+          [[ "${PLAN_SOURCE}" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || { echo "::error::plan source is not a full commit SHA"; exit 1; }
+          git bundle verify bundles/tag.bundle || { echo "::error::prepared tag bundle is invalid"; exit 1; }
+          git bundle list-heads bundles/tag.bundle | awk -v ref="refs/tags/${TAG}" 'NF != 2 || $2 != ref { exit 1 } END { if (NR != 1) exit 1 }' || { echo "::error::prepared tag bundle must contain only the planned tag"; exit 1; }
           git fetch --no-tags bundles/tag.bundle "refs/tags/${TAG}:refs/tags/${TAG}"
-          test "$(git cat-file -t "refs/tags/${TAG}")" = tag
-          test "$(git rev-parse "refs/tags/${TAG}^{commit}")" = "${CANDIDATE}"
-          git merge-base --is-ancestor "${PLAN_SOURCE}" "${TIP}"
-          git merge-base --is-ancestor "${CANDIDATE}" "${PLAN_SOURCE}"
+          test "$(git cat-file -t "refs/tags/${TAG}")" = tag || { echo "::error::prepared release tag must be annotated"; exit 1; }
+          test "$(git rev-parse "refs/tags/${TAG}^{commit}")" = "${CANDIDATE}" || { echo "::error::prepared tag does not point at the planned release candidate"; exit 1; }
+          if ! git cat-file -e "${PLAN_SOURCE}^{commit}" 2>/dev/null; then
+            git fetch --no-tags origin "${PLAN_SOURCE}" || { echo "::error::could not fetch the recorded plan source"; exit 1; }
+          fi
+          git merge-base --is-ancestor "${CANDIDATE}" "${PLAN_SOURCE}" || { echo "::error::release candidate is not an ancestor of the plan source"; exit 1; }
+          # The release job repeats the tag ancestry guard beside the App
+          # token mint, before pushing the tag.
+          git merge-base --is-ancestor "${CANDIDATE}" "${GITHUB_SHA}" || { echo "::error::release candidate is not on the default-branch run"; exit 1; }
 
       - name: Verify the prepared release commit
         if: "!cancelled() && needs.plan.outputs.action == 'open-pr' && needs.plan.outputs.push == 'true'"
@@ -486,7 +501,7 @@ jobs:
     # The default-branch check belongs before the mint, in this job's own if:
     # a dispatch on any other branch runs that branch's copy of this file,
     # and it must never hold the App key.
-    if: "!cancelled() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.plan.outputs.proceed == 'true' && needs.verify.result == 'success'"
+    if: "!cancelled() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true' && needs.verify.result == 'success'"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
