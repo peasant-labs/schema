@@ -7,6 +7,7 @@ UNSTRING ?= go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.4
 # CI sets it to the PR base (origin/develop). Locally, default to origin/develop;
 # override on the CLI: `make gates BASE_REF=HEAD~1`.
 BASE_REF ?= origin/develop
+export TITLE
 
 # Regenerate OpenAPI/Redoc from Go, then derive the TypeScript contract package.
 schema: typescript-deps
@@ -80,12 +81,20 @@ freshness: typescript-deps
 		exit 1; \
 	fi
 
-# gates runs the breaking-change contract gates that need git history: vacuum
-# lint of the committed specs, oasdiff vs the base ref, and go-apidiff vs the
-# base ref. Requires the flake tools (oasdiff/go-apidiff/vacuum) — run inside
-# `nix develop`. CI runs this with fetch-depth:0 so BASE_REF is resolvable.
+# gates conservatively refuses a break without a title. With TITLE set it uses
+# release-intent to judge the report just as CI does. The binary must be on PATH.
 gates:
-	./scripts/contract-gates.sh all $(BASE_REF)
+	@set -eu; \
+	report=$$(mktemp "$${TMPDIR:-/tmp}/schema-contract-report.XXXXXXXX.yaml"); \
+	trap 'rm -f "$$report"' EXIT; \
+	./scripts/contract-gates.sh all "$(BASE_REF)" --out "$$report"; \
+	if [ -n "$${TITLE:-}" ]; then \
+		command -v release-intent >/dev/null || { echo "release-intent is required on PATH to judge TITLE; build it from the pinned infra revision."; exit 1; }; \
+		printf '%s' "$$TITLE" | release-intent check-contract --report "$$report"; \
+	elif grep -Eq '^[[:space:]]*(go_api_breaking|breaking): true[[:space:]]*$$' "$$report"; then \
+		echo "Contract report contains a break; rerun with TITLE='feat(scope)![minor]: describe the change' and the pinned release-intent on PATH."; \
+		exit 1; \
+	fi
 
 # lint-specs runs just the hermetic vacuum lint (no git/base ref needed).
 lint-specs:

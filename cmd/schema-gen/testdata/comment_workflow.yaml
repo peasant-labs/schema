@@ -1,0 +1,11 @@
+producer_workflow: tests.yml
+producer_name: Tests
+comment_workflow: go-apidiff-comment.yml
+comment_job: comment
+activity: completed
+source_job: contract-gates
+uploader_job: apidiff-payload
+intermediate_artifact: go-apidiff-intermediate
+final_artifact: go-apidiff-comment
+placeholder: placeholder.txt
+missing_files_behavior: error

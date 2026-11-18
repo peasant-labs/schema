@@ -1,112 +1,117 @@
 name: Tests
 
-# The schema repo quality gate. Mirrors peasant's tests.yml but for a
-# contract-only leaf with TypeScript package checks and no binary build. Two jobs:
-#   - check          : `nix develop -c make check` — gofmt + vet + the release-
-#                      workflow guard + `go test -race ./...` (which includes the
-#                      leaf-audit test and the oasdiff/go-apidiff synthetic-break
-#                      tests; inside the dev shell those gate binaries are present
-#                      and run for real).
-#   - contract-gates : the breaking-change gates vs the PR base — oasdiff (spec
-#                      diff vs the prior released golden), go-apidiff (exported Go
-#                      API), and vacuum (OpenAPI lint). PR-only (a base ref is
-#                      required to diff against).
-#
-# Everything runs through the project's own nix dev shell so the toolchain (Go,
-# oasdiff, go-apidiff, vacuum, actionlint, …) matches local exactly. The jobs
-# use the shared reusable router to select the MicroVM pool when available or
-# fall back to hosted ubuntu-latest.
 on:
   pull_request:
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
-      - "generated/**"
-      - "openapi/**"
-      - "Makefile"
-      - "flake.nix"
-      - "flake.lock"
-      - ".unstring.yaml"
-      - ".unstring-baseline.yaml"
-      - ".vacuum.yaml"
-      - "scripts/**"
-      - "typescript/**"
-      - "testcase/testdata/**"
-      - "testdata/**"
-      - "README.md"
-      - "TESTING.md"
-      - "CONTRIBUTING.md"
-      - "CHANGELOG.md"
-      - ".github/workflows/tests.yml"
-      # The release-workflow guard (make check -> release-guard check-workflow)
-      # validates release.yml against the policy file, so a change to EITHER must
-      # re-run this gate to catch drift. The release-PR workflow is pinned by
-      # cmd/schema-gen's release-PR contract test, so a change to it must
-      # re-run this gate too.
-      - ".github/workflows/release.yml"
-      - ".github/workflows/release-pr.yml"
-      - ".github/release-guard.policy.yml"
+  merge_group:
   push:
     branches: [develop, main]
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
-      - "generated/**"
-      - "openapi/**"
-      - "Makefile"
-      - "flake.nix"
-      - "flake.lock"
-      - ".unstring.yaml"
-      - ".unstring-baseline.yaml"
-      - ".vacuum.yaml"
-      - "scripts/**"
-      - "typescript/**"
-      - "testcase/testdata/**"
-      - "testdata/**"
-      - "README.md"
-      - "TESTING.md"
-      - "CONTRIBUTING.md"
-      - "CHANGELOG.md"
-      - ".github/workflows/tests.yml"
-      # The release-workflow guard (make check -> release-guard check-workflow)
-      # validates release.yml against the policy file, so a change to EITHER must
-      # re-run this gate to catch drift. The release-PR workflow is pinned by
-      # cmd/schema-gen's release-PR contract test, so a change to it must
-      # re-run this gate too.
-      - ".github/workflows/release.yml"
-      - ".github/workflows/release-pr.yml"
-      - ".github/release-guard.policy.yml"
-  # Reusable entry point: release-pr.yml calls this on a release(...) PR so the
-  # quality gate runs even when the release marker commit touches none of the
-  # path-filtered files above. Also handy for on-demand reruns.
-  workflow_call:
-    inputs:
-      via_release_gate:
-        description: >-
-          Set true by release-pr.yml when it calls this workflow as the
-          authoritative release-PR gate. It lets the DIRECT pull_request run skip
-          on a release(...)-titled PR (that PR's gate is this reusable call) while
-          the call itself still runs, and it separates the two runs' concurrency
-          groups so the direct run can never cancel the gate run.
-        type: boolean
-        default: false
   workflow_dispatch:
 
 concurrency:
-  # Separate the direct pull_request run from the reusable release-PR gate call
-  # (via_release_gate) so the direct run, which skips on a release PR, can never
-  # cancel the authoritative gate run; a normal PR still cancels its own stale
-  # in-progress run (same group across pushes to the same ref).
-  group: tests-${{ github.ref }}-${{ inputs.via_release_gate && 'release-gate' || 'direct' }}
-  cancel-in-progress: true
+  group: tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+      deps: ${{ steps.diff.outputs.deps }}
+      release: ${{ steps.entry.outputs.release }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        if: github.event_name == 'merge_group'
+        with:
+          repository: peasant-labs/infra
+          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          path: infra-tool
+          sparse-checkout: tools/release
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        if: github.event_name == 'merge_group'
+        with:
+          go-version-file: infra-tool/tools/release/go.mod
+          cache: false
+      - name: Build release-intent
+        if: github.event_name == 'merge_group'
+        env:
+          GOWORK: "off"
+        run: go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
+      - name: Classify the merge-group entry
+        id: entry
+        env:
+          EVENT: ${{ github.event_name }}
+          GROUP_REF: ${{ github.ref }}
+          GROUP_BASE: ${{ github.event.merge_group.base_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" != merge_group ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          result="$("$RUNNER_TEMP/release-intent" group-pr --ref "$GROUP_REF")"
+          number="${result#pr=}"
+          test -n "$number" || { echo "::error::cannot identify merge-group entry"; exit 1; }
+          payload="$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" --json author,headRefName)"
+          author="$(jq -r '.author.login' <<< "$payload")"
+          branch="$(jq -r '.headRefName' <<< "$payload")"
+          if ! git cat-file -e "$GROUP_BASE:.github/release-intent.yaml" 2>/dev/null; then
+            GROUP_BASE="$(git rev-parse HEAD)"
+          fi
+          kind="$("$RUNNER_TEMP/release-intent" classify --author "$author" --head-branch "$branch" --rev "$GROUP_BASE")"
+          if [ "$kind" = 'kind=release' ]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Classify changed paths
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.merge_group.head_sha || github.event.pull_request.head.sha || github.sha }}
+          RELEASE: ${{ steps.entry.outputs.release }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = workflow_dispatch ] || [ "$RELEASE" = true ] || [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "deps=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --no-tags origin "$BASE" "$HEAD"
+          git diff --name-only -z "$BASE" "$HEAD" > "$RUNNER_TEMP/changed-paths"
+          code=false
+          deps=false
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              *.go|go.mod|go.sum|generated/*|openapi/*|Makefile|flake.nix|flake.lock|.unstring.yaml|.unstring-baseline.yaml|.vacuum.yaml|scripts/*|typescript/*|testdata/*|*/testdata/*|.github/workflows/*|.github/release-guard.policy.yml|.github/release-queue.policy.yml|.github/release-intent.yaml) code=true ;;
+            esac
+            case "$file" in
+              go.mod|go.sum|flake.nix|flake.lock|Makefile|scripts/update-nix-vendor-hash.sh|.github/workflows/nix-vendor-hash.yml) deps=true ;;
+            esac
+          done < "$RUNNER_TEMP/changed-paths"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "deps=$deps" >> "$GITHUB_OUTPUT"
+
   determine-runner:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    permissions:
+      contents: read
     uses: peasant-labs/infra/.github/workflows/runner-router.yml@71e687cef7eede9a63659be98ce9adac3c563398
     with:
       fallback: '["ubuntu-latest"]'
@@ -115,143 +120,187 @@ jobs:
 
   check:
     name: make check
-    # Skip the DIRECT pull_request run on a release(...)-titled PR: that PR's
-    # authoritative gate is the reusable call from release-pr.yml (via_release_gate),
-    # so a direct run here would duplicate it (and previously collided on the shared
-    # concurrency group). Normal PRs, pushes, workflow_dispatch, and the release-gate
-    # call itself all still run.
-    if: >-
-      inputs.via_release_gate ||
-      !startsWith(github.event.pull_request.title || '', 'release(')
-    needs: determine-runner
+    needs: [changes, determine-runner]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          fetch-depth: 1
-
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-
-      # GitHub cache archives are not signed Nix substitutes. Restore only in
-      # these ephemeral, read-only test jobs; PR-scoped caches can be restored
-      # by the same PR, but not by the base branch or release/tag workflows.
-      # Only a successful develop push can save a cache for other PRs to use.
-      - name: Restore Nix store cache
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
-        with:
-          primary-key: nix-store-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
-          save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
-
-      - name: Cache Go build + modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
       - name: make check
         run: |
           nix develop -c pnpm --dir typescript install --frozen-lockfile --ignore-scripts
           nix develop -c make check
 
   contract-gates:
-    name: contract gates (vs base)
-    # The breaking-change gates need a base ref to diff against; only meaningful
-    # on a pull request. Also skip the DIRECT run on a release(...)-titled PR (the
-    # reusable release-gate call runs them instead), matching the check job.
-    if: >-
-      github.event_name == 'pull_request' &&
-      (inputs.via_release_gate ||
-      !startsWith(github.event.pull_request.title || '', 'release('))
+    name: contract gates
     needs: determine-runner
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
     timeout-minutes: 30
-    # READ-ONLY: this workflow requests no write scope on any job, so it can be
-    # called as a reusable gate by release-pr.yml (whose token ceiling is
-    # pull-requests: read). The go-apidiff PR comment is posted out-of-band by the
-    # write-scoped go-apidiff-comment.yml (workflow_run), fed by the artifact this
-    # job uploads below.
     permissions:
-      contents: read # checkout only
+      contents: read
+      pull-requests: read
     steps:
-      - name: Checkout repository (full history for the base diff)
-        uses: actions/checkout@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-
-      # Same ephemeral test-only archive as make check, never a signed substitute.
-      # This PR-only job restores but does not save the Nix store cache.
-      - name: Restore Nix store cache
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          primary-key: nix-store-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
-          save: false
-
-      - name: Cache Go build + modules
-        uses: actions/cache@v4
+          repository: peasant-labs/infra
+          ref: 1946dd27019c7be7f1b2356d36f3db148a45a76f
+          path: infra-tool
+          sparse-checkout: tools/release
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-gates-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-gates-
-
-      - name: Fetch the PR base ref
-        run: git fetch --no-tags origin "${{ github.base_ref }}"
-
-      - name: Run contract gates vs base
+          go-version-file: infra-tool/tools/release/go.mod
+          cache: false
+      - name: Build release-intent
         env:
+          GOWORK: "off"
+        run: go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
+      - uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
+      - name: Resolve the entry PR and its live title
+        id: pr
+        env:
+          EVENT: ${{ github.event_name }}
+          EVENT_NUMBER: ${{ github.event.pull_request.number }}
+          GROUP_REF: ${{ github.ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          number="$EVENT_NUMBER"
+          if [ "$EVENT" = merge_group ]; then
+            resolved="$("$RUNNER_TEMP/release-intent" group-pr --ref "$GROUP_REF")"
+            number="${resolved#pr=}"
+          fi
+          test -n "$number" || { echo "::error::cannot resolve the entry PR"; exit 1; }
+          payload="$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" --json title,headRefOid,baseRefOid)"
+          title="$(jq -r '.title' <<< "$payload")"
+          head="$(jq -r '.headRefOid' <<< "$payload")"
+          base="$(jq -r '.baseRefOid' <<< "$payload")"
+          if [ "$EVENT" = merge_group ]; then
+            git fetch --no-tags origin develop
+            base="$(git rev-parse origin/develop)"
+          fi
+          git fetch --no-tags origin "$head" "$base"
+          base="$(git merge-base "$base" "$head")"
+          git checkout --detach "$head"
+          {
+            echo "number=$number"
+            echo "base=$base"
+            printf 'title=%s\n' "$title"
+          } >> "$GITHUB_OUTPUT"
+      - name: Build the contract report
+        env:
+          BASE: ${{ steps.pr.outputs.base }}
           APIDIFF_CHANGES_FILE: ${{ runner.temp }}/apidiff-changes.txt
           APIDIFF_COMPATIBLE_FILE: ${{ runner.temp }}/apidiff-compatible.txt
-        run: nix develop -c make gates BASE_REF="origin/${{ github.base_ref }}"
-
-      # Hand the go-apidiff outcome off to the write-scoped go-apidiff-comment.yml
-      # via a single artifact (this job holds no pull-requests:write). always() so
-      # the payload is uploaded even when an EARLIER step failed — a failed run
-      # still needs its comment reconciled.
+        run: nix develop -c ./scripts/contract-gates.sh all "$BASE" --out "${RUNNER_TEMP}/contract-report.yaml"
+      - name: Check the live title against the contract
+        env:
+          PR_TITLE: ${{ steps.pr.outputs.title }}
+        run: printf '%s' "$PR_TITLE" | "${RUNNER_TEMP}/release-intent" check-contract --report "${RUNNER_TEMP}/contract-report.yaml"
       - name: Stage go-apidiff comment payload
-        if: ${{ always() && github.event_name == 'pull_request' }}
+        if: always() && github.event_name == 'pull_request'
         env:
           APIDIFF_CHANGES_FILE: ${{ runner.temp }}/apidiff-changes.txt
           APIDIFF_COMPATIBLE_FILE: ${{ runner.temp }}/apidiff-compatible.txt
           STAGE_DIR: ${{ runner.temp }}/go-apidiff-comment
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           mkdir -p "$STAGE_DIR"
-          # The commenter runs in a workflow_run event, where context.issue.number
-          # is unavailable — carry the PR number in the artifact.
-          printf '%s\n' "$PR_NUMBER" > "$STAGE_DIR/pr-number.txt"
-          # Changes file: copy ONLY if go-apidiff actually wrote it. Its ABSENCE is
-          # the "gate blind / established nothing" tri-state (distinct from an EMPTY
-          # file = clean); fabricating an empty file here would masquerade as clean,
-          # so the absence is preserved and the commenter reproduces the
-          # not-established branch via readFileSync-catch.
-          if [ -f "$APIDIFF_CHANGES_FILE" ]; then
-            cp "$APIDIFF_CHANGES_FILE" "$STAGE_DIR/apidiff-changes.txt"
-          fi
-          # Compatible file: absent and empty are equivalent in the comment logic,
-          # so normalise to an always-present (possibly empty) file for a robust
-          # download.
-          if [ -f "$APIDIFF_COMPATIBLE_FILE" ]; then
-            cp "$APIDIFF_COMPATIBLE_FILE" "$STAGE_DIR/apidiff-compatible.txt"
-          else
-            : > "$STAGE_DIR/apidiff-compatible.txt"
-          fi
-
+          if [ -f "$APIDIFF_CHANGES_FILE" ]; then cp "$APIDIFF_CHANGES_FILE" "$STAGE_DIR/apidiff-changes.txt"; fi
+          if [ -f "$APIDIFF_COMPATIBLE_FILE" ]; then cp "$APIDIFF_COMPATIBLE_FILE" "$STAGE_DIR/apidiff-compatible.txt"; else : > "$STAGE_DIR/apidiff-compatible.txt"; fi
       - name: Upload go-apidiff comment payload
-        if: ${{ always() && github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: go-apidiff-comment
+          name: go-apidiff-intermediate
           path: ${{ runner.temp }}/go-apidiff-comment
           if-no-files-found: error
           retention-days: 1
+
+  # Always publish one artifact for a PR, even when contract-gates is skipped.
+  # The placeholder is not an established API-diff signal.
+  apidiff-payload:
+    needs: [contract-gates]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Prepare the placeholder payload
+        run: |
+          mkdir -p "${RUNNER_TEMP}/apidiff-payload"
+          : > "${RUNNER_TEMP}/apidiff-payload/placeholder.txt"
+      - name: Collect the API diff payload
+        if: needs.contract-gates.result != 'skipped'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: go-apidiff-intermediate
+          path: ${{ runner.temp }}/apidiff-payload
+      - name: Upload the comment payload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: go-apidiff-comment
+          path: ${{ runner.temp }}/apidiff-payload
+          if-no-files-found: error
+          retention-days: 1
+
+  vendor-hash:
+    needs: changes
+    if: (github.event_name == 'pull_request' && needs.changes.outputs.deps == 'true') || needs.changes.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
+      - name: Check vendor hash
+        continue-on-error: ${{ needs.changes.outputs.release != 'true' }}
+        run: |
+          set -euo pipefail
+          nix develop -c make nix-vendor-hash
+          if ! git diff --quiet -- flake.nix; then
+            echo "::warning::flake.nix vendorHash is stale; the hash bot will open a fix PR after merge. A release group must wait for it."
+            git diff -- flake.nix
+            exit 1
+          fi
+
+  merge-gate:
+    name: merge-gate
+    needs: [changes, determine-runner, check, contract-gates, vendor-hash]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Require successful or intentionally skipped jobs
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          EVENT: ${{ github.event_name }}
+          CODE: ${{ needs.changes.outputs.code }}
+          RELEASE: ${{ needs.changes.outputs.release }}
+        run: |
+          set -euo pipefail
+          case "$RELEASE" in true|false) ;; *) echo "::error::release classification is missing or invalid"; exit 1 ;; esac
+          jq -e --arg release "$RELEASE" 'to_entries | all(.[]; .value.result == "success" or .value.result == "skipped" or (.key == "vendor-hash" and $release == "false" and .value.result == "failure"))' <<< "$RESULTS"
+          test "$(jq -r '.changes.result' <<< "$RESULTS")" = success
+          if [ "$CODE" = true ]; then test "$(jq -r '.check.result' <<< "$RESULTS")" = success; fi
+          if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
+            test "$(jq -r '."contract-gates".result' <<< "$RESULTS")" = success
+          fi
+          if [ "$RELEASE" = true ]; then test "$(jq -r '."vendor-hash".result' <<< "$RESULTS")" = success; fi

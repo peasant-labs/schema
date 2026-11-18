@@ -9,10 +9,6 @@ rules:
   closed-set-literal:
     typescript/src/collective-validation.ts: 6
     typescript/src/index.ts: 2
-    typescript/src/internal/generated/contract/zod.gen.ts: 2
-  endpoint-literal:
-    typescript/src/internal/generated/local-api.ts: 49
-    typescript/src/internal/generated/village-api.ts: 83
   exported-literal-union:
     typescript/src/contribution-attempt.ts: 1
     typescript/src/fixtures/timeline.ts: 1
@@ -68,7 +64,6 @@ rules:
     cmd/schema-gen/frozen_specs_test.go: 2
     cmd/schema-gen/peasantlocal_surface_test.go: 1
     cmd/schema-gen/redactions.go: 1
-    cmd/schema-gen/release_pr_workflow_test.go: 1
     cmd/schema-gen/retired_specs_test.go: 2
     cmd/schema-gen/routes_test.go: 1
     cmd/schema-gen/workflow_paths_test.go: 1

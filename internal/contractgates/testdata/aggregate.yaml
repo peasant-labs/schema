@@ -1,0 +1,27 @@
+required:
+  - lint-failure-still-reports-api
+  - report-producer-failure-stays-red
+  - unreadable-api-leaves-no-signal
+cases:
+  - name: lint-failure-still-reports-api
+    vacuum_exit: 1
+    api_exit: 0
+    report_exit: 0
+    expected_exit: 1
+    signal: true
+    report: true
+  - name: report-producer-failure-stays-red
+    vacuum_exit: 0
+    api_exit: 0
+    report_exit: 17
+    expected_exit: 1
+    signal: true
+    report: false
+  - name: unreadable-api-leaves-no-signal
+    vacuum_exit: 0
+    api_exit: 1
+    api_output: "Incompatible changes:"
+    report_exit: 0
+    expected_exit: 1
+    signal: false
+    report: false

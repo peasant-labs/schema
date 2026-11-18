@@ -13,6 +13,15 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		if os.Args[1] != "report" {
+			log.Fatalf("unknown schema-gen command %q; use report or omit the command to generate", os.Args[1])
+		}
+		if err := runReport(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	moduleRoot, err := findModuleRoot()
 	if err != nil {
 		log.Fatal(err)
