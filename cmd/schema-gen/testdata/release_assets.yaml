@@ -1,0 +1,26 @@
+cases:
+  - name: numbered-contracts-only
+    input:
+      source: [types-0.1.0.json, types-0.1.0.yaml, types-next.json, types-next.yaml, publish-request-0.1.0.schema.json, publish-request-next.schema.json, annotation-push-request-0.1.0.schema.json, other.txt]
+    expected:
+      files: [annotation-push-request-0.1.0.schema.json, publish-request-0.1.0.schema.json, types-0.1.0.json, types-0.1.0.yaml]
+    classification: must-pass
+    provenance: &p {source: requirement, ref: "only numbered contracts are release assets"}
+    mutation: &m {description: "Change the release asset selection or output directory."}
+  - name: working-file-already-in-destination
+    input:
+      source: [types-0.1.0.json]
+      existing: [types-next.json]
+      sibling: numbered-contracts-only
+    expected: {error_contains: "working contract must not be published"}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: no-numbered-contract
+    input:
+      source: [types-next.json, types-next.yaml]
+      sibling: numbered-contracts-only
+    expected: {error_contains: "no numbered frozen contracts"}
+    classification: must-fail
+    provenance: *p
+    mutation: *m

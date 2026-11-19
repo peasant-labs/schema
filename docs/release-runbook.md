@@ -1,328 +1,306 @@
-# peasant-labs/schema Release Runbook
+# Schema release runbook
 
-Operator guide for cutting releases of the **contract library** `github.com/peasant-labs/schema`.
+The schema module ships the Go contract, generated OpenAPI and JSON Schema
+assets, and the `@peasant-labs/schema` npm package. It ships no binary.
+Consumers re-pin only after the schema tag exists.
 
-This pipeline **mirrors peasant's** PR-title-driven release ceremony but is adapted
-for a contract library that **ships no binary**. Everything peasant does to build,
-package, and smoke-test CLI binaries is **SUBTRACTED**; the contract gates
-(`oasdiff` / `go-apidiff` / `vacuum`) are **ADDED**.
+## Release path
 
-> **Status (rc1):** the pipeline is built and validated **locally** (actionlint,
-> `nix build`, `make check`, `make gates` all green). It is **not yet proven on a
-> live GitHub run** — the live `v0.1.0-rc1` release-PR is the MVP proof gate and
-> must be cut by a maintainer (it needs a real push/PR + the GitHub App
-> installation; an agent must not push a public tag). See **§5**.
+1. A content PR targets `develop` with a title such as
+   `feat(local-api)[minor]: add an endpoint`. A breaking change below 1.0 must
+   use `![minor]`. `docs`, `test`, `ci`, `chore`, and `style` never carry a
+   level. The title guard checks the live title on PR and merge-group events.
+2. `tests.yml` lints the specs, checks numbered-file immutability, builds the
+   Go/OpenAPI contract report, and checks the live title against that report.
+   The merge group compares the entry PR's own diff, not the combined group.
+3. After landing, `release-batch.yml` plans from the last final tag. When tag
+   mode is on, it checks the landed range and maintains the single
+   `automation/release` PR with a generated changelog section, the npm
+   version, and the freeze of every ahead supported surface. The tool's title
+   is passed unchanged to verification and the PR. The release PR is queued by
+   the bot; do not edit or merge it by hand. Before making a tag, the plan job
+   uses its read-only token to require exactly one merged PR for the
+   candidate, with the candidate as its merge commit, the configured release
+   bot branch as its head, and the releaser App as its author. A failed lookup or provenance check makes the shell exit
+   nonzero; neither the step nor the plan job sets `continue-on-error`, and
+   the release job requires a successful plan. The tag names that release
+   PR's merge commit; later commits belong to the next release. The independent
+   verifier checks the prepared tag against the recorded candidate and branch
+   ancestry without replanning against the current tip. If the run's event
+   commit predates the candidate, the ancestry check fails closed; a later
+   default-branch run can retry.
+4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
+   and the contract check precede the independent GitHub Release and npm
+   publishers. When `gh release view` finds no release, `gh release list`
+   (drafts included) must show no release or draft for the tag; it fails on
+   any API error, so a rate limit, a 5xx or an authentication error stops the
+   run before anything is created. `scripts/collect-release-assets.sh` copies
+   only the numbered frozen JSON and YAML specs, including numbered request
+   schemas, into `dist/assets`; `*-next` files never ship as release assets.
+   Then one `gh release create --draft --verify-tag ... 'dist/assets/*'`
+   command creates the draft and uploads those specs to that same release.
+   The next step checks that the draft holds assets; only then is it
+   published, and a last check confirms the release is published, immutable
+   and holds assets. The release notes sit beside the assets at
+   `dist/release-notes.md` and are not uploaded. The npm job checks that the
+   committed package version matches the tag and removes `private` only in
+   its working copy.
 
----
+On 2026-11-18, a read-only check of GitHub's commit-to-pulls API returned the
+merged bot release PR, its merge commit, `automation/release` head, and
+releaser App author for the merge-queue squash commit `cf9f3b7189d00a1ac841a75c413299d15c6fa257`.
+The same check for ordinary merge commit `24323466e020c223cf9750bd0606774c104b4b76`
+returned a human-authored PR. This is live evidence, not a guarantee of future
+API behavior: the provenance test stubs Git, yq, and gh.
 
-## 1. The release model
+A transient API error (rate limit, 5xx, authentication) fails the run before
+anything is created: rerun the workflow; no new tag is needed. If the list
+check reports a release or draft for the tag, nothing was created by this run;
+delete stale drafts by id as below, then rerun.
 
-A release is cut by **merging a `release(vX.Y.Z[-rcN]): <summary>`-titled PR into
-`develop`** — *never* by pushing a tag by hand. The title/tag grammar lives once in
-`internal/release` (exercised by `cmd/release-guard`); the workflows call that CLI.
+On a rerun, a published release with assets is left unchanged. A failed upload
+leaves an unpublished draft: the draft check fails before publishing, and a
+rerun fails on the existing draft without resuming the upload. Drafts are not
+immutable. Delete every draft for the tag **by its id**, then rerun the release
+workflow for the same tag. Set `TAG` to the existing tag and list the drafts:
 
+```sh
+gh api repos/peasant-labs/schema/releases --paginate \
+  --jq ".[] | select(.draft and .tag_name == \"$TAG\") | {id, assets: (.assets | length), created_at}"
+gh api -X DELETE repos/peasant-labs/schema/releases/<id>
 ```
-release PR (title: "release(vX.Y.Z[-rcN]): …")  →  develop
-   │  merged by a maintainer (approval gate deferred to the public flip — §2/§6)
-   ▼
-release-pr.yml (merge trigger)
-   │  make nix-vendor-hash (commit a flake.nix fix if needed)
-   │  → push annotated tag vX.Y.Z[-rcN] via the releaser App token
-   ▼ (tag push triggers)
-release.yml
-   guard → nix-vendor-hash (freshness) → contract-gates ─┬─→ release      → GitHub Release (prerelease for -rcN)
-                                                          │                  with the generated/ OpenAPI specs as ASSETS
-                                                          └─→ npm-publish  → @peasant-labs/schema on npm
-                                                                             (dist-tag next/latest, via OIDC trusted publishing)
+
+Deleting a draft that holds a few hundred assets can answer HTTP 502 and still
+finish a little later; read the release back by id and retry only while it
+still exists.
+
+Never use `gh release delete "$TAG"`: when a tag has several drafts, the tag
+lookup returns one of them (the oldest), so the command can delete the wrong
+one, and `--cleanup-tag` would delete the tag. Do not create a new tag to
+recover a draft. If an already-published release has no assets, fix forward
+with a new tag; do not attempt to repair a published immutable release or
+reuse its tag.
+
+Why one command: v0.55.0 through v0.57.1 were published with no assets. In run
+44295390680, `gh release create --draft` made one draft at 11:37:06; a
+separate upload action, which finds a release only by listing releases, did not
+see it, made a second draft at 11:37:13 and uploaded 349 assets there; at
+11:37:16 `gh release edit --draft=false` published the first, empty draft,
+because GitHub's tag lookup returns the oldest draft. v0.54.0, the last good
+release, used one `gh release create` with its assets, as the workflow does
+again now.
+
+A failed `gh release view`, including a network or authentication failure, is
+treated as no release. If a release actually exists, the create step fails
+loudly, so this fallback cannot report a false success.
+
+Tags are append-only. Never push, move, or delete a public tag by hand. Old
+`pkg/schema/v*` tags remain intact. The old tag parser still recognizes
+historical release candidates, but the automated planner creates final
+releases.
+
+## Working and frozen specs
+
+Types, Village, Local, and segmented read use committed
+`generated/<stem>-next.*` working files. Their numbered files are frozen, and
+`versions.go` points the public accessors and exported validators to the
+latest frozen bytes. The Village publish-request and annotation-push-request
+JSON Schemas follow the Village version. The TypeScript generator, module
+tests and contract report read working documents. For segmented read,
+`SegmentedReadSpecVersion` names the frozen document, while
+`SegmentedReadAPIVersion` names the current wire protocol and
+`SegmentedReadMinVersion` the oldest served protocol. A document freeze moves
+only the spec version; it does not change the selector table, the minimum
+document, or a protocol echo. A breaking protocol change requiring a new `v=`
+generation is separate P1 work, not a document freeze.
+
+`schema-gen status --write state.yaml` computes `clean`, `docs-ahead`, or
+`ahead`. Description-only changes remain docs-ahead and are copied at the next
+functional freeze. `release-intent freeze-plan` chooses each ahead surface's
+level from landed titles after the spec-freeze migration boundary, while the
+ordinary release floor and the full module changelog range remain independent.
+`schema-gen freeze --plan plan.yaml --state state.yaml` checks the handoff,
+updates constants and mirrors, rebuilds the generator, and writes numbered
+copies and registry rows. The release PR's merge-group tree must pass
+`schema-gen freeze --check`. Before tagging, the candidate is also checked
+against a plan made from its parent state.
+
+A functional surface change requires a releasing title naming it; an
+unchanged or docs-only surface may be named only if it is already ahead on the
+base. `spec-change-needs-bump` and `surface-mismatch` identify these errors.
+A non-releasing `docs(local-api): clarify ...` is valid for docs-only work.
+
+At cutover, an open content PR that edited `versions.go` or numbered specs
+merges the updated base, removes those edits, regenerates working files, and
+lists every functionally changed surface in its title. If a wrong stale freeze
+bypasses the queue check, pre-tag verification rejects it; the next release
+freezes the next number and retains the wrong numbered file in the registry.
+That burns one spec number without moving a tag.
+
+The release job takes the migration boundary (the freeze floor) from the
+first first-parent `develop` commit whose `.github/release-intent.yaml`
+gained the literal line `spec_freeze: true`. Later edits to that line do not
+move it. If no commit ever wrote the line literally, the step fails instead
+of guessing; `TestFreezeFloorSearch` runs the step against fixture histories.
+
+The changelog and npm version field are reserved to the release PR. The
+generator currently emits plain `## X.Y.Z` headings; changing that style is a
+separate follow-up.
+
+## Release PR checks
+
+A release PR (or a merge group) whose whole `base..head` change is
+`CHANGELOG.md` plus the `typescript/package.json` version does not rerun
+`make check`. The path filter alone cannot skip it: a version-only edit under
+`typescript/*` classifies as `code=true`, so inheritance is what saves the
+run. Only the bot release PR, or a merge group whose entry is that PR, runs
+`inherit-verdict`; every other run skips it without building the tool. The
+`changes` job runs `release-intent inherit-verdict`, which reads the
+`merge-gate` verdict that the exact base commit's merge-queue run recorded.
+When that verdict is missing, pending past the 20-minute wait, failed,
+cancelled, ambiguous or from another producer, the job fails and the release
+candidate is not merged; it never falls back to the suite. Fix it by waiting
+for or rerunning the base commit's merge-queue run, then rerun the candidate's
+checks. The contract gates, the title guard, the release tree freeze check and
+the release group's vendor-hash check still run. Spec-freeze outputs
+(`versions.go`, numbered `generated/` documents) are never release-only and
+always run the full suite.
+
+`merge-gate` ends with one `verdict-source: full|inherited|unaffected` step
+per run, so a later release candidate can tell a verdict that rests on a
+`make check` run from an inherited one. `make check` runs without the race
+detector on every event; the merge-queue run adds `make race-selective`, the
+race pass over the validator schema caches.
+
+## Vendor hash
+
+After a dependency-affecting push to `develop`, `nix-vendor-hash.yml` computes
+the hash without credentials, confirms that the only change is one
+`vendorHash` line, and hands a Git bundle to a separate credentialed job. That
+job pushes only `automation/vendor-hash`, opens or updates its bot PR, and
+enables auto-merge. If no change is needed, it closes an open hash PR. It never
+pushes `develop`. This workflow is independent of `RELEASE_BATCH_MODE`: even
+with tag mode off it can open, update, arm, or close a vendor-hash PR.
+
+On ordinary PRs the hash check is informational. The release PR's merge-group
+requires a current hash, and the tag-time check is the final backstop. A stale
+release group must wait for the vendor-hash PR; never repair a tagged tree.
+
+## Credentials and cutover
+
+The releaser App must be installed on `peasant-labs/schema` with Contents and
+Pull requests write. Existing repository secrets
+`PEASANT_RELEASER_APP_ID` and `PEASANT_RELEASER_APP_PRIVATE_KEY` mint its
+token. `RELEASE_BATCH_MODE` is unset for plan-only operation; the maintainer
+sets it to `tag` only after the plan-only checks below. `RELEASE_BATCH_FLOOR`
+is normally unset; it is a recovery boundary, not a release version.
+The App must be allowed to push its `automation/*` branches, including the
+force-with-lease updates, under the applicable branch rules. That permission
+does not bypass the merge queue or permit a push to `develop`.
+
+The reviewed go-apidiff comment job uses the existing organization secret
+`JOURNEY_GITHUB_USER_PAT`. Confirm that its owner can read pull requests and
+create and update the existing sticky comment, including comments authored by
+the earlier bot. The `workflow_run` job downloads the triggering run's artifact
+with the read-only workflow token, then runs a default-branch script with the
+PAT. It resolves the open PR from the run's head SHA, repository and branch;
+the untrusted artifact cannot select a PR or supply Markdown to post. This
+trusted-event separation also covers fork and Dependabot PRs.
+
+Before merging the adoption, the maintainer should:
+
+1. Confirm squash merge commits use the PR title, and auto-merge is enabled.
+   Retitle or drain open PRs using the old release-title grammar.
+2. Ensure the existing credentials and npm Trusted Publisher are available.
+   Verify the sticky-comment update on an existing bot-authored comment and
+   on a fork PR after the workflow is on the default branch.
+3. Configure and compare the `Merge queue` ruleset with
+    `.github/release-queue.policy.yml`; protect release tags so only the
+    releaser App creates them. Confirm the queue ruleset coexists with the
+    existing `develop` and `releases/**/*` rules. If the effective required
+    contexts or rules differ, stop: do not enqueue a release PR or enable tag
+    mode until the maintainer resolves and rechecks the rulesets.
+4. Leave tag mode off for the first group. Inspect the plan and independently
+   read back that no release branch, PR, or tag was written. Check the group
+   SHA and queue behavior before the maintainer enables tag mode.
+
+The former release-PR maintainer approval assertion was disabled for the
+single-maintainer setup. Its old workflow is removed; restoring a mandatory
+second approval requires a reviewed replacement compatible with queued bot
+PRs and branch rules, not uncommenting a step in a deleted workflow.
+
+## npm Trusted Publishing
+
+The `npm-publish` job uses OIDC, not an npm token. The GitHub environment must
+be named `npm-publish`. Register the npm Trusted Publisher for organization
+`peasant-labs`, repository `schema`, workflow `release.yml`, and environment
+`npm-publish`, scoped to `npm publish`. Optional environment protections
+require maintainer review before enabling them.
+
+The job installs the locked TypeScript tooling, checks tag and committed
+manifest versions, removes `private` in its temporary checkout, and runs
+typecheck, tests, package audit and package smoke before publishing. Historical
+release candidates use `next`; final tags use `latest`. A registry replica may
+take minutes to show a successful publication.
+
+If OIDC authentication fails, verify all four Trusted Publisher fields and
+the environment, then rerun the failed job. If the tag and committed package
+version differ, the immutable tag has burned that version: fix forward with a
+new release. An npm `E409` means the version was already published; never
+attempt to overwrite it. Failure of one publisher does not block its sibling.
+
+## Local checks and recovery
+
+Run `nix develop -c make check` and `nix develop -c make gates
+BASE_REF=origin/develop`. The contract report compares committed `HEAD` with
+the base, so commit the changes first. With a declared break, put the pinned
+`release-intent` on `PATH` and pass
+`TITLE='feat(local-api)![minor]: describe the change'` to `make gates`.
+Without a title the local gate fails conservatively on a reported break.
+
+For the real workflow policy gate, build the release tool at the SHA in the
+workflows and run:
+
+```sh
+release-intent check-config --config .github/release-intent.yaml
+release-intent check-workflows --policy .github/release-queue.policy.yml --dir .github/workflows
 ```
 
-`release` and `npm-publish` are independent siblings behind the same three gates: neither publish can block the other.
+`--print-required` is for comparing contexts with the GitHub ruleset, not a
+substitute for the workflow check. A stale release candidate is rebuilt by the
+bot, never tagged. If a landed subject is unparseable, an operator can set
+`RELEASE_BATCH_FLOOR` to that commit after deciding how to account for the
+excluded history. A forced release uses the `cut-release` dispatch or a PR
+containing only an empty commit titled `release[patch]: cut a release`; do not
+push a tag manually. The tag-triggered contract job and the pre-tag check use
+the same floor and range.
 
-### What is SUBTRACTED vs peasant
+If the release job fails to push a tag, inspect the job and remote tag first.
+After fixing the cause, dispatch `release-batch` on the default branch so it
+replans and verifies the current candidate. If the tag already exists, do not
+move or recreate it; investigate its target and the tag-triggered run instead.
 
-No goreleaser binary builds, no deb/rpm/AUR/Homebrew/nix packaging, no
-`release-validate` distro matrix, no `release-e2e`, no full-stack `e2e`, no
-`smoke`. The publisher is a single **GitHub Release** carrying the OpenAPI specs.
+Release recovery rules:
 
-### What is ADDED — the contract gates (the repo's CI value-add)
-
-| Gate | Tool | What it does |
-|------|------|--------------|
-| OpenAPI breaking diff | `oasdiff breaking --fail-on ERR` | Fails on an ERR-level breaking change to a released spec vs the prior golden. |
-| Exported-Go-API diff | `go-apidiff` | Fails if the module's exported Go API changes incompatibly vs the base ref. |
-| OpenAPI lint | `vacuum lint -r .vacuum.yaml` | Fails on `error`-severity lint findings in the generated specs. |
-
-All three are provisioned from the **flake dev shell** (`vacuum-go` from nixpkgs;
-`oasdiff` + `go-apidiff` are source-built `buildGoModule` derivations) and are
-**never** `go.mod` requires (the leaf-audit test enforces this). Each breaking
-gate ships a Go **synthetic-break test** (`internal/contractgates/`) that proves
-it fires; those run in `make check`.
-
-### Generated request-validation assets
-
-Each Village API version emits two JSON-only request schemas alongside the OpenAPI
-documents: `publish-request-<version>.schema.json` and
-`annotation-push-request-<version>.schema.json`. The root accessors
-`PublishRequestSchemaJSON()` and `AnnotationPushRequestSchemaJSON()` return those
-embedded bytes. Their canonical validators first enforce the extracted operation
-schema, then decode the Go request type; `ValidateAnnotationPushRequest` additionally
-enforces `entryTarget.endIndex > entryTarget.entryIndex`, a relational rule standard
-JSON Schema cannot express.
-
-When a Village API version is superseded, register the retiring Village JSON/YAML
-pair and both JSON-only request schemas in `cmd/schema-gen/testdata/retired_specs.yaml`
-with their frozen hashes. Current artifacts remain under freshness; only superseded
-artifacts move into the retired registry.
-
-### Workflow ownership
-
-| Workflow | Trigger | Role |
-|----------|---------|------|
-| `tests.yml` | PR / push / `workflow_call` | `make check` + the `contract-gates` job (oasdiff/go-apidiff/vacuum vs base). |
-| `release-pr.yml` | release PR open / merge | Validate title + maintainer; on merge: nix-vendor-hash + mint the annotated tag (App token). |
-| `release.yml` | tag push `v*` | guard → nix-vendor-hash → contract-gates → publish the GitHub Release **and**, independently, publish the `@peasant-labs/schema` npm package. |
-| `nix-vendor-hash.yml` | push to develop (dep files) | Recompute + commit the flake `vendorHash` after a dependency bump. |
-
-The `release.yml` job graph (the `release` GitHub-Release job and the
-`npm-publish` job each sit behind guard + nix-vendor-hash + contract-gates, as
-independent siblings) is asserted by `release-guard check-workflow`, run in
-`make check`.
-
----
-
-## 2. Secrets & GitHub App (one-time setup)
-
-| Secret | Used by | Purpose |
-|--------|---------|---------|
-| `PEASANT_RELEASER_APP_ID` | release-pr.yml, nix-vendor-hash.yml | The `peasant-labs-releaser` GitHub App id. |
-| `PEASANT_RELEASER_APP_PRIVATE_KEY` | release-pr.yml, nix-vendor-hash.yml | That App's private key. |
-
-**Required App installation (NOT testable pre-merge):** the `peasant-labs-releaser`
-GitHub App must be **installed on `peasant-labs/schema`** with **Contents: write**
-(it pushes the annotated tag + the `chore: update nix vendor hash` commit; the
-default `GITHUB_TOKEN` cannot push a tag that re-triggers `release.yml`). This is
-the same App peasant uses, additionally installed on the schema repo. The live
-`v0.1.0-rc1` run is the first time this is exercised end-to-end.
-
-No other secrets are needed (no registry tokens, no AUR key, no Homebrew tap — all
-subtracted). npm publication deliberately holds **no secret at all**: it
-authenticates via npm **Trusted Publishing** (OpenID Connect), so there is no
-token to provision, rotate, or leak.
-
-### npm publication setup (one-time, no secret)
-
-`release.yml`'s `npm-publish` job authenticates to the npm registry via **npm
-Trusted Publishing (OIDC)**, not a stored token: the job requests
-`permissions: { id-token: write }`, GitHub mints it a short-lived OIDC token
-scoped to the `npm-publish` GitHub Actions environment, and `pnpm publish`
-(native OIDC trusted-publish support since pnpm's v11 publish
-reimplementation; the package pins pnpm 11.24.0 in `packageManager`, and pnpm
-switches to it) exchanges that token with
-npmjs.com for a one-time publish credential - no `NPM_TOKEN` secret exists or
-is needed. Provenance attestation is automatic on a trusted-publishing publish.
-
-Two one-time, maintainer-side registrations make this work (both are already
-unblocked: the package exists - `@peasant-labs/schema@0.1.0-rc6` was published
-manually on 2026-07-17):
-
-1. **GitHub Actions environment (create this FIRST).** Create an environment
-   named `npm-publish` on `peasant-labs/schema` (Settings → Environments → New
-   environment), with **no protection rules for now**. The `npm-publish` job is
-   bound to it (`environment: npm-publish` in `release.yml`, asserted by
-   `release-guard check-workflow`). Optional protection rules (a required
-   reviewer, a tag-pattern restriction) are additional defense-in-depth that can
-   be added later without any workflow change - deferred to the public-flip
-   checklist (§6).
-2. **npm Trusted Publisher** (register AFTER step 1 - the environment must
-   already exist for npm to bind to it). On npmjs.com, `@peasant-labs/schema` →
-   Settings → Trusted Publisher → GitHub Actions, and register: organization or
-   user `peasant-labs`, repository `schema`, workflow filename `release.yml`,
-   environment name `npm-publish` (matching step 1 exactly - an npm Trusted
-   Publisher registration is exact-match on all four fields, and a run whose
-   job does not carry that exact `environment:` cannot mint a valid publish
-   token). Scope the allowed action to **`npm publish` only** - not `npm stage
-   publish` - since this ceremony publishes directly and least-privilege scoping
-   costs nothing here.
-
-Until both registrations exist, `npm-publish` fails at the `pnpm publish` step
-with the registry's own rejection (see Troubleshooting below); that failure
-does **not** block the GitHub Release published by the sibling `release` job.
-
-### Maintainer gating
-
-Authorization is GitHub collaborator **permission** (`admin`/`maintain`), asserted by
-`release-guard check-maintainer` on the PR author — not a checked-in `MAINTAINERS`
-file:
-
-- On release-PR open/edit: the PR **author** must be `admin`/`maintain`, and the title
-  must parse (`release-guard parse-title`).
-- On merge: a pre-existing tag is a **hard fail**. The at-least-one-APPROVED-review
-  assertion is **deferred until the public flip**: with a single active maintainer,
-  GitHub's no-self-approval rule makes it unsatisfiable. `release-guard check-approval`
-  remains implemented + tested (byte-identical to peasant's guard); its step in
-  `release-pr.yml`'s tag job is commented out and is re-enabled alongside branch
-  protection at the public flip (§6).
-
-Branch protection (≥1 approval on `develop`) is defense-in-depth, configured at the
-public flip.
-
----
-
-## 3. Cutting an rc (the v0.1.0-rc1 ceremony)
-
-1. Ensure `develop` is green (`make check`) and the specs are fresh
-   (`go run ./cmd/schema-gen` produces no diff).
-2. Open a PR to `develop` titled exactly:
-
-   ```
-   release(v0.1.0-rc1): first release candidate of the extracted schema contract
-   ```
-
-   `release-pr.yml` (open trigger) validates the title grammar + that **you are an
-   admin/maintain collaborator**, and runs the full `tests.yml` gate (make check +
-   contract-gates) on the PR.
-3. **Merge** (the maintainer-approval assertion is deferred to the public flip — §2/§6;
-   the guard code is live and tested, its workflow step commented out). On merge,
-   `release-pr.yml`:
-   - runs `make nix-vendor-hash` on the merge commit (commits a `chore: update nix
-     vendor hash` fix to develop first if `flake.nix` changed),
-   - pushes the annotated tag `v0.1.0-rc1` on the hash-current commit (App token).
-4. The tag push triggers `release.yml`: guard → nix-vendor-hash freshness →
-   contract-gates → **publish a prerelease GitHub Release** with the `generated/`
-   OpenAPI specs attached as assets. Independently and behind the same three
-   gates, the `npm-publish` job stamps `typescript/package.json`'s version from
-   the tag (stripping the leading `v`; the committed manifest stays
-   `0.0.0-development` + `private: true`) and publishes `@peasant-labs/schema` to
-   npm - `next` for an `-rcN` tag, `latest` for a final `vX.Y.Z` (dist-tag chosen
-   from the guard job's tag classification, not re-derived).
-
-`rcN` tags publish **prereleases**. A final `vX.Y.Z` does not require a preceding
-rc. It still runs the release gates and, when a prior release tag exists, the
-compatibility diff against that prior release.
-
-### npm publication
-
-Every tag from the one that lands this automation onward publishes
-`@peasant-labs/schema` to npm automatically, alongside (never gating) the GitHub
-Release: `v0.1.0-rc6` (the package's first tagged appearance) was published
-**manually** under dist-tag `next` before this automation existed, from the same
-staged-tag checkout this job now automates; the `npm-publish` job takes over
-from the next tag. Authentication is npm Trusted Publishing (OIDC) - see §2 for
-the one-time GitHub environment + npm Trusted Publisher registrations. Until
-both exist, `npm-publish` fails at the registry (see Troubleshooting below) -
-this does not block the GitHub Release, which the sibling `release` job still
-publishes. Note the npm registry's read replicas can lag the primary by several
-minutes after a publish; a `npm view`/website check run immediately after a
-publish can read as "not there yet" even on a successful publish, so this repo's
-tooling does not assert post-publish registry state.
-
-Before its TypeScript package gates run, the `npm-publish` job stamps only the
-working-copy version and removes `private`; neither change is committed. The
-package audit then reads `package/package.json` from a real tarball made from
-that staged manifest, including the exact repository metadata npm provenance
-requires.
-
-**Troubleshooting `npm-publish`:**
-
-- **`pnpm publish` fails to authenticate / npm rejects the OIDC exchange
-  ("no trusted publisher configured" or similar)** - the npm Trusted Publisher
-  is not registered, or its four fields (org/user, repo, workflow filename,
-  environment) don't exactly match this job. Register or correct it on
-  npmjs.com (§2, step 2): organization `peasant-labs`, repository `schema`,
-  workflow filename `release.yml`, environment `npm-publish`. Then re-run the
-  failed job from the Actions run page; no new tag is needed.
-- **The job errors before publish with a permissions/OIDC-token complaint** -
-  the `npm-publish` job's `permissions: id-token: write` was removed or
-  narrowed, or the `environment: npm-publish` binding was removed (both are
-  asserted by `release-guard check-workflow` in `make check`, so this should
-  fail on the PR before it ever reaches a tag; if it doesn't, the policy file
-  drifted from the workflow - see `.github/release-guard.policy.yml`). Restore
-  both and cut a new release PR.
-- **npm provenance rejects the package manifest's repository metadata** -
-  `typescript/package.json` must retain `repository.type: "git"` and
-  `repository.url: "https://github.com/peasant-labs/schema"`. The
-  `package:audit` gate checks this exact metadata before publication; restore it
-  and cut a new release PR.
-- **`E409` / "cannot publish over the previously published version"** - the tag's
-  stripped version (`${GITHUB_REF_NAME#v}`) already exists on the npm registry.
-  This means the tag was already published (check `npm view @peasant-labs/schema
-  versions`, allowing for registry replica lag - see above) or was re-cut after
-  a prior partial publish; npm tags are append-only just like git release tags,
-  so cut a new version rather than retrying the same one.
-- **The gate steps (typecheck/test/package:audit/package:smoke) fail** - treat
-  identically to a `tests.yml` failure: the same gates already ran on the release
-  PR, so a failure here on the tagged commit means something drifted between PR
-  merge and tag (for example an out-of-band edit to `develop`); fix on `develop`
-  and cut a new release rather than forcing this job to pass.
-
----
-
-## 4. Tag namespaces & the retention guardrail
-
-- New releases use **bare `vX.Y.Z[-rcN]`** tags on the new module path.
-- The old **`pkg/schema/v*`** tags (from when the contract lived nested inside
-  peasant, up to `v1.3.0`) are **retained forever** — `release-guard parse-tag`
-  rejects them as release references, and `release.yml`'s `v*` filter does not
-  match them. **Never move or delete a published tag.**
-
----
-
-## 5. rc1 readiness — what is verified, and what needs a maintainer
-
-**Verified locally in this worktree (all green):**
-
-- `actionlint .github/workflows/*.yml` — clean.
-- `make check` — gofmt + vet + `release-guard check-workflow` + `go test -race
-  ./...` (incl. the leaf-audit test and the oasdiff/go-apidiff synthetic-break
-  tests, which run for real in the dev shell).
-- `make gates BASE_REF=<ref>` — oasdiff + go-apidiff + vacuum all green.
-- `nix build` — the main module + the `oasdiff`/`go-apidiff` gate derivations
-  build; `vendorHash` is current.
-
-**Requires a maintainer / the user (an agent must not do these):**
-
-1. **Push this branch + open the PR** into `develop` on
-   `peasant-labs/schema` (GitHub).
-2. **Install the `peasant-labs-releaser` GitHub App** on `peasant-labs/schema`
-   with Contents: write, and add the `PEASANT_RELEASER_APP_ID` /
-   `PEASANT_RELEASER_APP_PRIVATE_KEY` repo secrets (§2).
-3. **Cut `v0.1.0-rc1`** via the §3 ceremony — the live run is the MVP proof gate.
-   A maintainer must open the `release(v0.1.0-rc1): …` PR and merge it (the
-   approval assertion is deferred to the public flip — §2/§6); the pipeline mints
-   the tag and publishes the prerelease. **Do not push the `v0.1.0-rc1` tag
-   manually** — the ceremony is the only sanctioned path, and the App-token tag
-   push is what proves the installation works.
-
----
-
-## 6. Public-flip checklist (one-time)
-
-Run these, in order, when taking the schema repo public and enabling external
-consumption of tagged releases. Mirrors peasant's public-flip checklist, minus the
-binary/packaging items this contract library does not ship (no goreleaser, no
-deb/rpm/AUR/Homebrew/nixpkgs — see "What is SUBTRACTED vs peasant" in §1).
-
-- [ ] Make the repository **public**.
-- [ ] Confirm the `peasant-labs-releaser` GitHub App has `Contents: write` on
-      `peasant-labs/schema` (§2) — it pushes the annotated tag + the `chore: update
-      nix vendor hash` commit.
-- [ ] Configure branch protection on `develop` (≥1 approval) as defense-in-depth,
-      and **re-enable the `check-approval` step** in `release-pr.yml`'s tag job
-      (commented out pre-flip; the `release-guard check-approval` guard code is live
-      and tested — byte-identical to peasant's). This closes the §2 deferral.
-- [ ] **(Optional) Attach protection rules to the `npm-publish` GitHub
-      environment** (§2) - a required reviewer and/or a tag-pattern restriction.
-      This adds a human approval gate on every npm publish with **no workflow
-      change**: the `npm-publish` job already targets `environment: npm-publish`,
-      so GitHub enforces whatever rules the environment carries. Pairs with the
-      `check-approval` re-enable above as the same class of defense-in-depth,
-      deferred pre-flip for the same reason (single active maintainer).
-- [ ] **Live verification (post-flip):**
-      - A `release(vX.Y.Z-rcN): …` PR merges and `release-pr.yml` mints the annotated
-        tag via the App token; `release.yml` runs guard → nix-vendor-hash freshness →
-        contract-gates and publishes a prerelease GitHub Release with the `generated/`
-        OpenAPI specs attached, and (independently) the `npm-publish` job publishes
-        `@peasant-labs/schema@X.Y.Z-rcN` to npm under dist-tag `next` via OIDC trusted
-        publishing.
-      - `go get github.com/peasant-labs/schema@vX.Y.Z-rcN` resolves against the public
-        module for a downstream consumer (peasant / village pin).
+- The `Protect release tags` ruleset has exactly one bypass actor: the
+  `peasant-labs-releaser` GitHub App (Integration id 3988034). A human
+  `git push` of a release tag is refused. Fix a failed batch; do not change the
+  ruleset to work around it.
+- `RELEASE_BATCH_MODE` must be `tag` for the batch to write. When unset, the
+  batch runs plan-only and returns `action=none` for pending releases. After any
+  runner, permission, or release-config change, confirm the variable is `tag`
+  with `gh variable list -R peasant-labs/schema` before treating a plan as
+  authoritative.
+- In the 0.56.0 incident, the batch returned `action=none` because
+  `RELEASE_BATCH_MODE` was unset; that alone prevented a write. A later
+  non-releasing fix also moved the tip after the release PR merged. Do not
+  treat `none` as success or move a tag; set the mode to `tag`, then cut a new
+  release that includes the fix.
+- An immutable GitHub Release cannot be updated. Older publisher runs failed
+  with `tag_name was used by an immutable release` or `target_commitish cannot
+  be changed`. The current publisher leaves complete releases alone and fails
+  on incomplete releases. Delete an unpublished draft by its id as described above; for
+  an already-published release without assets, fix forward with a new tag.
+- The npm version guard reads `typescript/package.json` with `jq`. The dev-shell
+  banner polluted the old `nix develop -c node -p` capture; do not reintroduce
+  a stdout-captured dev-shell command.

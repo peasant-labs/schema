@@ -1,0 +1,70 @@
+# Values a TypeScript route member's path() refuses at run time that Go cannot
+# be given. The type of path() rejects most of them, so they cover a JavaScript
+# caller, which the compiler does not check; the last case is a string where
+# the document declares an integer, which the type allows. Go has no
+# counterpart: its path builders take typed parameters. The refusals both
+# languages share are in testdata/route_paths.yaml. The names are pinned in
+# route_path_refusals_manifest.yaml.
+cases:
+  - name: missing-parameter
+    input:
+      api: village
+      member: GetTranscriptSegments
+      params: {}
+    expected: {error_contains: "parameter \"id\" received no value"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a missing parameter would address the wrong resource"}
+    mutation: {description: "omits the only parameter"}
+  - name: missing-parameter-object
+    input:
+      api: village
+      member: GetPullRequestAttachment
+    expected: {error_contains: "parameter \"owner\" received no value"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a route with parameters needs its parameter object"}
+    mutation: {description: "calls path() with no argument"}
+  - name: null-parameter-object
+    input:
+      api: village
+      member: GetTranscriptSegments
+      params: null
+    expected: {error_contains: "parameter \"id\" received no value"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a null parameter object must be refused with the actionable message, not a property-access error"}
+    mutation: {description: "passes null in place of the parameter object"}
+  - name: null-parameter
+    input:
+      api: local
+      member: GetSession
+      params: {id: null}
+    expected: {error_contains: "parameter \"id\" received a null"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "null would be written as the text null"}
+    mutation: {description: "the value is null"}
+  - name: boolean-parameter
+    input:
+      api: local
+      member: GetSession
+      params: {id: true}
+    expected: {error_contains: "parameter \"id\" received a boolean"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a path parameter is a string or a number"}
+    mutation: {description: "the value is a boolean"}
+  - name: non-finite-number
+    input:
+      api: village
+      member: GetTranscriptSegment
+      params: {id: transcript-1, index: .nan}
+    expected: {error_contains: "parameter \"index\" received NaN"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "NaN would be written as the text NaN"}
+    mutation: {description: "the integer parameter is NaN"}
+  - name: integer-parameter-given-dot-dot
+    input:
+      api: village
+      member: GetTranscriptSegment
+      params: {id: transcript-1, index: ".."}
+    expected: {error_contains: "parameter \"index\" is \"..\""}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a dot segment is refused for every parameter that receives a string, including one the document types as an integer"}
+    mutation: {description: "the integer parameter receives the string .."}

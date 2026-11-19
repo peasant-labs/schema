@@ -1,3 +1,4 @@
+// Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
 import type * as Schema from "../../index.js";
 export interface paths {
     "/api/v1/annotations": {
@@ -1141,7 +1142,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Advertise the annotation schema version plus push and pull contract windows and the deployment-specific content-capability set. contentCapabilities omitted or empty means none and null is invalid. Its items are opaque, forward-open revision strings: clients match exactly without SemVer or suffix parsing, ignore unknown tokens, and tolerate/deduplicate duplicates; server output contains only pinned known tokens, rejects duplicates, has no semantic order, and is serialized lexicographically. observed_model_v1 is required exactly when any root or nested assistant turn carries observedModel, not for session model alone. It guarantees assistant-only value validation before persistence with no invalid database or blob side effects and byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are not guaranteed. */
+        /** @description Advertise the annotation schema version plus push and pull contract windows and the deployment-specific content-capability set. segmentedReadVersion and minSegmentedReadVersion are emitted together or omitted together; a lone member is invalid, and an absent or empty pair means 0.1.0 only. An empty string counts as absent; null and non-string members are invalid. Clients compare these opaque versions by exact token membership, never inferred ordering. contentCapabilities omitted or empty means none and null is invalid. Its items are opaque, forward-open revision strings: clients match exactly without SemVer or suffix parsing, ignore unknown tokens, and tolerate/deduplicate duplicates; server output contains only pinned known tokens, rejects duplicates, has no semantic order, and is serialized lexicographically. observed_model_v1 is required exactly when any root or nested assistant turn carries observedModel, not for session model alone. It guarantees assistant-only value validation before persistence with no invalid database or blob side effects and byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are not guaranteed. */
         get: operations["getSchemaVersion"];
         put?: never;
         post?: never;
@@ -1209,7 +1210,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays. integrity is present only when the transcript is flagged, for any reader allowed to read the transcript, whatever its visibility; its presence is the flag. Its flagged_turns are zero-based positions in the top-level sessionDetail.turns array (never TurnDetail.index values, never earlierHistory or child sessions) of the content whose bare hash is transcript.content_hash. A reader highlights turns only when the content read's Village-Content-Hash header equals transcript.content_hash. An empty list means the flag stands with no turn flagged in the current copy. A clean, pending or failed check adds nothing. */
+        /** @description Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays. integrity is present only when the transcript is flagged, for any reader allowed to read the transcript, whatever its visibility; its presence is the flag. Its flagged_turns are zero-based positions in the top-level sessionDetail.turns array (never TurnDetail.index values, never earlierHistory or child sessions) of the content whose bare hash is transcript.content_hash. The header read's flaggedTurns use served main-partition positions after filtering instead. A reader highlights turns only when the content read's Village-Content-Hash header equals transcript.content_hash. An empty list means the flag stands with no turn flagged in the current copy. A clean, pending or failed check adds nothing. A transcript its publisher retracted answers 410 to its last audience, and 404 to every other viewer and to a retracted private transcript; the pull reads answer 404 in every such case. */
         get: operations["getTranscriptMetadata"];
         put?: never;
         post?: never;
@@ -1244,8 +1245,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered. */
+        /** @description Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered. A transcript whose stored content an operator recorded as lost answers 410 after access is decided. */
         get: operations["getTranscriptContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcripts/{id}/header": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read bounded session metadata without turns or retained records. The header carries its revision and representation, optional stored-content hash, served-position integrity marks and retained-evidence availability. A mark's turn identity is omitted when the served row has no usable recorded index. The hash and marks are omitted for migrated or repository-withheld projections. Repository fields follow getTranscriptContent's withholding rule. Access, owner visibility and integrity are checked before conditional revalidation; denied viewers receive 404, stale revision or representation receives 409, and a temporary load refusal receives 503 with Retry-After. Successful headers require private revalidation with ETag; refusal responses are no-store. A transcript whose stored content an operator recorded as lost answers 410 after access is decided. */
+        get: operations["getTranscriptHeader"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1278,10 +1296,34 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the transcript's segment directory: one ref per segment, each a bounded run of whole turns, and no turn content. It is the same directory type the local dashboard API serves, cut by the shared rule (schema.CutTranscriptSegments with schema.TranscriptSegmentBudgetBytes), so the same turns give the same refs on every server. sessionId is the published session's id. The directory is paged: page is one-based and omitted defaults to 1, and totalSegments counts every page. revision is optional and the current revision is served when it is omitted; a stale revision is a 409 naming both revisions, and a segment cut under another revision must not be placed beside this directory. A non-numeric or non-positive page is a 400. Access follows getTranscriptContent: a transcript this viewer may not read is a 404. */
+        /**
+         * @description Read a transcript's segment directory, without turn content, using the shared whole-turn cut. V1 is unchanged; v=2 opts into the additive positioned protocol. The positioned protocol serves every legacy shape /content serves, preserving route and content identities separately; rows are cooked before cutting and carry their producer-assigned display numbers. Select main or a history section with partition and section. A directory at or below 10000 refs is unpaged; above it each response holds one page of at most 10000 refs with the true total. page is one-based, defaults to 1, is rejected with 400 when invalid, and a page beyond the end is 404 after access is decided. Revision and representation are optional echoes; a mismatch is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
+         *
+         *     Protocol generation selectors (omission is v=0):
+         *     - v=0 -> 0.1.0
+         *     - v=1 -> 0.1.0
+         *     - v=2 -> 0.2.0
+         */
         get: operations["getTranscriptSegments"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcripts/{id}/segments/locate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Locate a reference in the served main partition. The request carries the expected revision, representation and public content hash, but no location kind or partition selector. After access and hash verification, the first exact source, tool call or tool result member in served order wins. A denied viewer and a missing reference receive the same non-disclosing 404; the reference is never echoed. A stale revision or representation is 409, and a temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided. */
+        post: operations["locateTranscriptEntry"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1295,7 +1337,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read one transcript segment by its directory ordinal. Every turn it serves is whole, and its firstTurn and lastTurn are exactly the range the directory declared. Each turn row embeds the shared turn detail beside truncated and the pre-bound byteLength. hasOlder and hasNewer say whether the transcript continues on that side. revision is optional and the current revision is served when it is omitted. A non-numeric or negative index is a 400, an index at or past totalSegments is a 404 naming the directory's segment count, and a stale revision is a 409 naming both revisions. A segment that cannot be served whole is refused with 409, never served short. Access and the repository-identity rule follow getTranscriptContent: a transcript this viewer may not read is a 404. */
+        /**
+         * @description Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
+         *
+         *     Protocol generation selectors (omission is v=0):
+         *     - v=0 -> 0.1.0
+         *     - v=1 -> 0.1.0
+         *     - v=2 -> 0.2.0
+         */
         get: operations["getTranscriptSegment"];
         put?: never;
         post?: never;
@@ -1346,7 +1395,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Resolve a turn identity to a contiguous transcript window and answer a descriptor that names where the window is, never what is in it. The rule is the shared one (schema.ResolveTranscriptWindow). anchor is a non-negative turn identity: when the turn there is a user turn it is the anchor, otherwise the read snaps to the nearest lower user turn, or the nearest higher one when none is lower, and requestedAnchor and anchorTurn report both. span is the number of assistant turns collected on each side, 1..10, and omitted defaults to the design value 10; the parameter narrows a window and cannot widen it. segments is the ordered contiguous run of segment ordinals that covers the range; the viewer loads exactly those through getTranscriptSegment. sessionId is the published session's id. revision is optional and the current revision is served when it is omitted. A missing, non-numeric, or negative anchor and a span outside 1..10 are 400; a transcript with no user turn is a 404, because a window requires one; a stale revision is a 409 naming both revisions. Access follows getTranscriptContent: a transcript this viewer may not read is a 404. */
+        /**
+         * @description Resolve a transcript window to a descriptor, never turn content. V1 requires an anchor and retains its existing shared resolver. The positioned protocol is opt-in with v=2, and omitting anchor selects the default window; otherwise the shared positioned resolver snaps the recorded identity to a user row. OpenAPI retains the shared required v1 anchor because one parameter cannot express version-conditional requiredness; the positioned route accepts omission. The contiguous segment run covers the window and the requested row when one exists. span is 1..10 assistant turns on each side, default 10. Select main or a history section with partition and section. Invalid anchor or span is 400; an unresolvable window is 404; a stale revision or representation is 409. Access follows getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
+         *
+         *     Protocol generation selectors (omission is v=0):
+         *     - v=0 -> 0.1.0
+         *     - v=1 -> 0.1.0
+         *     - v=2 -> 0.2.0
+         */
         get: operations["getTranscriptWindow"];
         put?: never;
         post?: never;
@@ -1845,6 +1901,10 @@ export interface components {
          * @enum {integer}
          */
         SchemaPageSize: Schema.PageSize;
+        SchemaPositionedDirectory: Schema.PositionedDirectory;
+        SchemaPositionedSegment: Schema.PositionedSegment;
+        SchemaPositionedSegmentRef: Schema.PositionedSegmentRef;
+        SchemaPositionedWindow: Schema.PositionedWindow;
         /**
          * Project Hash
          * @description SHA-256 hex digest of the project's origin URL or local path
@@ -2057,6 +2117,20 @@ export interface components {
          * @description SHA3-256 digest of the exact transcript file bytes
          */
         SchemaTranscriptContentHash: Schema.TranscriptContentHash;
+        SchemaTranscriptContentHeader: Schema.TranscriptContentHeader;
+        SchemaTranscriptEntryLocateRequest: Schema.TranscriptEntryLocateRequest;
+        SchemaTranscriptEntryMatch: Schema.TranscriptEntryMatch;
+        /**
+         * Transcript Entry Reference Kind
+         * @description Closed session graph value
+         * @example source
+         * @example tool_call
+         * @example tool_result
+         * @enum {string}
+         */
+        SchemaTranscriptEntryReferenceKind: Schema.TranscriptEntryReferenceKind;
+        SchemaTranscriptFlaggedTurn: Schema.TranscriptFlaggedTurn;
+        SchemaTranscriptHistorySection: Schema.TranscriptHistorySection;
         /**
          * Transcript ID
          * Format: uuid
@@ -2064,9 +2138,66 @@ export interface components {
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          */
         SchemaTranscriptID: Schema.TranscriptID;
+        /**
+         * Transcript Native Presence
+         * @description Closed session graph value
+         * @example absent
+         * @example present
+         * @example withheld
+         * @enum {string}
+         */
+        SchemaTranscriptNativePresence: Schema.TranscriptNativePresence;
+        SchemaTranscriptReadContext: Schema.TranscriptReadContext;
+        SchemaTranscriptReadTransport: Schema.TranscriptReadTransport;
+        /**
+         * Transcript Read Transport Kind
+         * @description Closed session graph value
+         * @example local_session
+         * @example village_transcript
+         * @enum {string}
+         */
+        SchemaTranscriptReadTransportKind: Schema.TranscriptReadTransportKind;
+        /**
+         * Transcript Read Validation
+         * @description Closed session graph value
+         * @example published_strict
+         * @example served_legacy
+         * @example migrated
+         * @enum {string}
+         */
+        SchemaTranscriptReadValidation: Schema.TranscriptReadValidation;
+        /**
+         * Transcript Recorded Index State
+         * @description Closed session graph value
+         * @example present
+         * @example absent
+         * @example invalid
+         * @enum {string}
+         */
+        SchemaTranscriptRecordedIndexState: Schema.TranscriptRecordedIndexState;
+        /**
+         * Transcript Retained State
+         * @description Closed session graph value
+         * @example absent
+         * @example deferred
+         * @enum {string}
+         */
+        SchemaTranscriptRetainedState: Schema.TranscriptRetainedState;
         SchemaTranscriptSegment: Schema.TranscriptSegment;
         SchemaTranscriptSegmentDirectory: Schema.TranscriptSegmentDirectory;
+        SchemaTranscriptSegmentPartition: Schema.TranscriptSegmentPartition;
+        /**
+         * Transcript Segment Partition Kind
+         * @description Closed session graph value
+         * @example main
+         * @example history
+         * @enum {string}
+         */
+        SchemaTranscriptSegmentPartitionKind: Schema.TranscriptSegmentPartitionKind;
         SchemaTranscriptSegmentRef: Schema.TranscriptSegmentRef;
+        SchemaTranscriptSegmentRow: Schema.TranscriptSegmentRow;
+        SchemaTranscriptServedTurn: Schema.TranscriptServedTurn;
+        SchemaTranscriptSessionHeader: Schema.TranscriptSessionHeader;
         SchemaTranscriptTurn: Schema.TranscriptTurn;
         /**
          * TranscriptUpdateVisibility
@@ -2076,6 +2207,15 @@ export interface components {
          * @enum {string}
          */
         SchemaTranscriptUpdateVisibility: Schema.TranscriptUpdateVisibility;
+        /**
+         * Transcript Usage Presence
+         * @description Closed session graph value
+         * @example present
+         * @example empty
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaTranscriptUsagePresence: Schema.TranscriptUsagePresence;
         SchemaTranscriptWindow: Schema.TranscriptWindow;
         SchemaTurnContentPart: Schema.TurnContentPart;
         SchemaTurnDetail: Schema.TurnDetail;
@@ -7002,6 +7142,15 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
+            /** @description Gone. The transcript was retracted by its publisher; its content has been deleted and cannot be shown. Only the last audience of the transcript sees this answer; every other viewer receives the same 404 as an unknown id. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
             /** @description Internal Server Error */
             500: {
                 headers: {
@@ -7176,6 +7325,145 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getTranscriptHeader: {
+        parameters: {
+            query?: {
+                /** @description Optional revision to read; omission selects the current revision. */
+                revision?: string;
+                /** @description Optional projection identity to revalidate; a mismatch requires reload. */
+                representation?: string;
+            };
+            header?: {
+                /** @description Optional entity tag of the previously authorized header. */
+                "If-None-Match"?: string;
+            };
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description private, no-cache when the revision is named; no-store when no revision is named or a migration rewrite was not installed. */
+                    "Cache-Control"?: string;
+                    /** @description Entity tag over the authorized header's revalidation inputs. */
+                    ETag?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptContentHeader"];
+                };
+            };
+            /** @description Not modified after authorization and revalidation. */
+            304: {
+                headers: {
+                    /** @description private, no-cache when the revision is named; no-store when no revision is named or a migration rewrite was not installed. */
+                    "Cache-Control"?: string;
+                    /** @description Entity tag over the authorized header's revalidation inputs. */
+                    ETag?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description When to retry a temporary load or admission refusal. */
+                    "Retry-After"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
         };
     };
     listTranscriptPullRequests: {
@@ -7244,6 +7532,19 @@ export interface operations {
                 page?: number;
                 /** @description Revision to read; omitted serves the current revision */
                 revision?: string;
+                /**
+                 * @description Protocol generation selectors (omission is v=0):
+                 *     - v=0 -> 0.1.0
+                 *     - v=1 -> 0.1.0
+                 *     - v=2 -> 0.2.0
+                 */
+                v?: 0 | 1 | 2;
+                /** @description Positioned partition: main or history; omitted selects main. */
+                partition?: components["schemas"]["SchemaTranscriptSegmentPartitionKind"];
+                /** @description History section index. Required for history and omitted for main. */
+                section?: number;
+                /** @description Optional positioned representation to revalidate; a mismatch requires reload. */
+                representation?: string;
             };
             header?: never;
             path: {
@@ -7257,15 +7558,23 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptSegmentDirectory"];
+                    "application/json": components["schemas"]["SchemaTranscriptSegmentDirectory"] | components["schemas"]["SchemaPositionedDirectory"];
                 };
             };
             /** @description Bad Request */
             400: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7275,6 +7584,10 @@ export interface operations {
             /** @description Not Found */
             404: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7284,6 +7597,23 @@ export interface operations {
             /** @description Conflict */
             409: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7293,6 +7623,136 @@ export interface operations {
             /** @description Internal Server Error */
             500: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description When to retry a temporary load or admission refusal. */
+                    "Retry-After"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    locateTranscriptEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaTranscriptEntryLocateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptEntryMatch"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description When to retry a temporary load or admission refusal. */
+                    "Retry-After"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7306,6 +7766,19 @@ export interface operations {
             query?: {
                 /** @description Revision to read; omitted serves the current revision */
                 revision?: string;
+                /**
+                 * @description Protocol generation selectors (omission is v=0):
+                 *     - v=0 -> 0.1.0
+                 *     - v=1 -> 0.1.0
+                 *     - v=2 -> 0.2.0
+                 */
+                v?: 0 | 1 | 2;
+                /** @description Positioned partition: main or history; omitted selects main. */
+                partition?: components["schemas"]["SchemaTranscriptSegmentPartitionKind"];
+                /** @description History section index. Required for history and omitted for main. */
+                section?: number;
+                /** @description Optional positioned representation to revalidate; a mismatch requires reload. */
+                representation?: string;
             };
             header?: never;
             path: {
@@ -7321,15 +7794,23 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptSegment"];
+                    "application/json": components["schemas"]["SchemaTranscriptSegment"] | components["schemas"]["SchemaPositionedSegment"];
                 };
             };
             /** @description Bad Request */
             400: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7339,6 +7820,10 @@ export interface operations {
             /** @description Not Found */
             404: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7348,6 +7833,23 @@ export interface operations {
             /** @description Conflict */
             409: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7357,6 +7859,25 @@ export interface operations {
             /** @description Internal Server Error */
             500: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description When to retry a temporary load or admission refusal. */
+                    "Retry-After"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7516,6 +8037,19 @@ export interface operations {
                 span?: number;
                 /** @description Revision to read; omitted serves the current revision */
                 revision?: string;
+                /**
+                 * @description Protocol generation selectors (omission is v=0):
+                 *     - v=0 -> 0.1.0
+                 *     - v=1 -> 0.1.0
+                 *     - v=2 -> 0.2.0
+                 */
+                v?: 0 | 1 | 2;
+                /** @description Positioned partition: main or history; omitted selects main. */
+                partition?: components["schemas"]["SchemaTranscriptSegmentPartitionKind"];
+                /** @description History section index. Required for history and omitted for main. */
+                section?: number;
+                /** @description Optional positioned representation to revalidate; a mismatch requires reload. */
+                representation?: string;
             };
             header?: never;
             path: {
@@ -7529,15 +8063,23 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptWindow"];
+                    "application/json": components["schemas"]["SchemaTranscriptWindow"] | components["schemas"]["SchemaPositionedWindow"];
                 };
             };
             /** @description Bad Request */
             400: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7547,6 +8089,10 @@ export interface operations {
             /** @description Not Found */
             404: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7556,6 +8102,23 @@ export interface operations {
             /** @description Conflict */
             409: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone. The transcript's stored content has been lost and cannot be loaded; an operator recorded the loss. Access is decided first, so a viewer who may not read the transcript receives 404. */
+            410: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7565,6 +8128,25 @@ export interface operations {
             /** @description Internal Server Error */
             500: {
                 headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    /** @description private, no-store for a successful read; no-store for a refusal. */
+                    "Cache-Control"?: string;
+                    /** @description When to retry a temporary load or admission refusal. */
+                    "Retry-After"?: string;
+                    /** @description Authorization, Cookie */
+                    Vary?: string;
                     [name: string]: unknown;
                 };
                 content: {

@@ -17,6 +17,14 @@ and schema-owned fixture helpers. It does not contain HTTP or WebSocket clients.
 Consumers that need endpoint typing can import type-only OpenAPI `paths` and
 `operations` namespaces from `@peasant-labs/schema/local-api` and
 `@peasant-labs/schema/village-api`; these exports do not contain a transport.
+The same subpaths export one route member per operation, named by its
+`operationId`: `VillageRoute.GetTranscriptSegments.method` is `"GET"`,
+`.pattern` is the document's path template, and `.path({ id })` builds the
+request path with every value escaped by `encodeURIComponent`. A missing or
+extra path parameter is a compile error. A value that is empty, `.` or `..`
+throws a `RangeError`: clients resolve such a segment, so the request would
+reach a different endpoint. `ALL_VILLAGE_ROUTES` and
+`ALL_LOCAL_ROUTES` are the ordered sets.
 
 The Go contract and its generated Types OpenAPI document are authoritative.
 Hey API's Zod plugin derives both the TypeScript definitions and runtime schemas
@@ -25,6 +33,17 @@ contracts from their OpenAPI documents. A small generated facade exposes the
 same closed-set shape as Go (`Role.User`, `AllRoles`, `isRole`) without
 maintaining a handwritten second contract. The retired `@peasant-labs/types`
 package must not receive new wire definitions.
+
+Generated enum members now retain their literal types: for example, `Role.User`
+is `"user"`, not the whole `Role` union. Generated schemas such as `zRole` have
+the structural type `ClosedSet<...>`, not a nominal `ZodEnum` type; `ClosedSet`
+is internal to the generated declarations and is not a public export.
+Optional, nullable and nullish fields keep the name as well: `TurnDetail`'s
+`entryType` is `EntryType | undefined`, so compare it with `EntryType.Thinking`
+rather than reaching the set through `TurnDetail["entryType"]`.
+One-member sets still narrow to their single literal, but TypeScript does not
+retain a named field alias for them. Runtime validation and wire values are
+unchanged.
 
 The generated root Zod schemas enforce the wire's structural shape and selected
 generator-owned local cross-field invariants, including association evidence and

@@ -1,4 +1,3 @@
-required_names: [grok-build, devin-desktop, cline, kiro, kiro-cli, kiro-crew, antigravity-cli, antigravity-ide]
 cases:
   - {name: grok-build, display: Grok Build}
   - {name: devin-desktop, display: Devin Desktop}

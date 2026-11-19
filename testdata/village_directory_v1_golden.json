@@ -1,0 +1,1 @@
+{"sessionId":"ses_test","revision":"1","totalTurns":3,"totalConversationTurns":2,"totalSegments":1,"segments":[{"index":0,"firstTurn":7,"lastTurn":9,"byteLength":123,"conversationTurns":{"before":0,"count":2}}]}

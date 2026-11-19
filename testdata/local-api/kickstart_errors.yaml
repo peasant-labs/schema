@@ -25,6 +25,12 @@ required_routes:
   - getKickstartPreview
   - scanKickstartSession
   - commitKickstartSession
+socket_codes:
+  - kickstart_preview_capture_not_found
+  - kickstart_preview_source_changed
+  - kickstart_preview_late_result
+  - kickstart_preview_capacity
+  - kickstart_preview_out_of_order
 routes:
   - operation_id: getKickstartStatus
     method: get
@@ -125,6 +131,11 @@ code_status:
   kickstart_commit_refused: 400
   kickstart_session_not_found: 404
   kickstart_preview_row_not_found: 404
+  kickstart_preview_capture_not_found: 404
+  kickstart_preview_source_changed: 400
+  kickstart_preview_late_result: 400
+  kickstart_preview_capacity: 503
+  kickstart_preview_out_of_order: 400
   kickstart_failed: 500
   kickstart_status_unreadable: 500
   kickstart_config_unreadable: 500

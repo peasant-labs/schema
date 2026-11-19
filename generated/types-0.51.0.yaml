@@ -5883,6 +5883,148 @@ components:
             - number
           - type: "null"
       type: object
+    PositionedDirectory:
+      properties:
+        context:
+          $ref: '#/components/schemas/TranscriptReadContext'
+        directoryPage:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        directoryPerPage:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        history:
+          items:
+            $ref: '#/components/schemas/TranscriptHistorySection'
+          type: array
+        partition:
+          $ref: '#/components/schemas/TranscriptSegmentPartition'
+        segments:
+          items:
+            $ref: '#/components/schemas/PositionedSegmentRef'
+          type: array
+        usagePresent:
+          $ref: '#/components/schemas/TranscriptUsagePresence'
+      required:
+      - context
+      - partition
+      - usagePresent
+      - segments
+      type: object
+    PositionedSegment:
+      properties:
+        byteLength:
+          type: integer
+        context:
+          $ref: '#/components/schemas/TranscriptReadContext'
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        index:
+          type: integer
+        nativeMetadata:
+          items:
+            $ref: '#/components/schemas/NativeMetadataRecord'
+          type: array
+        partition:
+          $ref: '#/components/schemas/TranscriptSegmentPartition'
+        rows:
+          items:
+            $ref: '#/components/schemas/TranscriptSegmentRow'
+          minItems: 1
+          type: array
+      required:
+      - context
+      - partition
+      - index
+      - rows
+      - byteLength
+      - hasOlder
+      - hasNewer
+      type: object
+    PositionedSegmentRef:
+      properties:
+        byteLength:
+          type: integer
+        conversationTurns:
+          anyOf:
+          - $ref: '#/components/schemas/ConversationTurnSpan'
+          - type: "null"
+        firstTurn:
+          minimum: 0
+          type: integer
+        index:
+          type: integer
+        lastTurn:
+          minimum: 0
+          type: integer
+        sourceFirstPosition:
+          minimum: 0
+          type: integer
+        sourceLastPosition:
+          minimum: 0
+          type: integer
+      required:
+      - index
+      - sourceFirstPosition
+      - sourceLastPosition
+      - byteLength
+      type: object
+    PositionedWindow:
+      properties:
+        anchorPosition:
+          type: integer
+        anchorSegment:
+          type: integer
+        anchorTurn:
+          minimum: 0
+          type: integer
+        context:
+          $ref: '#/components/schemas/TranscriptReadContext'
+        firstPosition:
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        lastPosition:
+          type: integer
+        partition:
+          $ref: '#/components/schemas/TranscriptSegmentPartition'
+        requestedAnchor:
+          minimum: 0
+          type: integer
+        requestedPosition:
+          minimum: 0
+          type: integer
+        segments:
+          items:
+            type: integer
+          minItems: 1
+          type: array
+        span:
+          maximum: 10
+          minimum: 1
+          type: integer
+      required:
+      - context
+      - partition
+      - anchorPosition
+      - anchorSegment
+      - span
+      - firstPosition
+      - lastPosition
+      - segments
+      - hasOlder
+      - hasNewer
+      type: object
     ProjectAnalytics:
       properties:
         avgDurationPerActiveWeek:
@@ -7333,11 +7475,15 @@ components:
           type: string
         minPushContractVersion:
           type: string
+        minSegmentedReadVersion:
+          type: string
         pullContractMaxVersion:
           type: string
         pullContractVersion:
           type: string
         pushContractVersion:
+          type: string
+        segmentedReadVersion:
           type: string
         supportedTargetKinds:
           items:
@@ -9262,6 +9408,123 @@ components:
       pattern: ^[0-9a-f]{64}$
       title: Transcript Content Hash
       type: string
+    TranscriptContentHeader:
+      properties:
+        canonical:
+          type: boolean
+        contentHash:
+          type: string
+        contractVersion:
+          type: string
+        flaggedTurns:
+          items:
+            $ref: '#/components/schemas/TranscriptFlaggedTurn'
+          type: array
+        kind:
+          $ref: '#/components/schemas/ContentKind'
+        omittedImages:
+          type: integer
+        representation:
+          type: string
+        retainedEvidence:
+          anyOf:
+          - $ref: '#/components/schemas/TranscriptRetainedState'
+          - type: "null"
+        revision:
+          type: string
+        sessionHeader:
+          $ref: '#/components/schemas/TranscriptSessionHeader'
+      required:
+      - contractVersion
+      - kind
+      - revision
+      - representation
+      - sessionHeader
+      - canonical
+      - omittedImages
+      type: object
+    TranscriptEntryLocateRequest:
+      properties:
+        contentHash:
+          type: string
+        reference:
+          minLength: 1
+          type: string
+        representation:
+          type: string
+        revision:
+          type: string
+      required:
+      - reference
+      - revision
+      - representation
+      - contentHash
+      type: object
+    TranscriptEntryMatch:
+      properties:
+        context:
+          $ref: '#/components/schemas/TranscriptReadContext'
+        kind:
+          $ref: '#/components/schemas/TranscriptEntryReferenceKind'
+        position:
+          type: integer
+        recordedIndex:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        segmentOrdinal:
+          type: integer
+      required:
+      - context
+      - kind
+      - position
+      - segmentOrdinal
+      type: object
+    TranscriptEntryReferenceKind:
+      description: Closed session graph value
+      enum:
+      - source
+      - tool_call
+      - tool_result
+      examples:
+      - source
+      - tool_call
+      - tool_result
+      title: Transcript Entry Reference Kind
+      type: string
+    TranscriptFlaggedTurn:
+      properties:
+        position:
+          minimum: 0
+          type: integer
+        turn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - position
+      type: object
+    TranscriptHistorySection:
+      properties:
+        index:
+          type: integer
+        state:
+          type: string
+        totalConversationTurns:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        totalTurns:
+          type: integer
+        usagePresent:
+          $ref: '#/components/schemas/TranscriptUsagePresence'
+      required:
+      - index
+      - totalTurns
+      - usagePresent
+      type: object
     TranscriptID:
       description: Village-side transcript identifier (canonical lowercase-hex UUID)
       examples:
@@ -9269,6 +9532,131 @@ components:
       format: uuid
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       title: Transcript ID
+      type: string
+    TranscriptNativePresence:
+      description: Closed session graph value
+      enum:
+      - absent
+      - present
+      - withheld
+      examples:
+      - absent
+      - present
+      - withheld
+      title: Transcript Native Presence
+      type: string
+    TranscriptReadContext:
+      properties:
+        contentHash:
+          type: string
+        contentSessionId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        harness:
+          type: string
+        model:
+          type: string
+        nativePresence:
+          $ref: '#/components/schemas/TranscriptNativePresence'
+        protocolVersion:
+          description: Required echo of the selected positioned read protocol version.
+            The 0.2.0 protocol carries 0.2.0. A reader must refuse a mismatch with
+            the requested generation before installing rows.
+          minLength: 1
+          type: string
+        representation:
+          type: string
+        revision:
+          type: string
+        thinkingLevel:
+          $ref: '#/components/schemas/ThinkingLevel'
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/ThinkingLevelRaw'
+        totalConversationTurns:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        totalSegments:
+          type: integer
+        totalTurns:
+          type: integer
+        transport:
+          $ref: '#/components/schemas/TranscriptReadTransport'
+        validation:
+          $ref: '#/components/schemas/TranscriptReadValidation'
+      required:
+      - protocolVersion
+      - transport
+      - revision
+      - representation
+      - validation
+      - nativePresence
+      - totalTurns
+      - totalSegments
+      type: object
+    TranscriptReadTransport:
+      properties:
+        kind:
+          $ref: '#/components/schemas/TranscriptReadTransportKind'
+        sessionId:
+          anyOf:
+          - $ref: '#/components/schemas/SessionID'
+          - type: "null"
+        transcriptId:
+          anyOf:
+          - $ref: '#/components/schemas/VillageUUID'
+          - type: "null"
+      required:
+      - kind
+      type: object
+    TranscriptReadTransportKind:
+      description: Closed session graph value
+      enum:
+      - local_session
+      - village_transcript
+      examples:
+      - local_session
+      - village_transcript
+      title: Transcript Read Transport Kind
+      type: string
+    TranscriptReadValidation:
+      description: Closed session graph value
+      enum:
+      - published_strict
+      - served_legacy
+      - migrated
+      examples:
+      - published_strict
+      - served_legacy
+      - migrated
+      title: Transcript Read Validation
+      type: string
+    TranscriptRecordedIndexState:
+      description: Closed session graph value
+      enum:
+      - present
+      - absent
+      - invalid
+      examples:
+      - present
+      - absent
+      - invalid
+      title: Transcript Recorded Index State
+      type: string
+    TranscriptRetainedState:
+      description: Closed session graph value
+      enum:
+      - absent
+      - deferred
+      examples:
+      - absent
+      - deferred
+      title: Transcript Retained State
       type: string
     TranscriptSegment:
       properties:
@@ -9347,6 +9735,29 @@ components:
       - totalSegments
       - segments
       type: object
+    TranscriptSegmentPartition:
+      properties:
+        kind:
+          $ref: '#/components/schemas/TranscriptSegmentPartitionKind'
+        sectionIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+      required:
+      - kind
+      type: object
+    TranscriptSegmentPartitionKind:
+      description: Closed session graph value
+      enum:
+      - main
+      - history
+      examples:
+      - main
+      - history
+      title: Transcript Segment Partition Kind
+      type: string
     TranscriptSegmentRef:
       properties:
         byteLength:
@@ -9372,6 +9783,98 @@ components:
       - firstTurn
       - lastTurn
       - byteLength
+      type: object
+    TranscriptSegmentRow:
+      properties:
+        displayNumber:
+          minLength: 1
+          pattern: ^[1-9][0-9]*[a-z]*$
+          type: string
+        position:
+          minimum: 0
+          type: integer
+        recordedIndex:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        recordedIndexState:
+          $ref: '#/components/schemas/TranscriptRecordedIndexState'
+        turn:
+          $ref: '#/components/schemas/TranscriptServedTurn'
+      required:
+      - position
+      - recordedIndexState
+      - turn
+      type: object
+    TranscriptServedTurn:
+      type: object
+    TranscriptSessionHeader:
+      properties:
+        conversationTurnCount:
+          type: integer
+        durationMins:
+          type: number
+        earlierHistory:
+          items:
+            type: string
+          type: array
+        endTime:
+          type: string
+        gitBranch:
+          type: string
+        gitRemote:
+          type: string
+        harness:
+          type: string
+        id:
+          type: string
+        inputSubmissionCount:
+          type: integer
+        model:
+          type: string
+        outcome:
+          type: string
+        parentSessionId:
+          type: string
+        project:
+          type: string
+        purpose:
+          type: string
+        rootSessionId:
+          type: string
+        schemaVersion:
+          type: string
+        sessionOrigin:
+          type: string
+        source:
+          type: string
+        startTime:
+          type: string
+        status:
+          type: string
+        thinkingLevel:
+          $ref: '#/components/schemas/ThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/ThinkingLevelChange'
+          type: array
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/ThinkingLevelRaw'
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        totalTokens:
+          type: integer
+        turnCount:
+          description: 'Turns: the number of folded turns of the session''s main partition,
+            system and tool rows included. Equal to the segment directory''s totalTurns
+            at the same revision. Not the count a reader is shown; see conversationTurnCount.'
+          type: integer
+        workingDirectory:
+          type: string
       type: object
     TranscriptTurn:
       properties:
@@ -9485,6 +9988,28 @@ components:
       - public
       - private
       title: TranscriptUpdateVisibility
+      type: string
+    TranscriptUsagePresence:
+      description: Closed session graph value
+      enum:
+      - present
+      - empty
+      - unknown
+      examples:
+      - present
+      - empty
+      - unknown
+      title: Transcript Usage Presence
+      type: string
+    TranscriptViewerProjection:
+      description: Closed session graph value
+      enum:
+      - anonymous
+      - authenticated
+      examples:
+      - anonymous
+      - authenticated
+      title: Transcript Viewer Projection
       type: string
     TranscriptWindow:
       properties:
@@ -10012,33 +10537,6 @@ components:
       - project_hash
       - shared
       - already_shared
-      type: object
-    VillageBatchShareSelectionRequest:
-      properties:
-        private_approvals:
-          description: The private transcripts among transcript_ids whose owner approved
-            their visibility, at most 1000 in one request.
-          items:
-            $ref: '#/components/schemas/TranscriptID'
-          maxItems: 1000
-          type: array
-        project_hash:
-          $ref: '#/components/schemas/ProjectHash'
-          description: The project of the selected roots. Helpers may belong to other
-            projects and are not checked against it.
-        transcript_ids:
-          description: Exactly the sessions to offer, roots and helpers alike, at
-            most 1000 in one request; a client with a larger selection sends it as
-            several requests. The server never expands a root into its helpers.
-          items:
-            $ref: '#/components/schemas/TranscriptID'
-          maxItems: 1000
-          minItems: 1
-          type: array
-      required:
-      - project_hash
-      - transcript_ids
-      - private_approvals
       type: object
     VillageCollective:
       properties:
@@ -10960,11 +11458,6 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
-        latest_status:
-          $ref: '#/components/schemas/VillageShareStatus'
-          description: The status of the latest contribution attempt in this collective.
-            Absent means no attempt. already_shared stays and is true only for pending
-            and approved.
         local_id:
           $ref: '#/components/schemas/SessionID'
         model_provider:
@@ -10973,10 +11466,6 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SessionID'
           - type: "null"
-        parent_transcript_id:
-          $ref: '#/components/schemas/TranscriptID'
-          description: The published transcript of the parent session. Absent for
-            a root, and for a helper whose parent is not published.
         project_display_name:
           type: string
         project_hash:
@@ -10996,16 +11485,8 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SessionID'
           - type: "null"
-        session_end:
-          description: When the session's last turn happened. Absent when unknown.
-          format: date-time
-          type: string
         session_origin:
           $ref: '#/components/schemas/SessionOrigin'
-        session_start:
-          description: When the session began. Absent when unknown.
-          format: date-time
-          type: string
         title:
           anyOf:
           - type:
@@ -11029,20 +11510,6 @@ components:
       - published_at
       - already_shared
       type: object
-    VillageContributableView:
-      description: The view of the contributable operation. Omission keeps the flat
-        response; grouped, paged and snapshot select the other envelopes. Any other
-        value is refused with a 400 that names the accepted values.
-      enum:
-      - grouped
-      - paged
-      - snapshot
-      examples:
-      - grouped
-      - paged
-      - snapshot
-      title: Village Contributable View
-      type: string
     VillageContributedCollective:
       properties:
         approved_count:
@@ -11095,242 +11562,6 @@ components:
           type: array
       required:
       - collectives
-      type: object
-    VillageContributionErrorCode:
-      description: Machine-readable reason a contribution request was refused
-      enum:
-      - moved
-      - missing
-      - private_unapproved
-      - conflict
-      - policy
-      - membership
-      - stale_selection
-      - snapshot_timeout
-      - snapshot_busy
-      - snapshot_too_large
-      examples:
-      - moved
-      - missing
-      - private_unapproved
-      - conflict
-      - policy
-      - membership
-      - stale_selection
-      - snapshot_timeout
-      - snapshot_busy
-      - snapshot_too_large
-      title: Village Contribution Error Code
-      type: string
-    VillageContributionErrorDetail:
-      properties:
-        code:
-          $ref: '#/components/schemas/VillageContributionErrorCode'
-          description: The machine-readable reason for this transcript.
-        current_project_hash:
-          $ref: '#/components/schemas/ProjectHash'
-          description: The project a moved transcript now belongs to.
-        transcript_id:
-          $ref: '#/components/schemas/TranscriptID'
-          description: The transcript this reason is about. Absent for a request-level
-            reason such as policy.
-      required:
-      - code
-      type: object
-    VillageContributionFamilyMember:
-      properties:
-        matched:
-          description: True when this member itself matched q. Absent when the request
-            carried no q.
-          type: boolean
-        transcript:
-          $ref: '#/components/schemas/VillageContributableTranscript'
-      required:
-      - transcript
-      type: object
-    VillageContributionPageItem:
-      properties:
-        helpers:
-          description: Every helper session that descends from the root. Each helper
-            keeps its own project, which may differ from the project of the root.
-          items:
-            $ref: '#/components/schemas/VillageContributionFamilyMember'
-          type: array
-        root:
-          $ref: '#/components/schemas/VillageContributionFamilyMember'
-          description: The root session of the family. The family belongs to the project
-            of the root. A session whose chain of parents loops back on itself is
-            a root with no helpers taken from the loop.
-      required:
-      - root
-      - helpers
-      type: object
-    VillageContributionPageResponse:
-      properties:
-        group_id:
-          $ref: '#/components/schemas/VillageUUID'
-        has_more:
-          type: boolean
-        items:
-          description: The families of this page, most recently active first. A family
-            is ordered by the last activity of its root session, newest first, where
-            last activity is the root's session_end, or its session_start when that
-            is unknown, or its published_at when both are unknown. Families with the
-            same last activity are ordered by the root's transcript id ascending.
-            Helpers do not affect the position of their family.
-          items:
-            $ref: '#/components/schemas/VillageContributionPageItem'
-          type: array
-        next_cursor:
-          description: The opaque cursor of the following page. Absent on the last
-            page.
-          type: string
-      required:
-      - group_id
-      - items
-      - has_more
-      type: object
-    VillageContributionProjectPage:
-      properties:
-        has_more:
-          type: boolean
-        matching_total:
-          description: The number of sessions in all matching families across every
-            page, counted in sessions, not roots.
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
-        next_cursor:
-          description: The opaque cursor of the following page. Absent on the last
-            page.
-          type: string
-        projects:
-          items:
-            $ref: '#/components/schemas/VillageContributionProjectSummary'
-          type: array
-        providers:
-          items:
-            $ref: '#/components/schemas/VillageContributionProviderFacet'
-          type: array
-        selectable_total:
-          description: The number of sessions among the matching ones that are not
-            already live, across every page, counted in sessions, not roots.
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
-      required:
-      - projects
-      - has_more
-      - matching_total
-      - selectable_total
-      - providers
-      type: object
-    VillageContributionProjectSummary:
-      properties:
-        matching_count:
-          description: The number of sessions in the project's matching families,
-            counted in sessions, not roots.
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
-        project_display_name:
-          type: string
-        project_hash:
-          $ref: '#/components/schemas/ProjectHash'
-        project_name_source:
-          $ref: '#/components/schemas/VillageProjectNameSource'
-        repository_state:
-          type: string
-        selectable_count:
-          description: The number of sessions among the matching ones that are not
-            already live, counted in sessions, not roots.
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
-      required:
-      - project_hash
-      - project_display_name
-      - project_name_source
-      - matching_count
-      - selectable_count
-      type: object
-    VillageContributionProviderFacet:
-      properties:
-        count:
-          description: The number of matching sessions of this provider, counted in
-            sessions, not roots.
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
-        provider:
-          type: string
-      required:
-      - provider
-      - count
-      type: object
-    VillageContributionSnapshotRecord:
-      properties:
-        id:
-          $ref: '#/components/schemas/TranscriptID'
-        latest_status:
-          $ref: '#/components/schemas/VillageShareStatus'
-          description: The status of the latest contribution attempt. Absent means
-            no attempt.
-        parent_transcript_id:
-          $ref: '#/components/schemas/TranscriptID'
-          description: The published transcript of the parent session. Absent for
-            a root, and for a helper whose parent is not published.
-        project_hash:
-          $ref: '#/components/schemas/ProjectHash'
-          description: The session's own project, which may differ from the project
-            of the root of its family.
-        title:
-          anyOf:
-          - description: The session's title, null when it has none. The same value
-              the session's contributable row carries, so a client can name a session
-              it never loaded as a row.
-            type:
-            - "null"
-            - string
-          - type: "null"
-        visibility:
-          $ref: '#/components/schemas/VillageTranscriptVisibility'
-      required:
-      - id
-      - title
-      - visibility
-      - project_hash
-      type: object
-    VillageContributionSnapshotResponse:
-      description: The compact record of every session in the matching families of
-        one project, in one document. The document is limited to 8 MiB (8388608 bytes)
-        of response body and there is no record-count cap. A snapshot that would exceed
-        the limit is refused whole with a 413 whose code is snapshot_too_large, and
-        nothing partial is returned; narrow the search with q or provider and read
-        the snapshot again. The limit is a contract constant, so no limit parameter
-        or field exists.
-      properties:
-        count:
-          description: The number of records, counted in sessions, not roots. Equals
-            the length of records.
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
-        group_id:
-          $ref: '#/components/schemas/VillageUUID'
-        project_hash:
-          $ref: '#/components/schemas/ProjectHash'
-          description: The project of the family roots. Helpers in the records may
-            belong to other projects.
-        records:
-          items:
-            $ref: '#/components/schemas/VillageContributionSnapshotRecord'
-          type: array
-      required:
-      - group_id
-      - project_hash
-      - records
-      - count
       type: object
     VillageContributionStatus:
       description: Status assigned when a new collective contribution is opened
@@ -11399,16 +11630,6 @@ components:
       type: object
     VillageErrorResponse:
       properties:
-        code:
-          $ref: '#/components/schemas/VillageContributionErrorCode'
-          description: The primary machine-readable reason for the refusal. Accompanies
-            contribution refusals; the error text is always present.
-        details:
-          description: The per-transcript reasons for the refusal. Accompanies contribution
-            refusals; the error text is always present.
-          items:
-            $ref: '#/components/schemas/VillageContributionErrorDetail'
-          type: array
         error:
           type: string
       required:

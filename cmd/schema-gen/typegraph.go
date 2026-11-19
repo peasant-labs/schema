@@ -317,15 +317,23 @@ var templateFuncs = template.FuncMap{
 }
 
 func writeTypesHTML(spec *openapi31.Spec, dir string) error {
+	return writeTypeCatalogHTML(spec, "types", "Peasant Types", dir)
+}
+
+func writeTypeCatalogHTML(spec *openapi31.Spec, name, label, dir string) error {
 	schemas, rels, err := extractFromSpec(spec)
 	if err != nil {
-		return fmt.Errorf("extract shared types: %w", err)
+		return fmt.Errorf("extract %s catalog: %w", name, err)
 	}
 
+	description := ""
+	if spec.Info.Description != nil {
+		description = *spec.Info.Description
+	}
 	data := typesData{
-		Title:         "Peasant Types",
-		Version:       "1.0.0",
-		Description:   "Foundational domain types shared across all Peasant APIs. These components define the vocabulary for sessions, providers, quality metrics, and content entries.",
+		Title:         label,
+		Version:       spec.Info.Version,
+		Description:   description,
 		MermaidSource: template.HTML(generateMermaidER(rels)),
 		Categories:    categorizeSchemas(schemas),
 		TotalTypes:    len(schemas),
@@ -334,7 +342,7 @@ func writeTypesHTML(spec *openapi31.Spec, dir string) error {
 
 	tmpl := template.Must(template.New("types").Funcs(templateFuncs).Parse(typesHTMLTemplate))
 
-	outPath := filepath.Join(dir, "types.html")
+	outPath := filepath.Join(dir, name+".html")
 	f, err := os.Create(outPath)
 	if err != nil {
 		return fmt.Errorf("create %s: %w", outPath, err)

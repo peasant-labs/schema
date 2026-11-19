@@ -1,0 +1,7 @@
+requiredNames:
+  - request-open-valid
+  - request-op-is-closed
+  - request-fits-read-limit
+  - node-id-bound-arithmetic
+  - capture-id-shape
+  - cursor-surface-is-withdrawn

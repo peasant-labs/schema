@@ -1,0 +1,109 @@
+scan:
+  cases:
+    - name: locator-source-match
+      classification: must-pass
+      provenance: {source: requirement, ref: "source member on a served row"}
+      mutation: {description: "source reference is located"}
+      input: {detail: '{"turns":[{"index":7,"role":"assistant","content":"x","sourceEntryRef":"s"}]}', references: [s]}
+      expected: {hits: [{found: true, position: 0, kind: source, recordedIndex: 7}]}
+    - name: locator-tool-call-match
+      classification: must-pass
+      provenance: {source: requirement, ref: "folded tool call"}
+      mutation: {description: "call reference is located"}
+      input: {detail: '{"turns":[{"index":1,"role":"assistant","content":"x","toolCalls":[{"callEntryRef":"c"}]}]}', references: [c]}
+      expected: {hits: [{found: true, position: 0, kind: tool_call, recordedIndex: 1}]}
+    - name: locator-tool-result-match
+      classification: must-pass
+      provenance: {source: requirement, ref: "folded tool result"}
+      mutation: {description: "result reference is located"}
+      input: {detail: '{"turns":[{"index":2,"role":"assistant","content":"x","toolCalls":[{"resultEntryRef":"r"}]}]}', references: [r]}
+      expected: {hits: [{found: true, position: 0, kind: tool_result, recordedIndex: 2}]}
+    - name: locator-turn-major-order
+      classification: must-pass
+      provenance: {source: requirement, ref: "first served row"}
+      mutation: {description: "earlier call beats later source"}
+      input: {detail: '{"turns":[{"index":3,"role":"assistant","content":"a","toolCalls":[{"callEntryRef":"same"}]},{"index":4,"role":"assistant","content":"b","sourceEntryRef":"same"}]}', references: [same]}
+      expected: {hits: [{found: true, position: 0, kind: tool_call, recordedIndex: 3}]}
+    - name: locator-source-beats-tool-in-one-row
+      classification: must-pass
+      provenance: {source: requirement, ref: "within-row source first"}
+      mutation: {description: "source beats call"}
+      input: {detail: '{"turns":[{"index":4,"role":"assistant","content":"x","sourceEntryRef":"same","toolCalls":[{"callEntryRef":"same"}]}]}', references: [same]}
+      expected: {hits: [{found: true, position: 0, kind: source, recordedIndex: 4}]}
+    - name: locator-duplicate-ref-first-served-row
+      classification: must-pass
+      provenance: {source: requirement, ref: "duplicate reference order"}
+      mutation: {description: "later duplicate cannot replace first"}
+      input: {detail: '{"turns":[{"index":8,"role":"assistant","content":"a","sourceEntryRef":"same"},{"index":9,"role":"assistant","content":"b"},{"index":10,"role":"assistant","content":"c","sourceEntryRef":"same"}]}', references: [same]}
+      expected: {hits: [{found: true, position: 0, kind: source, recordedIndex: 8}]}
+    - name: locator-tool-order-call-before-result
+      classification: must-pass
+      provenance: {source: requirement, ref: "tool element ordering"}
+      mutation: {description: "first call beats its result and later calls"}
+      input: {detail: '{"turns":[{"index":3,"role":"assistant","content":"x","toolCalls":[{"callEntryRef":"same","resultEntryRef":"same"},{"callEntryRef":"same"}]}]}', references: [same]}
+      expected: {hits: [{found: true, position: 0, kind: tool_call, recordedIndex: 3}]}
+    - name: locator-case-variant-ref-no-match
+      classification: must-pass
+      provenance: {source: bug, ref: "legacy Go case-folding differs from exact browser member names"}
+      mutation: {description: "case variant is not the canonical source member"}
+      input: {detail: '{"turns":[{"index":7,"role":"assistant","content":"synthetic answer","SourceEntryRef":"case-ref"}]}', references: [case-ref]}
+      expected: {hits: [{found: false}]}
+    - name: locator-case-variant-tool-ref-no-match
+      classification: must-pass
+      provenance: {source: requirement, ref: "tool members use exact names"}
+      mutation: {description: "case variant is not the canonical call member"}
+      input: {detail: '{"turns":[{"index":7,"role":"assistant","content":"x","toolCalls":[{"CallEntryRef":"case-ref"}]}]}', references: [case-ref]}
+      expected: {hits: [{found: false}]}
+    - name: locator-escaped-key-ref-matches
+      classification: must-pass
+      provenance: {source: requirement, ref: "decoded JSON member names"}
+      mutation: {description: "escaped canonical key is the same name"}
+      input: {detail: '{"turns":[{"index":7,"role":"assistant","content":"x","\u0073ourceEntryRef":"escaped"}]}', references: [escaped]}
+      expected: {hits: [{found: true, position: 0, kind: source, recordedIndex: 7}]}
+    - name: locator-null-ref-no-match
+      classification: must-pass
+      provenance: {source: manual, ref: "constructor-only null reference; not a claim about a served strict body"}
+      mutation: {description: "null is not a string"}
+      input: {detail: '{"turns":[{"index":7,"role":"assistant","content":"x","sourceEntryRef":null}]}', harness: pi, references: [not-null]}
+      expected: {hits: [{found: false}]}
+    - name: locator-empty-ref-not-requestable
+      classification: must-pass
+      provenance: {source: boundary, ref: "empty served reference and non-empty request"}
+      mutation: {description: "empty source does not match a non-empty request"}
+      input: {detail: '{"turns":[{"index":7,"role":"assistant","content":"x","sourceEntryRef":""}]}', references: [nonempty]}
+      expected: {hits: [{found: false}]}
+    - name: locator-history-only-ref-no-match
+      classification: must-pass
+      provenance: {source: requirement, ref: "main partition only"}
+      mutation: {description: "history is not scanned"}
+      input: {detail: '{"id":"synthetic","harness":"codex","startTime":"0001-01-01T00:00:00Z","endTime":"0001-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"turns":[{"index":0,"role":"assistant","content":"main","timestamp":"0001-01-01T00:00:00Z","depth":0}],"earlierHistory":[{"state":"uncertain_migrated","turns":[{"index":1,"role":"assistant","content":"history","timestamp":"0001-01-01T00:00:00Z","depth":0,"sourceEntryRef":"history-ref"}]}]}', strict: true, references: [history-ref]}
+      expected: {hits: [{found: false}]}
+    - name: locator-recorded-index-present-and-absent
+      classification: must-pass
+      provenance: {source: manual, ref: "constructor-only absent index with reference; no served-boundary claim"}
+      mutation: {description: "identity is copied only when present"}
+      input: {detail: '{"turns":[{"index":7,"role":"assistant","content":"x","sourceEntryRef":"present"},{"role":"assistant","content":"y","sourceEntryRef":"absent"},{"index":-1,"role":"assistant","content":"z","sourceEntryRef":"invalid"}]}', references: [present, absent, invalid]}
+      expected: {hits: [{found: true, position: 0, kind: source, recordedIndex: 7}, {found: true, position: 1, kind: source}, {found: true, position: 2, kind: source}]}
+    - name: locator-scan-input-subset-ignores-unlisted-rows
+      classification: must-pass
+      provenance: {source: manual, ref: "synthetic input slice; no cook removes a matchable reference-bearing row"}
+      mutation: {description: "a scan reads only the rows the caller supplies"}
+      input: {detail: '{"turns":[{"index":0,"role":"assistant","content":"a"},{"index":1,"role":"assistant","content":"b","sourceEntryRef":"not-listed"}]}', subset: [0], references: [not-listed]}
+      expected: {hits: [{found: false}]}
+    - name: locator-references-protect-their-rows
+      classification: must-pass
+      provenance: {source: requirement, ref: "reference-bearing rows protect their membership in the pre-change reader"}
+      mutation: {description: "every matchable reference row survives both cooks"}
+      input: {detail: '{"turns":[{"index":0,"role":"assistant","content":""},{"index":1,"role":"assistant","content":"","sourceEntryRef":"source-ref"},{"index":2,"role":"assistant","content":"","toolCalls":[{"id":"a","name":"read","callEntryRef":"call-ref"}]},{"index":3,"role":"assistant","content":"","toolCalls":[{"id":"b","name":"read","resultEntryRef":"result-ref"}]},{"index":4,"role":"assistant","content":"same","sourceEntryRef":"duplicate-ref"},{"index":5,"role":"assistant","content":"same"}]}', protect: true}
+      expected: {legacyKept: [1, 2, 3, 4, 5], piKept: [0, 1, 2, 3, 4, 5], referenced: [1, 2, 3, 4]}
+wire:
+  cases:
+    - {name: locator-kind-closed-set, classification: must-pass, provenance: {source: enum, ref: "located entry kinds"}, mutation: {description: "all three and no others"}, input: kind-set, expected: [source, tool_call, tool_result]}
+    - {name: locator-kind-rejects-unknown, classification: must-pass, provenance: {source: enum, ref: "closed located kind"}, mutation: {description: "unknown kind is invalid"}, input: kind-unknown, expected: []}
+    - {name: locator-request-required-members, classification: must-pass, provenance: {source: requirement, ref: "locator request"}, mutation: {description: "required member set"}, input: request-required, expected: [reference, revision, representation, contentHash]}
+    - {name: locator-request-has-no-kind, classification: must-pass, provenance: {source: requirement, ref: "link boundary is not a location kind"}, mutation: {description: "no kind member in request"}, input: request-properties, expected: [reference, revision, representation, contentHash]}
+    - {name: locator-request-has-no-partition, classification: must-pass, provenance: {source: requirement, ref: "main partition only"}, mutation: {description: "no partition or section member"}, input: request-properties, expected: [reference, revision, representation, contentHash]}
+    - {name: locator-request-reference-nonempty, classification: must-pass, provenance: {source: boundary, ref: "empty reference cannot be requested"}, mutation: {description: "minimum string length is one"}, input: request-min, expected: []}
+    - {name: locator-response-has-no-reference-member, classification: must-pass, provenance: {source: requirement, ref: "reference is not echoed"}, mutation: {description: "bounded finding member set"}, input: response-properties, expected: [context, kind, position, segmentOrdinal, recordedIndex]}
+    - {name: locator-response-constant-size, classification: must-pass, provenance: {source: requirement, ref: "finding does not hold the reference"}, mutation: {description: "reference length does not alter the finding"}, input: constant-size, expected: []}
+    - {name: locator-statuses-declared, classification: must-pass, provenance: {source: requirement, ref: "locator operation contract"}, mutation: {description: "operation and statuses are declared"}, input: statuses, expected: ["200", "400", "404", "409", "410", "500", "503"]}

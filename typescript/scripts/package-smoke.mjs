@@ -10,10 +10,7 @@ import { parse } from "yaml";
 const fixture = parse(await readFile(new URL("../tests/fixtures/public-subpaths.yaml", import.meta.url), "utf8"));
 assert.deepEqual(Object.keys(fixture), ["subpaths"]);
 assert.ok(Array.isArray(fixture.subpaths));
-const publicExports = parse(await readFile(new URL("../../testdata/typescript/public_exports.yaml", import.meta.url), "utf8"));
-const typesVersion = publicExports.constants?.find((constant) => constant.name === "TypesVersion")?.value;
-assert.equal(typeof typesVersion, "string", "public_exports.yaml must declare the TypesVersion string used to locate the canonical OpenAPI catalog");
-const spec = JSON.parse(await readFile(new URL(`../../generated/types-${typesVersion}.json`, import.meta.url), "utf8"));
+const spec = JSON.parse(await readFile(new URL("../../generated/types-next.json", import.meta.url), "utf8"));
 const enumCatalog = parse(await readFile(new URL("../../testdata/typescript/enums.yaml", import.meta.url), "utf8"));
 assert.ok(Array.isArray(enumCatalog.enums) && enumCatalog.enums.length > 0, "enums.yaml must provide at least one enum facade for the packed-package runtime probe");
 const villageCollectivesFixture = parse(await readFile(new URL("../../openapi/testdata/village_collectives_operations.yaml", import.meta.url), "utf8"));
@@ -32,6 +29,47 @@ const schemaName = Object.keys(spec.components?.schemas ?? {}).find((name) => !e
 assert.notEqual(schemaName, undefined, "the Types OpenAPI catalog must provide a non-enum component for the packed-package Zod runtime probe");
 assert.match(schemaName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "Types OpenAPI representative component name must be a JavaScript identifier");
 const schemaExportName = `z${schemaName}`;
+const directoryPositionCorpus = parse(await readFile(new URL("../../testdata/typescript/transcript_directory_positions.yaml", import.meta.url), "utf8"));
+assert.ok(Array.isArray(directoryPositionCorpus.cases) && directoryPositionCorpus.cases.length > 0, "transcript_directory_positions.yaml must provide a position corpus for the packed-package probe");
+// Look the two probe rows up by name: the shipped package must judge a stated
+// span and a span past the total, not only the container guards that the first
+// document-order row of each verdict would exercise. The corpus manifest already
+// fails closed on a rename, so a name lookup cannot go stale silently.
+const packedPositionProbes = [
+  { name: "directory-spans-only-without-total", verdict: true },
+  { name: "directory-span-ends-past-total", verdict: false },
+];
+const packedPositionCases = packedPositionProbes.map((probe) => {
+  const row = directoryPositionCorpus.cases.find((candidate) => candidate.name === probe.name);
+  assert.notEqual(row, undefined, `transcript_directory_positions.yaml must hold the packed position probe case ${probe.name}`);
+  assert.equal(typeof row.input?.json, "string", `packed position probe case ${probe.name} must state its decoded JSON as a string`);
+  assert.equal(row.expected, probe.verdict, `packed position probe case ${probe.name} must expect ${probe.verdict}`);
+  const decoded = JSON.parse(row.input.json);
+  assert.ok(statesPositionFields(decoded), `packed position probe case ${probe.name} must carry the total or a ref's conversationTurns; the probe would otherwise exercise only the container guards`);
+  return { name: probe.name, verdict: probe.verdict, json: row.input.json };
+});
+const positionedDirectoryPositionCorpus = parse(await readFile(new URL("../../testdata/typescript/transcript_positioned_directory_positions.yaml", import.meta.url), "utf8"));
+assert.ok(Array.isArray(positionedDirectoryPositionCorpus.cases), "the positioned position corpus must contain cases");
+const packedPositionedProbes = [
+  { name: "v2-directory-span-at-total", verdict: true },
+  { name: "v2-directory-span-ends-past-total", verdict: false },
+];
+const packedPositionedCases = packedPositionedProbes.map((probe) => {
+  const row = positionedDirectoryPositionCorpus.cases.find((candidate) => candidate.name === probe.name);
+  assert.notEqual(row, undefined, `the positioned position corpus must hold ${probe.name}`);
+  assert.equal(typeof row.input?.json, "string");
+  assert.equal(row.expected, probe.verdict);
+  const decoded = JSON.parse(row.input.json);
+  assert.ok(decoded?.context && Object.hasOwn(decoded.context, "totalConversationTurns"));
+  assert.ok(Array.isArray(decoded.segments) && decoded.segments.some((ref) => Object.hasOwn(ref, "conversationTurns")));
+  return { name: probe.name, verdict: probe.verdict, json: row.input.json };
+});
+
+function statesPositionFields(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  if (Object.hasOwn(value, "totalConversationTurns")) return true;
+  return Array.isArray(value.segments) && value.segments.some((ref) => typeof ref === "object" && ref !== null && !Array.isArray(ref) && Object.hasOwn(ref, "conversationTurns"));
+}
 
 const temp = await mkdtemp(join(tmpdir(), "peasant-labs-schema-package-"));
 try {
@@ -69,7 +107,21 @@ try {
     stdio: "inherit",
   });
 
+  const routePaths = parse(await readFile(new URL("../../testdata/route_paths.yaml", import.meta.url), "utf8"));
+  assert.ok(Array.isArray(routePaths.cases) && routePaths.cases.length > 0, "route_paths.yaml must provide route member paths for the packed-package probe");
+  const routeObjects = { village: "VillageRoute", local: "LocalRoute" };
   const probe = [
+    `import { VillageRoute, ALL_VILLAGE_ROUTES } from ${JSON.stringify(packageManifest.name + "/village-api")};`,
+    `import { LocalRoute, ALL_LOCAL_ROUTES } from ${JSON.stringify(packageManifest.name + "/local-api")};`,
+    `if (ALL_VILLAGE_ROUTES.length === 0 || ALL_LOCAL_ROUTES.length === 0) throw new TypeError("packed route member sets are empty");`,
+    ...routePaths.cases.map((row) => {
+      const member = `${routeObjects[row.input.api]}[${JSON.stringify(row.input.member)}]`;
+      const call = `${member}.path(${JSON.stringify(row.input.params)})`;
+      if (row.classification === "must-fail") {
+        return `{ let refused = false; try { ${call}; } catch (error) { refused = error instanceof RangeError && error.message.includes(${JSON.stringify(row.expected.error_contains)}); } if (!refused) throw new TypeError(${JSON.stringify(`packed route member did not refuse ${row.name}`)}); }`;
+      }
+      return `if (${call} !== ${JSON.stringify(row.expected.typescript)}) throw new TypeError(${JSON.stringify(`packed route member path differs for ${row.name}`)});`;
+    }),
     `const envelopeAPI = await import(${JSON.stringify(packageManifest.name)});`,
     ...parse(await readFile(new URL("../../testdata/deprecated_grouped_contributable.yaml", import.meta.url), "utf8")).envelopes.cases.map(row => `if (envelopeAPI[${JSON.stringify(`z${row.input.schema}`)}].safeParse(${JSON.stringify(row.input.payload)}).success !== ${row.expected.valid}) throw new Error(${JSON.stringify(`packed grouped contribution envelope differs for ${row.name}`)});`),
     `const redaction = await import(${JSON.stringify(packageManifest.name)});`,
@@ -77,6 +129,10 @@ try {
     `import { ${enumName}, ${schemaExportName}, parseSessionDetailPayloadText, requiredContentCapabilities, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
     `import { sessionGraphCapabilityFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph-capability")};`,
     `import * as publicSchema from ${JSON.stringify(packageManifest.name)};`,
+    `if (typeof publicSchema.isTranscriptDirectoryPositionsValid !== "function") throw new TypeError("packed ${packageManifest.name} does not export isTranscriptDirectoryPositionsValid");`,
+    ...packedPositionCases.map((probe) => `if (publicSchema.isTranscriptDirectoryPositionsValid(JSON.parse(${JSON.stringify(probe.json)})) !== ${probe.verdict}) throw new TypeError(${JSON.stringify(`packed directory position verdict differs for ${probe.name}`)});`),
+    `if (typeof publicSchema.isPositionedDirectoryPositionsValid !== "function") throw new TypeError("packed ${packageManifest.name} does not export isPositionedDirectoryPositionsValid");`,
+    ...packedPositionedCases.map((probe) => `if (publicSchema.isPositionedDirectoryPositionsValid(JSON.parse(${JSON.stringify(probe.json)})) !== ${probe.verdict}) throw new TypeError(${JSON.stringify(`packed positioned directory position verdict differs for ${probe.name}`)});`),
     ...retainedCollectiveAliases.aliases.map(row => `if (publicSchema.z${row.name} !== publicSchema.z${row.canonical}) throw new Error("packed legacy validator ${row.name} lost canonical identity");`),
     ...retainedCollectiveAliases.aliases.filter(row => row.all_name !== undefined).map(row => `if (publicSchema.${row.name} !== publicSchema.${row.canonical} || publicSchema.${row.all_name} !== publicSchema.${row.canonical_all_name} || publicSchema.is${row.name} !== publicSchema.is${row.canonical}) throw new Error("packed legacy enum ${row.name} changed");`),
     `import { sessionGraphFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph")};`,
@@ -117,6 +173,9 @@ try {
   ].join("\n");
   await writeFile(join(consumerDir, "consumer.ts"), `${await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8")}\n${operationTypeChecks}\n${legacyTypeChecks}\n${await readFile(new URL("../tests/redaction-categories.ts", import.meta.url), "utf8")}\n`);
   const tsc = join(consumerDir, "node_modules", ".bin", "tsc");
+  execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
+
+  await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/enum-member-types.ts", import.meta.url), "utf8"));
   execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
 
   await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/invalid-enum-consumer.ts", import.meta.url), "utf8"));

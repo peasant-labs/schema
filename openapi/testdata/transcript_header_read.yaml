@@ -1,0 +1,14 @@
+requiredNames: [village-transcript-content-header-read]
+cases:
+  - name: village-transcript-content-header-read
+    classification: must-pass
+    provenance: {source: requirement, ref: "Authorized bounded transcript header with conditional revalidation"}
+    mutation: {description: "The declared read names its request, response, refusal and cache contracts"}
+    input:
+      path: "/api/v1/transcripts/{id}/header"
+      operationId: getTranscriptHeader
+    expected:
+      responseRef: "#/components/schemas/SchemaTranscriptContentHeader"
+      statuses: [200, 304, 400, 404, 409, 410, 500, 503]
+      parameters: [path:id, query:revision, query:representation, header:If-None-Match]
+      headerFields: [contractVersion, kind, revision, representation, sessionHeader, canonical, omittedImages, flaggedTurns, retainedEvidence, contentHash]

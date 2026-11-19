@@ -1,0 +1,25 @@
+cases:
+  - name: positioned-json-describes-current-echo
+    classification: must-pass
+    provenance: {source: requirement, ref: "The generated JSON names the selected positioned version"}
+    mutation: {description: "Generate the current JSON protocol document"}
+    input: {role: current, format: json}
+    expected: {echoDescription: true}
+  - name: positioned-yaml-describes-current-echo
+    classification: must-pass
+    provenance: {source: requirement, ref: "The generated YAML names the selected positioned version"}
+    mutation: {description: "Generate the current YAML protocol document"}
+    input: {role: current, format: yaml}
+    expected: {echoDescription: true}
+  - name: shipped-json-has-no-echo-and-remains-frozen
+    classification: must-pass
+    provenance: {source: requirement, ref: "The shipped protocol has no echo and its bytes remain frozen"}
+    mutation: {description: "Generate the minimum JSON protocol document"}
+    input: {role: minimum, format: json}
+    expected: {frozenWithoutEcho: true}
+  - name: shipped-yaml-has-no-echo-and-remains-frozen
+    classification: must-pass
+    provenance: {source: requirement, ref: "The shipped protocol has no echo and its bytes remain frozen"}
+    mutation: {description: "Generate the minimum YAML protocol document"}
+    input: {role: minimum, format: yaml}
+    expected: {frozenWithoutEcho: true}

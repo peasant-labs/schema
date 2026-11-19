@@ -1,0 +1,6 @@
+requiredNames:
+  - ref-chain-window-first-ordinal-mismatch-refused
+  - ref-chain-window-first-outside-total-refused
+  - ref-chain-window-first-ordinal-matches
+  - ref-chain-window-later-gap-refused
+  - ref-chain-directory-first-ordinal-mismatch-refused

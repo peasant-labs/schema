@@ -1,0 +1,6 @@
+requiredNames:
+  - omitted-generation-selects-shipped-protocol
+  - explicit-first-generation-selects-shipped-protocol
+  - second-generation-selects-positioned-protocol
+  - negative-generation-refused
+  - unknown-future-generation-refused

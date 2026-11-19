@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"os"
-	"strings"
 	"testing"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/peasant-labs/schema"
 	specpkg "github.com/peasant-labs/schema/openapi"
+	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
 
 // legacyPublishSchema is a FROZEN copy of the now-retired BuildJSONSchema output
@@ -148,10 +148,12 @@ func TestPublishSchema_ExtractedShape(t *testing.T) {
 //go:embed testdata/current_harness_verdicts.yaml
 var currentHarnessVerdicts []byte
 
+//go:embed testdata/current_harness_verdicts_manifest.yaml
+var currentHarnessVerdictsManifest []byte
+
 func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 	var fixture struct {
-		RequiredNames []string `yaml:"required_names"`
-		Cases         []struct {
+		Cases []struct {
 			Name    string `yaml:"name"`
 			Body    string `yaml:"body"`
 			Accepts bool   `yaml:"accepts"`
@@ -192,8 +194,5 @@ func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 			}
 		})
 	}
-	collectUniqueNames(t, "current publish verdicts", "cases", names)
-	collectUniqueNames(t, "current publish verdicts", "required_names", fixture.RequiredNames)
-	assertSameStringSet(t, "current publish verdicts", names, fixture.RequiredNames)
-	assertSameStringSet(t, "required current publish verdicts", fixture.RequiredNames, strings.Fields("grok-build antigravity-cli antigravity-ide antigravity-archived gemini-cli-archived unknown-harness-current"))
+	caseassert.RequireManifestNames(t, "current publish verdicts", currentHarnessVerdictsManifest, names)
 }

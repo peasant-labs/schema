@@ -21,9 +21,7 @@ const fixtureSource = await readFile(new URL("../../testdata/typescript/public_e
 const fixture = parse(fixtureSource);
 assert.deepEqual(Object.keys(fixture).sort(), ["aliases", "constants", "forbidden", "functions"]);
 
-const typesVersion = fixture.constants.find((constant) => constant.name === "TypesVersion")?.value;
-assert.equal(typeof typesVersion, "string", "public_exports.yaml must declare the TypesVersion string used to locate the canonical OpenAPI catalog");
-const specSource = await readFile(new URL(`../../generated/types-${typesVersion}.json`, import.meta.url), "utf8");
+const specSource = await readFile(new URL("../../generated/types-next.json", import.meta.url), "utf8");
 const spec = JSON.parse(specSource);
 const catalogNames = Object.keys(spec.components?.schemas ?? {});
 assert.ok(catalogNames.length > 0, "the Types OpenAPI catalog backing the canonical type entries is empty");
@@ -65,12 +63,12 @@ const canonicalRuntimeNames = canonicalRuntimeEntries.map((entry) => entry.name)
 test("root, local-api, and village-api runtime exports match the strict shared fixture", async (t) => {
   for (const constant of fixture.constants) {
     await t.test(`constant ${constant.name}`, () => {
-      assert.equal(String(root[constant.name]), String(constant.value));
+      assertConstant(root[constant.name], constant.value, constant.name);
       for (const surface of constant.surfaces) {
         if (surface === "root") continue;
         const facade = surfaceModule(surface);
         assert.equal(Object.hasOwn(facade, constant.name), true, `${constant.name} is not re-exported from the /${surface} facade`);
-        assert.equal(String(facade[constant.name]), String(constant.value), `${constant.name} re-exported from /${surface} does not match the root value`);
+        assertConstant(facade[constant.name], constant.value, `${constant.name} re-exported from /${surface}`);
       }
     });
   }
@@ -138,6 +136,14 @@ test("root public export catalog rejects the strict shared mutation corpus", asy
 
 function toEntries(names) {
   return names.map((name) => ({ name, target: name }));
+}
+
+function assertConstant(actual, expected, description) {
+  if (typeof expected === "object" && expected !== null) {
+    assert.deepEqual(actual, expected, `${description} must match every declared policy member`);
+  } else {
+    assert.equal(String(actual), String(expected), `${description} must match its declared value`);
+  }
 }
 
 function surfaceModule(surface) {

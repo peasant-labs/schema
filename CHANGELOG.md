@@ -3,79 +3,66 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## 0.59.0
+
+- freeze spec documents in the release PR (#275) (BREAKING)
+
+## 0.58.1
+
+- keep the closed-set alias on optional, nullable and nullish fields (#260)
+
+## 0.58.0
+
+- create the release draft and its assets in one command (#267)
+- add the kickstart preview stream contract (#264)
+
+## 0.57.1
+
+This version was tagged and published to npm, but its GitHub Release has no
+assets. Its changes shipped with complete GitHub Release assets in 0.58.0.
+The generated contract files are in the [tag's generated/ tree](https://github.com/peasant-labs/schema/tree/v0.57.1/generated/).
+
+- publish immutable releases with their assets (#252)
+
+## 0.57.0
+
+This version was tagged and published to npm, but its GitHub Release has no
+assets. Its changes also shipped to npm in 0.57.1 and with complete GitHub
+Release assets in 0.58.0. The generated contract files are in the
+[tag's generated/ tree](https://github.com/peasant-labs/schema/tree/v0.57.0/generated/).
+
+- document the precise enum member types and release recovery (#254)
+
+## 0.56.0
+
+This version was tagged, but its GitHub Release has no assets and its npm
+package was not published. Its changes first shipped to npm in 0.57.0, also
+shipped to npm in 0.57.1, and shipped with complete GitHub Release assets in
+0.58.0. The generated contract files are in the
+[tag's generated/ tree](https://github.com/peasant-labs/schema/tree/v0.56.0/generated/).
+
+- emit precise TypeScript member types for enums (#248)
+
+## 0.55.0
+
+This version was tagged, but its GitHub Release has no assets and its npm
+package was not published. Its changes first shipped to npm in 0.57.0, also
+shipped to npm in 0.57.1, and shipped with complete GitHub Release assets in
+0.58.0. The generated contract files are in the
+[tag's generated/ tree](https://github.com/peasant-labs/schema/tree/v0.55.0/generated/).
+
+- declare 410 for retracted and unavailable transcript reads (#246)
+
+## Contract changes shipped in v0.41.0 through v0.54.0
 
 ### Added
 
-- Village API 0.41.0 and Types 0.51.0 (Local API stays 0.38.0) declare
-  contribution at library scale. `village-api-0.40.0` with its publish-request
-  and annotation-push-request schemas, and `types-0.50.0`, are frozen. The
-  contributable read gains the closed `VillageContributableView` menu
-  (`grouped`, `paged`, `snapshot`); omitting `view` keeps the flat response and
-  `view=grouped` keeps its envelope, on both the canonical route and the
-  deprecated `/api/v1/groups/...` alias. `view=paged` returns one page of
-  families: `limit` counts ROOT sessions (1 to 500, default 500), where a root
-  is a session with no `parent_session_id` or whose parent is not among the
-  owner's published transcripts, and each item carries its root and its helper
-  family, so a page can hold more transcripts than `limit`. A session whose
-  chain of parents loops back on itself (for example a session that names
-  itself as its parent) is listed as a root with no helpers taken from the
-  loop, so every session of the library is listed exactly once. Families are
-  ordered by the last activity of the ROOT session, newest first, where last
-  activity is the root's `session_end`, or its `session_start` when that is
-  unknown, or its `published_at` when both are unknown; families with the same
-  last activity are ordered by the root's transcript id ascending, and helpers
-  never affect the position of their family. A family belongs to
-  its root's project; a helper may be in another project and carries its own
-  `project_hash`. `view=snapshot` returns the compact record of every session in
-  the matching families of one project (id, title, visibility, latest
-  contribution status, project, parent link) in one document with no record-count cap. The
-  document is limited to 8 MiB (8388608 bytes) of response body
-  (`VillageContributionSnapshotMaxBytes`); a snapshot that would exceed the
-  limit is refused whole with a 413 whose code is the new
-  `VillageContributionErrorCode` member `snapshot_too_large`, nothing partial
-  is returned, and the client narrows the search with `q` or `provider` and
-  reads the snapshot again. The limit is a contract constant, so no
-  `snapshot_limit` parameter or field and no `truncated` field exists. The
-  snapshot may also refuse with the 503 codes `snapshot_timeout` and
-  `snapshot_busy`. One search
-  parameter `q` matches project display names, root and helper titles and exact
-  transcript ids; a family appears when its root or any helper matches, and each
-  family member carries the optional `matched` flag. New
-  `GET .../contributable/projects` is the project picker, with counts in
-  sessions and a page size in projects. New `POST .../shares/selection` writes
-  one exact selection of sessions; the server never expands a root into its
-  helpers, and live helpers stay locked. Refusals carry the closed
-  `VillageContributionErrorCode` in `code` and per-transcript `details` beside
-  the existing `error` text. Contributable rows gain optional `session_start`,
-  `session_end` (when the session's last turn happened), `parent_transcript_id`
-  and `latest_status`. Field descriptions state the unit
-  of every count: only a page size counts anything but sessions (roots in the
-  paged view, projects in the picker), every other count is in sessions, and
-  every count is an integer from 0 to 9007199254740991. The
-  parameters `q`, `project_hash`, `provider`, `cursor` and `limit` apply only to
-  `view=paged` and `view=snapshot`; they are ignored without `view` and with
-  `view=grouped`, whose responses are unchanged. `view=snapshot` without
-  `project_hash` is a 400. Without `view`, a 413 with no code is the flat
-  list's row-limit refusal. The
-  selection write offers exactly the listed `transcript_ids`; `project_hash` is
-  the project of the selected roots and helpers are not checked against it. One
-  request offers at most 1000 sessions (`VillageContributionSelectionMaxTranscripts`):
-  `transcript_ids` and `private_approvals` each hold at most 1000 ids, a body
-  over the bound is a 400 with no code, and a client with a larger selection
-  sends it as several requests. Its
-  refusals carry the status that names their kind: 400 is a body that violates
-  the contract (no code); 403 carries `membership` (the caller may not
-  contribute to the collective) or `policy` (the collective's policy refuses
-  the request as a whole); 409 carries `moved`, `missing`,
-  `private_unapproved`, `conflict` or `stale_selection` and refuses the WHOLE
-  request with nothing written, its details listing every offending
-  transcript; 413 is a body over 1 MiB. A transcript that is already live in
-  the collective, or becomes live before the write commits, is not a refusal:
-  it is returned under `already_shared` and the rest are shared, so the closed
-  code menu has no `live` member. The write declares no 422. The
-  optional fields these views add are absent when they have no value and are
-  never null.
+- The Go `route` package provides a typed member per Village and Local API
+  operation, each carrying its method, and path builders returning `(string, error)`.
+  The TypeScript `/village-api` and `/local-api` subpaths export `VillageRoute`
+  and `LocalRoute`, whose members build paths with `path()`. Both languages
+  refuse an empty, `.` or `..` path parameter value. No spec document or
+  version stamp changes.
 
 - Types 0.50.0, Village API 0.40.0 and Local API 0.38.0 recognize the separate
   `antigravity-cli` and `antigravity-ide` harness identities, with corresponding

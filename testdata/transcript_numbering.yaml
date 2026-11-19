@@ -1,0 +1,396 @@
+capturedFrom: bb908530f72bbdc44e4bc6c85582afe3668ffa74
+versions:
+  c1:
+    cases:
+      - name: number-baseline-tasks
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number baseline tasks"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"first\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"answer\",\"depth\":0},{\"role\":\"user\",\"content\":\"second\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"2"},{"position":3,"keep":true,"servedPosition":3,"displayNumber":"2a"}]
+      - name: number-leading-non-root-turns
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number leading non root turns"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"assistant\",\"content\":\"lead\",\"depth\":0},{\"role\":\"user\",\"content\":\"nested\",\"depth\":1},{\"role\":\"assistant\",\"content\":\"reply\",\"depth\":0},{\"role\":\"user\",\"content\":\"root\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"1b"},{"position":3,"keep":true,"servedPosition":3,"displayNumber":"2"}]
+      - name: number-nonblank-user-opens-task
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number nonblank user opens task"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"answer\",\"depth\":0},{\"role\":\"user\",\"content\":\"two\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"2"}]
+      - name: number-blank-user-with-tool-keeps-task
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number blank user with tool keeps task"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"user\",\"content\":\" \",\"depth\":0,\"toolCalls\":[{\"id\":\"tool\",\"name\":\"Read\",\"arguments\":\"{}\",\"result\":\"\"}]},{\"role\":\"assistant\",\"content\":\"answer\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"1b"}]
+      - name: number-subagent-user-not-a-boundary
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number subagent user not a boundary"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"user\",\"content\":\"nested\",\"depth\":1},{\"role\":\"assistant\",\"content\":\"answer\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"1b"}]
+      - name: number-alphabetic-suffix-z-to-aa
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number alphabetic suffix z to aa"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 0\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 1\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 2\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 3\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 4\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 5\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 6\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 7\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 8\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 9\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 10\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 11\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 12\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 13\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 14\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 15\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 16\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 17\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 18\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 19\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 20\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 21\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 22\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 23\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 24\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 25\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 26\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"reply 27\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"1b"},{"position":3,"keep":true,"servedPosition":3,"displayNumber":"1c"},{"position":4,"keep":true,"servedPosition":4,"displayNumber":"1d"},{"position":5,"keep":true,"servedPosition":5,"displayNumber":"1e"},{"position":6,"keep":true,"servedPosition":6,"displayNumber":"1f"},{"position":7,"keep":true,"servedPosition":7,"displayNumber":"1g"},{"position":8,"keep":true,"servedPosition":8,"displayNumber":"1h"},{"position":9,"keep":true,"servedPosition":9,"displayNumber":"1i"},{"position":10,"keep":true,"servedPosition":10,"displayNumber":"1j"},{"position":11,"keep":true,"servedPosition":11,"displayNumber":"1k"},{"position":12,"keep":true,"servedPosition":12,"displayNumber":"1l"},{"position":13,"keep":true,"servedPosition":13,"displayNumber":"1m"},{"position":14,"keep":true,"servedPosition":14,"displayNumber":"1n"},{"position":15,"keep":true,"servedPosition":15,"displayNumber":"1o"},{"position":16,"keep":true,"servedPosition":16,"displayNumber":"1p"},{"position":17,"keep":true,"servedPosition":17,"displayNumber":"1q"},{"position":18,"keep":true,"servedPosition":18,"displayNumber":"1r"},{"position":19,"keep":true,"servedPosition":19,"displayNumber":"1s"},{"position":20,"keep":true,"servedPosition":20,"displayNumber":"1t"},{"position":21,"keep":true,"servedPosition":21,"displayNumber":"1u"},{"position":22,"keep":true,"servedPosition":22,"displayNumber":"1v"},{"position":23,"keep":true,"servedPosition":23,"displayNumber":"1w"},{"position":24,"keep":true,"servedPosition":24,"displayNumber":"1x"},{"position":25,"keep":true,"servedPosition":25,"displayNumber":"1y"},{"position":26,"keep":true,"servedPosition":26,"displayNumber":"1z"},{"position":27,"keep":true,"servedPosition":27,"displayNumber":"1aa"},{"position":28,"keep":true,"servedPosition":28,"displayNumber":"1ab"}]
+      - name: number-system-banner-under-eight
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number system banner under eight"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"short\",\"depth\":0},{\"role\":\"user\",\"content\":\"one\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":1,"keep":true,"servedPosition":0,"displayNumber":"1"}]
+      - name: number-system-banner-with-tools-kept
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number system banner with tools kept"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"short\",\"depth\":0,\"toolCalls\":[{\"id\":\"tool\",\"name\":\"Read\",\"arguments\":\"{}\",\"result\":\"\"}]},{\"role\":\"user\",\"content\":\"one\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"2"}]
+      - name: number-empty-system-kept-when-evidenced
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number empty system kept when evidenced"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"\",\"depth\":0,\"provenance\":{\"origin\":\"system_control\",\"actor\":\"harness\",\"delivery\":\"system_lifecycle\",\"ownership\":\"uncertain\",\"evidence\":\"unknown\",\"inputModality\":\"none\"}},{\"role\":\"user\",\"content\":\"one\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"2"}]
+      - name: number-image-only-kept
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number image only kept"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"\",\"depth\":0,\"contentParts\":[{\"type\":\"image\",\"image\":{}}]},{\"role\":\"assistant\",\"content\":\"answer\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"}]
+      - name: number-control-kind-kept
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number control kind kept"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"\",\"depth\":0,\"controlKind\":\"mode\"},{\"role\":\"user\",\"content\":\"one\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"2"}]
+      - name: number-protected-provenance-present
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number protected provenance present"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"\",\"depth\":0,\"provenance\":{\"origin\":\"system_control\",\"actor\":\"harness\",\"delivery\":\"system_lifecycle\",\"ownership\":\"uncertain\",\"evidence\":\"unknown\",\"inputModality\":\"none\"}}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"}]
+      - name: number-unprotected-tool-namespace
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number unprotected tool namespace"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0,\"toolCalls\":[{\"id\":\"tool\",\"name\":\"Read\",\"arguments\":\"{}\",\"result\":\"\"}]},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0,\"toolCalls\":[{\"id\":\"tool\",\"name\":\"Read\",\"arguments\":\"{}\",\"result\":\"\",\"namespace\":\"example\"}]}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":false,"servedPosition":-1,"displayNumber":""}]
+      - name: number-usage-absent-vs-set
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number usage absent vs set"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"assistant\",\"content\":\"first\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"first\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"second\",\"depth\":0,\"usage\":{}},{\"role\":\"assistant\",\"content\":\"second\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":2,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":3,"keep":true,"servedPosition":2,"displayNumber":"1b"}]
+      - name: number-consecutive-dedup-dropped
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number consecutive dedup dropped"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0},{\"role\":\"user\",\"content\":\"two\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":3,"keep":true,"servedPosition":2,"displayNumber":"2"}]
+      - name: number-dedup-replaced-by-tool-bearing
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number dedup replaced by tool bearing"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0,\"toolCalls\":[{\"id\":\"tool\",\"name\":\"Read\",\"arguments\":\"{}\",\"result\":\"\"}]},{\"role\":\"user\",\"content\":\"two\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":2,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":3,"keep":true,"servedPosition":2,"displayNumber":"2"}]
+      - name: number-dedup-context-survives-distinct-successor
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number dedup context survives distinct successor"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0,\"toolCalls\":[{\"id\":\"tool\",\"name\":\"Read\",\"arguments\":\"{}\",\"result\":\"\"}]},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"different\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":2,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":3,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":4,"keep":true,"servedPosition":2,"displayNumber":"1b"}]
+      - name: number-pi-skips-legacy-filter
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number pi skips legacy filter"}
+        input: {"harness":"pi","turnsJSON":"[{\"role\":\"system\",\"content\":\"\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"1b"}]
+      - name: number-duplicate-index-distinct-rows
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number duplicate index distinct rows"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0,\"index\":5},{\"role\":\"assistant\",\"content\":\"different\",\"depth\":0,\"index\":5},{\"role\":\"user\",\"content\":\"two\",\"depth\":0,\"index\":5}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"2"}]
+      - name: number-nonmonotonic-index-kept-order
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number nonmonotonic index kept order"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0,\"index\":9},{\"role\":\"assistant\",\"content\":\"reply\",\"depth\":0,\"index\":2},{\"role\":\"user\",\"content\":\"two\",\"depth\":0,\"index\":1}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"2"}]
+      - name: number-blank-nbsp
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number blank nbsp"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\" \",\"depth\":0},{\"role\":\"user\",\"content\":\"one\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":1,"keep":true,"servedPosition":0,"displayNumber":"1"}]
+      - name: number-blank-bom
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number blank bom"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"﻿\",\"depth\":0},{\"role\":\"user\",\"content\":\"one\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":1,"keep":true,"servedPosition":0,"displayNumber":"1"}]
+      - name: number-blank-line-separator
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number blank line separator"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\" \",\"depth\":0},{\"role\":\"user\",\"content\":\"one\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":1,"keep":true,"servedPosition":0,"displayNumber":"1"}]
+      - name: number-blank-ideographic-space
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number blank ideographic space"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"　\",\"depth\":0},{\"role\":\"user\",\"content\":\"one\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":1,"keep":true,"servedPosition":0,"displayNumber":"1"}]
+      - name: number-nonblank-zero-width-space
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number nonblank zero width space"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"​\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"answer\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"}]
+      - name: number-content-equality-astral
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number content equality astral"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"assistant\",\"content\":\"hi 😀\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"hi 😀\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":false,"servedPosition":-1,"displayNumber":""}]
+      - name: number-content-equality-no-normalization
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number content equality no normalization"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"assistant\",\"content\":\"café\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"café\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"}]
+      - name: number-system-banner-short-astral
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number system banner short astral"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"😀😀😀😀\",\"depth\":0},{\"role\":\"user\",\"content\":\"one\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"2"}]
+      - name: number-empty-partition
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number empty partition"}
+        input: {"harness":"codex","turnsJSON":"[]"}
+        expected: []
+      - name: number-all-rows-filtered
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number all rows filtered"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"\",\"depth\":0},{\"role\":\"system\",\"content\":\"short\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":1,"keep":false,"servedPosition":-1,"displayNumber":""}]
+      - name: number-covers-every-kept-row
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number covers every kept row"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"short\",\"depth\":0},{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"two\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":1,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":2,"keep":true,"servedPosition":1,"displayNumber":"1a"}]
+      - name: number-unique-within-partition
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number unique within partition"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"two\",\"depth\":0},{\"role\":\"user\",\"content\":\"three\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"four\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"2"},{"position":3,"keep":true,"servedPosition":3,"displayNumber":"2a"}]
+      - name: number-ascending-in-source-order
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number ascending in source order"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"assistant\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"two\",\"depth\":0},{\"role\":\"user\",\"content\":\"three\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"four\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":2,"keep":true,"servedPosition":2,"displayNumber":"2"},{"position":3,"keep":true,"servedPosition":3,"displayNumber":"2a"}]
+      - name: number-served-position-skips-dropped-rows
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"number served position skips dropped rows"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"system\",\"content\":\"short\",\"depth\":0},{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"same\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"later\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":1,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":2,"keep":true,"servedPosition":1,"displayNumber":"1a"},{"position":3,"keep":false,"servedPosition":-1,"displayNumber":""},{"position":4,"keep":true,"servedPosition":2,"displayNumber":"1b"}]
+      - name: numbering-golden-seeded-from-prechange-js
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {"source":"manual","ref":"Captured from the whole-document browser filter and numbering rule"}
+        mutation: {"description":"numbering golden seeded from prechange js"}
+        input: {"harness":"codex","turnsJSON":"[{\"role\":\"user\",\"content\":\"one\",\"depth\":0},{\"role\":\"assistant\",\"content\":\"answer\",\"depth\":0}]"}
+        expected: [{"position":0,"keep":true,"servedPosition":0,"displayNumber":"1"},{"position":1,"keep":true,"servedPosition":1,"displayNumber":"1a"}]
+      - name: cook-role-case-variant-keeps-and-suffixes
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"same"},{"Role":"assistant","content":"same"}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}]
+      - name: cook-role-case-variant-does-not-open-task
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"same"},{"Role":"assistant","content":"same"},{"Role":"user","content":"third"}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}, {position: 2, keep: true, servedPosition: 2, displayNumber: "1b"}]
+      - name: cook-role-both-spellings-present-canonical-wins
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"first"},{"role":"user","Role":"assistant","content":"second"}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "2"}]
+      - name: cook-role-both-spellings-reversed-canonical-wins
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"first"},{"Role":"assistant","role":"user","content":"second"}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "2"}]
+      - name: cook-role-null-distinct-from-absent
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":null,"content":"same"},{"content":"same"},{"content":"same"}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}, {position: 2, keep: false, servedPosition: -1, displayNumber: ""}]
+      - name: cook-escaped-key-spelling-is-the-canonical-key
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"\u0072ole":"assistant","content":"same"},{"role":"assistant","content":"same"}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: false, servedPosition: -1, displayNumber: ""}]
+      - name: cook-protected-member-case-variant-does-not-protect
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"one"},{"role":"assistant","content":"one","Usage":{}},{"role":"assistant","content":"two"},{"role":"assistant","content":"two","SourceEntryRef":"x"},{"role":"assistant","content":"three"},{"role":"assistant","content":"three","ControlKind":"mode"},{"role":"assistant","content":"four"},{"role":"assistant","content":"four","ToolCalls":[{"name":"read"}]}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: false, servedPosition: -1, displayNumber: ""}, {position: 2, keep: true, servedPosition: 1, displayNumber: "1a"}, {position: 3, keep: false, servedPosition: -1, displayNumber: ""}, {position: 4, keep: true, servedPosition: 2, displayNumber: "1b"}, {position: 5, keep: false, servedPosition: -1, displayNumber: ""}, {position: 6, keep: true, servedPosition: 3, displayNumber: "1c"}, {position: 7, keep: false, servedPosition: -1, displayNumber: ""}]
+      - name: cook-depth-case-variant-is-absent
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"user","content":"first","depth":0},{"role":"assistant","content":"answer"},{"role":"user","content":"second","depth":1},{"role":"user","content":"third","Depth":1}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}, {position: 2, keep: true, servedPosition: 2, displayNumber: "1b"}, {position: 3, keep: true, servedPosition: 3, displayNumber: "2"}]
+      - name: cook-content-case-variant-is-not-equal
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"same"},{"role":"assistant","Content":"same","toolCalls":[{"name":"read"}]}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: true, servedPosition: 1, displayNumber: "1a"}]
+      - name: cook-content-parts-case-variant-is-not-an-image
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"user","content":"","ContentParts":[{"type":"image","image":{}}]},{"role":"user","content":"","contentParts":[{"Type":"image","image":{}}]}]'}
+        expected: [{position: 0, keep: false, servedPosition: -1, displayNumber: ""}, {position: 1, keep: false, servedPosition: -1, displayNumber: ""}]
+      - name: cook-unknown-member-is-ignored
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"same","Note":1},{"role":"assistant","content":"same","note":2}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}, {position: 1, keep: false, servedPosition: -1, displayNumber: ""}]
+      - name: cook-duplicate-member-refused
+        expect: {outcome: refused, stage: constructor, errorContains: ["turn 0", "duplicate object key", "role"]}
+        classification: must-fail
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"user","role":"assistant","content":"same"}]'}
+        expected: []
+      - name: cook-escaped-duplicate-member-refused
+        expect: {outcome: refused, stage: constructor, errorContains: ["turn 0", "duplicate object key", "role"]}
+        classification: must-fail
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"user","\u0072ole":"assistant","content":"same"}]'}
+        expected: []
+      - name: cook-absent-content-adjacent-duplicate-refused
+        expect: {outcome: refused, stage: cook}
+        classification: must-fail
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","toolCalls":[{"name":"read"}]},{"role":"assistant","toolCalls":[{"name":"read"}]}]'}
+        expected: []
+      - name: cook-null-content-adjacent-duplicate-refused
+        expect: {outcome: refused, stage: cook}
+        classification: must-fail
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","content":null,"toolCalls":[{"name":"read"}]},{"role":"assistant","content":null,"toolCalls":[{"name":"read"}]}]'}
+        expected: []
+      - name: cook-invalid-provenance-refused
+        expect: {outcome: refused, stage: cook}
+        classification: must-fail
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","provenance":{}}]'}
+        expected: []
+      - name: cook-valid-provenance-empty-submission-kept
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"system","content":"","provenance":{"origin":"system_control","actor":"harness","delivery":"system_lifecycle","ownership":"uncertain","evidence":"unknown","inputModality":"none","submissionRef":""}}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}]
+      - name: cook-provenance-unknown-member-refused
+        expect: {outcome: refused, stage: cook, errorContains: ["turn 0"]}
+        classification: must-fail
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","provenance":{"origin":"system_control","Origin":"system_control","actor":"harness","delivery":"system_lifecycle","ownership":"uncertain","evidence":"unknown","inputModality":"none"}}]'}
+        expected: []
+      - name: cook-pi-skips-evidence-validation
+        expect: {outcome: cooked}
+        classification: must-pass
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: pi, turnsJSON: '[{"role":"assistant","content":"row","provenance":{}}]'}
+        expected: [{position: 0, keep: true, servedPosition: 0, displayNumber: "1"}]
+      - name: cook-null-provenance-refused
+        expect: {outcome: refused, stage: cook}
+        classification: must-fail
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","provenance":null}]'}
+        expected: []
+      - name: cook-refusal-is-not-a-verdict
+        expect: {outcome: refused, stage: cook, errorContains: ["turn 7"]}
+        classification: must-fail
+        provenance: {source: manual, ref: "Exact-name behavior of the pre-change whole-document browser rule"}
+        mutation: {description: "Cook the raw served turns without folding member names"}
+        input: {harness: codex, turnsJSON: '[{"role":"assistant","content":"one"},{"role":"assistant","content":"two"},{"role":"assistant","content":"three"},{"role":"assistant","content":"four"},{"role":"assistant","content":"five"},{"role":"assistant","content":"six"},{"role":"assistant","content":"seven"},{"role":"assistant","provenance":{}}]'}
+        expected: []

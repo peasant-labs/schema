@@ -1,0 +1,17 @@
+requiredNames:
+  - pr-functional-declared
+  - pr-functional-nonrelease
+  - pr-missing-surface
+  - pr-misspelt-surface
+  - pr-extra-unchanged
+  - pr-docs-nonrelease
+  - pr-docs-releasing-scope
+  - pr-ahead-base-declaration
+  - queue-functional-declared
+  - queue-functional-nonrelease
+  - queue-missing-surface
+  - queue-misspelt-surface
+  - queue-extra-unchanged
+  - queue-docs-nonrelease
+  - queue-docs-releasing-scope
+  - queue-ahead-base-declaration

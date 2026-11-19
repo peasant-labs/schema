@@ -1,0 +1,10 @@
+# The case names testdata/typescript/route_path_refusals.yaml must hold. A case that is removed or added
+# without its entry here fails the test.
+requiredNames:
+  - missing-parameter
+  - missing-parameter-object
+  - null-parameter-object
+  - null-parameter
+  - boolean-parameter
+  - non-finite-number
+  - integer-parameter-given-dot-dot

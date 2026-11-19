@@ -1,0 +1,31 @@
+cases:
+  - name: ref-chain-window-first-ordinal-mismatch-refused
+    classification: must-fail
+    provenance: &bounds {source: boundary, ref: "A ref chain must start at the caller's expected ordinal"}
+    mutation: {description: "The first ref starts after the expected window ordinal"}
+    input: {context: window, firstOrdinal: 4, total: 10, refs: [{index: 5, first: 0, last: 0}]}
+    expected: {errorContains: "does not match expected first ordinal"}
+  - name: ref-chain-window-first-outside-total-refused
+    classification: must-fail
+    provenance: *bounds
+    mutation: {description: "The first ordinal is outside the declared segment total"}
+    input: {context: window, firstOrdinal: 4, total: 5, refs: [{index: 5, first: 0, last: 0}]}
+    expected: {errorContains: "outside totalSegments"}
+  - name: ref-chain-window-first-ordinal-matches
+    classification: must-pass
+    provenance: *bounds
+    mutation: {description: "The expected first ordinal matches an adjacent absolute-ordinal interval"}
+    input: {context: window, firstOrdinal: 5, total: 10, refs: [{index: 5, first: 0, last: 0}, {index: 6, first: 1, last: 1}]}
+    expected: {}
+  - name: ref-chain-window-later-gap-refused
+    classification: must-fail
+    provenance: *bounds
+    mutation: {description: "A later ordinal skips a segment"}
+    input: {context: window, firstOrdinal: 5, total: 10, refs: [{index: 5, first: 0, last: 0}, {index: 7, first: 1, last: 1}]}
+    expected: {errorContains: "segment ordinals 5 and 7 are not consecutive"}
+  - name: ref-chain-directory-first-ordinal-mismatch-refused
+    classification: must-fail
+    provenance: *bounds
+    mutation: {description: "A page begins at an ordinal other than its expected offset"}
+    input: {context: directory, firstOrdinal: 4, total: 10, refs: [{index: 5, first: 0, last: 0}]}
+    expected: {errorContains: "refs must be consecutive from page ordinal 4"}

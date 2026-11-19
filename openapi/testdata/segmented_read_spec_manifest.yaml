@@ -1,0 +1,5 @@
+requiredNames:
+  - segmented-spec-shipped-protocol
+  - segmented-spec-positioned-protocol
+  - document-bump-keeps-positioned-protocol
+  - segmented-spec-unknown-version-refused

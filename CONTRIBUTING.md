@@ -89,9 +89,11 @@ The Nix `buildGoModule` `vendorHash` covers only the third-party module graph
 `replace` folds first-party source into the vendor graph (the #119 pathology).
 `TestVendorHashStableOnFirstPartyEdit` enforces this structurally.
 
-When you DO bump a third-party dependency, recompute the `vendorHash`: set it to
-`nixpkgs.lib.fakeHash` in `flake.nix`, run `nix build`, and copy the reported
-`got:` hash back. (A first-party-only change never needs this.)
+When a third-party dependency changes, the vendor-hash workflow computes any
+needed hash fix after the dependency PR lands and opens a separate bot PR through
+the queue. An ordinary PR reports a stale hash without blocking; a release
+merge-group requires a fresh hash. For a local check, run `make nix-vendor-hash`
+in the dev shell. A first-party-only change never needs a hash update.
 
 ## Nix package lookups
 
@@ -102,7 +104,8 @@ never `nix search nixpkgs` (it is slow and can hang).
 
 ```bash
 pnpm --dir typescript install --frozen-lockfile --ignore-scripts
-make check                 # gofmt + vet + release-workflow guard + go test -race ./...
+make check                 # gofmt + vet + release-workflow guard + go test ./... (RACE=1 adds -race)
+make race-selective        # go test -race over the validator schema caches, in seconds
 make gates BASE_REF=origin/develop  # oasdiff + go-apidiff + vacuum vs a base ref
 make schema                # regenerate OpenAPI, docs, and TypeScript contract outputs
 nix build                  # hermetic build + go test ./... sanity gate
@@ -138,37 +141,45 @@ Gates that run in CI (and locally):
   **leaf-audit** (`go.mod` direct requires ⊆ the allowed set), the
   `vendorHash`-stability proof, and the **synthetic-break tests** that prove the
   `oasdiff` / `go-apidiff` gates actually fire.
-- **`make gates`** (`tests.yml` → `contract-gates` job, PR-only): the breaking-change
-  gates diff the regenerated specs + exported Go API against the PR base —
-  `oasdiff breaking --fail-on ERR`, `go-apidiff`, and `vacuum lint -r .vacuum.yaml`.
-  Provisioned entirely from the flake dev shell (never `go.mod`); run inside
-  `nix develop`.
+- **`make gates`** (`tests.yml` -> `contract-gates` on PRs and merge groups):
+  vacuum lints specs, numbered files are immutable, and oasdiff plus go-apidiff
+  compare committed `HEAD` with the base to produce a report; commit changes
+  before running it. Without `TITLE`, a reported break fails conservatively.
+  With `TITLE='feat(scope)![minor]: description'`, the pinned `release-intent`
+  on `PATH` judges the report. CI always judges the live PR title. The tools
+  are provisioned through the dev shell, never `go.mod`.
 
 ## Release ceremony
 
-Releases mirror peasant's PR-title-driven pipeline (the title/tag grammar and
-publication gates are in `internal/release`, exposed via `cmd/release-guard`):
+Title a content PR `type(scope)[level]: description`. For example,
+`feat(local-api)[minor]: add an endpoint`; a breaking change below 1.0 is
+`feat(local-api)![minor]: remove an endpoint`. Never-release types such as
+`docs` and `chore` take no level. CI compares the live title with the contract
+report on the PR and in the merge group.
 
-1. Open a PR to `develop` titled `release(vX.Y.Z[-rcN]): <summary>`
-   (e.g. `release(v0.1.0-rc1): first release candidate`). The grammar is enforced
-   by `release-guard parse-title`.
-2. A maintainer (admin/maintain) approves — `release-guard check-maintainer` /
-   `check-approval` gate this.
-3. On merge, the release workflow mints the annotated tag (via the releaser App
-   token); the tag triggers the release run, which publishes a GitHub Release with
-   the OpenAPI specs as downloadable assets (prerelease for `-rcN`).
-4. A FINAL `vX.Y.Z` no longer requires a same-version rc. It still runs the
-   release gates and, when a prior release tag exists, the compatibility diff
-   against that prior release. An `-rcN` tag remains supported as a prerelease.
-5. Old `pkg/schema/v*` tags (from when this lived nested in peasant) are **retained
-   forever**; new releases use the bare `vX.Y.Z` path. Tags are append-only — never
-   move or delete a release tag.
+For Types, Village, Local, and segmented read, regenerate `generated/*-next.*` and never
+change a numbered spec or `versions.go` in a content PR. Public accessors and
+validators use the frozen numbered files; generators and internal tests use
+the working files. The two Village request schemas share the Village version.
+The segmented read document version is separate from its protocol versions:
+freezes move `SegmentedReadSpecVersion`, not the selected
+`SegmentedReadAPIVersion` or oldest served `SegmentedReadMinVersion`.
+A breaking protocol change that needs a new `v=` generation is separate P1
+work, not a document freeze.
 
-The CI workflows that wire these guards live in `.github/workflows/`
-(`release-pr.yml` mints the tag on merge; `release.yml` runs guard →
-nix-vendor-hash → contract-gates → publish, where "publish" is both the
-GitHub Release job and the independent `npm-publish` job that ships
-`@peasant-labs/schema` to npm via OIDC trusted publishing, no stored token).
-The full operator guide - secrets, the GitHub App installation, the npm
-Trusted Publisher setup, the `v0.1.0-rc1` cut, and troubleshooting - is in
+A functional change needs a releasing title naming every functionally changed
+surface; a releasing title cannot name a docs-only or unchanged surface unless
+it is already ahead on the base. `docs(local-api): clarify a description` is
+valid for a docs-only change. The report's `spec-change-needs-bump` and
+`surface-mismatch` errors explain the required correction.
+
+The release bot computes the module version and the spec freeze, updates the
+changelog, npm version, frozen specs, registry and mirrors in one standing PR,
+and tags its fresh queued commit. Its PR title is passed through from the
+release tool. `schema-gen status` reports clean, docs-ahead or ahead;
+`schema-gen freeze --check` refuses a release tree containing an ahead
+surface. Do not edit release-owned files or push a tag by hand. The tag
+publishes numbered frozen assets and the npm package, independently, after the
+common checks. Historical
+`pkg/schema/v*` tags remain immutable. Operator setup and recovery are in
 [`docs/release-runbook.md`](docs/release-runbook.md).

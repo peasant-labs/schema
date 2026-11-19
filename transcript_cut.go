@@ -23,6 +23,13 @@ import (
 // the new one. Change it only as a deliberate contract change.
 const TranscriptSegmentBudgetBytes = 1 << 20
 
+// CutVersion names the producer rules for the turn byte measure, segment cut,
+// ResolveTranscriptWindow, ResolvePositionedWindow, cooking, numbering, and
+// TranscriptSegmentBudgetBytes.
+// Changing served rows, segment boundaries, or display numbers changes this
+// identity and adds a new version's cut and numbering fixture expectations.
+const CutVersion = "c1"
+
 // The window span is the number of assistant turns collected on each side of
 // the anchor. A caller may narrow it; it cannot widen the design value.
 const (
@@ -92,6 +99,7 @@ func transcriptImagePartByteLength(image *ImagePart) int {
 // in the earlier segments, so no directory page restarts it. Two servers that
 // cut the same turns with the same budget produce the same refs. No turns give
 // an empty, non-nil slice.
+// Preview segments are capture-local and need not match the later stored cut.
 func CutTranscriptSegments(turns []TurnDetail, budget int) []TranscriptSegmentRef {
 	if len(turns) == 0 {
 		return []TranscriptSegmentRef{}
@@ -153,28 +161,7 @@ func ResolveTranscriptWindow(sessionID SessionID, revision string, requestedAnch
 		return TranscriptWindow{}, fmt.Errorf("%ssession %s has no user turn among its %d turns, so a window cannot be centred on turn %d; no window was resolved; a window requires a user turn: %w", where, sessionID, len(turns), requestedAnchor, ErrTranscriptWindowNoUserTurn)
 	}
 
-	firstPos := anchorPos
-	seen := 0
-	for pos := anchorPos - 1; pos >= 0; pos-- {
-		firstPos = pos
-		if turns[pos].Role == RoleAssistant {
-			seen++
-			if seen == span {
-				break
-			}
-		}
-	}
-	lastPos := anchorPos
-	seen = 0
-	for pos := anchorPos + 1; pos < len(turns); pos++ {
-		lastPos = pos
-		if turns[pos].Role == RoleAssistant {
-			seen++
-			if seen == span {
-				break
-			}
-		}
-	}
+	firstPos, lastPos := assistantSpanBounds(func(i int) Role { return turns[i].Role }, len(turns), anchorPos, span)
 
 	firstTurn := turns[firstPos].Index
 	lastTurn := turns[lastPos].Index
@@ -202,6 +189,34 @@ func ResolveTranscriptWindow(sessionID SessionID, revision string, requestedAnch
 		return TranscriptWindow{}, err
 	}
 	return window, nil
+}
+
+// assistantSpanBounds collects up to span assistant rows on each side of an
+// anchor. Both window resolvers use this positional rule.
+func assistantSpanBounds(roleAt func(int) Role, n, anchor, span int) (first, last int) {
+	first = anchor
+	seen := 0
+	for pos := anchor - 1; pos >= 0; pos-- {
+		first = pos
+		if roleAt(pos) == RoleAssistant {
+			seen++
+			if seen == span {
+				break
+			}
+		}
+	}
+	last = anchor
+	seen = 0
+	for pos := anchor + 1; pos < n; pos++ {
+		last = pos
+		if roleAt(pos) == RoleAssistant {
+			seen++
+			if seen == span {
+				break
+			}
+		}
+	}
+	return first, last
 }
 
 // resolveTranscriptWindowAnchor returns the position of the user turn a window

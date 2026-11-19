@@ -1,0 +1,15 @@
+requiredNames:
+  - integer-without-maximum-accepts-wide-values
+  - integer-minimum-kept-without-maximum
+  - integer-safe-maximum-keeps-safe-check
+  - integer-wide-maximum-is-applied-separately
+  - integer-int64-keeps-original-bigint
+  - integer-int32-keeps-format-bounds
+  - integer-int64-keeps-earlier-safe-number-refinement
+  - integer-maximum-beyond-int64-is-capped
+  - integer-publication-reachable-component-unchanged
+  - integer-missing-preserved-root-fails-generation
+  - datetime-with-offset
+  - datetime-evidence-constraint-stays-utc
+  - integer-missing-marker-fails-generation
+  - datetime-missing-marker-fails-generation

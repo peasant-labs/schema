@@ -1,0 +1,14 @@
+requiredNames:
+  - decode-absent-pair
+  - decode-empty-pair
+  - decode-empty-and-omitted
+  - decode-complete-pair
+  - decode-current-only-refused
+  - decode-minimum-only-refused
+  - decode-empty-minimum-refused
+  - decode-numeric-current-refused
+  - decode-numeric-minimum-refused
+  - decode-null-current-refused
+  - decode-null-minimum-refused
+  - decode-casefold-lone-refused
+  - decode-casefold-null-refused

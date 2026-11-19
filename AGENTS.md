@@ -22,7 +22,9 @@ module's tagged releases (first in `v0.1.0-rc6`); npm publication is automated
 in the release ceremony (`release.yml`'s `npm-publish` job, behind the same
 gates as the GitHub Release) and `@peasant-labs/types` is deprecated. The TypeScript package retains type-only
 `paths` and `operations` contracts at `/local-api` and `/village-api`, while
-shared payloads resolve to the canonical package root. Neither language package
+shared payloads resolve to the canonical package root. Those subpaths and the Go
+`route` package also carry generated route members, one per operation, which
+`go run ./cmd/schema-gen` projects from the built documents. Neither language package
 provides an HTTP or WebSocket transport client SDK. It has
 **no runtime server**: no HTTP handler and no
 WebSocket hub (the WebSocket types live here, but the hub stays in peasant). So
@@ -73,6 +75,19 @@ window reads, equal to the Go constants. Do not add a TypeScript cut, measure or
 window resolver; if a browser ever needs one, that is a contract change with its
 own recorded decision.
 
+**Recorded exception:** `transcript_numbering.go` holds the cooking and
+numbering rule for the same reason as the cut: every server that serves the
+partitioned reads must decide membership and assign the same display number.
+Its JavaScript counterpart is the browser rule that already exists, because a
+whole-document render or Markdown export has no server-numbered row. The
+counterpart is pinned by one shared fixture, is never consulted for a
+server-numbered row, and fails that fixture on divergence. The rule against a
+TypeScript cut, measure, or window resolver above is unchanged.
+
+**Recorded exception:** `transcript_entry_locate.go` holds the exact-member
+scan over served rows. Both servers use the same rule to locate an existing
+relationship entry; copying it per host would make link targets drift.
+
 **Recorded exception:** Kickstart response and view components are closed as well as
 request bodies. Adding a response property is a breaking change to pinned consumers;
 this choice is specific to the kickstart contract and is not a general precedent.
@@ -108,50 +123,68 @@ verification rules.
 
 ## Releases and tags (reserved)
 
-Releases are PR-title driven. Open a PR to `develop` titled
-`release(vX.Y.Z[-rcN]): <summary>` (for example
-`release(v0.1.0-rc1): first release candidate`). The title grammar is the single
-source enforced by `cmd/release-guard parse-title`, and the release workflow gate
-keys on the title, so it runs regardless of which files the PR touches (a
-content-carrying release PR is supported). On merge,
-`.github/workflows/release-pr.yml` mints the annotated tag using the
-`peasant-labs-releaser` GitHub App token (the default CI token cannot push a tag
-that re-triggers `release.yml`), and the tag drives `release.yml` to publish a
-GitHub Release with the OpenAPI specs as assets (a prerelease for `-rcN`). A final
-`vX.Y.Z` does not require a preceding rc, but it still runs the release gates and
-diffs against the prior release when one exists.
+Titles carry release intent as `type(scope)[level]: subject`; below 1.0 a
+breaking change uses `![minor]`. The pinned `release-intent` checks the live
+title against the Go and OpenAPI contract report. A functional spec change
+requires a releasing title that names each changed surface. A releasing title
+must not name an unchanged or docs-only surface unless it was already ahead on
+the base. A non-releasing title such as `docs(local-api): clarify a field`
+may mention a surface. `spec-change-needs-bump` and `surface-mismatch` name
+the respective failures.
 
-**Minting a public tag is a reserved maintainer action.** An agent must not push
-a public release tag or perform the cut. Prepare and queue the release PR; the
-maintainer merges it and CI mints the tag. Tags are append-only: never move or
-delete a release tag, and the old nested `pkg/schema/v*` tags (from when this
-lived inside peasant) are retained forever.
+Content PRs regenerate working specs; they do not choose spec numbers or edit
+the protected `versions.go`, numbered documents, freeze registries,
+`CHANGELOG.md`, or the `typescript/package.json` version. The standing bot
+release PR writes the frozen specs with the changelog and lands through the
+merge queue.
+
+`release-batch.yml` computes the module version and pushes an annotated tag on a
+fresh release PR commit using the releaser App. The tag triggers `release.yml`,
+which checks the contract, the Nix vendor hash and the npm version before
+publishing the generated specs and npm package. The vendor-hash bot opens its
+own queued PR; no workflow pushes `develop`.
+
+Agents never push public tags or edit, stack on, or merge bot release PRs by
+hand. Enqueueing a releasing content PR is the release decision. Tags are
+append-only: never move or delete them, including the historical nested
+`pkg/schema/v*` tags.
 
 When reading an `rc` number, disambiguate three things that look alike: a peasant
 product release version, the schema module's own release tag, and an internal
 codename that merely looks version-like. Only a real tag on this module gates a
 release here.
 
-**Explicit human delegation:** a maintainer may authorize an agent to merge a
-specific release PR. The instruction must unambiguously identify the release PR;
-generic implementation or ordinary PR-merge approval is insufficient. The agent
-records the authorization in a PR comment before merging.
+## Spec versioning: working and frozen documents
 
-Delegation does not waive required reviews, CI, contract gates, or dependency
-ordering, UNLESS stated by the maintainer.
-CI must mint the tag through the existing release workflow; agents
-must not create or push public release tags directly.
+For Types, Village, Local, and segmented read, `generated/<stem>-next.*` is
+the committed working document. `versions.go` names the latest frozen numbered document.
+The two Village request schemas follow the Village version. The public
+accessors and exported validators read the numbered frozen bytes; generators,
+contract reports, and current-document tests read working bytes. No public
+accessor exposes a working file.
 
+`schema-gen status` computes `clean`, `docs-ahead`, or `ahead` per surface.
+Docs-only changes need no bump and may wait for the next functional freeze.
+The release job uses `release-intent freeze-plan`, then `schema-gen freeze`,
+to raise constants, regenerate working version lines, copy numbered files and
+update the frozen registry and version mirrors in the release PR. A release
+tree must contain no `ahead` surface: the PR and merge-group check and the
+candidate pre-tag check enforce this. A wrong stale freeze that bypasses the
+queue burns one spec number; the next freeze advances again and retains the
+wrong numbered file.
 
-## Spec versioning: bump, do not mutate
+Segmented read separates the frozen document version
+(`SegmentedReadSpecVersion`) from the selected wire protocol
+(`SegmentedReadAPIVersion`, with `SegmentedReadMinVersion` as the oldest
+served protocol). A document freeze moves only the document version. The
+minimum protocol document and the generation selector table remain unchanged.
+A breaking protocol change requiring a new `v=` generation is separate P1
+work, not a document freeze.
 
-A released spec version is immutable. To change a surface, bump its version stamp
-in `versions.go` (the current versions are stamped there as `VillageAPIVersion`,
-`PeasantLocalAPIVersion`, and `TypesVersion`) and regenerate; do not edit a
-version already released. Retired versions are byte-frozen and guarded by
-`cmd/schema-gen/retired_specs_test.go`, which fails on both an in-place edit and a
-deletion. An intentional stamp bump is exempt from the exported-Go-API advisory
-gate; every other incompatible change is reported.
+When an open content PR predates this migration, merge the updated base,
+drop its numbered-file and constant changes, regenerate the working files,
+and list its functionally changed surfaces in the title. See the release
+runbook for the full cutover and recovery flow.
 
 ## Leaf purity
 
@@ -196,11 +229,41 @@ Install the locked TypeScript development toolchain with
 
 `make check` is the authoritative full-repository gate: fmt, vet, the
 release-workflow guard, TypeScript typecheck/tests/package smoke, and
-`go test -race ./...` (which carries the freshness, immutability,
-leaf-audit, vendor-hash, and synthetic-break checks). `make gates
+`go test ./...` (which carries the freshness, immutability,
+leaf-audit, vendor-hash, and synthetic-break checks). It runs without the race
+detector by default; `make check RACE=1` opts in. `make race-selective` runs
+`-race` over the module's only production concurrency (the validator schema
+caches), and the merge-queue run requires it. `make gates
 BASE_REF=origin/develop` runs the breaking-change gates (`oasdiff`, `go-apidiff`,
 `vacuum`) and needs the flake tools. `TESTING.md` has the full gate table and the
 real test behind each one.
+
+## Static guard
+
+`make check` runs the unstring static guard. The pin lives in one place, the
+`UNSTRING` variable in the `Makefile` (default
+`go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.4`). The run
+needs Go 1.26 or newer and ast-grep 0.51.2 exactly; the dev shell provides that
+ast-grep, and any other version stops before a scan.
+
+`.unstring-baseline.yaml` is generated. `init` writes it once. After a count
+falls, refresh it with `make unstring-update`. Do not hand-edit or hand-merge
+it.
+
+A hit that is not a closed-set value may carry
+`// unstring-allow: <rule-id> — <reason>` on the hit. The reason is at least
+three words, after an em dash. `closed-set-literal` and `go-closed-set-literal`
+accept no marker: the fix for a set value is the typed value.
+
+`route/routes_gen.go` and `typescript/src/internal/generated/**` are
+exempt as generated code. A `rule: "*"` exemption is accepted only when every
+matched file carries a `Code generated … DO NOT EDIT` header, which those files
+do.
+`schema.module` is omitted: this repository is the contract, not a consumer of
+its own package, so the catalog is this repository's typed constants and
+TypeScript unions.
+
+The tool contract is [`infra/unstring/README.md`](https://github.com/peasant-labs/infra/blob/unstring/v0.0.4/unstring/README.md).
 
 ## Hygiene
 

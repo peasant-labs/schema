@@ -1,0 +1,8 @@
+requiredNames:
+  - segmented-read-0.1.0
+  - segmented-read-0.2.0
+  - types-0.52.0
+  - village-api-0.42.0
+  - publish-request-0.42.0.schema
+  - annotation-push-request-0.42.0.schema
+  - peasantlocal-api-0.39.0

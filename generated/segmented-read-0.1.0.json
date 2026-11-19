@@ -1,0 +1,1094 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Peasant Segmented Read Protocol v0.1.0",
+    "description": "This document owns segmented read shapes; the host API document owns the routes. Routes:\n- GET /api/v1/transcripts/{id}/segments (getTranscriptSegments)\n- GET /api/v1/transcripts/{id}/segments/{index} (getTranscriptSegment)\n- GET /api/v1/transcripts/{id}/window (getTranscriptWindow)\nProtocol generation selectors (omission is v=0):\n- v=0 -\u003e 0.1.0\n- v=1 -\u003e 0.1.0\n- v=2 -\u003e 0.2.0",
+    "version": "0.1.0"
+  },
+  "components": {
+    "schemas": {
+      "ActorOrigin": {
+        "description": "Closed session graph value",
+        "enum": [
+          "operator",
+          "agent_delegate",
+          "harness",
+          "unknown"
+        ],
+        "examples": [
+          "operator",
+          "agent_delegate",
+          "harness",
+          "unknown"
+        ],
+        "title": "Actor Origin",
+        "type": "string"
+      },
+      "CommandInvocation": {
+        "properties": {
+          "args": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "ContentOrigin": {
+        "description": "Closed session graph value",
+        "enum": [
+          "submitted_input",
+          "harness_context",
+          "agent_output",
+          "agent_communication",
+          "tool_activity",
+          "system_control",
+          "generated_summary",
+          "unknown"
+        ],
+        "examples": [
+          "submitted_input",
+          "harness_context",
+          "agent_output",
+          "agent_communication",
+          "tool_activity",
+          "system_control",
+          "generated_summary",
+          "unknown"
+        ],
+        "title": "Content Origin",
+        "type": "string"
+      },
+      "ContentOwnership": {
+        "description": "Closed session graph value",
+        "enum": [
+          "local",
+          "inherited",
+          "uncertain"
+        ],
+        "examples": [
+          "local",
+          "inherited",
+          "uncertain"
+        ],
+        "title": "Content Ownership",
+        "type": "string"
+      },
+      "ContentProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/ActorOrigin"
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/DeliveryOrigin"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceKind"
+          },
+          "inputModality": {
+            "$ref": "#/components/schemas/InputModality"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/ContentOrigin"
+          },
+          "ownership": {
+            "$ref": "#/components/schemas/ContentOwnership"
+          },
+          "submissionRef": {
+            "$ref": "#/components/schemas/SubmissionRef"
+          }
+        },
+        "required": [
+          "origin",
+          "actor",
+          "delivery",
+          "ownership",
+          "evidence",
+          "inputModality"
+        ],
+        "type": "object"
+      },
+      "ConversationTurnSpan": {
+        "properties": {
+          "before": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "count": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "before",
+          "count"
+        ],
+        "type": "object"
+      },
+      "DeliveryOrigin": {
+        "description": "Closed session graph value",
+        "enum": [
+          "session_admission",
+          "guardian_review",
+          "subagent_delivery",
+          "inherited_context",
+          "tool_delivery",
+          "system_lifecycle",
+          "unknown"
+        ],
+        "examples": [
+          "session_admission",
+          "guardian_review",
+          "subagent_delivery",
+          "inherited_context",
+          "tool_delivery",
+          "system_lifecycle",
+          "unknown"
+        ],
+        "title": "Delivery Origin",
+        "type": "string"
+      },
+      "EntryType": {
+        "description": "Classification of a single entry within an agent session transcript",
+        "enum": [
+          "text",
+          "tool_use",
+          "tool_result",
+          "thinking",
+          "system",
+          "error",
+          "result",
+          "image"
+        ],
+        "examples": [
+          "text",
+          "tool_use",
+          "tool_result"
+        ],
+        "title": "Entry Type",
+        "type": "string"
+      },
+      "EvidenceKind": {
+        "description": "Closed session graph value",
+        "enum": [
+          "native_typed",
+          "lifecycle_typed",
+          "existing_adapter",
+          "retained_last_good",
+          "unknown",
+          "conflict"
+        ],
+        "examples": [
+          "native_typed",
+          "lifecycle_typed",
+          "existing_adapter",
+          "retained_last_good",
+          "unknown",
+          "conflict"
+        ],
+        "title": "Evidence Kind",
+        "type": "string"
+      },
+      "ImageMediaType": {
+        "description": "Recorded image media type: image/png or image/jpeg",
+        "enum": [
+          "image/png",
+          "image/jpeg"
+        ],
+        "examples": [
+          "image/png",
+          "image/jpeg"
+        ],
+        "title": "Image Media Type",
+        "type": "string"
+      },
+      "ImagePart": {
+        "properties": {
+          "byteSize": {
+            "description": "Exact stored byte size. Zero means unset or no bytes, and an explicit zero is accepted as unset; a published transcript never carries a nonzero size.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "height": {
+            "description": "Optional recorded pixel height; zero means unset or unknown, and an explicit zero is accepted as unset. A published transcript never carries a nonzero height.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/ImageMediaType",
+            "description": "Recorded image/png or image/jpeg media type. Absent for an unsupported source type or a published transcript."
+          },
+          "omittedReason": {
+            "$ref": "#/components/schemas/OmittedReason",
+            "description": "Why the bytes are absent: unsupported (wins for a non-recorded media type), too_large, missing, or not_published. Omit when local bytes are present."
+          },
+          "ref": {
+            "description": "Lowercase 64-hex content address of the stored image. Absent when the bytes are omitted or the transcript is published.",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "width": {
+            "description": "Optional recorded pixel width; zero means unset or unknown, and an explicit zero is accepted as unset. A published transcript never carries a nonzero width.",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "InputModality": {
+        "description": "Closed session graph value",
+        "enum": [
+          "none",
+          "text",
+          "media",
+          "user_action",
+          "mixed",
+          "unknown"
+        ],
+        "examples": [
+          "none",
+          "text",
+          "media",
+          "user_action",
+          "mixed",
+          "unknown"
+        ],
+        "title": "Input Modality",
+        "type": "string"
+      },
+      "ObservedModelID": {
+        "description": "Exact UTF-8 model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values are non-empty and may not have a Unicode White_Space code point at either edge; all accepted bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.",
+        "examples": [
+          "anthropic/Claude-Opus-4-8",
+          "provider/Model Family"
+        ],
+        "minLength": 1,
+        "pattern": "^(?:﻿|[^\\s])(?:[\\s\\S]*(?:﻿|[^\\s]))?$",
+        "title": "Observed Model ID",
+        "type": "string"
+      },
+      "OmittedReason": {
+        "description": "Why an image part carries no bytes: unsupported (wins for a non-recorded media type), too_large, missing, or not_published",
+        "enum": [
+          "too_large",
+          "unsupported",
+          "missing",
+          "not_published"
+        ],
+        "examples": [
+          "too_large",
+          "unsupported",
+          "missing",
+          "not_published"
+        ],
+        "title": "Omitted Reason",
+        "type": "string"
+      },
+      "RecordedCostDetail": {
+        "properties": {
+          "cacheRead": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cacheWrite": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "type": "object"
+      },
+      "Role": {
+        "description": "Sender role of a message turn",
+        "enum": [
+          "user",
+          "assistant",
+          "tool",
+          "system"
+        ],
+        "examples": [
+          "user",
+          "assistant"
+        ],
+        "title": "Role",
+        "type": "string"
+      },
+      "SessionID": {
+        "description": "Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), msg_{id}, or a Strike session ID)",
+        "examples": [
+          "99d59925-36bc-424c-a789-8be54d9702ba",
+          "agent-a3aee4f",
+          "ses_3cd91f52effeXd3QAJ54jOyzv5",
+          "sess_3cd91f52effeXd3QAJ54jOyzv5",
+          "20260728T123456.123456789Z-ABCDEFGHIJKLMNOPQRST234567",
+          "ABCDEFGHIJKLMNOPQRST234567"
+        ],
+        "format": "session-id",
+        "pattern": "^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+|[0-9]{8}T[0-9]{6}\\.[0-9]{9}Z-[A-Z2-7]{26}|[A-Z2-7]{26})$",
+        "title": "Session ID",
+        "type": "string"
+      },
+      "SourceEntryRef": {
+        "format": "public-ref-utf8-96-bytes",
+        "maxLength": 96,
+        "minLength": 1,
+        "title": "Source Entry Reference",
+        "type": "string"
+      },
+      "StopReason": {
+        "description": "Reason why a session or turn ended (ACP-aligned)",
+        "enum": [
+          "end_turn",
+          "cancelled",
+          "max_tokens",
+          "max_turn_requests",
+          "refusal"
+        ],
+        "examples": [
+          "end_turn",
+          "max_tokens"
+        ],
+        "title": "Stop Reason",
+        "type": "string"
+      },
+      "SubmissionRef": {
+        "format": "public-ref-utf8-96-bytes",
+        "maxLength": 96,
+        "minLength": 1,
+        "title": "Submission Reference",
+        "type": "string"
+      },
+      "ThinkingLevel": {
+        "description": "Canonical reasoning-effort level of assistant-generated output: off, minimal, low, medium, high, xhigh, max, ultra, ultracode. off is the single disabled state, ultra is above max, and ultracode is a distinct level. Omit the field when the level is unknown; never infer it from token budgets.",
+        "enum": [
+          "off",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max",
+          "ultra",
+          "ultracode"
+        ],
+        "examples": [
+          "off",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max",
+          "ultra",
+          "ultracode"
+        ],
+        "title": "Thinking Level",
+        "type": "string"
+      },
+      "ThinkingLevelRaw": {
+        "description": "Exact native thinking-level spelling observed when it differs from the emitted canonical thinkingLevel, including when no canonical level could be mapped. Source evidence, never a canonical value; numeric budgets are never raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode White_Space code point at either edge. Omit when nothing was observed or the native spelling is canonical.",
+        "examples": [
+          "none",
+          "custom"
+        ],
+        "format": "thinking-level-raw-utf8-128-bytes",
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^(?:﻿|[^\\s])(?:[\\s\\S]*(?:﻿|[^\\s]))?$",
+        "title": "Thinking Level Raw",
+        "type": "string"
+      },
+      "TokenUsageDetail": {
+        "properties": {
+          "cacheRead": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cacheWrite": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cacheWrite1h": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalTokens": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ToolCallDetail": {
+        "properties": {
+          "arguments": {
+            "type": "string"
+          },
+          "callEntryRef": {
+            "$ref": "#/components/schemas/SourceEntryRef"
+          },
+          "callProvenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "exitCode": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "filePath": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isError": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "resultEntryRef": {
+            "$ref": "#/components/schemas/SourceEntryRef"
+          },
+          "resultProvenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "toolKind": {
+            "$ref": "#/components/schemas/ToolCallKind"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "arguments",
+          "result"
+        ],
+        "type": "object"
+      },
+      "ToolCallKind": {
+        "description": "Classification of a tool call, aligned with ACP ToolCallUpdate.kind",
+        "enum": [
+          "read",
+          "edit",
+          "delete",
+          "move",
+          "search",
+          "execute",
+          "think",
+          "fetch",
+          "other"
+        ],
+        "examples": [
+          "read",
+          "edit",
+          "execute"
+        ],
+        "title": "Tool Call Kind",
+        "type": "string"
+      },
+      "TranscriptSegment": {
+        "properties": {
+          "byteLength": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "firstTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "index": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "lastTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptTurn"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "index",
+          "revision",
+          "firstTurn",
+          "lastTurn",
+          "byteLength",
+          "hasOlder",
+          "hasNewer",
+          "turns"
+        ],
+        "type": "object"
+      },
+      "TranscriptSegmentDirectory": {
+        "properties": {
+          "directoryPage": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "directoryPerPage": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegmentRef"
+            },
+            "type": "array"
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "totalConversationTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalSegments": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionId",
+          "revision",
+          "totalTurns",
+          "totalSegments",
+          "segments"
+        ],
+        "type": "object"
+      },
+      "TranscriptSegmentRef": {
+        "properties": {
+          "byteLength": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "conversationTurns": {
+            "$ref": "#/components/schemas/ConversationTurnSpan"
+          },
+          "firstTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "index": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "lastTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "firstTurn",
+          "lastTurn",
+          "byteLength"
+        ],
+        "type": "object"
+      },
+      "TranscriptTurn": {
+        "properties": {
+          "agentName": {
+            "type": "string"
+          },
+          "byteLength": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "command": {
+            "$ref": "#/components/schemas/CommandInvocation"
+          },
+          "content": {
+            "type": "string"
+          },
+          "contentParts": {
+            "items": {
+              "$ref": "#/components/schemas/TurnContentPart"
+            },
+            "type": "array"
+          },
+          "controlKind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "depth": {
+            "type": "integer"
+          },
+          "entryType": {
+            "$ref": "#/components/schemas/EntryType"
+          },
+          "hasThinking": {
+            "type": "boolean"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "observedModel": {
+            "$ref": "#/components/schemas/ObservedModelID"
+          },
+          "parentIndex": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/ContentProvenance"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "sourceEntryRef": {
+            "$ref": "#/components/schemas/SourceEntryRef"
+          },
+          "stopReason": {
+            "$ref": "#/components/schemas/StopReason"
+          },
+          "thinkingLevel": {
+            "$ref": "#/components/schemas/ThinkingLevel"
+          },
+          "thinkingLevelRaw": {
+            "$ref": "#/components/schemas/ThinkingLevelRaw"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "tokensIn": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "tokensOut": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "toolCalls": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCallDetail"
+            },
+            "type": "array"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageDetail"
+          }
+        },
+        "required": [
+          "index",
+          "role",
+          "content",
+          "timestamp",
+          "depth",
+          "truncated",
+          "byteLength"
+        ],
+        "type": "object"
+      },
+      "TranscriptWindow": {
+        "properties": {
+          "anchorTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "firstTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "lastTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "requestedAnchor": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "span": {
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionId",
+          "revision",
+          "requestedAnchor",
+          "anchorTurn",
+          "span",
+          "firstTurn",
+          "lastTurn",
+          "segments",
+          "hasOlder",
+          "hasNewer"
+        ],
+        "type": "object"
+      },
+      "TurnContentPart": {
+        "properties": {
+          "image": {
+            "$ref": "#/components/schemas/ImagePart"
+          },
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TurnPartType"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "TurnPartType": {
+        "description": "Kind of one ordered turn content part: text or image",
+        "enum": [
+          "text",
+          "image"
+        ],
+        "examples": [
+          "text",
+          "image"
+        ],
+        "title": "Turn Part Type",
+        "type": "string"
+      },
+      "UsageCompleteness": {
+        "description": "Completeness of the five base token fields",
+        "enum": [
+          "complete",
+          "partial",
+          "unknown"
+        ],
+        "examples": [
+          "complete",
+          "partial",
+          "unknown"
+        ],
+        "title": "Usage Completeness",
+        "type": "string"
+      },
+      "UsageDetail": {
+        "properties": {
+          "completeness": {
+            "$ref": "#/components/schemas/UsageCompleteness"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecordedCostDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/UsageScope"
+          },
+          "sourceEntryRef": {
+            "$ref": "#/components/schemas/SourceEntryRef"
+          },
+          "tokens": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenUsageDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "ownerId",
+          "sourceEntryRef",
+          "scope",
+          "completeness"
+        ],
+        "type": "object"
+      },
+      "UsageScope": {
+        "description": "Native owner scope for detailed token and cost evidence",
+        "enum": [
+          "assistant",
+          "tool",
+          "summary"
+        ],
+        "examples": [
+          "assistant",
+          "tool",
+          "summary"
+        ],
+        "title": "Usage Scope",
+        "type": "string"
+      }
+    }
+  }
+}

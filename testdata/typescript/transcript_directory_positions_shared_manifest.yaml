@@ -1,0 +1,25 @@
+# The exact shared directory cases the TypeScript position replay must visit.
+# The cases live in testdata/transcript_segments.yaml, where the Go validator
+# test asserts each one's expected.valid; this manifest selects the ones that
+# carry totalConversationTurns or a ref's conversationTurns, so a rename or a
+# removal on the Go side fails the browser suite instead of silently shrinking
+# the parity seam.
+#
+# The selection is by field presence, not by a name prefix:
+# directory-total-conversation-turns-negative carries no span and only a
+# negative total, and it proves the total is checked at all.
+expectedCaseCount: 13
+requiredCaseNames:
+  - directory-positions-zero-count-segment
+  - directory-positions-paged-second-page
+  - directory-positions-partial
+  - directory-positions-without-total
+  - directory-positions-total-without-spans
+  - directory-positions-negative-before
+  - directory-positions-negative-count
+  - directory-total-conversation-turns-negative
+  - directory-positions-exceed-total
+  - directory-positions-not-continuous
+  - directory-positions-omitted-span-agrees
+  - directory-positions-omitted-span-disagrees
+  - directory-positions-overlapping-spans

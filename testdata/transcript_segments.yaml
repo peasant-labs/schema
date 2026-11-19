@@ -28,6 +28,9 @@ required_names:
   - directory-total-conversation-turns-negative
   - directory-positions-exceed-total
   - directory-positions-not-continuous
+  - directory-positions-omitted-span-agrees
+  - directory-positions-omitted-span-disagrees
+  - directory-positions-overlapping-spans
   - window-anchored
   - window-span-one
   - window-span-zero
@@ -581,7 +584,11 @@ shape_cases:
           segments:
             - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10, conversationTurns: {before: -1, count: 2}}
             - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10, conversationTurns: {before: 1, count: 2}}
-      expected: {valid: false, errorContains: "segment 0 declares conversationTurns {before: -1, count: 2}"}
+      expected:
+        valid: false
+        errorContains: "segment 0 declares conversationTurns {before: -1, count: 2}"
+        errorExact: >-
+          transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: segment 0 declares conversationTurns {before: -1, count: 2}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref
     - name: directory-positions-negative-count
       classification: must-fail
       provenance: {source: boundary, ref: "span counts cannot be negative"}
@@ -597,7 +604,11 @@ shape_cases:
           segments:
             - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10, conversationTurns: {before: 0, count: -1}}
             - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10, conversationTurns: {before: 0, count: 2}}
-      expected: {valid: false, errorContains: "segment 0 declares conversationTurns {before: 0, count: -1}"}
+      expected:
+        valid: false
+        errorContains: "segment 0 declares conversationTurns {before: 0, count: -1}"
+        errorExact: >-
+          transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: segment 0 declares conversationTurns {before: 0, count: -1}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref
     - name: directory-total-conversation-turns-negative
       classification: must-fail
       provenance: {source: boundary, ref: "the total cannot be negative"}
@@ -629,7 +640,11 @@ shape_cases:
           segments:
             - {index: 0, firstTurn: 0, lastTurn: 10, byteLength: 10, conversationTurns: {before: 0, count: 11}}
             - {index: 1, firstTurn: 11, lastTurn: 12, byteLength: 10, conversationTurns: {before: 11, count: 0}}
-      expected: {valid: false, errorContains: "segment 0 ends at conversation turn 11, past totalConversationTurns 10"}
+      expected:
+        valid: false
+        errorContains: "segment 0 ends at conversation turn 11, past totalConversationTurns 10"
+        errorExact: >-
+          transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: segment 0 ends at conversation turn 11, past totalConversationTurns 10; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields
     - name: directory-positions-not-continuous
       classification: must-fail
       provenance: {source: boundary, ref: "neighbouring spans are continuous"}
@@ -645,7 +660,65 @@ shape_cases:
           segments:
             - {index: 0, firstTurn: 0, lastTurn: 5, byteLength: 10, conversationTurns: {before: 0, count: 5}}
             - {index: 1, firstTurn: 6, lastTurn: 12, byteLength: 10, conversationTurns: {before: 6, count: 4}}
-      expected: {valid: false, errorContains: "segment 1 declares 6 conversation turns before it, but segment 0 ends at 5"}
+      expected:
+        valid: false
+        errorContains: "segment 1 declares 6 conversation turns before it, but segment 0 ends at 5"
+        errorExact: >-
+          transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: segment 1 declares 6 conversation turns before it, but segment 0 ends at 5; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields
+    - name: directory-positions-omitted-span-agrees
+      classification: must-pass
+      provenance: {source: requirement, ref: "an omitted span breaks the continuity chain"}
+      mutation: {description: "serves spans on refs 0 and 2 that happen to meet across the ref without one"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 6
+          totalConversationTurns: 5
+          totalSegments: 3
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 1, byteLength: 10, conversationTurns: {before: 0, count: 3}}
+            - {index: 1, firstTurn: 2, lastTurn: 3, byteLength: 10}
+            - {index: 2, firstTurn: 4, lastTurn: 5, byteLength: 10, conversationTurns: {before: 3, count: 2}}
+      expected: {valid: true}
+    - name: directory-positions-omitted-span-disagrees
+      classification: must-pass
+      provenance: {source: requirement, ref: "an omitted span breaks the continuity chain"}
+      mutation: {description: "serves spans on refs 0 and 2 that would overlap across the ref without one"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 6
+          totalConversationTurns: 5
+          totalSegments: 3
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 1, byteLength: 10, conversationTurns: {before: 0, count: 3}}
+            - {index: 1, firstTurn: 2, lastTurn: 3, byteLength: 10}
+            - {index: 2, firstTurn: 4, lastTurn: 5, byteLength: 10, conversationTurns: {before: 2, count: 2}}
+      expected: {valid: true}
+    - name: directory-positions-overlapping-spans
+      classification: must-fail
+      provenance: {source: boundary, ref: "neighbouring spans are continuous"}
+      mutation: {description: "declares an overlap between neighbouring spans"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 6
+          totalConversationTurns: 5
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 1, byteLength: 10, conversationTurns: {before: 0, count: 3}}
+            - {index: 1, firstTurn: 2, lastTurn: 3, byteLength: 10, conversationTurns: {before: 1, count: 2}}
+      expected:
+        valid: false
+        errorContains: "segment 1 declares 1 conversation turns before it, but segment 0 ends at 3"
+        errorExact: >-
+          transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: segment 1 declares 1 conversation turns before it, but segment 0 ends at 3; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields
 cut_cases:
   - name: cut-defers-crossing-entry
     budgetBytes: 1048576

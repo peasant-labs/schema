@@ -13,6 +13,25 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		var err error
+		switch os.Args[1] {
+		case "report":
+			err = runReport(os.Args[2:])
+		case "status":
+			err = runStatus(os.Args[2:])
+		case "freeze":
+			err = runFreeze(os.Args[2:])
+		case "freeze-render":
+			err = runFreezeRender(os.Args[2:])
+		default:
+			log.Fatalf("unknown schema-gen command %q; use report, status, freeze or omit the command to generate", os.Args[1])
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	moduleRoot, err := findModuleRoot()
 	if err != nil {
 		log.Fatal(err)
@@ -41,12 +60,19 @@ func main() {
 		log.Fatal(err)
 	}
 	for filename, data := range artifacts {
-		path := filepath.Join(generatedDir, filename)
+		path := filepath.Join(generatedDir, workingArtifactName(filename))
 		if err := os.WriteFile(path, data, 0644); err != nil {
 			log.Fatal(err)
 		}
 		log.Printf("Generated %s", path)
 	}
+
+	// --- Route members (route/routes_gen.go and the TypeScript routes module) ---
+	// A projection of the Village API and Local API documents built above.
+	if err := generateRoutes(moduleRoot, artifacts); err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Generated %s and %s", filepath.Join(moduleRoot, routeGoRelPath), filepath.Join(moduleRoot, routeTSRelPath))
 
 	// Specs still needed below for the HTML docs.
 	villageSpec, err := openapi.BuildVillageAPISpec()
@@ -58,6 +84,14 @@ func main() {
 		log.Fatal(err)
 	}
 	sharedSpec, err := openapi.BuildTypesSpec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	minReadSpec, err := openapi.BuildSegmentedReadSpec(openapi.SegmentedReadMinVersion, openapi.SegmentedReadMinVersion)
+	if err != nil {
+		log.Fatal(err)
+	}
+	currentReadSpec, err := openapi.BuildSegmentedReadSpec(openapi.SegmentedReadAPIVersion, openapi.SegmentedReadSpecVersion)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -94,6 +128,14 @@ func main() {
 	if err := writeTypesHTML(sharedSpec, docsDir); err != nil {
 		log.Fatal(err)
 	}
+	minReadName := "segmented-read-" + openapi.SegmentedReadMinVersion
+	currentReadName := "segmented-read-" + openapi.SegmentedReadSpecVersion
+	if err := writeTypeCatalogHTML(minReadSpec, minReadName, "Segmented Read Protocol", docsDir); err != nil {
+		log.Fatal(err)
+	}
+	if err := writeTypeCatalogHTML(currentReadSpec, currentReadName, "Segmented Read Protocol", docsDir); err != nil {
+		log.Fatal(err)
+	}
 	if err := writeTypeGraphHTML(villageSpec, docsDir); err != nil {
 		log.Fatal(err)
 	}
@@ -107,6 +149,8 @@ func main() {
 		{villageSpec, "village-api", villageLabel, "Transcript publishing + CLI auth"},
 		{peasantLocalSpec, "peasantlocal-api", peasantLocalLabel, "REST + WebSocket"},
 		{sharedSpec, "types", typesLabel, "Domain type catalog + relationship diagram"},
+		{minReadSpec, minReadName, "Segmented Read Protocol v" + openapi.SegmentedReadMinVersion, "Frozen and still served"},
+		{currentReadSpec, currentReadName, "Segmented Read Protocol v" + openapi.SegmentedReadSpecVersion, "Positioned transcript read shapes"},
 		{nil, "type-graph", "Type Relationship Graph", "Full dependency graph across all types"},
 	}
 	if err := writeIndexHTML(indexEntries, docsDir); err != nil {

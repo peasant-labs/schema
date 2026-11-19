@@ -1,11 +1,26 @@
-.PHONY: schema check fmt vet test freshness gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check
+.PHONY: schema check fmt vet test race-selective freshness freeze-check gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check check-unstring unstring-update
 
 GO ?= go
+UNSTRING ?= go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.4
 
 # BASE_REF: the ref the breaking-change gates (oasdiff / go-apidiff) diff against.
 # CI sets it to the PR base (origin/develop). Locally, default to origin/develop;
 # override on the CLI: `make gates BASE_REF=HEAD~1`.
 BASE_REF ?= origin/develop
+export TITLE
+
+# RACE=1 runs the Go suites under the race detector. The default is no race:
+# the detector roughly doubles to triples the suite's wall time, and the
+# module's only production concurrency is the lazy schema-compilation caches,
+# which `make race-selective` covers under -race in seconds. Opt in for a
+# full race pass with `make check RACE=1` or `make test RACE=1`.
+RACE ?= 0
+GORACE_FLAG := $(if $(filter 1,$(RACE)),-race,)
+
+# The tests race-selective runs, by exact name, space-separated. Each one
+# must run and pass, so a renamed or deleted test fails the target instead of
+# passing with zero tests. New production concurrency adds its test here.
+RACE_SELECTIVE_TESTS ?= TestValidatorCachesConcurrently
 
 # Regenerate OpenAPI/Redoc from Go, then derive the TypeScript contract package.
 schema: typescript-deps
@@ -37,23 +52,49 @@ vet:
 	$(GO) vet ./...
 	cd tools/redaction-categories && GOWORK=off $(GO) vet ./...
 
-# check is the schema repo's quality gate — the make-check-equivalent of peasant's
-# `make check`, minus the peasant-specific web build and ast-grep step (no
-# ast-grep ruleset is configured in this contract-only leaf). The Go race suite
+# check is the schema repo's quality gate - the make-check-equivalent of peasant's
+# `make check`, minus the peasant-specific web build. The unstring static guard
+# runs here and needs ast-grep 0.51.2 from the dev shell. The Go suite
 # includes the leaf-audit test and the oasdiff/go-apidiff synthetic-break tests,
 # which t.Skip with an actionable message when a gate binary is absent (e.g.
 # outside `nix develop`) and run for real inside the flake dev shell. The full
 # gate also requires the locked TypeScript dependencies.
 #
 # The release-workflow guard (release-guard check-workflow) keeps publication
-# behind the required gates; the race suite is the authoritative test run.
+# behind the required gates; the Go suite is the authoritative test run, without
+# the race detector unless RACE=1 (see RACE above).
+# The root package needs headroom beyond Go's default 10-minute timeout in CI.
 check: fmt vet freshness typescript-check
+	$(UNSTRING) check
 	$(GO) run ./cmd/release-guard check-workflow --policy .github/release-guard.policy.yml --release .github/workflows/release.yml
-	$(GO) test -race ./...
-	cd tools/redaction-categories && GOWORK=off $(GO) test -race ./...
+	$(GO) test $(GORACE_FLAG) -timeout 20m ./...
+	cd tools/redaction-categories && GOWORK=off $(GO) test $(GORACE_FLAG) ./...
+
+check-unstring:
+	$(UNSTRING) check
+
+unstring-update:
+	$(UNSTRING) update
 
 test:
-	$(GO) test -race ./...
+	# Match check's CI headroom for the root package suite.
+	$(GO) test $(GORACE_FLAG) -timeout 20m ./...
+	cd tools/redaction-categories && GOWORK=off $(GO) test $(GORACE_FLAG) ./...
+
+# race-selective runs the race detector over the module's only production
+# concurrency: the sync.Once and sync.Map schema-compilation caches behind the
+# publish-request, annotation-push and described-value validators. The merge
+# queue runs it beside the no-race `make check`.
+race-selective:
+	@set -eu; \
+	log=$$(mktemp "$${TMPDIR:-/tmp}/schema-race-selective.XXXXXXXX"); \
+	trap 'rm -f "$$log"' EXIT; \
+	pattern="^($$(printf '%s' '$(RACE_SELECTIVE_TESTS)' | tr -s ' ' '|'))$$"; \
+	$(GO) test -race -count=1 -v -run "$$pattern" . > "$$log" 2>&1 || { cat "$$log"; exit 1; }; \
+	grep -E '^(--- |ok|PASS|FAIL)' "$$log"; \
+	for name in $(RACE_SELECTIVE_TESTS); do \
+		grep -q -- "^--- PASS: $$name " "$$log" || { echo "race-selective: $$name did not run and pass under -race; a renamed or deleted test must be updated in RACE_SELECTIVE_TESTS"; exit 1; }; \
+	done
 
 # freshness is the git-diff backstop: regenerate the specs and fail
 # if the committed generated/ artifacts drift from the Go source. It is largely
@@ -65,19 +106,30 @@ test:
 freshness: typescript-deps
 	$(GO) run ./cmd/schema-gen
 	pnpm --dir typescript run generate
-	@git add -N -- generated/ testdata/session-detail/redactions.yaml typescript/src/internal/generated/
-	@if ! git diff --quiet -- generated/ testdata/session-detail/redactions.yaml typescript/src/internal/generated/; then \
+	@git add -N -- generated/ route/routes_gen.go testdata/session-detail/redactions.yaml typescript/src/internal/generated/
+	@if ! git diff --quiet -- generated/ route/routes_gen.go testdata/session-detail/redactions.yaml typescript/src/internal/generated/; then \
 		echo "generated artifacts drifted from their canonical Go/OpenAPI/YAML sources — run 'make schema' and commit the result."; \
-		git --no-pager diff --stat -- generated/ testdata/session-detail/redactions.yaml typescript/src/internal/generated/; \
+		git --no-pager diff --stat -- generated/ route/routes_gen.go testdata/session-detail/redactions.yaml typescript/src/internal/generated/; \
 		exit 1; \
 	fi
 
-# gates runs the breaking-change contract gates that need git history: vacuum
-# lint of the committed specs, oasdiff vs the base ref, and go-apidiff vs the
-# base ref. Requires the flake tools (oasdiff/go-apidiff/vacuum) — run inside
-# `nix develop`. CI runs this with fetch-depth:0 so BASE_REF is resolvable.
+freeze-check:
+	$(GO) run ./cmd/schema-gen freeze --check
+
+# gates conservatively refuses a break without a title. With TITLE set it uses
+# release-intent to judge the report just as CI does. The binary must be on PATH.
 gates:
-	./scripts/contract-gates.sh all $(BASE_REF)
+	@set -eu; \
+	report=$$(mktemp "$${TMPDIR:-/tmp}/schema-contract-report.XXXXXXXX.yaml"); \
+	trap 'rm -f "$$report"' EXIT; \
+	./scripts/contract-gates.sh all "$(BASE_REF)" --out "$$report"; \
+	if [ -n "$${TITLE:-}" ]; then \
+		command -v release-intent >/dev/null || { echo "release-intent is required on PATH to judge TITLE; build it from the pinned infra revision."; exit 1; }; \
+		printf '%s' "$$TITLE" | release-intent check-contract --report "$$report"; \
+	elif grep -Eq '^[[:space:]]*(go_api_breaking|breaking): true[[:space:]]*$$' "$$report"; then \
+		echo "Contract report contains a break; rerun with TITLE='feat(scope)![minor]: describe the change' and the pinned release-intent on PATH."; \
+		exit 1; \
+	fi
 
 # lint-specs runs just the hermetic vacuum lint (no git/base ref needed).
 lint-specs:

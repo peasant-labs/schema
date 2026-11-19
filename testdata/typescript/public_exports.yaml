@@ -10,13 +10,22 @@ aliases:
     surfaces: [local, village]
 constants:
   - name: VillageAPIVersion
-    value: 0.41.0
+    value: 0.42.0
     surfaces: [root, village]
   - name: PeasantLocalAPIVersion
-    value: 0.38.0
+    value: 0.39.0
     surfaces: [root, local]
   - name: TypesVersion
-    value: 0.51.0
+    value: 0.52.0
+    surfaces: [root]
+  - name: SegmentedReadAPIVersion
+    value: 0.2.0
+    surfaces: [root]
+  - name: SegmentedReadSpecVersion
+    value: 0.2.0
+    surfaces: [root]
+  - name: SegmentedReadMinVersion
+    value: 0.1.0
     surfaces: [root]
   - name: MetadataSchemaVersion
     value: "12"
@@ -24,7 +33,28 @@ constants:
   - name: LocalKickstartDroppedLabelsMax
     value: "3"
     surfaces: [root, local]
+  - {name: MaxLocalKickstartPreviewNodeIDBytes, value: "512", surfaces: [root]}
+  - {name: MaxTranscriptDirectoryRefs, value: "10000", surfaces: [root]}
+  - name: TranscriptSourceReadPolicy
+    value: {maxDocumentBytes: 134217728, maxDocumentDepth: 64, opaqueMetadataPointers: ["/sessionDetail/nativeMetadata/*/data"]}
+    surfaces: [root]
+  - name: TranscriptSourceDetailReadPolicy
+    value: {maxDocumentBytes: 134217728, maxDocumentDepth: 64, opaqueMetadataPointers: ["/nativeMetadata/*/data"]}
+    surfaces: [root]
+  - name: TranscriptDownloadPolicy
+    value:
+      maxDocumentDepth: 64
+      opaqueMetadataPointers:
+        - "/sessionDetail/nativeMetadata/*/data"
+        - "/sessionDetail/earlierHistory/*/nativeMetadata/*/data"
+        - "/nativeMetadata/*/data"
+        - "/earlierHistory/*/nativeMetadata/*/data"
+    surfaces: [root]
 functions:
+  - {name: parseLocalKickstartPreviewValue, target: runtime-preview-parser, surfaces: [root]}
+  - {name: parseLocalKickstartPreviewRequest, target: runtime-preview-request-parser, surfaces: [root]}
+  - {name: parseLocalKickstartPreviewEvent, target: runtime-preview-event-parser, surfaces: [root]}
+  - {name: mergeLocalKickstartPreview, target: runtime-preview-stream-merge, surfaces: [root]}
   - {name: normalizeCollectiveObservationScope, target: runtime-scope-normalizer, surfaces: [root]}
   - {name: encodeContributionTraversalRevision, target: runtime-selected-category-token-encoder, surfaces: [root]}
   - {name: parseContributionTraversalRevision, target: runtime-selected-category-token-parser, surfaces: [root]}
@@ -38,6 +68,9 @@ functions:
     surfaces: [root]
   - name: parseSchemaVersionAdvertisement
     target: runtime-capability-advertisement-parser
+    surfaces: [root]
+  - name: parseSegmentedReadVersionAdvertisement
+    target: runtime-segmented-read-version-parser
     surfaces: [root]
   - name: knownContentCapabilities
     target: runtime-capability-reader
@@ -75,6 +108,10 @@ functions:
   - name: parseTranscriptContentText
     target: runtime-parser:TranscriptContent
     surfaces: [root]
+  - {name: parseSessionDetailPayloadTextWithPolicy, target: runtime-policy-parser:SessionDetailPayload, surfaces: [root]}
+  - {name: parseTranscriptContentTextWithPolicy, target: runtime-policy-parser:TranscriptContent, surfaces: [root]}
+  - {name: transcriptContentIsStrict, target: runtime-strictness:TranscriptContent, surfaces: [root]}
+  - {name: parseTranscriptDownloadText, target: runtime-download-parser:TranscriptContent, surfaces: [root]}
   - name: parseNativeMetadataRecordsText
     target: runtime-parser:NativeMetadataRecords
     surfaces: [root]
@@ -83,6 +120,15 @@ functions:
     surfaces: [root]
   - name: isConversationTurn
     target: runtime-predicate:ConversationTurn
+    surfaces: [root]
+  - name: isTranscriptDirectoryPositionsValid
+    target: runtime-predicate:TranscriptDirectoryPositions
+    surfaces: [root]
+  - name: isPositionedDirectoryPositionsValid
+    target: runtime-predicate:PositionedDirectoryPositions
+    surfaces: [root]
+  - name: readTranscriptServedTurn
+    target: runtime-reader:TranscriptServedTurn
     surfaces: [root]
 forbidden:
   - Provider

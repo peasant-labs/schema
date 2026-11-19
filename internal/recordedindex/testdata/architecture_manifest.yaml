@@ -1,0 +1,7 @@
+requiredNames:
+  - recorded-index-zero-on-both-architectures
+  - recorded-index-max-native-32
+  - recorded-index-above-native-32
+  - recorded-index-would-wrap-on-32
+  - recorded-index-safe-maximum-by-architecture
+  - recorded-index-above-safe-range-on-both

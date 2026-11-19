@@ -151,6 +151,30 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"ConversationTurnSpan", new(schema.ConversationTurnSpan)},
 		{"TranscriptSegment", new(schema.TranscriptSegment)}, {"TranscriptTurn", new(schema.TranscriptTurn)},
 		{"TranscriptWindow", new(schema.TranscriptWindow)},
+		{"TranscriptReadTransportKind", new(schema.TranscriptReadTransportKind)},
+		{"TranscriptReadTransport", new(schema.TranscriptReadTransport)},
+		{"TranscriptRecordedIndexState", new(schema.TranscriptRecordedIndexState)},
+		{"TranscriptReadValidation", new(schema.TranscriptReadValidation)},
+		{"TranscriptNativePresence", new(schema.TranscriptNativePresence)},
+		{"TranscriptUsagePresence", new(schema.TranscriptUsagePresence)},
+		{"TranscriptReadContext", new(schema.TranscriptReadContext)},
+		{"TranscriptSegmentPartitionKind", new(schema.TranscriptSegmentPartitionKind)},
+		{"TranscriptSegmentPartition", new(schema.TranscriptSegmentPartition)},
+		{"TranscriptHistorySection", new(schema.TranscriptHistorySection)},
+		{"PositionedSegmentRef", new(schema.PositionedSegmentRef)},
+		{"TranscriptSegmentRow", new(schema.TranscriptSegmentRow)},
+		{"PositionedDirectory", new(schema.PositionedDirectory)},
+		{"PositionedSegment", new(schema.PositionedSegment)},
+		{"PositionedWindow", new(schema.PositionedWindow)},
+		{"TranscriptEntryReferenceKind", new(schema.TranscriptEntryReferenceKind)},
+		{"TranscriptEntryLocateRequest", new(schema.TranscriptEntryLocateRequest)},
+		{"TranscriptEntryMatch", new(schema.TranscriptEntryMatch)},
+		{"TranscriptFlaggedTurn", new(schema.TranscriptFlaggedTurn)},
+		{"TranscriptServedTurn", new(schema.TranscriptServedTurn)},
+		{"TranscriptSessionHeader", new(schema.TranscriptSessionHeader)},
+		{"TranscriptContentHeader", new(schema.TranscriptContentHeader)},
+		{"TranscriptRetainedState", new(schema.TranscriptRetainedState)},
+		{"TranscriptViewerProjection", new(schema.TranscriptViewerProjection)},
 		{"SessionTeammate", new(schema.SessionTeammate)}, {"SessionTeammateEvidence", new(schema.SessionTeammateEvidence)},
 		{"LocalSyncSummary", new(schema.LocalSyncSummary)}, {"LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)},
 		{"LocalSessionRow", new(schema.LocalSessionRow)}, {"LocalSessionListItem", new(schema.LocalSessionListItem)},
@@ -282,6 +306,10 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"LocalKickstartAnswers", new(schema.LocalKickstartAnswers)}, {"LocalKickstartOverwrite", new(schema.LocalKickstartOverwrite)},
 		{"LocalKickstartPatchResult", new(schema.LocalKickstartPatchResult)}, {"LocalKickstartCommitted", new(schema.LocalKickstartCommitted)},
 		{"LocalKickstartCommitRefusal", new(schema.LocalKickstartCommitRefusal)}, {"LocalKickstartEvent", new(schema.LocalKickstartEvent)},
+		{"LocalKickstartPreviewOp", new(schema.LocalKickstartPreviewOp)}, {"LocalKickstartPreviewContinuation", new(schema.LocalKickstartPreviewContinuation)},
+		{"LocalKickstartPreviewEventKind", new(schema.LocalKickstartPreviewEventKind)}, {"LocalKickstartPreviewCutReason", new(schema.LocalKickstartPreviewCutReason)}, {"LocalKickstartPreviewCloseReason", new(schema.LocalKickstartPreviewCloseReason)},
+		{"LocalKickstartPreviewRequest", new(schema.LocalKickstartPreviewRequest)}, {"LocalKickstartPreviewEvent", new(schema.LocalKickstartPreviewEvent)},
+		{"LocalKickstartPreviewDirectory", new(schema.LocalKickstartPreviewDirectory)}, {"LocalKickstartPreviewSegment", new(schema.LocalKickstartPreviewSegment)},
 		{"LocalKickstartErrorCode", new(schema.LocalKickstartErrorCode)}, {"LocalKickstartErrorResponse", new(schema.LocalKickstartErrorResponse)},
 		{"AutoPublishEvent", new(schema.AutoPublishEvent)}, {"AutoPublishHookStatus", new(schema.AutoPublishHookStatus)},
 		{"AutoPublishHookRemedy", new(schema.AutoPublishHookRemedy)}, {"AutoPublishHook", new(schema.AutoPublishHook)},
@@ -410,9 +438,10 @@ func constrainHelperMemberItems(components map[string]map[string]interface{}) er
 // component opts in when its embedding is the wire shape itself rather than a
 // nested object, so the promoted properties are the fields a consumer receives.
 var expandedEmbeddedRequired = map[string]struct{}{
-	"SessionDetailReadPayload":   {},
-	"SessionDetailHeaderPayload": {},
-	"TranscriptTurn":             {},
+	"SessionDetailReadPayload":     {},
+	"SessionDetailHeaderPayload":   {},
+	"TranscriptTurn":               {},
+	"LocalKickstartPreviewSegment": {},
 }
 
 // applyGoRequiredFields preserves Go's JSON presence contract in the canonical
@@ -656,7 +685,8 @@ var strictNullableProperties = map[string]map[string]struct{}{
 // API document that references the same canonical type, so the Types catalog and
 // the operation cannot disagree about what the body accepts.
 func closeStrictComponents(components map[string]map[string]interface{}) error {
-	for _, name := range strictComponents {
+	names := append(append([]string(nil), strictComponents...), "LocalKickstartPreviewRequest", "LocalKickstartPreviewEvent", "LocalKickstartPreviewDirectory", "LocalKickstartPreviewSegment")
+	for _, name := range names {
 		component, ok := components[name]
 		if !ok {
 			return fmt.Errorf("close strict component %s: it is named as strict but absent from the Types catalog; either add it to TypeCatalogEntries or remove it from strictComponents, because a strict name that matches nothing would silently stop closing anything", name)

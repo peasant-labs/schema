@@ -1,0 +1,12 @@
+requiredNames:
+  - clean-tree
+  - openapi-description-only
+  - openapi-new-field
+  - openapi-changed-type
+  - openapi-removed-path
+  - request-description-only
+  - request-new-field
+  - request-changed-type
+  - request-removed-field
+  - segmented-description-only
+  - segmented-new-field

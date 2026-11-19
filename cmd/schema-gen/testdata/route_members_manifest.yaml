@@ -1,0 +1,22 @@
+# The case names cmd/schema-gen/testdata/route_members.yaml must hold. A case
+# that is removed or added without its entry here fails the test.
+requiredNames:
+  - orders-by-pattern-then-method
+  - parameters-follow-the-template
+  - no-paths
+  - missing-operation-id
+  - operation-id-not-an-identifier
+  - repeated-operation-id
+  - generated-identifier-collision
+  - method-outside-the-set
+  - path-level-parameters
+  - referenced-parameter
+  - template-parameter-undeclared
+  - declared-parameter-not-in-template
+  - unsupported-parameter-type
+  - unresolved-schema-reference
+  - unbalanced-brace
+  - parameter-name-not-an-identifier
+  - parameter-name-reserved-in-go
+  - repeated-template-parameter
+  - parameter-name-reserved-by-the-builder

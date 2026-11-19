@@ -30,7 +30,8 @@ inside `nix develop` (or after `direnv allow`).
 
 ```bash
 make check                          # the authoritative quality gate (bare-go runnable)
-make test                           # go test -race ./...
+make test                           # go test ./... (RACE=1 adds -race)
+make race-selective                 # go test -race over the validator schema caches
 make gates BASE_REF=origin/develop  # the breaking-change contract gates (needs the flake tools)
 make freshness                      # git-diff backstop on the generated artifacts
 pnpm --dir typescript run typecheck
@@ -40,16 +41,34 @@ pnpm --dir typescript run package:smoke
 ```
 
 `make check` is `fmt` + `vet` + `freshness` + the release-workflow guard
-(`release-guard check-workflow`) + `go test -race ./...`. The race suite is the
+(`release-guard check-workflow`) + `go test ./...`. That suite is the
 authoritative run: it includes the leaf audit, the vendor-hash guard, and the
 `oasdiff` / `go-apidiff` synthetic-break tests (which skip when their binary is
 absent).
 
+The default is no race detector, on every CI event and locally. The module's
+only production concurrency is the lazy schema compilation behind
+`ValidatePublishRequest`, `ValidateAnnotationPushRequest` (`sync.Once`) and
+`ValidateDescribedValue` (`sync.Map`). `make race-selective` runs
+`TestValidatorCachesConcurrently` (fixture
+`testdata/validator_cache_concurrency.yaml`) alone under `-race`, so the first
+compilation and every cache read contend; the merge-queue run requires it.
+`make check RACE=1` (or `make test RACE=1`) is the opt-in full race pass.
+
+`race-selective` names its tests in `RACE_SELECTIVE_TESTS` (Makefile) and
+fails unless each one runs and passes, so a renamed test cannot leave it
+passing with zero tests. New production concurrency must add a test that
+exercises it from many goroutines and extend `RACE_SELECTIVE_TESTS`. The
+`sync.Once` caches race if replaced by an unguarded nil check and the
+`sync.Map` cache races if replaced by a plain map (both verified to report
+`DATA RACE`); `sync.Map` is race-safe by construction, so for it the test
+only guards against such a replacement.
+
 Run one test or one package:
 
 ```bash
-go test -race ./cmd/schema-gen/ -run TestRetiredSpecsImmutable -v
-go test -race ./internal/contractgates/ -run TestOasdiffSyntheticBreak -v   # skips without oasdiff
+go test ./cmd/schema-gen/ -run TestRetiredSpecsImmutable -v
+go test ./internal/contractgates/ -run TestOasdiffSyntheticBreak -v   # skips without oasdiff
 ```
 
 ### Bare `go` vs `nix develop`
@@ -61,6 +80,46 @@ go test -race ./internal/contractgates/ -run TestOasdiffSyntheticBreak -v   # sk
   `vacuum` are on `PATH`, so the synthetic-break tests and `make gates` run for
   real. CI runs `make gates` with `fetch-depth: 0` so the base ref is resolvable.
 
+### Tests never read your git configuration
+
+A test result must not depend on the machine. Every package whose tests start a
+process (git, a shell script, `go`) has a `TestMain` that calls
+`testutil.RunWithIsolatedGitConfig` (`internal/testutil/gitconfig.go`). Before
+any test runs it sets `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`,
+and unsets `GIT_CONFIG_COUNT`, `GIT_CONFIG_PARAMETERS` and the repository
+location variables (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`,
+`GIT_COMMON_DIR`, `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`)
+that a hook or `rebase -x` exports. A global `commit.gpgsign`, a
+`url.*.insteadOf` rewrite or injected `GIT_CONFIG_*` values therefore never
+reach a child, and a test's git never acts on an outer repository.
+`GIT_CONFIG_GLOBAL` needs git 2.32 or newer; older git ignores it. Do not add
+per-call `-c commit.gpgsign=false` or `GIT_CONFIG_GLOBAL` workarounds. Set the
+commit identity per call (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`), as the existing
+helpers do.
+
+`TestEveryPackageThatStartsProcessesIsolatesGitConfig` scans test files that
+import `os/exec`. Their package must have an unconstrained `TestMain` ending in
+`os.Exit(testutil.RunWithIsolatedGitConfig(...))`, with no other `m.Run`,
+`goleak.VerifyTestMain`, `os.Exit`, or isolation-helper call. Setup before the
+exit is allowed. The helper's own package instead calls unexported
+`isolateGitConfig` in a top-level `if err := isolateGitConfig(); err != nil`
+that exits nonzero, then ends with `os.Exit(m.Run())`, without a competing
+runner, exit, or isolation call. It runs independently so a broken helper
+cannot skip its own tests. The fixture corpus is
+`internal/testutil/testdata/git_isolation_scanner.yaml`.
+`TestIsolatedChildGitReadsNoHostileSource` runs a real child git under every
+hostile source and checks that it reads none of them once isolated.
+
+The guard cannot see:
+
+- a test that starts git only through non-test code (it checks `_test.go`
+  imports only);
+- a process started without `os/exec` (`os.StartProcess`, `syscall.Exec`);
+- git run by a dependency outside the module;
+- a `TestMain` that calls the helper on only some paths;
+- a child whose environment a test rebuilds from scratch without the isolation
+  variables.
+
 ## Layer 1: the contract gates
 
 These are the load-bearing invariants. Each has a real, named test (or gate
@@ -68,14 +127,14 @@ script) behind it.
 
 | Gate | Where it lives | Consequence |
 |---|---|---|
-| Codegen freshness | `cmd/schema-gen/freshness_test.go`, `cmd/schema-gen/redactions_freshness_test.go`, `cmd/schema-gen/generated_accounted_test.go`; `make freshness` | **Hard.** A committed spec that drifts from the Go source fails the build. |
+| Codegen freshness | `cmd/schema-gen/freshness_test.go`, `cmd/schema-gen/redactions_freshness_test.go`, `cmd/schema-gen/routes_test.go`, `cmd/schema-gen/generated_accounted_test.go`; `make freshness` | **Hard.** A committed spec that drifts from the Go source fails the build. |
 | Retired-version immutability | `cmd/schema-gen/retired_specs_test.go` | **Hard.** A frozen spec that is edited or deleted fails. |
-| OpenAPI breaking diff (`oasdiff`) | `scripts/contract-gates.sh` (`make gates`); `internal/contractgates/synthetic_break_test.go` | **Hard.** An ERR-level break vs the prior golden fails. |
+| OpenAPI breaking diff (`oasdiff`) | `scripts/contract-gates.sh`, `cmd/schema-gen/report.go`; `internal/contractgates/synthetic_break_test.go` | An ERR-level break is reported against the base surface version and must be declared in the title. |
 | OpenAPI lint (`vacuum`) | `scripts/contract-gates.sh` + `.vacuum.yaml` | **Hard.** An `error`-severity finding in a generated spec fails. |
-| Exported-Go-API diff (`go-apidiff`) | `scripts/contract-gates.sh`; `internal/contractgates/synthetic_break_test.go` | **Advisory (pre-1.0).** Incompatible changes warn; an unparseable diff fails closed. |
+| Exported-Go-API diff (`go-apidiff`) | `scripts/contract-gates.sh`; `internal/contractgates/synthetic_break_test.go` | Incompatible changes must be declared in the title; an unparseable diff fails closed. |
 | Leaf-purity audit | `leaf_audit_test.go` | **Hard.** A `go.mod` direct require outside the allowed set fails. |
 | Vendor-hash stability | `vendorhash_test.go` | **Hard.** A local-path `replace` in `go.mod` fails. |
-| Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish (GitHub Release or npm) behind an un-gated workflow, is rejected. |
+| Release grammar + guard | pinned `release-intent`, `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** Malformed intent titles or tags, and an un-gated publish workflow, are rejected. |
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
 | Local API 0.5.0 closed-set exhaustive coverage + regen-freshness | `enumcorpus/enumcorpus_test.go` (`TestEnumCorpora_ExhaustiveCoverageAndFreshness`, one subtest pair per enum) | **Hard.** `enumcorpus.BuildCorpus`/`RenderCorpus` generalize `licensecorpus`'s pattern over any closed string enum; `cmd/gen-enum-corpora` regenerates all ten committed corpora (`AssociationConclusion`, `AssociationEvidenceKind`, `Confidence`, `RewriteResolution`, `RewriteMethod`, `InsightKind`, `InsightProvenance`, `ReadAttributionState`, `ReadStateGrade`, `TargetKind`) in one `go generate`. |
@@ -83,13 +142,17 @@ script) behind it.
 | Declared session origin | `session_origin_test.go`, `testdata_session_origin.go`; `testdata/local-api/session_origin.yaml` | **Hard.** The corpus derives its menu from `AllSessionOrigins` and its behaviour coverage from `AllSessionOriginBehaviours`, both by set membership, so widening the enum or deleting the rows that carry a behaviour fails at load. Every menu member round-trips on BOTH `SessionDetailPayload` and `SessionSummary`, and the published `SessionOrigin` component must refuse an off-menu token with a needle naming the whole menu. |
 | Local publishing and Village pull request read boundaries | `publishing_contract_boundaries_test.go`; `testdata/publishing_corpora.yaml` (the one corpus list both languages read), `testdata/local-api/{sync_sessions,publications,sync_push,village_collectives,sync_auth,settings}.yaml`, `testdata/pulls/{transcript_pull_requests,personal_stats}.yaml`; `typescript/tests/publishing-contract-zod.test.mjs` | **Hard.** One harness runs every case through two independent layers: the published Types component (JSON Schema) and the Go decoder plus `Validate`. Each invalid case names the layer that refuses it (`rejected_by: shape` or `semantics`), so a relational rule cannot pass because the schema happens to refuse the payload, and a shape rule cannot pass because Go happens to; a shape case also states `go_rejects`, and `go_error_contains` names the Go rule when a closed-set guard must be the one that refuses, so an unrelated relational rule cannot mask it. Valid cases round-trip through Go and the emitted JSON must still satisfy the component. Each file's `operations` bind the component to its Local or Village operation with its parameters and, where the corpus owns the operation's exact status set, the component of every declared refusal body, and `required_names` is the exact case manifest. A boundary corpus in those fixture directories that the shared list omits fails the run. The TypeScript suite replays the same files against the generated Zod schemas, which must accept exactly the cases the shape layer accepts. |
 | Local write routes declare the cross-origin refusal | `cross_origin_writes_test.go`; `testdata/local-api/cross_origin_writes.yaml` | **Hard.** The manifest is the exact set of declared state-changing Local API operations. Each must declare 403 with the shared JSON error body and state the refusal in its description, and a declared write operation outside the manifest fails. |
-| Village rows embedded in the Local API | `village_components_in_local_api_test.go`; `testdata/local-api/village_components.yaml` | **Hard.** The Village catalog rows the Local API embeds are pinned by hash for the current `PeasantLocalAPIVersion`, so a Village change that would rewrite the current Local spec is noticed. On a same-version change the test prints no re-pin block: a released version needs a Local bump, and only an unreleased one may be re-pinned in place by hand. It cannot tell the two apart; a gate comparing each current spec with its bytes at the last release tag would replace it. |
+| Working and frozen specs | `cmd/schema-gen/freeze_status_test.go`, `freeze_handoff_test.go`, `freeze_writer_test.go`; `cmd/schema-gen/testdata/freeze_*.yaml` | **Hard.** Real oasdiff classifies the fixture documents, the handoff rejects stale or incoherent plans, and the real writer's recorded writes must be authorized by the release config. The writer test uses an isolated temporary source copy and recompiles the generator; ordinary temporary-directory cleanup removes it on completion, while an interrupted process may leave it under the test temporary directory. |
+| Segmented document and protocol versions | `openapi/segmented_read_test.go`, `segmented_read_versions_test.go`, `cmd/schema-gen/freeze_writer_test.go` | **Hard.** A document bump changes its title and version only; the real freeze retains the minimum document, Village working specs, protocol selectors and read-context validation. |
+| Release asset selection | `cmd/schema-gen/release_assets_test.go`; `cmd/schema-gen/testdata/release_assets*.yaml` | **Hard.** The shipped selection script copies numbered documents, including request schemas, and rejects a distribution already containing working files. |
 | Village request bodies against the served document | `openapi/village_request_bodies_test.go`; `request_bodies` in `openapi/testdata/village_collectives_operations.yaml` | **Hard.** Each body is validated against the request schema its operation declares, as Village does when it enforces the served document, and `request_body_names` is the exact case manifest; the create-group request accepts a null `linked_github_org` exactly as update does. |
 | TypeScript closed-set completeness | `openapi_enums_test.go`; `testdata/typescript/enums.yaml` | **Hard.** Every canonical Go closed set is an OpenAPI enum before TypeScript generation can run. |
+| Route members against the documents | `route/route_test.go`; `cmd/schema-gen/routes_test.go`; `typescript/tests/route-members.ts`, `route-members.test.mjs`; `cmd/schema-gen/testdata/route_members.yaml`, `testdata/route_paths.yaml`, `testdata/typescript/route_path_refusals.yaml` | **Hard.** `route.AllVillage` and `route.AllLocal` equal the built documents' operations (method, pattern, operationId), the TypeScript members equal them at run time and `keyof paths` at compile time, every member mounts on one `ServeMux`, the generator refuses a document it cannot project, a missing path parameter is a compile error, and both languages refuse an empty, `.` or `..` path parameter value with the same message from one shared fixture. |
 | TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod root output, `openapi-typescript` operation contracts, and YAML-derived fixture data are byte-stable after regeneration. |
 | TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
 | TypeScript operation-alias collision safety | `typescript/scripts/lib/operation-aliases.mjs`; `typescript/tests/operation-aliases.test.mjs`; `testdata/typescript/collision_cases.yaml` | **Hard.** A Local/Village API component whose schema drifts from the canonical root type it would alias to stops generation with an actionable error; a synthetic-break test proves the throw fires on a real mismatch, not only on today's already-consistent specs. |
 | TypeScript ProjectHash brand-resolver safety | `typescript/scripts/lib/project-hash-resolver.mjs`; `typescript/tests/project-hash-resolver.test.mjs`; `testdata/typescript/project_hash_resolver_cases.yaml` | **Hard.** The generation-time decision that brands a string schema as `ProjectHash` requires both the canonical pattern AND the canonical `#/components/schemas/ProjectHash` `$ref` location; a 6-case fixture (1 positive, 5 negative-control) drives the extracted decision function directly, proving a same-pattern differently-named or differently-located schema is never branded. |
+| TypeScript closed-set member and field types | `typescript/tests/enum-member-types.ts` (compiled by `pnpm typecheck` and the packed-consumer smoke); `typescript/tests/enum-member-aliases.test.mjs` | **Hard.** Each member is its own literal type, the named set type derives from the member table, and every multi-member generated Zod schema reports that named type, so `TurnDetail["role"]` is `Role` with a const `Role` table beside it. A wrong literal fails compilation, and the schema/table pair is checked at compile time. |
 | TypeScript public contract completeness | `typescript/scripts/generate-contract-support.mjs` (`renderPublicContract`) | **Hard.** Every Types OpenAPI catalog component must produce exactly one matching Hey API Zod export; a missing, extra, or renamed export fails generation instead of only asserting the facade is non-empty. |
 | TypeScript facade export identity | `typescript/tests/public-exports.test.mjs`; `testdata/typescript/public_exports.yaml`, `public_export_mutations.yaml` | **Hard.** The hand-maintained root/`local-api`/`village-api` facade exports (aliases, version constants, ProjectHash functions, forbidden names) match a fixture; a dedicated add/remove/duplicate/redirect mutation corpus proves the check is not vacuous. |
 | TypeScript ProjectHash wire-location coverage | `typescript/tests/project-hash-locations.ts`, `project-hash-locations.test.mjs`; `testdata/typescript/project_hash_locations.yaml` | **Hard.** Compile-time proof that the ProjectHash brand reaches all 5 named wire locations plus a same-spelling negative control; a runtime coupling test fails if a location is dropped from either the fixture or the compile-time file (removing a passing assertion is not by itself a type error). |
@@ -225,24 +288,40 @@ negative control that proves the guard actually fires.
 
 ### The OpenAPI + Go-API gates (and their meta-gates)
 
-`scripts/contract-gates.sh` runs three gates against a base ref (`make gates
-BASE_REF=origin/develop`):
+`scripts/contract-gates.sh` runs the contract checks against a base ref
+(`make gates BASE_REF=origin/develop`). The report compares committed `HEAD`
+with the base; it does not include uncommitted changes:
 
-- **`vacuum`** lints every generated OpenAPI spec (the `*-api-*.yaml` surfaces and
-  the `types-*.yaml` catalog; the publish-request JSON Schema is not an OpenAPI doc
-  and is excluded) against `.vacuum.yaml`, failing on `error` severity. Hermetic:
-  no git history needed.
-- **`oasdiff`** breaking-diffs each generated spec against the same file on the base
-  ref and fails on an ERR-level break. A version file that is new on the branch
-  (absent at the base) has nothing to diff and is skipped.
-- **`go-apidiff`** diffs the exported Go API vs the base ref under a pre-1.0
-  **advisory** policy: an incompatible change surfaces a warning (and, in CI, a
-  sticky PR comment) but does not fail the gate; an intentional spec-version stamp
-  bump (`VillageAPIVersion` / `PeasantLocalAPIVersion` / `TypesVersion`) is exempt;
-  and an `Incompatible changes` section that cannot be parsed **fails closed** (a
-  blind gate must stop the line).
+- **`vacuum`** lints generated OpenAPI specs, including segmented reads, against
+  `.vacuum.yaml`, failing on `error` severity. Request JSON Schemas are not
+  OpenAPI documents.
+- Numbered files already present on the base are immutable. For the report,
+  **`oasdiff`** compares each surface's base and head versions, including a new
+  numbered file, and records ERR-level breaks.
+- **`go-apidiff`** reports incompatible exported Go changes and compatible
+  additions. Intentional spec-version stamp value changes are exempt; an
+  unparseable result fails closed. The reviewed `workflow_run` PR comment
+  carries its tri-state result, including for fork PRs.
+- **`release-intent check-contract`** rejects an undeclared break. Locally,
+  `make gates` fails conservatively without a title; set `TITLE` and put the
+  pinned tool on `PATH` to judge the same report as CI.
 
 A gate that can never fail is worthless, so the gates have their own tests.
+`TestContractGatesAllAndReleaseVerdict` runs the real `all` path, including
+vacuum, go-apidiff, `go run ./cmd/schema-gen report`, and oasdiff, in a
+temporary repository with two-commit ranges. It verifies the requested output
+and head, ERR-level break, immutable-file refusal, and independently written
+report. It builds `release-intent` from the workflow's pinned infra commit,
+checks the config and full workflow policy, and runs tag-time
+`check-contract --until ... --floor ... --report ...` on declared and
+undeclared breaking subjects. The latter must report `under-declared-breaking`.
+The first uncached run needs network access to download the pinned tool module.
+The report tests skip without oasdiff locally, but fail if `CI` is set.
+`TestPreTagPolicyResolvesChecks` also resolves policy step IDs through the
+release job's needed jobs and asserts the exact declared pre-tag command.
+`TestMergeGateVendorHash` runs the mounted merge-gate shell with fixture needs,
+including failed and skipped vendor-hash results for both release and content.
+
 `internal/contractgates/synthetic_break_test.go` proves they fire:
 `TestOasdiffSyntheticBreak` removes an endpoint from a committed golden spec and
 asserts `oasdiff breaking --fail-on ERR` exits non-zero, while
@@ -465,6 +544,10 @@ metadata keeps every case both traceable and non-vacuous.
   keeping the size and validity logic in pure functions a negative-control test
   can drive without a `*testing.T`. This promotes the module's existing
   file-level testing-helper isolation to a package boundary.
+- **Required case names.** `testcase/assert.RequireManifestNames` checks a
+  separate YAML manifest against fixture case names by exact membership, rejects
+  empty or repeated names, and requires a single document with known fields.
+  Use it for fixtures whose cases must not disappear or be added silently.
 
 The enum-exhaustion generator `licensecorpus` shows the payoff for a closed enum.
 `BuildCorpus` enumerates `schema.AllLicenses` into one must-pass case per menu

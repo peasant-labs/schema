@@ -1,0 +1,26 @@
+requiredNames:
+  - locator-source-match
+  - locator-tool-call-match
+  - locator-tool-result-match
+  - locator-turn-major-order
+  - locator-source-beats-tool-in-one-row
+  - locator-duplicate-ref-first-served-row
+  - locator-tool-order-call-before-result
+  - locator-case-variant-ref-no-match
+  - locator-case-variant-tool-ref-no-match
+  - locator-escaped-key-ref-matches
+  - locator-null-ref-no-match
+  - locator-empty-ref-not-requestable
+  - locator-history-only-ref-no-match
+  - locator-recorded-index-present-and-absent
+  - locator-scan-input-subset-ignores-unlisted-rows
+  - locator-references-protect-their-rows
+  - locator-kind-closed-set
+  - locator-kind-rejects-unknown
+  - locator-request-required-members
+  - locator-request-has-no-kind
+  - locator-request-has-no-partition
+  - locator-request-reference-nonempty
+  - locator-response-has-no-reference-member
+  - locator-response-constant-size
+  - locator-statuses-declared

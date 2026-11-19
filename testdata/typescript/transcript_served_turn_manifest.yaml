@@ -1,0 +1,12 @@
+requiredNames:
+  - v2-turn-object-accepted
+  - v2-turn-index-absent
+  - v2-turn-index-null
+  - v2-turn-index-string
+  - v2-turn-index-object
+  - v2-turn-non-object-refused
+  - v2-turn-array-refused
+  - v2-turn-index-absent-not-null
+  - v2-turn-index-null-is-null
+  - v2-turn-unknown-member-kept
+  - v2-turn-number-lexeme-normalized-to-value

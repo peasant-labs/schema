@@ -1,0 +1,143 @@
+# Browser-only directory position corpus. Go's validateDirectoryConversationTurns
+# is the semantic reference, and the shared cases in testdata/transcript_segments.yaml
+# hold both languages to one verdict. This file holds the inputs the shared corpus
+# cannot: explicit nulls, wrong types, unsafe integers, broken containers and a
+# directory whose required fields are invalid. The TypeScript suite reads it in
+# typescript/tests/transcript-directory-positions.test.mjs, and the packed-package
+# smoke probe replays one accepted and one rejected case from it.
+#
+# Each case states one decoded JSON document as a string plus its expected verdict
+# for isTranscriptDirectoryPositionsValid. A case that must assert the parsed
+# number itself carries `numbers`, because a value that JSON.parse has already
+# rounded cannot be told apart from a safe one afterwards.
+
+cases:
+  - name: directory-null
+    input: {json: 'null'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a directory response is an object'}
+    mutation: {description: 'Passes null where a decoded directory is expected.'}
+  - name: directory-array
+    input: {json: '[]'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a directory response is an object'}
+    mutation: {description: 'Passes an empty array where a decoded directory is expected.'}
+  - name: directory-missing-segments
+    input: {json: '{"sessionId":"ses_3cd91f52effeXd3QAJ54jOyzv5"}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a directory states its segments as an array'}
+    mutation: {description: 'Omits the segments member entirely.'}
+  - name: directory-non-array-segments
+    input: {json: '{"segments":{}}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a directory states its segments as an array'}
+    mutation: {description: 'States segments as an object.'}
+  - name: directory-non-object-ref
+    input: {json: '{"segments":["ref"]}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'every directory ref is an object'}
+    mutation: {description: 'States a segment ref as a string.'}
+  - name: directory-empty-segments
+    input: {json: '{"segments":[]}'}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: 'an empty session answers with an empty array'}
+    mutation: {description: 'Serves an empty directory with no optional positions.'}
+  - name: directory-spans-only-without-total
+    input: {json: '{"segments":[{"conversationTurns":{"before":3,"count":2}},{"conversationTurns":{"before":5,"count":1}}]}'}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: 'an absent total stays absent even when spans are present'}
+    mutation: {description: 'Serves a continuous span chain with the total omitted.'}
+  - name: directory-explicit-null-total
+    input: {json: '{"segments":[],"totalConversationTurns":null}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: 'an absent count is omitted, never null'}
+    mutation: {description: 'States the conversation total as an explicit null.'}
+  - name: directory-explicit-null-span
+    input: {json: '{"segments":[{"conversationTurns":null}]}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: 'an absent position is omitted, never null'}
+    mutation: {description: 'States a ref position as an explicit null.'}
+  - name: directory-string-total
+    input: {json: '{"segments":[],"totalConversationTurns":"5"}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'the conversation total is an integer count'}
+    mutation: {description: 'States the conversation total as a decimal string.'}
+  - name: directory-fractional-total
+    input: {json: '{"segments":[{"conversationTurns":{"before":0,"count":1}}],"totalConversationTurns":1.5}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'the conversation total is an integer count'}
+    mutation: {description: 'States a fractional conversation total.'}
+  - name: directory-fractional-before
+    input: {json: '{"segments":[{"conversationTurns":{"before":0.5,"count":1}}],"totalConversationTurns":2}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a span states two integer counts'}
+    mutation: {description: 'States a fractional before count.'}
+  - name: directory-string-before
+    input: {json: '{"segments":[{"conversationTurns":{"before":"0","count":1}}],"totalConversationTurns":1}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a span states two integer counts'}
+    mutation: {description: 'States the before count as a decimal string.'}
+  - name: directory-span-missing-before
+    input: {json: '{"segments":[{"conversationTurns":{"count":1}}],"totalConversationTurns":1}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a span states both counts'}
+    mutation: {description: 'Omits the before count from a stated span.'}
+  - name: directory-span-missing-count
+    input: {json: '{"segments":[{"conversationTurns":{"before":0}}],"totalConversationTurns":1}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a span states both counts'}
+    mutation: {description: 'Omits the count from a stated span.'}
+  - name: directory-span-ends-past-total
+    input: {json: '{"segments":[{"conversationTurns":{"before":2,"count":3}}],"totalConversationTurns":4}'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a span ends at or before the total'}
+    mutation: {description: 'Ends a span one conversation turn past the stated total.'}
+  - name: directory-total-safe-integer-boundary
+    input:
+      json: '{"segments":[{"conversationTurns":{"before":9007199254740990,"count":1}}],"totalConversationTurns":9007199254740991}'
+      numbers:
+        - {pointer: /totalConversationTurns, safeInteger: true}
+    expected: true
+    classification: must-pass
+    provenance: {source: boundary, ref: '9007199254740991 is the largest accepted count'}
+    mutation: {description: 'States the largest safe integer as the total and ends a span exactly there.'}
+  - name: directory-total-above-safe-integer-boundary
+    input:
+      json: '{"segments":[],"totalConversationTurns":9007199254740992}'
+      numbers:
+        - {pointer: /totalConversationTurns, safeInteger: false}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'counts above the largest safe integer are refused'}
+    mutation: {description: 'States one above the largest safe integer as the total.'}
+  - name: directory-span-before-above-safe-integer-boundary
+    input:
+      json: '{"segments":[{"conversationTurns":{"before":9007199254740992,"count":1}}]}'
+      numbers:
+        - {pointer: /segments/0/conversationTurns/before, safeInteger: false}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a span count above the largest safe integer is refused'}
+    mutation: {description: 'States one above the largest safe integer as a span before count.'}
+  - name: directory-required-field-invalid-with-valid-positions
+    input: {json: '{"sessionId":"","revision":"","totalTurns":-1,"totalSegments":9,"segments":[{"index":0,"firstTurn":0,"lastTurn":1,"byteLength":10,"conversationTurns":{"before":0,"count":2}}],"totalConversationTurns":2}'}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: 'the helper judges optional positions, not the whole directory'}
+    mutation: {description: 'Serves unusable required fields beside valid optional positions; the position verdict stays true.'}

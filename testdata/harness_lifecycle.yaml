@@ -1,7 +1,3 @@
-required_names:
-  - gemini-cli-retained-for-history
-  - antigravity-removal-planned
-  - declared-harnesses-not-deprecated
 cases:
   - name: gemini-cli-retained-for-history
     classification: must-pass

@@ -1,0 +1,889 @@
+tool_pin: 7d2a604afe5b50a3dcc20df06f02e85c2a0d4027
+version_guard_required:
+  - matching-version
+  - mismatched-version-is-refused
+version_guard_cases:
+  - name: matching-version
+    tag: v1.2.3
+    package_version: 1.2.3
+    expected_exit: 0
+    expected_output: ""
+  - name: mismatched-version-is-refused
+    tag: v1.2.3
+    package_version: 1.2.4
+    expected_exit: 1
+    expected_output: "tag v1.2.3 does not match typescript/package.json version 1.2.4; tags are immutable, so fix forward"
+existing_release_required:
+  - complete-published-release
+  - draft-with-assets
+  - draft-without-assets
+  - draft-with-invalid-assets
+  - published-without-assets
+  - missing-draft-state
+  - invalid-assets
+  - non-json-response
+  - api-failure
+existing_release_cases:
+  - name: complete-published-release
+    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 0
+    expected_output: "existing release is published and has assets"
+  - name: draft-with-assets
+    response: '{"isDraft":true,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: 'release is an unpublished draft; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; do not create a new tag'
+  - name: draft-without-assets
+    response: '{"isDraft":true,"assets":[]}'
+    expected_exit: 1
+    expected_output: 'release is an unpublished draft; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; do not create a new tag'
+  - name: draft-with-invalid-assets
+    response: '{"isDraft":true,"assets":null}'
+    expected_exit: 1
+    expected_output: 'release is an unpublished draft; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; do not create a new tag'
+  - name: published-without-assets
+    response: '{"isDraft":false,"assets":[]}'
+    expected_exit: 1
+    expected_output: "published release has no assets; tags are immutable, so fix forward with a new tag"
+  - name: missing-draft-state
+    response: '{"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "release draft status is invalid; inspect the release before retrying"
+  - name: invalid-assets
+    response: '{"isDraft":false,"assets":null}'
+    expected_exit: 1
+    expected_output: "published release assets are invalid; inspect the release before retrying"
+  - name: non-json-response
+    response: "not-json"
+    expected_exit: 1
+    expected_output: "parse error"
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
+draft_release_required:
+  - draft-with-assets
+  - draft-without-assets
+  - draft-with-invalid-assets
+  - published-instead-of-draft
+  - missing-draft-state
+  - api-failure
+draft_release_cases:
+  - name: draft-with-assets
+    response: '{"isDraft":true,"assets":[{"name":"spec.json"},{"name":"spec.yaml"}]}'
+    expected_exit: 0
+    expected_output: "draft holds 2 assets"
+  - name: draft-without-assets
+    response: '{"isDraft":true,"assets":[]}'
+    expected_exit: 1
+    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
+  - name: draft-with-invalid-assets
+    response: '{"isDraft":true,"assets":null}'
+    expected_exit: 1
+    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
+  - name: published-instead-of-draft
+    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
+  - name: missing-draft-state
+    response: '{"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
+published_release_required:
+  - published-immutable-with-assets
+  - still-a-draft
+  - not-immutable
+  - published-without-assets
+  - missing-immutable-state
+  - api-failure
+published_release_cases:
+  - name: published-immutable-with-assets
+    response: '{"isDraft":false,"isImmutable":true,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 0
+    expected_output: "release is published, immutable and holds 1 assets"
+  - name: still-a-draft
+    response: '{"isDraft":true,"isImmutable":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
+  - name: not-immutable
+    response: '{"isDraft":false,"isImmutable":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
+  - name: published-without-assets
+    response: '{"isDraft":false,"isImmutable":true,"assets":[]}'
+    expected_exit: 1
+    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
+  - name: missing-immutable-state
+    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
+release_list_required:
+  - no-release-for-the-tag
+  - draft-exists
+  - published-release-exists
+  - another-tag-only
+  - api-failure
+  - malformed-output
+release_list_cases:
+  - name: no-release-for-the-tag
+    response: '[]'
+    expected_exit: 0
+    expected_output: "no release or draft exists for this tag"
+  - name: draft-exists
+    response: '[{"tagName":"v1.2.3","isDraft":true}]'
+    expected_exit: 1
+    expected_output: "a release or draft already exists for this tag, so nothing was created"
+  - name: published-release-exists
+    response: '[{"tagName":"v1.2.3","isDraft":false}]'
+    expected_exit: 1
+    expected_output: "a release or draft already exists for this tag, so nothing was created"
+  - name: another-tag-only
+    response: '[{"tagName":"v1.2.2","isDraft":false},{"tagName":"v1.2.4","isDraft":true}]'
+    expected_exit: 0
+    expected_output: "no release or draft exists for this tag"
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
+  - name: malformed-output
+    response: "not-json"
+    expected_exit: 1
+    expected_output: "parse error"
+prepared_tag_required:
+  - release-commit-snapshot
+  - branch-advances-after-plan
+  - branch-advances-before-plan
+  - tag-not-on-run-commit
+  - tag-points-at-wrong-commit
+  - lightweight-tag
+  - unexpected-tag-ref
+  - multiple-tag-refs
+  - candidate-outside-plan-source
+  - candidate-outside-run-branch
+  - corrupt-bundle
+  - invalid-candidate-sha
+  - invalid-plan-source-sha
+  - unavailable-plan-source
+prepared_tag_cases:
+  - name: release-commit-snapshot
+    success: true
+  - name: branch-advances-after-plan
+    advance_after_plan: true
+    success: true
+  - name: branch-advances-before-plan
+    advance_before_plan: true
+    success: true
+  - name: tag-not-on-run-commit
+    success: true
+    ancestry_at_base: true
+    expected_ancestry_exit: 1
+  - name: tag-points-at-wrong-commit
+    tag_at_base: true
+    error_contains: "prepared tag does not point at the planned release candidate"
+  - name: lightweight-tag
+    lightweight: true
+    error_contains: "prepared release tag must be annotated"
+  - name: unexpected-tag-ref
+    unexpected_ref: true
+    error_contains: "prepared tag bundle must contain only the planned tag"
+  - name: multiple-tag-refs
+    extra_ref: true
+    error_contains: "prepared tag bundle must contain only the planned tag"
+  - name: candidate-outside-plan-source
+    source_at_base: true
+    error_contains: "release candidate is not an ancestor of the plan source"
+  - name: candidate-outside-run-branch
+    candidate_off_branch: true
+    error_contains: "release candidate is not on the default-branch run"
+  - name: corrupt-bundle
+    corrupt_bundle: true
+    error_contains: "prepared tag bundle is invalid"
+  - name: invalid-candidate-sha
+    invalid_candidate: true
+    error_contains: "release candidate is not a full commit SHA"
+  - name: invalid-plan-source-sha
+    invalid_source: true
+    error_contains: "plan source is not a full commit SHA"
+  - name: unavailable-plan-source
+    unavailable_source: true
+    error_contains: "could not fetch the recorded plan source"
+# merge-gate cases run the workflow's real merge-gate script. Omitted fields
+# take the ordinary merge-group value: event merge_group, code true,
+# release_candidate false, release_only false, inherit false. Every reject
+# names the message it must fail with, so a jq or shell syntax fault cannot
+# pass as a rejection.
+merge_gate_required:
+  - merge-group-race-skipped
+  - merge-group-race-failed
+  - inherited-race-ran
+  - release-vendor-failed
+  - release-vendor-skipped
+  - release-vendor-success
+  - content-vendor-failed
+  - content-vendor-skipped
+  - content-vendor-success
+  - content-other-job-failed
+  - content-check-skipped-for-code
+  - content-docs-only-skips-check
+  - changes-failed-is-refused
+  - contract-gates-skipped-is-refused
+  - unknown-release-is-refused
+  - unknown-candidate-is-refused
+  - unknown-inherit-is-refused
+  - inherited-release-skips-check
+  - inherited-release-check-ran-is-refused
+  - inherited-without-release-only-is-refused
+  - inherited-without-candidate-is-refused
+  - inherited-on-push-is-refused
+  - not-inherited-code-requires-check
+  - pull-request-inherited-release
+  - release-tree-failed
+  - release-tree-skipped
+  - pull-request-release-tree-skipped
+  - push-candidate-release-tree-skipped
+  - pull-request-non-candidate-release-tree-skipped
+merge_gate_cases:
+  - name: release-vendor-failed
+    release: "true"
+    release_candidate: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
+  - name: release-vendor-skipped
+    release: "true"
+    release_candidate: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "a release group needs a current vendor hash"
+  - name: release-vendor-success
+    release: "true"
+    release_candidate: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 0
+  - name: content-vendor-failed
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    expected_exit: 0
+  - name: content-vendor-skipped
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
+  - name: content-vendor-success
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 0
+  - name: content-other-job-failed
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"failure"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
+  - name: content-check-skipped-for-code
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "make check is required for a code change"
+  - name: content-docs-only-skips-check
+    release: "false"
+    code: "false"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
+  - name: changes-failed-is-refused
+    release: "false"
+    results_json: '{"changes":{"result":"failure"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
+  - name: contract-gates-skipped-is-refused
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "contract gates are required"
+  - name: unknown-release-is-refused
+    release: ""
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "release classification is missing or invalid"
+  - name: unknown-candidate-is-refused
+    release: "false"
+    release_candidate: ""
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "release candidate classification is missing or invalid"
+  - name: unknown-inherit-is-refused
+    release: "false"
+    inherit: "maybe"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "verdict inheritance is missing or invalid"
+  - name: inherited-release-skips-check
+    release: "true"
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 0
+  - name: inherited-release-check-ran-is-refused
+    release: "true"
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "make check ran although the verdict was inherited"
+  - name: inherited-without-release-only-is-refused
+    release: "true"
+    release_candidate: "true"
+    release_only: "false"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "an inherited verdict needs a release-only change"
+  - name: inherited-without-candidate-is-refused
+    release: "false"
+    release_candidate: "false"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "only a release candidate inherits a verdict"
+  - name: inherited-on-push-is-refused
+    release: "false"
+    event: push
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"skipped"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "only pull_request and merge_group runs inherit a verdict"
+  - name: not-inherited-code-requires-check
+    release: "true"
+    release_candidate: "true"
+    release_only: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "make check is required for a code change"
+  - name: pull-request-inherited-release
+    release: "false"
+    event: pull_request
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
+  - name: release-tree-failed
+    release: "true"
+    release_candidate: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"failure"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
+  - name: release-tree-skipped
+    release: "true"
+    release_candidate: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "a release candidate needs a frozen release tree"
+  - name: pull-request-release-tree-skipped
+    release: "false"
+    event: pull_request
+    release_candidate: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "a release candidate needs a frozen release tree"
+  - name: push-candidate-release-tree-skipped
+    release: "false"
+    event: push
+    release_candidate: "true"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"success"},"contract-gates":{"result":"skipped"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
+  - name: pull-request-non-candidate-release-tree-skipped
+    release: "false"
+    event: pull_request
+    release_candidate: "false"
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
+  - name: merge-group-race-skipped
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"race":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "the selective race pass is required for a merge-group code change"
+  - name: merge-group-race-failed
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"race":{"result":"failure"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
+  - name: inherited-race-ran
+    release: "true"
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"race":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "race ran although the verdict was inherited"
+pre_tag_commands:
+  contract: 'release-intent check-contract --report "${RUNNER_TEMP}/candidate-report.yaml" --until "${CANDIDATE}" --floor "${FLOOR}"'
+  freeze: 'nix develop -c schema-gen freeze --check --plan "${RUNNER_TEMP}/candidate-freeze-plan.yaml" --state "${RUNNER_TEMP}/candidate-surface-state.yaml"'
+precheck:
+  id: precheck
+  setup_if: "steps.precheck.outputs.proceed == 'true'"
+  setup_steps:
+    - Check out the repository (full history and tags)
+    - Check out the release-intent tool
+    - Set up Go
+    - Build release-intent
+    - Install Nix
+provenance_gates:
+  candidate_output: "${{ steps.verdict.outputs.candidate }}"
+  pull_requests: read
+  job_conditions:
+    verify: "!cancelled() && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true'"
+    release: "!cancelled() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.plan.result == 'success' && needs.plan.outputs.proceed == 'true' && needs.verify.result == 'success'"
+  job_needs:
+    verify: [plan]
+    release: [plan, verify]
+publication_required: [build, release, npm-publish]
+publication_needs:
+  build: [guard, nix-vendor-hash, contract-gates, verify-tag]
+  release: [guard, nix-vendor-hash, contract-gates, verify-tag, build]
+  npm-publish: [guard, nix-vendor-hash, contract-gates, verify-tag]
+provenance_candidate: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+provenance_config:
+  automation_author: app/peasant-labs-releaser
+  bot_branches:
+    release: automation/release
+provenance_examples:
+  bot: &provenance-bot
+    merged_at: "2026-01-01T00:00:00Z"
+    merge_commit_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    head: {ref: automation/release}
+    user: {login: "peasant-labs-releaser[bot]"}
+  association_error: &provenance-association-error '::error::release candidate aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa must be the merge commit of exactly one merged release PR from automation/release by peasant-labs-releaser[bot]'
+provenance_required:
+  - merged-bot-release
+  - merged-app-author-form
+  - open-pr-ignored
+  - no-associated-pr
+  - unmerged-pr
+  - wrong-branch
+  - human-author
+  - wrong-merge-commit
+  - multiple-merged-prs
+  - multiple-prs-across-pages
+  - malformed-response
+  - empty-api-output
+  - failed-api
+  - invalid-candidate
+  - wrong-config-author
+provenance_cases:
+  - name: merged-bot-release
+    pages: [[*provenance-bot]]
+    expected_exit: 0
+  - name: merged-app-author-form
+    pages:
+      - - <<: *provenance-bot
+          user: {login: app/peasant-labs-releaser}
+    expected_exit: 0
+  - name: open-pr-ignored
+    pages:
+      - - *provenance-bot
+        - <<: *provenance-bot
+          merged_at: null
+    expected_exit: 0
+  - name: no-associated-pr
+    pages: [[]]
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: unmerged-pr
+    pages:
+      - - <<: *provenance-bot
+          merged_at: null
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: wrong-branch
+    pages:
+      - - <<: *provenance-bot
+          head: {ref: human/release}
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: human-author
+    pages:
+      - - <<: *provenance-bot
+          user: {login: human}
+          title: "release[patch]: update the changelog"
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: wrong-merge-commit
+    pages:
+      - - <<: *provenance-bot
+          merge_commit_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: multiple-merged-prs
+    pages: [[*provenance-bot, *provenance-bot]]
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: multiple-prs-across-pages
+    pages:
+      - [*provenance-bot]
+      - - <<: *provenance-bot
+          user: {login: human}
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: malformed-response
+    raw_output: "not-json"
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: empty-api-output
+    expected_exit: 1
+    error_contains: *provenance-association-error
+  - name: failed-api
+    pages: [[*provenance-bot]]
+    api_exit: 1
+    expected_exit: 1
+    error_contains: '::error::could not read pull requests associated with release candidate aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  - name: invalid-candidate
+    candidate: not-a-sha
+    pages: [[*provenance-bot]]
+    expected_exit: 1
+    error_contains: '::error::release candidate is not a full commit SHA'
+  - name: wrong-config-author
+    config:
+      automation_author: app/not-the-releaser
+      bot_branches: {release: automation/release}
+    pages: [[*provenance-bot]]
+    expected_exit: 1
+    error_contains: '::error::release configuration does not name the releaser App'
+cut_default_branch_if: "github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && vars.RELEASE_BATCH_MODE == 'tag'"
+cut_jobs: [prepare, cut]
+required:
+  - pr-and-group-live-title
+  - pr-and-group-contract-report
+  - release-group-requires-vendor-hash
+  - vendor-hash-is-advisory-on-content-pr
+  - vendor-hash-diff-is-one-line
+  - pre-tag-contract-has-floor
+  - tag-requires-verified-release-pr
+  - tag-creation-requires-provenance
+  - prepared-tag-is-snapshot-verified
+  - tag-push-checks-default-branch-ancestry
+  - tag-push-follows-default-branch-check
+  - pending-range-has-floor
+  - tag-range-has-floor
+  - tag-judges-contract
+  - npm-tag-matches-version
+  - npm-published-version-has-no-shell-banner
+  - release-checks-for-existing
+  - existing-release-must-be-complete
+  - release-refuses-an-existing-release-for-the-tag
+  - release-creates-a-draft-with-its-assets
+  - release-verifies-the-draft
+  - release-publishes-after-verifying-the-draft
+  - release-verifies-the-published-release
+  - release-assets-are-files-beside-the-notes
+  - vendor-hash-mints-only-for-work
+  - precheck-identifies-repository
+  - plan-mode-and-floor-env
+  - cut-commit-uses-default-branch
+  - cut-pr-targets-default-branch
+  - release-assets-numbered-only
+  - prepared-title-verified
+  - release-pr-create-uses-tool-title
+  - release-pr-edit-uses-tool-title
+  - candidate-freeze-uses-parent
+  - candidate-freeze-is-checked
+  - release-tree-job-checks-mounted-tree
+  - freeze-floor-from-migration
+  - release-freeze-plan-uses-migration-floor
+cases:
+  - name: pr-and-group-live-title
+    workflow: tests.yml
+    job: contract-gates
+    step: Resolve the entry PR and its live title
+    run_contains: ["group-pr", "gh pr view", "git merge-base", "git checkout --detach"]
+  - name: pr-and-group-contract-report
+    workflow: tests.yml
+    job: contract-gates
+    step: Check the live title against the contract
+    run_contains: ["check-contract", "--report", "PR_TITLE"]
+  - name: release-group-requires-vendor-hash
+    workflow: tests.yml
+    job: merge-gate
+    step: Require successful or intentionally skipped jobs
+    run_contains: ['if [ "$RELEASE" = true ]', '[ "$(result vendor-hash)" = success ]']
+  - name: vendor-hash-is-advisory-on-content-pr
+    workflow: tests.yml
+    job: vendor-hash
+    step: Check vendor hash
+    continue_contains: ["needs.changes.outputs.release != 'true'"]
+  - name: vendor-hash-diff-is-one-line
+    workflow: nix-vendor-hash.yml
+    job: prepare
+    step: Compute and bundle the vendor hash
+    run_contains: ["git diff --numstat", "vendorHash", "removed != 1 || added != 1", "git bundle create"]
+  - name: pre-tag-contract-has-floor
+    workflow: release-batch.yml
+    job: plan
+    step: Verify the candidate contract
+    run_contains: ["check-contract", "--until", "--floor"]
+    id: verify-contract
+  - name: tag-requires-verified-release-pr
+    workflow: release-batch.yml
+    job: plan
+    step: Verify the release candidate PR provenance
+    id: provenance
+    no_continue: true
+    no_job_continue: true
+    after: Plan with the candidate verdict
+    if_value: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag'"
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+      CANDIDATE: "${{ steps.verdict.outputs.candidate }}"
+      PLAN_SOURCE: "${{ steps.plan.outputs.source }}"
+    run_contains: ['git show "${PLAN_SOURCE}:.github/release-intent.yaml"', 'gh api --paginate', '/commits/${CANDIDATE}/pulls?per_page=100', 'merged_at', 'merge_commit_sha', '.head.ref', '.user.login']
+  - name: tag-creation-requires-provenance
+    workflow: release-batch.yml
+    job: plan
+    step: Make the annotated release tag
+    after: Verify the release candidate PR provenance
+    if_value: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.verdict.outputs.action == 'tag' && steps.provenance.outcome == 'success'"
+  - name: prepared-tag-is-snapshot-verified
+    workflow: release-batch.yml
+    job: verify
+    step: Verify the prepared tag
+    if_value: "!cancelled() && needs.plan.outputs.tag-action == 'tag'"
+    no_continue: true
+    no_job_continue: true
+    env_values:
+      TAG: "${{ needs.plan.outputs.tag }}"
+      CANDIDATE: "${{ needs.plan.outputs.candidate }}"
+      PLAN_SOURCE: "${{ needs.plan.outputs.plan-source }}"
+    run_contains: ['git bundle verify', 'git bundle list-heads', 'refs/tags/${TAG}^{commit}', '${CANDIDATE}', '${PLAN_SOURCE}', '${GITHUB_SHA}']
+    run_excludes: ["origin/develop", 'release-intent" plan', 'TIP=', FRESH_ACTION]
+  - name: tag-push-checks-default-branch-ancestry
+    workflow: release-batch.yml
+    job: release
+    step: Check the release tag is on the default branch
+    after: Fetch the release tag
+    if_value: "needs.plan.outputs.tag-action == 'tag'"
+    no_continue: true
+    no_job_continue: true
+    run_contains: ['git merge-base --is-ancestor "refs/tags/${TAG}" "${GITHUB_SHA}"']
+  - name: tag-push-follows-default-branch-check
+    workflow: release-batch.yml
+    job: release
+    step: Tag the fresh release candidate
+    after: Check the release tag is on the default branch
+    if_value: "needs.plan.outputs.tag-action == 'tag'"
+    no_continue: true
+    no_job_continue: true
+  - name: pending-range-has-floor
+    workflow: release-batch.yml
+    job: plan
+    step: Check the pending range before preparing a release PR
+    run_contains: ["check-contract", "--until", "--floor", "contract-gates.sh report", 'git fetch --no-tags origin develop', 'git checkout --detach "${tip}"']
+  - name: tag-range-has-floor
+    workflow: release.yml
+    job: contract-gates
+    step: Determine the previous final tag
+    run_contains: ["check-contract", "--until", "--floor", "--print-range-base"]
+  - name: tag-judges-contract
+    workflow: release.yml
+    job: contract-gates
+    step: Check the tag contract
+    run_contains: ["check-contract", "--until", "--floor", "--report"]
+  - name: npm-tag-matches-version
+    workflow: release.yml
+    job: npm-publish
+    step: Guard tag and package version consistency
+    run_contains: ["jq -r '.version' typescript/package.json", "${TAG#v}", '"${version}" = "${pkg_version}"']
+    run_excludes: ["nix develop"]
+  - name: npm-published-version-has-no-shell-banner
+    workflow: release.yml
+    job: npm-publish
+    step: Publish @peasant-labs/schema to npm (OIDC trusted publishing)
+    run_contains: ['published_version="$(jq -r ''.version'' typescript/package.json)"']
+    run_excludes: ['published_version="$(nix develop']
+  - name: release-checks-for-existing
+    workflow: release.yml
+    job: release
+    step: Look for an existing release
+    id: view
+    continue_contains: ["true"]
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"']
+    run_excludes: ['--json']
+    job_run_excludes: ['gh release upload', 'gh release delete "']
+    job_uses_excludes: [softprops/, action-gh-release, upload-release-asset, release-action]
+    job_run_only:
+      gh release create: Create the draft release with its assets
+      gh release edit: Publish the release
+      isImmutable: Verify the published release
+      gh release list: Refuse an existing release for the tag
+  - name: existing-release-must-be-complete
+    workflow: release.yml
+    job: release
+    step: Verify the existing release is complete
+    after: Look for an existing release
+    if_value: "steps.view.outcome == 'success'"
+    no_continue: true
+    no_job_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"', '--json isDraft,assets', '--jq', 'unpublished draft', 'gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id>', 'never gh release delete', 'do not create a new tag', 'published release has no assets', 'fix forward with a new tag']
+  - name: release-refuses-an-existing-release-for-the-tag
+    workflow: release.yml
+    job: release
+    step: Refuse an existing release for the tag
+    id: list
+    after: Look for an existing release
+    if_value: "steps.view.outcome == 'failure'"
+    no_continue: true
+    no_job_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft --jq', 'select(.tagName == env.TAG)', 'error(', 'delete stale drafts by id', 'no new tag is needed']
+    run_excludes: ['--exclude-drafts']
+  - name: release-creates-a-draft-with-its-assets
+    workflow: release.yml
+    job: release
+    step: Create the draft release with its assets
+    id: create
+    after: Refuse an existing release for the tag
+    if_value: "steps.view.outcome == 'failure' && steps.list.outcome == 'success'"
+    no_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+      PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"
+    run_contains: ['gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "$TAG" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" ''dist/assets/*''']
+    run_excludes: ['--latest', '$(', "\n"]
+  - name: release-verifies-the-draft
+    workflow: release.yml
+    job: release
+    step: Verify the draft before publishing
+    after: Create the draft release with its assets
+    if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
+    no_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq', '.isDraft != true', '(.assets | length) == 0', 'was not published', 'gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id>', 'never gh release delete', 'no new tag is needed']
+  - name: release-publishes-after-verifying-the-draft
+    workflow: release.yml
+    job: release
+    step: Publish the release
+    after: Verify the draft before publishing
+    if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
+    no_continue: true
+    env_values:
+      PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"
+      LATEST: "${{ needs.guard.outputs.kind == 'final' }}"
+    run_contains: ['gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease="$PRERELEASE" --latest="$LATEST"']
+  - name: release-verifies-the-published-release
+    workflow: release.yml
+    job: release
+    step: Verify the published release
+    after: Publish the release
+    if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
+    no_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,assets --jq', '.isDraft != false', '.isImmutable != true', '(.assets | length) == 0', 'fix forward with a new tag']
+  - name: release-assets-are-files-beside-the-notes
+    workflow: release.yml
+    job: build
+    step: Prepare the generated contracts and release notes
+    run_contains: ['mkdir -p dist/assets', './scripts/collect-release-assets.sh generated dist/assets', '> dist/release-notes.md']
+    run_excludes: ['dist/assets/release-notes.md']
+  - name: vendor-hash-mints-only-for-work
+    workflow: nix-vendor-hash.yml
+    job: update
+    step: Mint the releaser App token
+    if_value: "needs.prepare.outputs.changed == 'true' || needs.prepare.outputs.number != ''"
+  - name: precheck-identifies-repository
+    workflow: release-batch.yml
+    job: plan
+    step: Check whether a scheduled run has work to do
+    env_values:
+      GH_REPO: "${{ github.repository }}"
+  - name: plan-mode-and-floor-env
+    workflow: release-batch.yml
+    job: plan
+    step: Plan from the branch tip
+    env_values:
+      MODE: "${{ vars.RELEASE_BATCH_MODE }}"
+      FLOOR: "${{ vars.RELEASE_BATCH_FLOOR }}"
+    run_contains: ['--mode "${MODE}"', '--floor "${FLOOR}"']
+  - name: cut-commit-uses-default-branch
+    workflow: cut-release.yml
+    job: prepare
+    step: Commit an empty release commit on the bot branch
+    env_values:
+      DEFAULT_BRANCH: "${{ github.event.repository.default_branch }}"
+    run_contains: ['origin/${DEFAULT_BRANCH}']
+    run_excludes: [origin/develop]
+  - name: cut-pr-targets-default-branch
+    workflow: cut-release.yml
+    job: cut
+    step: Open the cut-release PR
+    run_contains: [gh pr create, automation/cut-release]
+    run_excludes: [--base]
+  - name: release-assets-numbered-only
+    workflow: release.yml
+    job: build
+    step: Prepare the generated contracts and release notes
+    run_contains: ["./scripts/collect-release-assets.sh generated dist/assets"]
+    run_excludes: ["cp generated/", "collect-release-assets.sh generated dist\n"]
+  - name: prepared-title-verified
+    workflow: release-batch.yml
+    job: verify
+    step: Verify the prepared release commit
+    env_values: {EXPECTED_TITLE: "${{ needs.plan.outputs.title }}"}
+    run_contains: ['"${TITLE}" = "${EXPECTED_TITLE}"']
+  - name: release-pr-create-uses-tool-title
+    workflow: release-batch.yml
+    job: release
+    step: Open the release PR
+    env_values: {TITLE: "${{ needs.plan.outputs.title }}"}
+    run_contains: ['--title "${TITLE}"']
+  - name: release-pr-edit-uses-tool-title
+    workflow: release-batch.yml
+    job: release
+    step: Update the release PR
+    env_values: {TITLE: "${{ needs.plan.outputs.title }}"}
+    run_contains: ['--title "${TITLE}"']
+  - name: candidate-freeze-uses-parent
+    workflow: release-batch.yml
+    job: plan
+    step: Prepare the candidate freeze evidence
+    if_contains: ["!cancelled()", "steps.plan.outputs.action == 'verify'"]
+    env_values: {FREEZE_FLOOR: "${{ steps.freeze-floor.outputs.freeze_floor }}"}
+    run_contains: ['git worktree add --detach "${RUNNER_TEMP}/candidate-parent-tree" "${CANDIDATE}^"', 'git worktree add --detach "${RUNNER_TEMP}/candidate-tree" "${CANDIDATE}"', 'cd "${RUNNER_TEMP}/candidate-parent-tree" && nix develop -c go run ./cmd/schema-gen status --write', 'freeze-plan --branch origin/develop --until "${CANDIDATE}^"', '--freeze-floor "${FREEZE_FLOOR}"', 'cd "${RUNNER_TEMP}/candidate-tree" && nix develop -c go build']
+    run_excludes: ['git checkout']
+  - name: candidate-freeze-is-checked
+    workflow: release-batch.yml
+    job: plan
+    step: Verify the candidate freeze
+    id: verify-freeze
+    if_contains: ["!cancelled()", "steps.plan.outputs.action == 'verify'"]
+    working_directory: "${{ runner.temp }}/candidate-tree"
+    run_contains: ["schema-gen freeze --check", "--plan", "--state"]
+  - name: release-tree-job-checks-mounted-tree
+    workflow: tests.yml
+    job: release-tree
+    step: Check the release tree
+    run_contains: ["schema-gen freeze --check"]
+  - name: freeze-floor-from-migration
+    workflow: release-batch.yml
+    job: plan
+    step: Find the spec-freeze migration
+    id: freeze-floor
+    run_contains: ["git log --first-parent", "-S 'spec_freeze: true'", 'freeze_floor=${freeze_floor}']
+  - name: release-freeze-plan-uses-migration-floor
+    workflow: release-batch.yml
+    job: plan
+    step: Prepare the release commit
+    env_values: {FREEZE_FLOOR: "${{ steps.freeze-floor.outputs.freeze_floor }}"}
+    run_contains: ['freeze-plan --branch origin/develop', '--freeze-floor "${FREEZE_FLOOR}"', 'release-pr --commit', '--freeze-plan "${RUNNER_TEMP}/freeze-plan.yaml"']

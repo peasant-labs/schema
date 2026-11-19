@@ -3,16 +3,15 @@ package schema
 // Versioned-spec info.version values. These are the SINGLE SOURCE OF TRUTH for
 // each versioned OpenAPI spec's semantic version: they feed WithVersion(...) in
 // the openapi.Build*Spec functions (re-exported there as openapi.VillageAPIVersion
-// etc.), the generated artifact filenames, AND the version-aware accessors in this
-// package (e.g. VillageAPISpecJSON). A version bump is a one-line edit here.
+// etc.), the frozen artifact filenames, AND the version-aware accessors in this
+// package (e.g. VillageAPISpecJSON). The release freeze writes these stamps.
 //
 // They live in the contract root (not the openapi sub-package) so the embedded-spec
 // accessors below can key off them without an import cycle (openapi imports this
 // package, so this package cannot import openapi).
 //
-// Bump the relevant one when its API surface changes (minor for additive surface,
-// major for breaking changes). Retired versions stay byte-frozen under the
-// retired-spec immutability guard; new surface goes on a new version.
+// Content changes regenerate working specs without changing these constants.
+// Numbered documents stay byte-frozen under the registry guards.
 const (
 	// VillageAPIVersion is the info.version of the Village API spec. Bumped to
 	// 0.2.0 when the /api/v1/pull surface was added (additive = minor bump).
@@ -140,13 +139,16 @@ const (
 	// and getTranscriptWindow with the existing transcript types.
 	// Bumped to 0.40.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	// Bumped to 0.41.0 on 2026-11-13 when the contributable route gained the
-	// closed paged and snapshot views, the families of root sessions with their
-	// helpers, the project picker and the exact selection write, the optional
-	// machine-readable refusal code and details, and the optional session_start,
-	// session_end, parent_transcript_id and latest_status on the contributable row
-	// (additive = minor bump).
-	VillageAPIVersion = "0.41.0"
+	// Bumped to 0.41.0 for the additive positioned segmented transcript reads.
+	// Bumped to 0.42.0 when the transcript metadata read declared 410 for a
+	// transcript its publisher retracted, and the content, header, segment
+	// directory, segment, window and locator reads declared 410 for a
+	// transcript whose stored content an operator recorded as lost (additive
+	// statuses on the existing error envelope = minor bump). The locator
+	// answers the lost-content 410 and never the retracted one. The pull reads
+	// declare no 410. No type, protocol version or segmented read document
+	// changes.
+	VillageAPIVersion = "0.42.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -183,8 +185,7 @@ const (
 	// The Local API embeds Village catalog rows: VillageUserGroup in the
 	// collectives proxy, VillagePromptRequest in push results, and
 	// VillageShareStatus in the publication audience, with their closed sets.
-	// A change to any of them also bumps this version;
-	// testdata/local-api/village_components.yaml pins them per Local version.
+	// Changes to them can also change the Local working spec and its title scope.
 	// Bumped to 0.16.0 for rule-required hooks that stop publishing when their
 	// last active binding is removed, retaining the existing response fields.
 	// Bumped to 0.17.0 for an optional stored-session target on rule creation.
@@ -264,7 +265,8 @@ const (
 	// turnCount was re-documented in folded-turn units (additive = minor bump).
 	// Bumped to 0.38.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	PeasantLocalAPIVersion = "0.38.0"
+	// Bumped for the connection-owned preview stream.
+	PeasantLocalAPIVersion = "0.39.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -386,10 +388,64 @@ const (
 	// re-documented folded-turn turnCount fields (additive = minor bump).
 	// Bumped to 0.50.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	// Bumped to 0.51.0 on 2026-11-13 when the catalog gained the contributable
-	// view, the contribution page, family, snapshot and project-picker types,
-	// the selection request, and the contribution error code and detail, and
-	// VillageErrorResponse gained the optional code and details (additive =
-	// minor bump).
-	TypesVersion = "0.51.0"
+	// Bumped to 0.51.0 for the positioned segmented transcript read catalog.
+	// Bumped for preview stream payloads and closed sets.
+	TypesVersion = "0.52.0"
+
+	// SegmentedReadAPIVersion identifies the newest declared segmented read
+	// protocol. Version 0.1.0 (additive) first declares the already-shipped
+	// reads and is still served when v is omitted or v=1.
+	// Version 0.2.0 (breaking) adds the positioned protocol at v=2; this is
+	// a breaking-class change expressed as a minor bump before 1.0.
+	//
+	// A breaking protocol change that needs a new v= generation is separate
+	// from freezing a document and requires its own protocol decision.
+	SegmentedReadAPIVersion = "0.2.0"
+
+	// SegmentedReadSpecVersion identifies the current frozen document. Release
+	// freezes advance it independently of the wire protocol and its selectors.
+	SegmentedReadSpecVersion = "0.2.0"
+
+	// SegmentedReadMinVersion is the oldest declared and served segmented read
+	// protocol. It moves only when the oldest served version is retired.
+	SegmentedReadMinVersion = "0.1.0"
 )
+
+// AllSegmentedReadVersions is the exact set of declared protocol versions.
+// Compare tokens by membership, never by inferred semantic-version ordering.
+var AllSegmentedReadVersions = []string{SegmentedReadAPIVersion, SegmentedReadMinVersion}
+
+type segmentedReadGeneration struct {
+	generation int
+	version    string
+}
+
+const positionedReadGeneration = 2
+
+// The omitted selector decodes to zero; one is its explicit equivalent.
+var segmentedReadGenerations = [...]segmentedReadGeneration{
+	{generation: 0, version: SegmentedReadMinVersion},
+	{generation: 1, version: SegmentedReadMinVersion},
+	{generation: positionedReadGeneration, version: SegmentedReadAPIVersion},
+}
+
+// SegmentedReadProtocolVersion resolves the integer generation to an exact
+// protocol version. Unknown generations are refused by returning false.
+func SegmentedReadProtocolVersion(generation int) (string, bool) {
+	for _, entry := range segmentedReadGenerations {
+		if entry.generation == generation {
+			return entry.version, true
+		}
+	}
+	return "", false
+}
+
+// SegmentedReadGenerations returns the supported selectors in declaration order.
+// The returned slice is independent of the protocol's generation table.
+func SegmentedReadGenerations() []int {
+	generations := make([]int, len(segmentedReadGenerations))
+	for i, entry := range segmentedReadGenerations {
+		generations[i] = entry.generation
+	}
+	return generations
+}

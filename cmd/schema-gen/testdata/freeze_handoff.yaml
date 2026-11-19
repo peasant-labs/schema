@@ -1,0 +1,43 @@
+cases:
+  - name: coherent-plan
+    input: {edit: unchanged}
+    expected: {}
+    classification: must-pass
+    provenance: &p {source: requirement, ref: "freeze handoff validation"}
+    mutation: &m {description: "Change one field in the total freeze handoff."}
+  - name: stale-source-version
+    input: {edit: stale-source, sibling: coherent-plan}
+    expected: {error_contains: "disagree"}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: wrong-next-version
+    input: {edit: wrong-next, sibling: coherent-plan}
+    expected: {error_contains: "incoherent"}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: missing-surface
+    input: {edit: missing-surface, sibling: coherent-plan}
+    expected: {error_contains: "every configured surface"}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: unplanned-ahead
+    input: {edit: unplanned-ahead, sibling: coherent-plan}
+    expected: {error_contains: "does not match the state"}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: segmented-document-freezes
+    input: {edit: segmented-freeze}
+    expected: {}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: wrong-candidate-constant
+    input: {edit: wrong-candidate, sibling: coherent-plan}
+    expected: {error_contains: "candidate version"}
+    classification: must-fail
+    provenance: *p
+    mutation: *m

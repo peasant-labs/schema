@@ -1,0 +1,115 @@
+# The Village operations that declare 410, and the ones that must not.
+# declared: each operation declares exactly one 410 whose body is the shared
+# Village error envelope and whose description carries every listed phrase.
+# excludes: phrases that neither the 410 description nor the operation
+# description may carry, so the retracted copy never reaches a lost-content
+# read and the lost-content copy never reaches the metadata read.
+# absent: each operation declares no 410 at all; the pull surface stays 404 for
+# a retracted or lost transcript so a pull cannot confirm that an id existed.
+declared:
+  cases:
+    - name: metadata-read-declares-retraction
+      classification: must-pass
+      provenance: {source: requirement, ref: "A retracted transcript answers 410 on the metadata read to its last audience"}
+      mutation: {description: "Drop 410 from getTranscriptMetadata or change its copy"}
+      input: {operationId: getTranscriptMetadata, path: "/api/v1/transcripts/{id}"}
+      expected:
+        contains:
+          - "retracted by its publisher"
+          - "its content has been deleted and cannot be shown"
+          - "Only the last audience"
+        excludes:
+          - "stored content has been lost"
+          - "an operator recorded the loss"
+    - name: content-read-declares-lost-content
+      classification: must-pass
+      provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the content read"}
+      mutation: {description: "Drop 410 from getTranscriptContent or change its copy"}
+      input: {operationId: getTranscriptContent, path: "/api/v1/transcripts/{id}/content"}
+      expected:
+        contains:
+          - "stored content has been lost and cannot be loaded"
+          - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
+    - name: segment-directory-read-declares-lost-content
+      classification: must-pass
+      provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the segment directory"}
+      mutation: {description: "Drop 410 from getTranscriptSegments or change its copy"}
+      input: {operationId: getTranscriptSegments, path: "/api/v1/transcripts/{id}/segments"}
+      expected:
+        contains:
+          - "stored content has been lost and cannot be loaded"
+          - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
+    - name: segment-read-declares-lost-content
+      classification: must-pass
+      provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the segment read"}
+      mutation: {description: "Drop 410 from getTranscriptSegment or change its copy"}
+      input: {operationId: getTranscriptSegment, path: "/api/v1/transcripts/{id}/segments/{index}"}
+      expected:
+        contains:
+          - "stored content has been lost and cannot be loaded"
+          - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
+    - name: window-read-declares-lost-content
+      classification: must-pass
+      provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the window read"}
+      mutation: {description: "Drop 410 from getTranscriptWindow or change its copy"}
+      input: {operationId: getTranscriptWindow, path: "/api/v1/transcripts/{id}/window"}
+      expected:
+        contains:
+          - "stored content has been lost and cannot be loaded"
+          - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
+    - name: header-read-declares-lost-content
+      classification: must-pass
+      provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the header read"}
+      mutation: {description: "Drop 410 from getTranscriptHeader or change its copy"}
+      input: {operationId: getTranscriptHeader, path: "/api/v1/transcripts/{id}/header"}
+      expected:
+        contains:
+          - "stored content has been lost and cannot be loaded"
+          - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
+    - name: locator-read-declares-lost-content
+      classification: must-pass
+      provenance: {source: requirement, ref: "A transcript whose stored content was recorded as lost answers 410 on the locator after access"}
+      mutation: {description: "Drop 410 from locateTranscriptEntry or change its copy"}
+      input: {operationId: locateTranscriptEntry, path: "/api/v1/transcripts/{id}/segments/locate"}
+      expected:
+        contains:
+          - "stored content has been lost and cannot be loaded"
+          - "an operator recorded the loss"
+        excludes:
+          - "retracted"
+          - "Only the last audience"
+absent:
+  cases:
+    - name: transcript-pull-request-list-declares-no-410
+      classification: must-pass
+      provenance: {source: requirement, ref: "The pull surface stays 404 for every absentee case"}
+      mutation: {description: "Declare 410 on listTranscriptPullRequests"}
+      input: {operationId: listTranscriptPullRequests, path: "/api/v1/transcripts/{id}/pulls"}
+      expected: {}
+    - name: pull-request-attachment-read-declares-no-410
+      classification: must-pass
+      provenance: {source: requirement, ref: "The pull surface stays 404 for every absentee case"}
+      mutation: {description: "Declare 410 on getPullRequestAttachment"}
+      input: {operationId: getPullRequestAttachment, path: "/api/v1/pulls/{owner}/{name}/{number}"}
+      expected: {}
+    - name: transcript-list-declares-no-410
+      classification: must-pass
+      provenance: {source: requirement, ref: "A list never answers for one absent transcript"}
+      mutation: {description: "Declare 410 on listTranscripts"}
+      input: {operationId: listTranscripts, path: "/api/v1/transcripts"}
+      expected: {}

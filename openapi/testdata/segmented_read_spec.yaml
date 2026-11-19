@@ -1,0 +1,25 @@
+cases:
+  - name: segmented-spec-shipped-protocol
+    classification: must-pass
+    provenance: {source: requirement, ref: "The shipped protocol remains declared and served"}
+    mutation: {description: "Build the frozen protocol catalog"}
+    input: {version: "0.1.0"}
+    expected: {roots: [TranscriptSegmentDirectory, TranscriptSegmentRef, TranscriptSegment, TranscriptWindow, ConversationTurnSpan], absent: [PositionedDirectory]}
+  - name: segmented-spec-positioned-protocol
+    classification: must-pass
+    provenance: {source: requirement, ref: "The positioned protocol is a separate version"}
+    mutation: {description: "Build the positioned protocol catalog"}
+    input: {version: "0.2.0"}
+    expected: {roots: [PositionedDirectory, PositionedSegmentRef, PositionedSegment, PositionedWindow, TranscriptReadContext], absent: [TranscriptSegmentDirectory], protocolVersionDescription: "selected positioned read protocol version"}
+  - name: document-bump-keeps-positioned-protocol
+    classification: must-pass
+    provenance: {source: requirement, ref: "A document freeze does not change the positioned protocol"}
+    mutation: {description: "Change only the document version for the same protocol"}
+    input: {version: "0.2.0", document_version: "0.3.0"}
+    expected: {roots: [PositionedDirectory, PositionedSegmentRef, PositionedSegment, PositionedWindow, TranscriptReadContext], absent: [TranscriptSegmentDirectory], same_as_document: "0.2.0"}
+  - name: segmented-spec-unknown-version-refused
+    classification: must-fail
+    provenance: {source: boundary, ref: "Only declared protocol versions have documents"}
+    mutation: {description: "Request an unknown protocol"}
+    input: {version: "0.3.0"}
+    expected: {errorContains: "not declared"}

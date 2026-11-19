@@ -39,6 +39,9 @@ type retiredSpec struct {
 	// (they are JSON Schema documents, not OpenAPI specs), so freezing them must
 	// skip the .yaml present/hash check. yamlSHA256 is left empty for such entries.
 	JSONOnly bool `yaml:"json_only"`
+	// Regenerate preserves the independent source check for protocols that
+	// remain generated as numbered files.
+	Regenerate bool `yaml:"regenerate,omitempty"`
 }
 
 // retiredSpecRegistry is the set of RETIRED spec versions under the generic
@@ -49,10 +52,9 @@ type retiredSpec struct {
 // TypesVersion, plus both request schemas derived from VillageAPIVersion) are
 // deliberately EXCLUDED; they stay under the codegen-freshness gate
 // (TestCodegenFreshness_SpecsMatchSource), which regenerates them from the Go
-// source on every run. Pinning a current version's hash here would false-fail
-// `make check` on every legitimate regen. The partition key is simply "is this
-// version still generated?": still-generated => freshness (mutable-by-regen);
-// retired => this guard (immutable/frozen).
+// source on every run. A version still generated after its current stamp moves
+// is also pinned by the separate frozen-while-served registry; it does not
+// belong in this retired-only registry until generation and service both stop.
 //
 // REGISTER-AT-FREEZE-TIME: a version is MOVED into this registry at the moment it is
 // frozen (i.e. in the same change that bumps the live const past it), so there is no
@@ -174,18 +176,18 @@ func checkFrozen(path, wantSHA string) error {
 	got, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf(
-			"RETIRED spec MISSING: %s\n"+
+			"FROZEN spec MISSING: %s\n"+
 				"  what: a frozen, released OpenAPI spec is absent (deleted or moved).\n"+
-				"  why:  retired versions are immutable goldens and must remain committed in generated/.\n"+
-				"  fix:  restore it from git history (it is no longer regenerated) and re-run; do not delete retired specs.",
+				"  why:  frozen versions are immutable goldens and must remain committed in generated/.\n"+
+				"  fix:  restore it from git history and re-run; do not delete frozen specs.",
 			path)
 	}
 
 	sum := sha256.Sum256(got)
 	if gotSHA := hex.EncodeToString(sum[:]); gotSHA != wantSHA {
 		return fmt.Errorf(
-			"RETIRED spec MUTATED: %s drifted from its pinned hash.\n"+
-				"  what: a RETIRED (frozen) OpenAPI spec was edited in place.\n"+
+			"FROZEN spec MUTATED: %s drifted from its pinned hash.\n"+
+				"  what: a frozen OpenAPI spec was edited in place.\n"+
 				"  why:  released versions are immutable; NEW API surface goes on a NEW version (bump the version const + `go run ./cmd/schema-gen`), never onto an already-shipped spec.\n"+
 				"  got:  %s\n"+
 				"  want: %s\n"+

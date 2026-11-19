@@ -21,8 +21,8 @@ func (p CollaboratorPermission) String() string { return string(p) }
 // IsMaintainer reports whether a collaborator permission grants release-
 // maintainer authority (may open OR approve a release PR).
 //
-// This is the SINGLE source of the maintainer predicate. Both release-pr.yml
-// gates — the PR-author check and the approver check — consume it via
+// This is the SINGLE source of the maintainer predicate. It was formerly consumed by
+// both release-pr.yml gates - the PR-author check and the approver check - via
 // `release-guard check-maintainer`, so the {admin, maintain} set is defined
 // exactly once (no duplicated `admin|maintain` shell case across jobs).
 func IsMaintainer(perm CollaboratorPermission) bool {

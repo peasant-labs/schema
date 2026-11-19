@@ -1,0 +1,4 @@
+requiredNames:
+  - durable-timestamp-positive-offset
+  - durable-timestamp-negative-offset
+  - durable-timestamp-offset-outside-rfc3339-known-limit

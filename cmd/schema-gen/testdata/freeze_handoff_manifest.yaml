@@ -1,0 +1,8 @@
+requiredNames:
+  - coherent-plan
+  - stale-source-version
+  - wrong-next-version
+  - missing-surface
+  - unplanned-ahead
+  - segmented-document-freezes
+  - wrong-candidate-constant

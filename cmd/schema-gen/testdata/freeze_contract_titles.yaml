@@ -1,0 +1,98 @@
+cases:
+  - &accept_pr
+    name: pr-functional-declared
+    input: {event: pr, title: "fix(local-api)[patch]: change", local: functional}
+    expected: {exit: 0}
+    classification: must-pass
+    provenance: &p {source: requirement, ref: "spec changes are judged against the live title"}
+    mutation: &m {description: "Change the title, event, or surface report."}
+  - name: pr-functional-nonrelease
+    input: {event: pr, title: "docs(local-api): change", local: functional, sibling: pr-functional-declared}
+    expected: {exit: 2, code: spec-change-needs-bump}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: pr-missing-surface
+    input: {event: pr, title: "fix[patch]: change", local: functional, sibling: pr-functional-declared}
+    expected: {exit: 2, code: surface-mismatch}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: pr-misspelt-surface
+    input: {event: pr, title: "fix(local-ap)[patch]: change", local: functional, sibling: pr-functional-declared}
+    expected: {exit: 2, code: surface-mismatch}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: pr-extra-unchanged
+    input: {event: pr, title: "fix(local-api,types)[patch]: change", local: functional, sibling: pr-functional-declared}
+    expected: {exit: 2, code: surface-mismatch}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: pr-docs-nonrelease
+    input: {event: pr, title: "docs(local-api): clarify", local: docs}
+    expected: {exit: 0}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: pr-docs-releasing-scope
+    input: {event: pr, title: "fix(local-api)[patch]: clarify", local: docs, sibling: pr-docs-nonrelease}
+    expected: {exit: 2, code: surface-mismatch}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: pr-ahead-base-declaration
+    input: {event: pr, title: "fix(local-api)[patch]: declare", local: none, ahead: true}
+    expected: {exit: 0}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: queue-functional-declared
+    input: {event: queue, title: "fix(local-api)[patch]: change", local: functional}
+    expected: {exit: 0}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: queue-functional-nonrelease
+    input: {event: queue, title: "docs(local-api): change", local: functional, sibling: queue-functional-declared}
+    expected: {exit: 2, code: spec-change-needs-bump}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: queue-missing-surface
+    input: {event: queue, title: "fix[patch]: change", local: functional, sibling: queue-functional-declared}
+    expected: {exit: 2, code: surface-mismatch}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: queue-misspelt-surface
+    input: {event: queue, title: "fix(local-ap)[patch]: change", local: functional, sibling: queue-functional-declared}
+    expected: {exit: 2, code: surface-mismatch}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: queue-extra-unchanged
+    input: {event: queue, title: "fix(local-api,types)[patch]: change", local: functional, sibling: queue-functional-declared}
+    expected: {exit: 2, code: surface-mismatch}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: queue-docs-nonrelease
+    input: {event: queue, title: "docs(local-api): clarify", local: docs}
+    expected: {exit: 0}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: queue-docs-releasing-scope
+    input: {event: queue, title: "fix(local-api)[patch]: clarify", local: docs, sibling: queue-docs-nonrelease}
+    expected: {exit: 2, code: surface-mismatch}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: queue-ahead-base-declaration
+    input: {event: queue, title: "fix(local-api)[patch]: declare", local: none, ahead: true}
+    expected: {exit: 0}
+    classification: must-pass
+    provenance: *p
+    mutation: *m

@@ -3,6 +3,43 @@ forbidden_components:
   - BestiaryHarness
   - VersionResponse
 types:
+  - {go_name: TranscriptReadTransportKind, disposition: catalog, component: TranscriptReadTransportKind, reason: segmented read transport kind}
+  - {go_name: TranscriptReadTransport, disposition: catalog, component: TranscriptReadTransport, reason: segmented read route identity}
+  - {go_name: TranscriptRecordedIndexState, disposition: catalog, component: TranscriptRecordedIndexState, reason: recorded index presence state}
+  - {go_name: TranscriptReadValidation, disposition: catalog, component: TranscriptReadValidation, reason: served validation state}
+  - {go_name: TranscriptNativePresence, disposition: catalog, component: TranscriptNativePresence, reason: native evidence presence state}
+  - {go_name: TranscriptUsagePresence, disposition: catalog, component: TranscriptUsagePresence, reason: partition usage presence state}
+  - {go_name: TranscriptReadContext, disposition: catalog, component: TranscriptReadContext, reason: shared segmented read context}
+  - {go_name: TranscriptSegmentPartitionKind, disposition: catalog, component: TranscriptSegmentPartitionKind, reason: segmented read partition kind}
+  - {go_name: TranscriptSegmentPartition, disposition: catalog, component: TranscriptSegmentPartition, reason: segmented read partition identity}
+  - {go_name: TranscriptHistorySection, disposition: catalog, component: TranscriptHistorySection, reason: earlier history section manifest}
+  - {go_name: PositionedSegmentRef, disposition: catalog, component: PositionedSegmentRef, reason: positioned segment reference}
+  - {go_name: TranscriptSegmentRow, disposition: catalog, component: TranscriptSegmentRow, reason: positioned served row}
+  - {go_name: PositionedDirectory, disposition: catalog, component: PositionedDirectory, reason: positioned segment directory}
+  - {go_name: PositionedSegment, disposition: catalog, component: PositionedSegment, reason: positioned segment body}
+  - {go_name: PositionedWindow, disposition: catalog, component: PositionedWindow, reason: positioned window descriptor}
+  - {go_name: TranscriptEntryReferenceKind, disposition: catalog, component: TranscriptEntryReferenceKind, reason: located entry member}
+  - {go_name: TranscriptEntryLocateRequest, disposition: catalog, component: TranscriptEntryLocateRequest, reason: reference and expected read epoch}
+  - {go_name: TranscriptEntryMatch, disposition: catalog, component: TranscriptEntryMatch, reason: served entry location without reference}
+  - {go_name: TranscriptEntryScanRow, disposition: runtime-only, reason: captured producer scan input}
+  - {go_name: TranscriptEntryHit, disposition: runtime-only, reason: producer scan finding}
+  - {go_name: TranscriptContentReadPolicy, disposition: runtime-only, reason: raw scanner policy alias}
+  - {go_name: TranscriptDownloadKind, disposition: runtime-only, reason: download parser dispatch}
+  - {go_name: TranscriptDownloadRead, disposition: runtime-only, reason: download parser result}
+  - {go_name: TranscriptFlaggedTurn, disposition: catalog, component: TranscriptFlaggedTurn, reason: served position and recorded index of a flag}
+  - {go_name: TranscriptServedTurn, disposition: catalog, component: TranscriptServedTurn, reason: open legacy turn object in a segment row}
+  - {go_name: TranscriptSessionHeader, disposition: catalog, component: TranscriptSessionHeader, reason: bounded served session metadata}
+  - {go_name: TranscriptContentHeader, disposition: catalog, component: TranscriptContentHeader, reason: bounded content header envelope}
+  - {go_name: TranscriptRetainedState, disposition: catalog, component: TranscriptRetainedState, reason: retained evidence availability}
+  - {go_name: TranscriptViewerProjection, disposition: catalog, component: TranscriptViewerProjection, reason: served viewer class}
+  - {go_name: TranscriptRepresentationInputs, disposition: runtime-only, reason: producer inputs for representation identity}
+  - {go_name: HeaderETagInputs, disposition: runtime-only, reason: producer inputs for header validation identity}
+  - {go_name: TranscriptContentHashWord, disposition: runtime-only, reason: producer input for header validation identity}
+  - {go_name: TranscriptRetainedOwnerVisibility, disposition: runtime-only, reason: producer input for header validation identity}
+  - {go_name: TranscriptCookTurn, disposition: runtime-only, reason: paired raw and decoded producer input}
+  - {go_name: CookedTurn, disposition: runtime-only, reason: producer cooking verdict}
+  - {go_name: PositionedWindowTurn, disposition: runtime-only, reason: producer window resolver input}
+  - {go_name: PositionedWindowInput, disposition: runtime-only, reason: producer window resolver input}
   - {go_name: VillageDeprecatedGroupedContributableResponse, disposition: catalog, component: VillageDeprecatedGroupedContributableResponse, reason: released grouped envelope during deprecated resource route window}
   - {go_name: VillageOrganizationCollective, disposition: catalog, component: VillageOrganizationCollective, reason: existing viewer-permitted organization collective projection}
   - {go_name: VillageOrganizationCollectivesResponse, disposition: catalog, component: VillageOrganizationCollectivesResponse, reason: narrow complete disclosed organization collective set}
@@ -1564,6 +1601,16 @@ types:
   - {go_name: LocalKickstartNode, disposition: catalog, component: LocalKickstartNode, reason: kickstart forest row}
   - {go_name: LocalKickstartTree, disposition: catalog, component: LocalKickstartTree, reason: kickstart whole forest}
   - {go_name: LocalKickstartPreview, disposition: catalog, component: LocalKickstartPreview, reason: kickstart bounded preview}
+  - {go_name: LocalKickstartPreviewOp, disposition: catalog, component: LocalKickstartPreviewOp, reason: preview stream operation}
+  - {go_name: LocalKickstartPreviewContinuation, disposition: catalog, component: LocalKickstartPreviewContinuation, reason: preview stream continuation}
+  - {go_name: LocalKickstartPreviewEventKind, disposition: catalog, component: LocalKickstartPreviewEventKind, reason: preview stream event kind}
+  - {go_name: LocalKickstartPreviewCutReason, disposition: catalog, component: LocalKickstartPreviewCutReason, reason: preview stream cut reason}
+  - {go_name: LocalKickstartPreviewCloseReason, disposition: catalog, component: LocalKickstartPreviewCloseReason, reason: preview stream close reason}
+  - {go_name: LocalKickstartPreviewRequest, disposition: catalog, component: LocalKickstartPreviewRequest, reason: preview stream request}
+  - {go_name: LocalKickstartPreviewEvent, disposition: catalog, component: LocalKickstartPreviewEvent, reason: preview stream event}
+  - {go_name: LocalKickstartPreviewDirectory, disposition: catalog, component: LocalKickstartPreviewDirectory, reason: preview stream directory}
+  - {go_name: LocalKickstartPreviewSegment, disposition: catalog, component: LocalKickstartPreviewSegment, reason: preview stream segment}
+  - {go_name: LocalKickstartPreviewState, disposition: runtime-only, reason: in-memory merge state is not a wire payload}
   - {go_name: LocalKickstartAnswers, disposition: catalog, component: LocalKickstartAnswers, reason: kickstart patch body}
   - {go_name: LocalKickstartOverwrite, disposition: catalog, component: LocalKickstartOverwrite, reason: kickstart stale-write notice}
   - {go_name: LocalKickstartPatchResult, disposition: catalog, component: LocalKickstartPatchResult, reason: kickstart patch result}

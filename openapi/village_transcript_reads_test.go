@@ -30,10 +30,12 @@ type villageTranscriptReadExpected struct {
 		Minimum  *int   `yaml:"minimum"`
 		Maximum  *int   `yaml:"maximum"`
 	} `yaml:"parameters"`
-	ResponseRef   string   `yaml:"responseRef"`
-	RequiredRoot  []string `yaml:"requiredRoot"`
-	ForbiddenRoot []string `yaml:"forbiddenRoot"`
-	NonnullArrays []string `yaml:"nonnullArrays"`
+	ResponseRef            string   `yaml:"responseRef"`
+	PositionedResponseRef  string   `yaml:"positionedResponseRef"`
+	PositionedRequiredRoot []string `yaml:"positionedRequiredRoot"`
+	RequiredRoot           []string `yaml:"requiredRoot"`
+	ForbiddenRoot          []string `yaml:"forbiddenRoot"`
+	NonnullArrays          []string `yaml:"nonnullArrays"`
 	// ReachableComponents are nested components, named without the Schema
 	// prefix, that the Village-to-Local comparison must reach from the
 	// response component. It is a required subset, not the whole closure.
@@ -145,14 +147,33 @@ func TestVillageTranscriptReadsAreDeclared(t *testing.T) {
 				t.Fatalf("statuses=%v, want %v", statuses, c.Expected.Statuses)
 			}
 			for _, status := range statuses {
-				ref := declaredResponseRef(t, responses, status)
-				want := c.Expected.ErrorRef
+				response := responses[strconv.Itoa(status)].(map[string]any)
+				headers, ok := response["headers"].(map[string]any)
+				if !ok || headers["Cache-Control"] == nil || headers["Vary"] == nil {
+					t.Fatalf("status %d must declare Cache-Control and Vary headers", status)
+				}
 				if status == 200 {
-					want = c.Expected.ResponseRef
+					content := response["content"].(map[string]any)
+					body := content["application/json"].(map[string]any)["schema"].(map[string]any)
+					alternatives, ok := body["oneOf"].([]any)
+					if !ok || len(alternatives) != 2 {
+						t.Fatalf("status 200 schema = %v; want v1 and positioned alternatives", body)
+					}
+					for i, want := range []string{c.Expected.ResponseRef, c.Expected.PositionedResponseRef} {
+						if got := alternatives[i].(map[string]any)["$ref"]; got != want {
+							t.Fatalf("status 200 alternative %d = %v, want %s", i, got, want)
+						}
+					}
+					continue
 				}
-				if ref != want {
-					t.Fatalf("status %d body=%s, want %s", status, ref, want)
+				if ref := declaredResponseRef(t, responses, status); ref != c.Expected.ErrorRef {
+					t.Fatalf("status %d body=%s, want %s", status, ref, c.Expected.ErrorRef)
 				}
+			}
+			retry := responses["503"].(map[string]any)
+			headers, ok := retry["headers"].(map[string]any)
+			if !ok || headers["Retry-After"] == nil {
+				t.Fatal("503 must declare the Retry-After response header")
 			}
 
 			name := strings.TrimPrefix(c.Expected.ResponseRef, "#/components/schemas/")
@@ -174,6 +195,17 @@ func TestVillageTranscriptReadsAreDeclared(t *testing.T) {
 			for _, root := range c.Expected.NonnullArrays {
 				if properties[root].(map[string]any)["type"] != "array" {
 					t.Fatalf("%s is not a non-null array", root)
+				}
+			}
+			positionedName := strings.TrimPrefix(c.Expected.PositionedResponseRef, "#/components/schemas/")
+			positioned, ok := components[positionedName].(map[string]any)
+			if !ok {
+				t.Fatalf("positioned response ref %q does not resolve", c.Expected.PositionedResponseRef)
+			}
+			positionedProperties := positioned["properties"].(map[string]any)
+			for _, root := range c.Expected.PositionedRequiredRoot {
+				if _, ok := positionedProperties[root]; !ok {
+					t.Fatalf("positioned response component is missing %q", root)
 				}
 			}
 			// Nested components are only references inside the response

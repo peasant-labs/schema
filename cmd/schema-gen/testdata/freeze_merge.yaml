@@ -1,0 +1,21 @@
+cases:
+  - name: content-branch-merges-after-freeze
+    input:
+      docs_edit:
+        path: map_api.go
+        find: "From      string `json:\"from\"`"
+        replace: "From      string `json:\"from\" description:\"Clarified freeze documentation.\"`"
+      base_edit:
+        path: map_api.go
+        find: "type ActivityEdge struct {\n"
+        replace: "type ActivityEdge struct {\n\tFreezeBase string `json:\"freezeBase,omitempty\"`\n"
+      content_edit:
+        path: map_api.go
+        find: "type MapEdge struct {\n"
+        replace: "type MapEdge struct {\n\tFreezePending string `json:\"freezePending,omitempty\"`\n"
+      ahead: [types, local-api]
+      docs_marker: "Clarified freeze documentation."
+    expected: {fresh: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an open content change merges across a release freeze"}
+    mutation: {description: "Merge a generated content change after an independent freeze."}

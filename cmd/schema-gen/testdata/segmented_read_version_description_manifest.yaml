@@ -1,0 +1,5 @@
+requiredNames:
+  - positioned-json-describes-current-echo
+  - positioned-yaml-describes-current-echo
+  - shipped-json-has-no-echo-and-remains-frozen
+  - shipped-yaml-has-no-echo-and-remains-frozen

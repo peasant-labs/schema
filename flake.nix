@@ -9,6 +9,9 @@
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs = nixpkgs-unstable;
+    # ast-grep 0.51.2 exactly. The channel package is a different version, and
+    # unstring refuses any other before it scans.
+    nixpkgs-ast-grep.url = "github:NixOS/nixpkgs/34209e4f67c988d6a21b19f4ae37672fce52c7da";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -21,6 +24,7 @@
     , nixpkgs
     , nixpkgs-stable
     , nixpkgs-unstable
+    , nixpkgs-ast-grep
     , flake-utils
     , ...
     }:
@@ -72,10 +76,11 @@
         gotools # goimports, godoc, etc.
         go-tools # staticcheck
         delve # debugger
-        ast-grep # structural code search and lint
         golangci-lint # linter suite
         actionlint # lint GitHub Actions workflow YAML (.github/workflows/*.yml)
         vacuum-go # Go-native OpenAPI/Swagger linter (contract gate; binary: vacuum)
+        # ast-grep is not taken from this channel. mkOutputs imports the pinned
+        # nixpkgs-ast-grep input and appends that package to the dev shell.
       ];
 
       # Native build dependencies (C libraries, system packages). The schema leaf
@@ -100,12 +105,16 @@
       # IMPLEMENTATION — you shouldn't need to edit below here
       # ==========================================================
 
-      mkOutputs = nixpkgs-channel:
+      mkOutputs = nixpkgs-channel: nixpkgs-ast-grep:
         flake-utils.lib.eachDefaultSystem (system:
           let
             pkgs = import nixpkgs-channel {
               inherit system;
             };
+            astGrepPkgs = import nixpkgs-ast-grep {
+              inherit system;
+            };
+            ast-grep = assert astGrepPkgs.ast-grep.version == "0.51.2"; astGrepPkgs.ast-grep;
 
             goPackage =
               if goAttr != null
@@ -207,7 +216,8 @@
               # tests); git is present only for isolated local-runner fixtures.
               # The whole suite runs as a packaging sanity gate. No
               # -race: the detector requires cgo and this build is CGO_ENABLED=0;
-              # the authoritative race-enabled suite runs in CI (`go test -race`).
+              # CI's merge queue runs `make race-selective` over the module's
+              # concurrency, and `make check RACE=1` is the full race pass.
               checkPhase = ''
                 runHook preCheck
                 go test ./...
@@ -237,7 +247,7 @@
               # devTools (incl. vacuum-go from nixpkgs) + the source-built
               # oasdiff/go-apidiff gates, so `nix develop` and CI share one
               # contract-gate toolchain.
-              packages = (devTools pkgs) ++ contractGateTools;
+              packages = (devTools pkgs) ++ contractGateTools ++ [ ast-grep ];
 
               shellHook = ''
                 echo "Go $(go version | cut -d' ' -f3) dev shell"
@@ -262,5 +272,5 @@
           }
         );
     in
-    mkOutputs nixpkgs;
+    mkOutputs nixpkgs nixpkgs-ast-grep;
 }
