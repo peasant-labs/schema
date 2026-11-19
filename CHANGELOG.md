@@ -14,17 +14,29 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## 0.57.1
 
+This version was tagged and published to npm, but its GitHub Release has no
+assets. The generated contract files are in the [tag's generated/ tree](https://github.com/peasant-labs/schema/tree/v0.57.1/generated/).
+
 - publish immutable releases with their assets (#252)
 
 ## 0.57.0
+
+This version was tagged and published to npm, but its GitHub Release has no
+assets. The generated contract files are in the [tag's generated/ tree](https://github.com/peasant-labs/schema/tree/v0.57.0/generated/).
 
 - document the precise enum member types and release recovery (#254)
 
 ## 0.56.0
 
+This version was tagged, but its GitHub Release has no assets and its npm
+package was not published. The generated contract files are in the [tag's generated/ tree](https://github.com/peasant-labs/schema/tree/v0.56.0/generated/).
+
 - emit precise TypeScript member types for enums (#248)
 
 ## 0.55.0
+
+This version was tagged, but its GitHub Release has no assets and its npm
+package was not published. The generated contract files are in the [tag's generated/ tree](https://github.com/peasant-labs/schema/tree/v0.55.0/generated/).
 
 - declare 410 for retracted and unavailable transcript reads (#246)
 
