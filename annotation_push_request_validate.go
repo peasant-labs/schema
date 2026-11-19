@@ -20,12 +20,17 @@ var (
 )
 
 func compileAnnotationPushRequestSchema() {
+	annotationPushRequestSchema, annotationPushRequestSchemaErr = newAnnotationPushRequestSchema(AnnotationPushRequestSchemaJSON())
+}
+
+// newAnnotationPushRequestSchema lets internal tests validate the working
+// document without changing the exported validator's frozen byte source.
+func newAnnotationPushRequestSchema(data []byte) (*jsonschema.Schema, error) {
 	compiler := NewJSONSchemaCompiler()
-	if err := compiler.AddResource(annotationPushRequestSchemaURL, bytes.NewReader(AnnotationPushRequestSchemaJSON())); err != nil {
-		annotationPushRequestSchemaErr = err
-		return
+	if err := compiler.AddResource(annotationPushRequestSchemaURL, bytes.NewReader(data)); err != nil {
+		return nil, err
 	}
-	annotationPushRequestSchema, annotationPushRequestSchemaErr = compiler.Compile(annotationPushRequestSchemaURL)
+	return compiler.Compile(annotationPushRequestSchemaURL)
 }
 
 // ValidateAnnotationPushRequest validates an annotation-push JSON body against

@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -41,20 +42,28 @@ func TestGeneratedDirFullyAccounted(t *testing.T) {
 
 	// accounted = generated ∪ served-frozen ∪ retired (all keyed by filename).
 	accounted := make(map[string]bool, len(artifacts)+2*len(retiredSpecRegistry))
+	registered := make(map[string]bool, 2*(len(retiredSpecRegistry)+len(frozenServed)))
 	for filename := range artifacts {
-		accounted[filename] = true
+		accounted[workingArtifactName(filename)] = true
 	}
 	for _, rs := range retiredSpecRegistry {
 		accounted[rs.Name+".json"] = true
+		registered[rs.Name+".json"] = true
 		if !rs.JSONOnly {
 			accounted[rs.Name+".yaml"] = true
+			registered[rs.Name+".yaml"] = true
 		}
 	}
 	for _, spec := range frozenServed {
 		accounted[spec.Name+".json"] = true
-		accounted[spec.Name+".yaml"] = true
+		registered[spec.Name+".json"] = true
+		if !spec.JSONOnly {
+			accounted[spec.Name+".yaml"] = true
+			registered[spec.Name+".yaml"] = true
+		}
 	}
 
+	numbered := regexp.MustCompile(`-[0-9]+\.[0-9]+\.[0-9]+(\.schema)?\.(json|yaml)$`)
 	for _, dir := range committedSpecDirs(root) {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
@@ -72,6 +81,9 @@ func TestGeneratedDirFullyAccounted(t *testing.T) {
 			}
 			if !accounted[name] {
 				unaccounted = append(unaccounted, name)
+			}
+			if numbered.MatchString(name) && !registered[name] {
+				t.Errorf("numbered spec %s is missing from the frozen or retired registry", name)
 			}
 		}
 		if len(unaccounted) > 0 {

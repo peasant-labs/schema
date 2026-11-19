@@ -1,0 +1,3 @@
+requiredNames:
+  - every-writer-output-is-authorized
+  - segmented-document-freeze-retains-protocol

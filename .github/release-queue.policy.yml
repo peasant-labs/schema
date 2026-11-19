@@ -8,6 +8,7 @@ queue:
     job: release
     pre_tag_steps:
       - {id: verify-contract, check: contract}
+      - {id: verify-freeze, check: freeze}
   bot_jobs:
     - {workflow: cut-release.yml, job: cut, kind: cut-release}
     - {workflow: nix-vendor-hash.yml, job: update, kind: vendor-hash}

@@ -125,10 +125,18 @@ verification rules.
 
 Titles carry release intent as `type(scope)[level]: subject`; below 1.0 a
 breaking change uses `![minor]`. The pinned `release-intent` checks the live
-title against the Go and OpenAPI contract report. Content PRs still choose and
-write spec version stamps until the freeze migration. They must not edit
-`CHANGELOG.md` or the `typescript/package.json` version: the standing bot
-release PR writes those files and lands through the merge queue.
+title against the Go and OpenAPI contract report. A functional spec change
+requires a releasing title that names each changed surface. A releasing title
+must not name an unchanged or docs-only surface unless it was already ahead on
+the base. A non-releasing title such as `docs(local-api): clarify a field`
+may mention a surface. `spec-change-needs-bump` and `surface-mismatch` name
+the respective failures.
+
+Content PRs regenerate working specs; they do not choose spec numbers or edit
+the protected `versions.go`, numbered documents, freeze registries,
+`CHANGELOG.md`, or the `typescript/package.json` version. The standing bot
+release PR writes the frozen specs with the changelog and lands through the
+merge queue.
 
 `release-batch.yml` computes the module version and pushes an annotated tag on a
 fresh release PR commit using the releaser App. The tag triggers `release.yml`,
@@ -146,30 +154,37 @@ product release version, the schema module's own release tag, and an internal
 codename that merely looks version-like. Only a real tag on this module gates a
 release here.
 
-## Spec versioning: bump, do not mutate
+## Spec versioning: working and frozen documents
 
-A released spec version is immutable. To change a surface, bump its version stamp
-in `versions.go` (`VillageAPIVersion`, `PeasantLocalAPIVersion`, `TypesVersion`,
-or `SegmentedReadAPIVersion`) and regenerate; do not edit a version already
-released. `SegmentedReadMinVersion` names the oldest segmented-read protocol the
-module still declares and hosts still serve; it moves only when support ends.
-Record each segmented-read bump as additive or breaking, including a breaking
-change expressed by a pre-1.0 minor bump.
+For Types, Village, Local, and segmented read, `generated/<stem>-next.*` is
+the committed working document. `versions.go` names the latest frozen numbered document.
+The two Village request schemas follow the Village version. The public
+accessors and exported validators read the numbered frozen bytes; generators,
+contract reports, and current-document tests read working bytes. No public
+accessor exposes a working file.
 
-An older version has one of two freeze states:
+`schema-gen status` computes `clean`, `docs-ahead`, or `ahead` per surface.
+Docs-only changes need no bump and may wait for the next functional freeze.
+The release job uses `release-intent freeze-plan`, then `schema-gen freeze`,
+to raise constants, regenerate working version lines, copy numbered files and
+update the frozen registry and version mirrors in the release PR. A release
+tree must contain no `ahead` surface: the PR and merge-group check and the
+candidate pre-tag check enforce this. A wrong stale freeze that bypasses the
+queue burns one spec number; the next freeze advances again and retains the
+wrong numbered file.
 
-- **Frozen while served:** it remains generated and declared, but its committed
-  and regenerated JSON and YAML bytes are pinned in
-  `cmd/schema-gen/testdata/frozen_specs.yaml` and checked by
-  `cmd/schema-gen/frozen_specs_test.go`. Changes to shared declarations must not
-  silently change that document.
-- **Retired:** it is no longer generated or served. Move its pins to
-  `cmd/schema-gen/testdata/retired_specs.yaml`, where
-  `cmd/schema-gen/retired_specs_test.go` rejects edits and deletions.
+Segmented read separates the frozen document version
+(`SegmentedReadSpecVersion`) from the selected wire protocol
+(`SegmentedReadAPIVersion`, with `SegmentedReadMinVersion` as the oldest
+served protocol). A document freeze moves only the document version. The
+minimum protocol document and the generation selector table remain unchanged.
+A breaking protocol change requiring a new `v=` generation is separate P1
+work, not a document freeze.
 
-Keep the corresponding required-name manifests in step with an intentional
-state transition. An intentional stamp bump is exempt from the exported-Go-API
-diff; every other incompatible change must be declared in the PR title.
+When an open content PR predates this migration, merge the updated base,
+drop its numbered-file and constant changes, regenerate the working files,
+and list its functionally changed surfaces in the title. See the release
+runbook for the full cutover and recovery flow.
 
 ## Leaf purity
 

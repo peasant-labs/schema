@@ -48,11 +48,12 @@ const versions = {
   PeasantLocalAPIVersion: requiredMatch(versionsSource, /PeasantLocalAPIVersion\s*=\s*"([^"]+)"/, "PeasantLocalAPIVersion", "versions.go"),
   TypesVersion: requiredMatch(versionsSource, /TypesVersion\s*=\s*"([^"]+)"/, "TypesVersion", "versions.go"),
   SegmentedReadAPIVersion: requiredMatch(versionsSource, /SegmentedReadAPIVersion\s*=\s*"([^"]+)"/, "SegmentedReadAPIVersion", "versions.go"),
+  SegmentedReadSpecVersion: requiredMatch(versionsSource, /SegmentedReadSpecVersion\s*=\s*"([^"]+)"/, "SegmentedReadSpecVersion", "versions.go"),
   SegmentedReadMinVersion: requiredMatch(versionsSource, /SegmentedReadMinVersion\s*=\s*"([^"]+)"/, "SegmentedReadMinVersion", "versions.go"),
   MetadataSchemaVersion: Number(requiredMatch(metadataSource, /MetadataSchemaVersion\s*=\s*(\d+)/, "MetadataSchemaVersion", "metadata.go")),
 };
 
-const specPath = join(moduleRoot, "generated", `types-${versions.TypesVersion}.json`);
+const specPath = join(moduleRoot, "generated", "types-next.json");
 const spec = JSON.parse(await readFile(specPath, "utf8"));
 const enumCatalog = parse(await readFile(join(moduleRoot, "testdata", "typescript", "enums.yaml"), "utf8"));
 const contentCapabilityCatalog = parse(await readFile(join(moduleRoot, "testdata", "typescript", "content_capabilities.yaml"), "utf8"));
@@ -88,8 +89,8 @@ await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineF
 await writeFile(join(generatedRoot, "session-graph-fixtures.gen.ts"), renderFixtureConstant("canonicalSessionGraphFixtures", { ...sessionGraphSource, grouped_read: groupedReadSource }));
 await writeFile(join(generatedRoot, "session-graph-capability-fixtures.gen.ts"), renderFixtureConstant("canonicalSessionGraphCapabilityFixtures", sessionGraphCapabilitySource));
 await writeFile(join(generatedRoot, "testcase.gen.ts"), renderTestcaseModel(testcaseSource));
-await generateOperationContracts("local", `peasantlocal-api-${versions.PeasantLocalAPIVersion}.json`, "local-api.ts");
-await generateOperationContracts("village", `village-api-${versions.VillageAPIVersion}.json`, "village-api.ts");
+await generateOperationContracts("local", "peasantlocal-api-next.json", "local-api.ts");
+await generateOperationContracts("village", "village-api-next.json", "village-api.ts");
 
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
@@ -125,7 +126,7 @@ async function readGeneratorOutput(path, label) {
 }
 
 function renderVersions(values) {
-  return `${header()}export const VillageAPIVersion = ${JSON.stringify(values.VillageAPIVersion)} as const;\nexport const PeasantLocalAPIVersion = ${JSON.stringify(values.PeasantLocalAPIVersion)} as const;\nexport const TypesVersion = ${JSON.stringify(values.TypesVersion)} as const;\nexport const SegmentedReadAPIVersion = ${JSON.stringify(values.SegmentedReadAPIVersion)} as const;\nexport const SegmentedReadMinVersion = ${JSON.stringify(values.SegmentedReadMinVersion)} as const;\nexport const MetadataSchemaVersion = ${values.MetadataSchemaVersion} as const;\n`;
+  return `${header()}export const VillageAPIVersion = ${JSON.stringify(values.VillageAPIVersion)} as const;\nexport const PeasantLocalAPIVersion = ${JSON.stringify(values.PeasantLocalAPIVersion)} as const;\nexport const TypesVersion = ${JSON.stringify(values.TypesVersion)} as const;\nexport const SegmentedReadAPIVersion = ${JSON.stringify(values.SegmentedReadAPIVersion)} as const;\nexport const SegmentedReadSpecVersion = ${JSON.stringify(values.SegmentedReadSpecVersion)} as const;\nexport const SegmentedReadMinVersion = ${JSON.stringify(values.SegmentedReadMinVersion)} as const;\nexport const MetadataSchemaVersion = ${values.MetadataSchemaVersion} as const;\n`;
 }
 
 // Derive exact known keys from the same canonical schemas as the public types.

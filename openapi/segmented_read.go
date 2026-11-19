@@ -9,17 +9,20 @@ import (
 	"github.com/swaggest/openapi-go/openapi31"
 )
 
-// BuildSegmentedReadSpec builds the component catalog for one declared
-// segmented read protocol. Routes remain owned by the host API document.
-func BuildSegmentedReadSpec(version string) (*openapi31.Spec, error) {
+// BuildSegmentedReadSpec builds one declared protocol's component catalog and
+// stamps it with the independently versioned document. The host owns routes.
+func BuildSegmentedReadSpec(protocolVersion, documentVersion string) (*openapi31.Spec, error) {
 	var roots []string
-	switch version {
+	var description string
+	switch protocolVersion {
 	case schema.SegmentedReadMinVersion:
 		roots = []string{"TranscriptSegmentDirectory", "TranscriptSegment", "TranscriptWindow"}
+		description = historicalSegmentedReadGenerationDescription
 	case schema.SegmentedReadAPIVersion:
 		roots = []string{"PositionedDirectory", "PositionedSegment", "PositionedWindow"}
+		description = segmentedReadGenerationDescription()
 	default:
-		return nil, fmt.Errorf("segmented read spec generation failed at openapi.BuildSegmentedReadSpec: version %q is not declared; no protocol document can be generated; use %q or %q from versions.go", version, schema.SegmentedReadMinVersion, schema.SegmentedReadAPIVersion)
+		return nil, fmt.Errorf("segmented read spec generation failed at openapi.BuildSegmentedReadSpec: protocol version %q is not declared; no protocol document can be generated; use %q or %q from versions.go", protocolVersion, schema.SegmentedReadMinVersion, schema.SegmentedReadAPIVersion)
 	}
 
 	spec, err := BuildTypesSpec()
@@ -72,20 +75,24 @@ func BuildSegmentedReadSpec(version string) (*openapi31.Spec, error) {
 		}
 	}
 	spec.Components.Schemas = selected
-	spec.Info.WithTitle("Peasant Segmented Read Protocol v" + version).
-		WithVersion(version).
-		WithDescription(segmentedReadDescription())
+	spec.Info.WithTitle("Peasant Segmented Read Protocol v" + documentVersion).
+		WithVersion(documentVersion).
+		WithDescription(segmentedReadDescription(description))
 	return spec, nil
 }
 
-func segmentedReadDescription() string {
+// The minimum document is an already-shipped artifact; later selector changes
+// must not rewrite its historical description.
+const historicalSegmentedReadGenerationDescription = "Protocol generation selectors (omission is v=0):\n- v=0 -> 0.1.0\n- v=1 -> 0.1.0\n- v=2 -> 0.2.0"
+
+func segmentedReadDescription(generationDescription string) string {
 	var description strings.Builder
 	description.WriteString("This document owns segmented read shapes; the host API document owns the routes. Routes:")
 	for _, member := range []route.Route{route.VillageGetTranscriptSegments, route.VillageGetTranscriptSegment, route.VillageGetTranscriptWindow} {
 		fmt.Fprintf(&description, "\n- %s %s (%s)", member.Method(), member.Pattern(), member.OperationID())
 	}
 	description.WriteString("\n")
-	description.WriteString(segmentedReadGenerationDescription())
+	description.WriteString(generationDescription)
 	return description.String()
 }
 

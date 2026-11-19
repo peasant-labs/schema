@@ -1,0 +1,6 @@
+requiredNames:
+  - migration-commit-is-the-floor
+  - later-edits-keep-the-earliest-floor
+  - side-branch-commit-is-not-the-floor
+  - missing-migration-fails-closed
+  - reformatted-line-fails-closed

@@ -68,7 +68,7 @@ gate_immutable() {
 # stamp_exempt_regex matches — and ONLY matches — a go-apidiff "Incompatible
 # changes" bullet reporting a VALUE CHANGE of a spec-version STAMP const. These
 # constants (VillageAPIVersion, PeasantLocalAPIVersion, TypesVersion and
-# SegmentedReadAPIVersion, from versions.go)
+# SegmentedReadAPIVersion and SegmentedReadSpecVersion, from versions.go)
 # are version MARKERS, not part of the behavioural API surface: their value is the pin
 # target a consumer asserts against and the trigger that names the newly-generated
 # golden spec files. A bump is therefore an INTENTIONAL, expected "change" that
@@ -90,7 +90,7 @@ gate_immutable() {
 # through this same decision), with TestGoAPIDiffStampExemption anchoring those
 # strings to go-apidiff's real output format — together the proof that this exemption
 # cannot mask a real break.
-stamp_exempt_regex='^[[:space:]]*-[[:space:]]+(VillageAPIVersion|PeasantLocalAPIVersion|TypesVersion|SegmentedReadAPIVersion): value changed from "[^"]*" to "[^"]*"$'
+stamp_exempt_regex='^[[:space:]]*-[[:space:]]+(VillageAPIVersion|PeasantLocalAPIVersion|TypesVersion|SegmentedReadAPIVersion|SegmentedReadSpecVersion): value changed from "[^"]*" to "[^"]*"$'
 
 # evaluate_go_apidiff reads raw go-apidiff output on stdin and is the PURE incompatible
 # decision of the go-apidiff gate (no process invocation), so it can be exercised

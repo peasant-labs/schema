@@ -3,16 +3,15 @@ package schema
 // Versioned-spec info.version values. These are the SINGLE SOURCE OF TRUTH for
 // each versioned OpenAPI spec's semantic version: they feed WithVersion(...) in
 // the openapi.Build*Spec functions (re-exported there as openapi.VillageAPIVersion
-// etc.), the generated artifact filenames, AND the version-aware accessors in this
-// package (e.g. VillageAPISpecJSON). A version bump is a one-line edit here.
+// etc.), the frozen artifact filenames, AND the version-aware accessors in this
+// package (e.g. VillageAPISpecJSON). The release freeze writes these stamps.
 //
 // They live in the contract root (not the openapi sub-package) so the embedded-spec
 // accessors below can key off them without an import cycle (openapi imports this
 // package, so this package cannot import openapi).
 //
-// Bump the relevant one when its API surface changes (minor for additive surface,
-// major for breaking changes). Retired versions stay byte-frozen under the
-// retired-spec immutability guard; new surface goes on a new version.
+// Content changes regenerate working specs without changing these constants.
+// Numbered documents stay byte-frozen under the registry guards.
 const (
 	// VillageAPIVersion is the info.version of the Village API spec. Bumped to
 	// 0.2.0 when the /api/v1/pull surface was added (additive = minor bump).
@@ -186,8 +185,7 @@ const (
 	// The Local API embeds Village catalog rows: VillageUserGroup in the
 	// collectives proxy, VillagePromptRequest in push results, and
 	// VillageShareStatus in the publication audience, with their closed sets.
-	// A change to any of them also bumps this version;
-	// testdata/local-api/village_components.yaml pins them per Local version.
+	// Changes to them can also change the Local working spec and its title scope.
 	// Bumped to 0.16.0 for rule-required hooks that stop publishing when their
 	// last active binding is removed, retaining the existing response fields.
 	// Bumped to 0.17.0 for an optional stored-session target on rule creation.
@@ -400,15 +398,13 @@ const (
 	// Version 0.2.0 (breaking) adds the positioned protocol at v=2; this is
 	// a breaking-class change expressed as a minor bump before 1.0.
 	//
-	// Patch bumps describe documentation only. A declaration, member, bound,
-	// default, pattern, refusal or closed-set change needs a minor bump; before
-	// 1.0 this includes breaking changes. At and after 1.0 breaking changes
-	// require a major bump. Name each bump's class explicitly.
-	//
-	// A version that is still served after a bump is frozen while served and
-	// remains generated with its own hash pin. Retired versions stop being
-	// generated and move to the retired-spec registry.
+	// A breaking protocol change that needs a new v= generation is separate
+	// from freezing a document and requires its own protocol decision.
 	SegmentedReadAPIVersion = "0.2.0"
+
+	// SegmentedReadSpecVersion identifies the current frozen document. Release
+	// freezes advance it independently of the wire protocol and its selectors.
+	SegmentedReadSpecVersion = "0.2.0"
 
 	// SegmentedReadMinVersion is the oldest declared and served segmented read
 	// protocol. It moves only when the oldest served version is retired.

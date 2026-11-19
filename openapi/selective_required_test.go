@@ -22,16 +22,10 @@ import (
 // components/schemas excludes them (a parameter's required is a bool, not the
 // object-schema required ARRAY this guard inspects).
 func TestVillageSpec_RequirednessMatchesCanonicalTypes(t *testing.T) {
-	artifacts, err := specpkg.GenerateSpecArtifacts()
+	key := "village-api-next.json"
+	raw, err := os.ReadFile("../generated/" + key)
 	if err != nil {
-		t.Fatalf("GenerateSpecArtifacts: %v", err)
-	}
-	// Key derives from the single-source version const, so a version bump does not
-	// strand this assertion on a stale filename.
-	key := "village-api-" + specpkg.VillageAPIVersion + ".json"
-	raw, ok := artifacts[key]
-	if !ok {
-		t.Fatalf("generator did not emit %s; check VillageAPIVersion / BuildVillageAPISpec", key)
+		t.Fatalf("read working Village document %s: %v", key, err)
 	}
 
 	type componentDocument struct {

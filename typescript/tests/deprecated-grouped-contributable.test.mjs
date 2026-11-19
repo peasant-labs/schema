@@ -10,7 +10,7 @@ const cases = loadCorpus(stringify(fixture.envelopes, { aliasDuplicateObjects: f
   decodeInput(value) { assert.ok(value && typeof value === "object" && !Array.isArray(value)); return value; },
   decodeExpected(value) { assert.equal(typeof value?.valid, "boolean"); return value; },
 }).cases;
-const village = JSON.parse(await readFile(new URL(`../../generated/village-api-${api.VillageAPIVersion}.json`, import.meta.url), "utf8"));
+const village = JSON.parse(await readFile(new URL("../../generated/village-api-next.json", import.meta.url), "utf8"));
 test("grouped contribution transition retains its exact named cases", () => {
   assert.deepEqual(new Set(fixture.required_names), new Set(cases.map(row => row.name)));
   assert.equal(new Set(fixture.required_names).size, fixture.required_names.length);

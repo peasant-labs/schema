@@ -204,7 +204,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist/assets
-          cp generated/*.json generated/*.yaml dist/assets/
+          ./scripts/collect-release-assets.sh generated dist/assets
           awk -v tag="$TAG" -v version="${TAG#v}" '
             /^## / {
               if (found) exit

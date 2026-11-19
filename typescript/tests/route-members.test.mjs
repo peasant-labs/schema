@@ -20,14 +20,14 @@ const apis = [
     module: villageApi,
     members: villageApi.VillageRoute,
     all: villageApi.ALL_VILLAGE_ROUTES,
-    document: JSON.parse(await readFile(new URL(`../../generated/village-api-${villageApi.VillageAPIVersion}.json`, import.meta.url), "utf8")),
+    document: JSON.parse(await readFile(new URL("../../generated/village-api-next.json", import.meta.url), "utf8")),
   },
   {
     label: "local",
     module: localApi,
     members: localApi.LocalRoute,
     all: localApi.ALL_LOCAL_ROUTES,
-    document: JSON.parse(await readFile(new URL(`../../generated/peasantlocal-api-${localApi.PeasantLocalAPIVersion}.json`, import.meta.url), "utf8")),
+    document: JSON.parse(await readFile(new URL("../../generated/peasantlocal-api-next.json", import.meta.url), "utf8")),
   },
 ];
 

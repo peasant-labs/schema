@@ -60,7 +60,7 @@ func TestGeneratedSegmentedReadVersionDescriptions(t *testing.T) {
 			var version string
 			switch c.Input.Role {
 			case "current":
-				version = schema.SegmentedReadAPIVersion
+				version = schema.SegmentedReadSpecVersion
 			case "minimum":
 				version = schema.SegmentedReadMinVersion
 			default:
@@ -134,7 +134,7 @@ func TestGeneratedSegmentedReadVersionDescriptions(t *testing.T) {
 					t.Error("protocol echo must remain an open string, not a schema enum")
 				}
 			}
-			committed, err := os.ReadFile(filepath.Join(root, "generated", filename))
+			committed, err := os.ReadFile(filepath.Join(root, "generated", workingArtifactName(filename)))
 			if err != nil {
 				t.Fatal(err)
 			}

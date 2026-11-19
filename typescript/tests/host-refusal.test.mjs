@@ -3,7 +3,6 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { parse } from "yaml";
-import * as schema from "../dist/index.js";
 
 // The Go suites (local_host_refusal_test.go and cross_origin_writes_test.go)
 // build the Local API document from source and hold it to
@@ -17,7 +16,7 @@ import * as schema from "../dist/index.js";
 
 const fixture = parse(await readFile(new URL("../../testdata/local-api/host_refusal.yaml", import.meta.url), "utf8"));
 const writes = parse(await readFile(new URL("../../testdata/local-api/cross_origin_writes.yaml", import.meta.url), "utf8"));
-const document = JSON.parse(await readFile(new URL(`../../generated/peasantlocal-api-${schema.PeasantLocalAPIVersion}.json`, import.meta.url), "utf8"));
+const document = JSON.parse(await readFile(new URL("../../generated/peasantlocal-api-next.json", import.meta.url), "utf8"));
 
 function endsWithSentence(description, sentence) {
   return description.endsWith(` ${sentence}`);

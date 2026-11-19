@@ -62,6 +62,7 @@ jobs:
       release-tag: ${{ steps.replan.outputs.tag }}
       push: ${{ steps.write.outputs.push }}
       source: ${{ steps.write.outputs.source }}
+      title: ${{ steps.write.outputs.title }}
       number: ${{ steps.find.outputs.number }}
       pr: ${{ steps.entry.outputs.pr }}
       queued: ${{ steps.entry.outputs.queued }}
@@ -149,6 +150,23 @@ jobs:
           echo "source=${SOURCE}" >> "${GITHUB_OUTPUT}"
           release-intent plan --branch origin/develop --mode "${MODE}" --floor "${FLOOR}" | tee -a "${GITHUB_STEP_SUMMARY}"
 
+      # The freeze floor is the first first-parent develop commit whose
+      # release config gained the literal line spec_freeze: true, the merge
+      # of the spec-freeze migration. Later edits to that line do not move it
+      # (--reverse keeps the earliest), and a side-branch commit never names
+      # it (--first-parent). If the line was never written literally, the
+      # search finds nothing and the step fails closed instead of guessing.
+      # TestFreezeFloorSearch runs this script against fixture histories.
+      - name: Find the spec-freeze migration
+        id: freeze-floor
+        if: steps.precheck.outputs.proceed == 'true'
+        run: |
+          set -euo pipefail
+          freeze_floor="$(git log --first-parent --diff-merges=first-parent --reverse --format=%H -S 'spec_freeze: true' origin/develop -- .github/release-intent.yaml | sed -n '1p')"
+          test -n "${freeze_floor}" || { echo "::error::spec-freeze migration commit not found on develop"; exit 1; }
+          echo "freeze_floor=${freeze_floor}" >> "${GITHUB_OUTPUT}"
+
+      # Runs at the workflow's own commit (GITHUB_SHA); the report compares refs.
       - name: Build the candidate contract report
         if: steps.precheck.outputs.proceed == 'true' && steps.plan.outputs.action == 'verify'
         env:
@@ -156,6 +174,7 @@ jobs:
           FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
+          git checkout --detach "${GITHUB_SHA}"
           base="$(release-intent check-contract --until "${CANDIDATE}" --print-range-base --floor "${FLOOR}" | sed -n 's/^range_base=//p')"
           test -n "${base}" || { echo "::error::no prior final tag for candidate ${CANDIDATE}"; exit 1; }
           nix develop -c ./scripts/contract-gates.sh report "${base}" --head "${CANDIDATE}" --out "${RUNNER_TEMP}/candidate-report.yaml"
@@ -168,13 +187,37 @@ jobs:
           FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: release-intent check-contract --report "${RUNNER_TEMP}/candidate-report.yaml" --until "${CANDIDATE}" --floor "${FLOOR}"
 
-      - name: Plan with the contract verdict
+      # Runs at CANDIDATE^ and CANDIDATE, each in its own worktree; the main checkout is not moved.
+      - name: Prepare the candidate freeze evidence
+        id: candidate-freeze
+        if: "!cancelled() && steps.plan.outputs.action == 'verify'"
+        env:
+          CANDIDATE: ${{ steps.plan.outputs.candidate }}
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
+          FREEZE_FLOOR: ${{ steps.freeze-floor.outputs.freeze_floor }}
+        run: |
+          set -euo pipefail
+          git worktree add --detach "${RUNNER_TEMP}/candidate-parent-tree" "${CANDIDATE}^"
+          git worktree add --detach "${RUNNER_TEMP}/candidate-tree" "${CANDIDATE}"
+          (cd "${RUNNER_TEMP}/candidate-parent-tree" && nix develop -c go run ./cmd/schema-gen status --write "${RUNNER_TEMP}/candidate-surface-state.yaml")
+          release-intent freeze-plan --branch origin/develop --until "${CANDIDATE}^" --state "${RUNNER_TEMP}/candidate-surface-state.yaml" --out "${RUNNER_TEMP}/candidate-freeze-plan.yaml" --freeze-floor "${FREEZE_FLOOR}" --floor "${FLOOR}"
+          (cd "${RUNNER_TEMP}/candidate-tree" && nix develop -c go build -o "${RUNNER_TEMP}/schema-gen" ./cmd/schema-gen)
+          echo "${RUNNER_TEMP}" >> "${GITHUB_PATH}"
+
+      # Runs at CANDIDATE: the candidate-tree worktree, because a pre-tag step must be one command.
+      - name: Verify the candidate freeze
+        id: verify-freeze
+        if: "!cancelled() && steps.plan.outputs.action == 'verify'"
+        working-directory: ${{ runner.temp }}/candidate-tree
+        run: nix develop -c schema-gen freeze --check --plan "${RUNNER_TEMP}/candidate-freeze-plan.yaml" --state "${RUNNER_TEMP}/candidate-surface-state.yaml"
+
+      - name: Plan with the candidate verdict
         id: verdict
         if: "!cancelled() && steps.precheck.outputs.proceed == 'true'"
         env:
           MODE: ${{ vars.RELEASE_BATCH_MODE }}
           FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
-        run: release-intent plan --branch origin/develop --mode "${MODE}" --verdict ${{ (steps.verify-contract.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${FLOOR}"
+        run: release-intent plan --branch origin/develop --mode "${MODE}" --verdict ${{ (steps.verify-contract.outcome == 'success' && steps.verify-freeze.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${FLOOR}"
 
       - name: Verify the release candidate PR provenance
         id: provenance
@@ -241,8 +284,9 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --no-tags origin develop
-          release-intent plan --branch origin/develop --mode "${MODE}" --verdict ${{ (steps.verify-contract.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${FLOOR}" | tee -a "${GITHUB_STEP_SUMMARY}"
+          release-intent plan --branch origin/develop --mode "${MODE}" --verdict ${{ (steps.verify-contract.outcome == 'success' && steps.verify-freeze.outcome == 'success') && 'taggable' || 'rejected' }} --floor "${FLOOR}" | tee -a "${GITHUB_STEP_SUMMARY}"
 
+      # Runs at the develop tip it fetches.
       - name: Check the pending range before preparing a release PR
         id: range-contract
         if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.replan.outputs.action == 'open-pr'"
@@ -250,17 +294,21 @@ jobs:
           FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
+          git fetch --no-tags origin develop
           tip="$(git rev-parse origin/develop)"
+          git checkout --detach "${tip}"
           base="$(release-intent check-contract --until "${tip}" --print-range-base --floor "${FLOOR}" | sed -n 's/^range_base=//p')"
           test -n "${base}" || { echo "::error::no prior final tag for ${tip}"; exit 1; }
           nix develop -c ./scripts/contract-gates.sh report "${base}" --head "${tip}" --out "${RUNNER_TEMP}/range-report.yaml"
           release-intent check-contract --report "${RUNNER_TEMP}/range-report.yaml" --until "${tip}" --floor "${FLOOR}"
 
+      # Runs on automation/release, reset to the develop tip it fetches.
       - name: Prepare the release commit
         id: write
         if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.replan.outputs.action == 'open-pr' && steps.range-contract.outcome == 'success'"
         env:
           FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
+          FREEZE_FLOOR: ${{ steps.freeze-floor.outputs.freeze_floor }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin develop
@@ -271,7 +319,10 @@ jobs:
           git checkout -q -B automation/release origin/develop
           SOURCE="$(git rev-parse HEAD)"
           echo "source=${SOURCE}" >> "${GITHUB_OUTPUT}"
-          release-intent release-pr --commit --branch origin/develop "${current[@]}" --floor "${FLOOR}"
+          nix develop -c go run ./cmd/schema-gen status --write "${RUNNER_TEMP}/surface-state.yaml"
+          release-intent freeze-plan --branch origin/develop --state "${RUNNER_TEMP}/surface-state.yaml" --out "${RUNNER_TEMP}/freeze-plan.yaml" --freeze-floor "${FREEZE_FLOOR}" --floor "${FLOOR}"
+          nix develop -c go run ./cmd/schema-gen freeze --plan "${RUNNER_TEMP}/freeze-plan.yaml" --state "${RUNNER_TEMP}/surface-state.yaml"
+          release-intent release-pr --commit --branch origin/develop "${current[@]}" --freeze-plan "${RUNNER_TEMP}/freeze-plan.yaml" --floor "${FLOOR}"
 
       - name: Bundle the release branch
         if: "!cancelled() && steps.precheck.outputs.proceed == 'true' && steps.replan.outputs.action == 'open-pr' && steps.write.outputs.push == 'true'"
@@ -437,7 +488,7 @@ jobs:
         if: "!cancelled() && needs.plan.outputs.action == 'open-pr' && needs.plan.outputs.push == 'true'"
         env:
           SOURCE: ${{ needs.plan.outputs.source }}
-          EXPECTED_TITLE: "release${{ needs.plan.outputs.breaking == 'true' && '!' || '' }}[${{ needs.plan.outputs.level }}]: ${{ needs.plan.outputs.release-tag }}"
+          EXPECTED_TITLE: ${{ needs.plan.outputs.title }}
           FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
         run: |
           set -euo pipefail
@@ -531,7 +582,7 @@ jobs:
         if: "!cancelled() && needs.plan.outputs.action == 'open-pr' && needs.plan.outputs.push == 'true' && needs.plan.outputs.number == ''"
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
-          TITLE: "release${{ needs.plan.outputs.breaking == 'true' && '!' || '' }}[${{ needs.plan.outputs.level }}]: ${{ needs.plan.outputs.release-tag }}"
+          TITLE: ${{ needs.plan.outputs.title }}
           BODY: "Automated release PR for ${{ needs.plan.outputs.release-tag }}. Rebuilt by the release job from the landed subjects since the last tag; do not edit by hand, the next run rebuilds this branch."
         run: gh pr create --head automation/release --base develop --title "${TITLE}" --body "${BODY}"
 
@@ -539,7 +590,7 @@ jobs:
         if: "!cancelled() && needs.plan.outputs.action == 'open-pr' && needs.plan.outputs.push == 'true' && needs.plan.outputs.number != ''"
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
-          TITLE: "release${{ needs.plan.outputs.breaking == 'true' && '!' || '' }}[${{ needs.plan.outputs.level }}]: ${{ needs.plan.outputs.release-tag }}"
+          TITLE: ${{ needs.plan.outputs.title }}
           BODY: "Automated release PR for ${{ needs.plan.outputs.release-tag }}. Rebuilt by the release job from the landed subjects since the last tag; do not edit by hand, the next run rebuilds this branch."
         run: gh pr edit --title "${TITLE}" --body "${BODY}" -- automation/release
 
