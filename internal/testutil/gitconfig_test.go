@@ -108,13 +108,11 @@ func TestIsolatedChildGitReadsNoHostileSource(t *testing.T) {
 
 type fakeTestRun struct {
 	code   int
-	ran    bool
 	calls  int
 	global string
 }
 
 func (f *fakeTestRun) Run() int {
-	f.ran = true
 	f.calls++
 	f.global = os.Getenv("GIT_CONFIG_GLOBAL")
 	return f.code
