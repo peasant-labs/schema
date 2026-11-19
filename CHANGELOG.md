@@ -3,6 +3,10 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.58.1
+
+- keep the closed-set alias on optional, nullable and nullish fields (#260)
+
 ## 0.58.0
 
 - create the release draft and its assets in one command (#267)
