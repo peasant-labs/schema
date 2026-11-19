@@ -17,8 +17,10 @@ export TITLE
 RACE ?= 0
 GORACE_FLAG := $(if $(filter 1,$(RACE)),-race,)
 
-# The tests that call the cached validators from many goroutines at once.
-RACE_SELECTIVE_TESTS ?= ^TestValidatorCachesConcurrently$$
+# The tests race-selective runs, by exact name, space-separated. Each one
+# must run and pass, so a renamed or deleted test fails the target instead of
+# passing with zero tests. New production concurrency adds its test here.
+RACE_SELECTIVE_TESTS ?= TestValidatorCachesConcurrently
 
 # Regenerate OpenAPI/Redoc from Go, then derive the TypeScript contract package.
 schema: typescript-deps
@@ -84,7 +86,15 @@ test:
 # publish-request, annotation-push and described-value validators. The merge
 # queue runs it beside the no-race `make check`.
 race-selective:
-	$(GO) test -race -count=1 -run '$(RACE_SELECTIVE_TESTS)' .
+	@set -eu; \
+	log=$$(mktemp "$${TMPDIR:-/tmp}/schema-race-selective.XXXXXXXX"); \
+	trap 'rm -f "$$log"' EXIT; \
+	pattern="^($$(printf '%s' '$(RACE_SELECTIVE_TESTS)' | tr -s ' ' '|'))$$"; \
+	$(GO) test -race -count=1 -v -run "$$pattern" . > "$$log" 2>&1 || { cat "$$log"; exit 1; }; \
+	grep -E '^(--- |ok|PASS|FAIL)' "$$log"; \
+	for name in $(RACE_SELECTIVE_TESTS); do \
+		grep -q -- "^--- PASS: $$name " "$$log" || { echo "race-selective: $$name did not run and pass under -race; a renamed or deleted test must be updated in RACE_SELECTIVE_TESTS"; exit 1; }; \
+	done
 
 # freshness is the git-diff backstop: regenerate the specs and fail
 # if the committed generated/ artifacts drift from the Go source. It is largely

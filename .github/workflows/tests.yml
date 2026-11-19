@@ -29,6 +29,7 @@ jobs:
       code: ${{ steps.diff.outputs.code }}
       deps: ${{ steps.diff.outputs.deps }}
       release: ${{ steps.entry.outputs.release }}
+      release_candidate: ${{ steps.entry.outputs.candidate }}
       release_only: ${{ steps.inherit.outputs.release_only || 'false' }}
       inherit: ${{ steps.inherit.outputs.inherit || 'false' }}
       inherited_from: ${{ steps.inherit.outputs.inherited_from }}
@@ -39,7 +40,7 @@ jobs:
           fetch-tags: true
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        if: github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.user.type == 'Bot')
         with:
           repository: peasant-labs/infra
           ref: 6a15bbbd87457dacc65a4048aee16017f22dc716
@@ -47,60 +48,86 @@ jobs:
           sparse-checkout: tools/release
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        if: github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.user.type == 'Bot')
         with:
           go-version-file: infra-tool/tools/release/go.mod
           cache: false
       - name: Build release-intent
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        if: github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.user.type == 'Bot')
         env:
           GOWORK: "off"
         run: go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
-      - name: Classify the merge-group entry
+      # release: the merge group's entry is the bot release PR (it gates the
+      # vendor-hash requirement). candidate: this run is the bot release PR or
+      # a merge group whose entry is, the only runs that may inherit a
+      # verdict. A pull request from a human never builds the tool here.
+      - name: Classify the release entry
         id: entry
         env:
           EVENT: ${{ github.event_name }}
           GROUP_REF: ${{ github.ref }}
-          GROUP_BASE: ${{ github.event.merge_group.base_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          BASE: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [ "$EVENT" != merge_group ]; then
-            echo "release=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          result="$("$RUNNER_TEMP/release-intent" group-pr --ref "$GROUP_REF")"
-          number="${result#pr=}"
-          test -n "$number" || { echo "::error::cannot identify merge-group entry"; exit 1; }
+          case "$EVENT" in
+            merge_group)
+              result="$("$RUNNER_TEMP/release-intent" group-pr --ref "$GROUP_REF")"
+              number="${result#pr=}"
+              ;;
+            pull_request)
+              if [ "$PR_AUTHOR_TYPE" != Bot ]; then
+                echo "release=false" >> "$GITHUB_OUTPUT"
+                echo "candidate=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              number="$PR_NUMBER"
+              ;;
+            *)
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              echo "candidate=false" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
+          test -n "$number" || { echo "::error::cannot identify the entry PR"; exit 1; }
           payload="$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" --json author,headRefName)"
           author="$(jq -r '.author.login' <<< "$payload")"
           branch="$(jq -r '.headRefName' <<< "$payload")"
-          if ! git cat-file -e "$GROUP_BASE:.github/release-intent.yaml" 2>/dev/null; then
-            GROUP_BASE="$(git rev-parse HEAD)"
+          if ! git cat-file -e "$BASE:.github/release-intent.yaml" 2>/dev/null; then
+            BASE="$(git rev-parse HEAD)"
           fi
-          kind="$("$RUNNER_TEMP/release-intent" classify --author "$author" --head-branch "$branch" --rev "$GROUP_BASE")"
-          if [ "$kind" = 'kind=release' ]; then
-            echo "release=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "release=false" >> "$GITHUB_OUTPUT"
-          fi
-      # A candidate whose whole base..head change is release content (the
-      # changelog and the package.json version) inherits the verdict its exact
-      # base recorded in that commit's merge-queue run instead of rerunning
-      # make check. A release-only candidate whose base verdict is missing,
-      # pending past the wait, failed or ambiguous fails here; it never falls
-      # back to the suite. A merge group may be built on a group still ahead
-      # of it in the queue, so it waits for that verdict.
+          kind="$("$RUNNER_TEMP/release-intent" classify --author "$author" --head-branch "$branch" --rev "$BASE")"
+          candidate=false
+          if [ "$kind" = 'kind=release' ]; then candidate=true; fi
+          release=false
+          if [ "$EVENT" = merge_group ]; then release="$candidate"; fi
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+          echo "candidate=$candidate" >> "$GITHUB_OUTPUT"
+      # A release candidate whose whole base..head change is release content
+      # (the changelog and the package.json version) inherits the verdict its
+      # exact base recorded in that commit's merge-queue run instead of
+      # rerunning make check. A release-only candidate whose base verdict is
+      # missing, pending past the wait, failed or ambiguous fails here; it
+      # never falls back to the suite. A merge group may be built on a group
+      # still ahead of it in the queue, so it waits for that verdict. The step
+      # always runs (no step-level if); every other run records no inheritance.
       - name: Inherit the base commit's queue verdict
         id: inherit
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         env:
           EVENT: ${{ github.event_name }}
+          CANDIDATE: ${{ steps.entry.outputs.candidate }}
           BASE: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.merge_group.head_sha || github.event.pull_request.head.sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          if [ "$CANDIDATE" != true ]; then
+            echo "release_only=false" >> "$GITHUB_OUTPUT"
+            echo "inherit=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           wait=0s
           if [ "$EVENT" = merge_group ]; then wait=20m; fi
           git fetch --no-tags origin "$BASE" "$HEAD"
@@ -332,25 +359,32 @@ jobs:
           EVENT: ${{ github.event_name }}
           CODE: ${{ needs.changes.outputs.code }}
           RELEASE: ${{ needs.changes.outputs.release }}
+          RELEASE_CANDIDATE: ${{ needs.changes.outputs.release_candidate }}
           RELEASE_ONLY: ${{ needs.changes.outputs.release_only }}
           INHERIT: ${{ needs.changes.outputs.inherit }}
         run: |
           set -euo pipefail
-          case "$RELEASE" in true|false) ;; *) echo "::error::release classification is missing or invalid"; exit 1 ;; esac
-          case "$INHERIT" in true|false) ;; *) echo "::error::verdict inheritance is missing or invalid"; exit 1 ;; esac
-          jq -e --arg release "$RELEASE" 'to_entries | all(.[]; .value.result == "success" or .value.result == "skipped" or (.key == "vendor-hash" and $release == "false" and .value.result == "failure"))' <<< "$RESULTS"
-          test "$(jq -r '.changes.result' <<< "$RESULTS")" = success
+          fail() { echo "::error::merge-gate: $*"; exit 1; }
+          result() { jq -r --arg job "$1" '.[$job].result' <<< "$RESULTS"; }
+          case "$RELEASE" in true|false) ;; *) fail "release classification is missing or invalid" ;; esac
+          case "$RELEASE_CANDIDATE" in true|false) ;; *) fail "release candidate classification is missing or invalid" ;; esac
+          case "$INHERIT" in true|false) ;; *) fail "verdict inheritance is missing or invalid" ;; esac
+          jq -e --arg release "$RELEASE" 'to_entries | all(.[]; .value.result == "success" or .value.result == "skipped" or (.key == "vendor-hash" and $release == "false" and .value.result == "failure"))' <<< "$RESULTS" > /dev/null || fail "a needed job failed or was cancelled"
+          [ "$(result changes)" = success ] || fail "the changes job did not succeed"
           if [ "$INHERIT" = true ]; then
-            case "$EVENT" in pull_request|merge_group) ;; *) echo "::error::only pull_request and merge_group runs inherit a verdict"; exit 1 ;; esac
-            test "$RELEASE_ONLY" = true
-            test "$(jq -r '.check.result' <<< "$RESULTS")" = skipped
+            case "$EVENT" in pull_request|merge_group) ;; *) fail "only pull_request and merge_group runs inherit a verdict" ;; esac
+            [ "$RELEASE_CANDIDATE" = true ] || fail "only a release candidate inherits a verdict"
+            [ "$RELEASE_ONLY" = true ] || fail "an inherited verdict needs a release-only change"
+            [ "$(result check)" = skipped ] || fail "make check ran although the verdict was inherited"
           elif [ "$CODE" = true ]; then
-            test "$(jq -r '.check.result' <<< "$RESULTS")" = success
+            [ "$(result check)" = success ] || fail "make check is required for a code change"
           fi
           if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
-            test "$(jq -r '."contract-gates".result' <<< "$RESULTS")" = success
+            [ "$(result contract-gates)" = success ] || fail "contract gates are required"
           fi
-          if [ "$RELEASE" = true ]; then test "$(jq -r '."vendor-hash".result' <<< "$RESULTS")" = success; fi
+          if [ "$RELEASE" = true ]; then
+            [ "$(result vendor-hash)" = success ] || fail "a release group needs a current vendor hash"
+          fi
       - name: "verdict-source: full"
         if: needs.check.result == 'success'
         run: echo "verdict-source=full" >> "$GITHUB_STEP_SUMMARY"

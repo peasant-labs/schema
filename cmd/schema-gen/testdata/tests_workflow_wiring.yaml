@@ -1,0 +1,33 @@
+# Wiring of .github/workflows/tests.yml that verdict inheritance and the
+# selective race pass rely on, checked by TestTestsWorkflowWiring.
+#
+# verdict_markers mirrors infra's exported marker step set at the pinned
+# release tool (tools/release/internal/intent/testdata/verdict_markers.yaml,
+# intent.VerdictMarkerStepNames and intent.VerdictMarkersVersion). The tool
+# reads these names back from a base commit's run, so a change on either side
+# must bump the version and move both together at a re-pin.
+verdict_markers:
+  version: 1
+  names:
+    - "verdict-source: full"
+    - "verdict-source: inherited"
+    - "verdict-source: unaffected"
+# The aggregator's final steps, in order, with the condition that makes
+# exactly one of them run.
+aggregator_job: merge-gate
+marker_steps:
+  - {name: "verdict-source: full", if: "needs.check.result == 'success'"}
+  - {name: "verdict-source: inherited", if: "needs.changes.outputs.inherit == 'true' && needs.check.result == 'skipped'"}
+  - {name: "verdict-source: unaffected", if: "needs.changes.outputs.inherit != 'true' && needs.check.result == 'skipped'"}
+# The full-suite job is skipped exactly when the verdict was inherited (or
+# no code changed).
+check_job: check
+check_if: "needs.changes.outputs.code == 'true' && needs.changes.outputs.inherit != 'true'"
+# The selective race pass runs in the full-suite job on merge groups only, and
+# nowhere else.
+race_selective:
+  step: make race-selective
+  if: "github.event_name == 'merge_group'"
+  run: nix develop -c make race-selective
+# The proof step: always runs, never fails softly.
+inherit_step: {job: changes, id: inherit}

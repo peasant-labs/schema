@@ -48,6 +48,12 @@ func (in validatorCacheInput) call() (bool, error) {
 // goroutines released together, so the first schema compilation and every
 // cache read contend. `make race-selective` runs this test alone under the
 // race detector, which makes the first use in the process the contended one.
+//
+// What it can catch: the two sync.Once caches race if the Once is replaced by
+// an unguarded nil check, and the sync.Map cache races if it is replaced by a
+// plain map; both regressions report DATA RACE here. sync.Map itself is
+// race-safe by construction, so for that cache the test is only a guard
+// against such a replacement, not a check of sync.Map.
 func TestValidatorCachesConcurrently(t *testing.T) {
 	t.Parallel()
 	var fixture struct {

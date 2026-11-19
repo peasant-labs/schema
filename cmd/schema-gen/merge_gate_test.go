@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -23,14 +24,16 @@ func TestMergeGateVendorHash(t *testing.T) {
 	var fixture struct {
 		Required []string `yaml:"merge_gate_required"`
 		Cases    []struct {
-			Name         string `yaml:"name"`
-			Release      string `yaml:"release"`
-			Event        string `yaml:"event"`
-			Code         string `yaml:"code"`
-			ReleaseOnly  string `yaml:"release_only"`
-			Inherit      string `yaml:"inherit"`
-			ResultsJSON  string `yaml:"results_json"`
-			ExpectedExit int    `yaml:"expected_exit"`
+			Name             string  `yaml:"name"`
+			Release          string  `yaml:"release"`
+			Event            string  `yaml:"event"`
+			Code             string  `yaml:"code"`
+			ReleaseCandidate *string `yaml:"release_candidate"`
+			ReleaseOnly      string  `yaml:"release_only"`
+			Inherit          string  `yaml:"inherit"`
+			ResultsJSON      string  `yaml:"results_json"`
+			ExpectedExit     int     `yaml:"expected_exit"`
+			ExpectedStderr   string  `yaml:"expected_stderr"`
 		} `yaml:"merge_gate_cases"`
 	}
 	if err := yaml.Unmarshal(releaseAdoptionFixture, &fixture); err != nil {
@@ -72,8 +75,13 @@ func TestMergeGateVendorHash(t *testing.T) {
 		seen[c.Name] = true
 		t.Run(c.Name, func(t *testing.T) {
 			cmd := exec.Command("bash", "-c", script)
+			candidate := "false"
+			if c.ReleaseCandidate != nil {
+				candidate = *c.ReleaseCandidate
+			}
 			cmd.Env = append(os.Environ(), "RESULTS="+c.ResultsJSON, "RELEASE="+c.Release,
 				"EVENT="+orDefault(c.Event, "merge_group"), "CODE="+orDefault(c.Code, "true"),
+				"RELEASE_CANDIDATE="+candidate,
 				"RELEASE_ONLY="+orDefault(c.ReleaseOnly, "false"), "INHERIT="+orDefault(c.Inherit, "false"))
 			out, err := cmd.CombinedOutput()
 			exit := 0
@@ -86,6 +94,9 @@ func TestMergeGateVendorHash(t *testing.T) {
 			}
 			if exit != c.ExpectedExit {
 				t.Fatalf("merge-gate exit = %d, want %d:\n%s", exit, c.ExpectedExit, out)
+			}
+			if c.ExpectedExit != 0 && (c.ExpectedStderr == "" || !strings.Contains(string(out), "::error::merge-gate: "+c.ExpectedStderr)) {
+				t.Fatalf("merge-gate output lacks the expected refusal %q (a reject row must name its message):\n%s", c.ExpectedStderr, out)
 			}
 		})
 	}

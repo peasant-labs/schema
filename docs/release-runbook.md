@@ -107,7 +107,10 @@ is a separate follow-up.
 
 A release PR (or a merge group) whose whole `base..head` change is
 `CHANGELOG.md` plus the `typescript/package.json` version does not rerun
-`make check`. The `changes` job runs `release-intent inherit-verdict`, which
+`make check`. The path filter alone cannot skip it: a version-only edit under
+`typescript/*` classifies as `code=true`, so inheritance is what saves the
+run. Only the bot release PR, or a merge group whose entry is that PR, runs
+`inherit-verdict`; every other run skips it without building the tool. The `changes` job runs `release-intent inherit-verdict`, which
 reads the `merge-gate` verdict that the exact base commit's merge-queue run
 recorded. When that verdict is missing, pending past the 20-minute wait,
 failed, cancelled, ambiguous or from another producer, the job fails and the

@@ -55,6 +55,15 @@ only production concurrency is the lazy schema compilation behind
 compilation and every cache read contend; the merge-queue run requires it.
 `make check RACE=1` (or `make test RACE=1`) is the opt-in full race pass.
 
+`race-selective` names its tests in `RACE_SELECTIVE_TESTS` (Makefile) and
+fails unless each one runs and passes, so a renamed test cannot leave it
+passing with zero tests. New production concurrency must add a test that
+exercises it from many goroutines and extend `RACE_SELECTIVE_TESTS`. The
+`sync.Once` caches race if replaced by an unguarded nil check and the
+`sync.Map` cache races if replaced by a plain map (both verified to report
+`DATA RACE`); `sync.Map` is race-safe by construction, so for it the test
+only guards against such a replacement.
+
 Run one test or one package:
 
 ```bash
