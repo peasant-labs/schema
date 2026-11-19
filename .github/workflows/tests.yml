@@ -200,13 +200,14 @@ jobs:
             ${{ env.GOMODCACHE }}
           key: ${{ runner.os }}-${{ runner.arch }}-go-check-${{ hashFiles('flake.nix', 'flake.lock') }}-${{ hashFiles('go.sum', 'tools/redaction-categories/go.sum') }}
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-check-${{ hashFiles('flake.nix', 'flake.lock') }}-
+      # Temporary sizing evidence: remove after the runner sizing decision.
       - name: Report runner and Go cache
+        continue-on-error: true
         env:
           CACHE_HIT: ${{ steps.cache-go.outputs.cache-hit }}
           CACHE_MATCHED_KEY: ${{ steps.cache-go.outputs.cache-matched-key }}
         run: |
           nproc
-          nix develop -c go env GOMAXPROCS GOFLAGS GOCACHE GOMODCACHE
           for file in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/cpu/cpu.cfs_quota_us /sys/fs/cgroup/cpu/cpu.cfs_period_us; do
             if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
           done
@@ -215,10 +216,10 @@ jobs:
       - name: make check
         run: |
           nix develop -c pnpm --dir typescript install --frozen-lockfile --ignore-scripts
-          nix develop -c make check
-      # Only trusted branch and merge-queue runs populate caches; PRs restore only.
+          nix develop -c sh -c 'go env GOMAXPROCS GOFLAGS GOCACHE GOMODCACHE || true; exec make check'
+      # Only pushes to develop populate caches; all other events restore only.
       - name: Save Go build and module caches
-        if: success() && steps.cache-go.outputs.cache-hit != 'true' && (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/develop'))
+        if: success() && steps.cache-go.outputs.cache-hit != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/develop'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
@@ -250,17 +251,16 @@ jobs:
           path: |
             ${{ env.GOCACHE }}
             ${{ env.GOMODCACHE }}
-          key: ${{ runner.os }}-${{ runner.arch }}-go-race-${{ hashFiles('flake.nix', 'flake.lock') }}-${{ hashFiles('go.sum', 'tools/redaction-categories/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-go-race-${{ hashFiles('flake.nix', 'flake.lock') }}-
-            ${{ runner.os }}-${{ runner.arch }}-go-check-${{ hashFiles('flake.nix', 'flake.lock') }}-
+          key: ${{ runner.os }}-${{ runner.arch }}-go-check-${{ hashFiles('flake.nix', 'flake.lock') }}-${{ hashFiles('go.sum', 'tools/redaction-categories/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-check-${{ hashFiles('flake.nix', 'flake.lock') }}-
+      # Temporary sizing evidence: remove after the runner sizing decision.
       - name: Report runner and Go cache
+        continue-on-error: true
         env:
           CACHE_HIT: ${{ steps.cache-go.outputs.cache-hit }}
           CACHE_MATCHED_KEY: ${{ steps.cache-go.outputs.cache-matched-key }}
         run: |
           nproc
-          nix develop -c go env GOMAXPROCS GOFLAGS GOCACHE GOMODCACHE
           for file in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/cpu/cpu.cfs_quota_us /sys/fs/cgroup/cpu/cpu.cfs_period_us; do
             if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
           done
@@ -268,17 +268,7 @@ jobs:
           printf 'cache-hit=%s cache-matched-key=%s\n' "$CACHE_HIT" "$CACHE_MATCHED_KEY"
       - name: make race-selective
         run: |
-          nix develop -c make race-selective
-      # Only trusted branch and merge-queue runs populate caches; PRs restore only.
-      - name: Save Go build and module caches
-        if: success() && steps.cache-go.outputs.cache-hit != 'true' && (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/develop'))
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            ${{ env.GOCACHE }}
-            ${{ env.GOMODCACHE }}
-          key: ${{ steps.cache-go.outputs.cache-primary-key }}
-
+          nix develop -c sh -c 'go env GOMAXPROCS GOFLAGS GOCACHE GOMODCACHE || true; exec make race-selective'
   contract-gates:
     name: contract gates
     needs: determine-runner

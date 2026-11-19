@@ -20,6 +20,23 @@ marker_steps:
   - {name: "verdict-source: full", if: "needs.check.result == 'success' && (github.event_name != 'merge_group' || needs.race.result == 'success')"}
   - {name: "verdict-source: inherited", if: "needs.changes.outputs.inherit == 'true' && needs.check.result == 'skipped'"}
   - {name: "verdict-source: unaffected", if: "needs.changes.outputs.inherit != 'true' && needs.check.result == 'skipped'"}
+marker_cases:
+  - name: pull-request-full-without-race
+    event: pull_request
+    check: success
+    race: skipped
+    inherit: "false"
+    expected: "verdict-source: full"
+cache:
+  jobs: [check, race]
+  restore_action: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+  save_action: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+  path: |
+    ${{ env.GOCACHE }}
+    ${{ env.GOMODCACHE }}
+  key: "${{ runner.os }}-${{ runner.arch }}-go-check-${{ hashFiles('flake.nix', 'flake.lock') }}-${{ hashFiles('go.sum', 'tools/redaction-categories/go.sum') }}"
+  save_if: "success() && steps.cache-go.outputs.cache-hit != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/develop'"
+  save_key: "${{ steps.cache-go.outputs.cache-primary-key }}"
 # The full-suite job is skipped exactly when the verdict was inherited (or
 # no code changed).
 check_job: check
@@ -30,6 +47,6 @@ race_selective:
   job: race
   step: make race-selective
   if: "github.event_name == 'merge_group' && needs.changes.outputs.code == 'true' && needs.changes.outputs.inherit != 'true'"
-  run: nix develop -c make race-selective
+  run: "nix develop -c sh -c 'go env GOMAXPROCS GOFLAGS GOCACHE GOMODCACHE || true; exec make race-selective'"
 # The proof step: always runs, never fails softly.
 inherit_step: {job: changes, id: inherit}

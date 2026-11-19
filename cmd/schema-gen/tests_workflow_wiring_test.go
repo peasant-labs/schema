@@ -3,9 +3,15 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -26,6 +32,18 @@ type testsWorkflowWiring struct {
 		Name string `yaml:"name"`
 		If   string `yaml:"if"`
 	} `yaml:"marker_steps"`
+	MarkerCases []struct {
+		Name, Event, Check, Race, Inherit, Expected string
+	} `yaml:"marker_cases"`
+	Cache struct {
+		Jobs          []string `yaml:"jobs"`
+		RestoreAction string   `yaml:"restore_action"`
+		SaveAction    string   `yaml:"save_action"`
+		Path          string   `yaml:"path"`
+		Key           string   `yaml:"key"`
+		SaveIf        string   `yaml:"save_if"`
+		SaveKey       string   `yaml:"save_key"`
+	} `yaml:"cache"`
 	CheckJob      string `yaml:"check_job"`
 	CheckIf       string `yaml:"check_if"`
 	RaceSelective struct {
@@ -38,6 +56,72 @@ type testsWorkflowWiring struct {
 		Job string `yaml:"job"`
 		ID  string `yaml:"id"`
 	} `yaml:"inherit_step"`
+}
+
+// evalMarker evaluates the small boolean expression subset used by marker
+// conditions, failing closed if a workflow introduces a different expression.
+func evalMarker(expr string, values map[string]string) (bool, error) {
+	quoted := regexp.MustCompile(`'([^']*)'`).ReplaceAllString(expr, `"$1"`)
+	node, err := parser.ParseExpr(quoted)
+	if err != nil {
+		return false, err
+	}
+	var eval func(ast.Expr) (string, error)
+	eval = func(n ast.Expr) (string, error) {
+		switch v := n.(type) {
+		case *ast.ParenExpr:
+			return eval(v.X)
+		case *ast.BasicLit:
+			if v.Kind == token.STRING {
+				return strconv.Unquote(v.Value)
+			}
+		case *ast.SelectorExpr:
+			var name func(ast.Expr) string
+			name = func(e ast.Expr) string {
+				switch x := e.(type) {
+				case *ast.Ident:
+					return x.Name
+				case *ast.SelectorExpr:
+					return name(x.X) + "." + x.Sel.Name
+				}
+				return ""
+			}
+			if value, ok := values[name(v)]; ok {
+				return value, nil
+			}
+		case *ast.BinaryExpr:
+			left, err := eval(v.X)
+			if err != nil {
+				return "", err
+			}
+			right, err := eval(v.Y)
+			if err != nil {
+				return "", err
+			}
+			switch v.Op {
+			case token.EQL:
+				return strconv.FormatBool(left == right), nil
+			case token.NEQ:
+				return strconv.FormatBool(left != right), nil
+			case token.LAND, token.LOR:
+				a, e1 := strconv.ParseBool(left)
+				b, e2 := strconv.ParseBool(right)
+				if e1 != nil || e2 != nil {
+					return "", fmt.Errorf("non-boolean operand")
+				}
+				if v.Op == token.LAND {
+					return strconv.FormatBool(a && b), nil
+				}
+				return strconv.FormatBool(a || b), nil
+			}
+		}
+		return "", fmt.Errorf("unsupported marker expression %T", n)
+	}
+	value, err := eval(node)
+	if err != nil {
+		return false, err
+	}
+	return strconv.ParseBool(value)
 }
 
 func workflowScalar(node *yaml.Node, key string) string {
@@ -107,6 +191,66 @@ func TestTestsWorkflowWiring(t *testing.T) {
 		if got := workflowScalar(tail[i], "if"); got != m.If {
 			t.Errorf("marker step %q if = %q, want %q", m.Name, got, m.If)
 		}
+	}
+	for _, c := range want.MarkerCases {
+		t.Run(c.Name, func(t *testing.T) {
+			values := map[string]string{
+				"github.event_name":             c.Event,
+				"needs.check.result":            c.Check,
+				"needs.race.result":             c.Race,
+				"needs.changes.outputs.inherit": c.Inherit,
+			}
+			var selected []string
+			for _, step := range tail {
+				ok, err := evalMarker(workflowScalar(step, "if"), values)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if ok {
+					selected = append(selected, workflowScalar(step, "name"))
+				}
+			}
+			if len(selected) != 1 || selected[0] != c.Expected {
+				t.Errorf("selected markers = %q, want %q", selected, c.Expected)
+			}
+		})
+	}
+
+	saveCount := 0
+	for _, jobName := range want.Cache.Jobs {
+		jobSteps := workflowMappingChild(workflowMappingChild(jobs, jobName), "steps")
+		restores := 0
+		for _, step := range jobSteps.Content {
+			action := workflowScalar(step, "uses")
+			if action == want.Cache.RestoreAction {
+				restores++
+				with := workflowMappingChild(step, "with")
+				if got := workflowScalar(with, "path"); got != want.Cache.Path {
+					t.Errorf("jobs.%s cache path = %q, want %q", jobName, got, want.Cache.Path)
+				}
+				if got := workflowScalar(with, "key"); got != want.Cache.Key {
+					t.Errorf("jobs.%s cache key = %q, want %q", jobName, got, want.Cache.Key)
+				}
+			}
+			if action == want.Cache.SaveAction {
+				saveCount++
+				if jobName != want.CheckJob || workflowScalar(step, "if") != want.Cache.SaveIf {
+					t.Errorf("unexpected cache save in jobs.%s with if %q", jobName, workflowScalar(step, "if"))
+				}
+				if got := workflowScalar(workflowMappingChild(step, "with"), "path"); got != want.Cache.Path {
+					t.Errorf("jobs.%s save path = %q, want %q", jobName, got, want.Cache.Path)
+				}
+				if got := workflowScalar(workflowMappingChild(step, "with"), "key"); got != want.Cache.SaveKey {
+					t.Errorf("jobs.%s save key = %q, want %q", jobName, got, want.Cache.SaveKey)
+				}
+			}
+		}
+		if restores != 1 {
+			t.Errorf("jobs.%s has %d cache restores, want one", jobName, restores)
+		}
+	}
+	if saveCount != 1 {
+		t.Errorf("check and race have %d cache saves, want one", saveCount)
 	}
 
 	check := workflowMappingChild(jobs, want.CheckJob)
