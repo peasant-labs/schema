@@ -40,6 +40,7 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 			EnvValues        map[string]string `yaml:"env_values"`
 			WithValues       map[string]string `yaml:"with_values"`
 			WithExcludes     []string          `yaml:"with_excludes"`
+			WorkingDirectory string            `yaml:"working_directory"`
 		} `yaml:"cases"`
 	}
 	if err := yaml.Unmarshal(releaseAdoptionFixture, &fixture); err != nil {
@@ -132,6 +133,12 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 					t.Error("step must not set continue-on-error")
 				}
 				checkWorkflowFragments(t, step, "if", c.IfContains)
+				if c.WorkingDirectory != "" {
+					dir := workflowMappingChild(step, "working-directory")
+					if dir == nil || dir.Value != c.WorkingDirectory {
+						t.Errorf("step working-directory must equal %q", c.WorkingDirectory)
+					}
+				}
 				if c.IfValue != "" {
 					condition := workflowMappingChild(step, "if")
 					if condition == nil || condition.Value != c.IfValue {

@@ -13,11 +13,6 @@ dist_dir="$2"
 mkdir -p "${dist_dir}"
 
 shopt -s nullglob
-for path in "${dist_dir}"/*-next.*; do
-  echo "working contract must not be published: ${path}" >&2
-  exit 1
-done
-
 copied=0
 for path in "${source_dir}"/*; do
   [[ -f "${path}" && ! -L "${path}" ]] || continue
@@ -31,6 +26,8 @@ if [[ "${copied}" -eq 0 ]]; then
   echo "no numbered frozen contracts found in ${source_dir}; refusing an empty release" >&2
   exit 1
 fi
+# The destination is checked after the copy, so a working file already there
+# or copied by a widened pattern is refused before anything is published.
 for path in "${dist_dir}"/*-next.*; do
   echo "working contract must not be published: ${path}" >&2
   exit 1

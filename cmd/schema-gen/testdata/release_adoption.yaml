@@ -244,6 +244,8 @@ merge_gate_required:
   - release-tree-failed
   - release-tree-skipped
   - pull-request-release-tree-skipped
+  - push-candidate-release-tree-skipped
+  - pull-request-non-candidate-release-tree-skipped
 merge_gate_cases:
   - name: release-vendor-failed
     release: "true"
@@ -390,6 +392,18 @@ merge_gate_cases:
     results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "a release candidate needs a frozen release tree"
+  - name: push-candidate-release-tree-skipped
+    release: "false"
+    event: push
+    release_candidate: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"skipped"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
+  - name: pull-request-non-candidate-release-tree-skipped
+    release: "false"
+    event: pull_request
+    release_candidate: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
 pre_tag_commands:
   contract: 'release-intent check-contract --report "${RUNNER_TEMP}/candidate-report.yaml" --until "${CANDIDATE}" --floor "${FLOOR}"'
   freeze: 'nix develop -c schema-gen freeze --check --plan "${RUNNER_TEMP}/candidate-freeze-plan.yaml" --state "${RUNNER_TEMP}/candidate-surface-state.yaml"'
@@ -650,7 +664,7 @@ cases:
     workflow: release-batch.yml
     job: plan
     step: Check the pending range before preparing a release PR
-    run_contains: ["check-contract", "--until", "--floor", "contract-gates.sh report"]
+    run_contains: ["check-contract", "--until", "--floor", "contract-gates.sh report", 'git fetch --no-tags origin develop', 'git checkout --detach "${tip}"']
   - name: tag-range-has-floor
     workflow: release.yml
     job: contract-gates
@@ -825,13 +839,15 @@ cases:
     step: Prepare the candidate freeze evidence
     if_contains: ["!cancelled()", "steps.plan.outputs.action == 'verify'"]
     env_values: {FREEZE_FLOOR: "${{ steps.freeze-floor.outputs.freeze_floor }}"}
-    run_contains: ['git checkout --detach "${CANDIDATE}^"', 'status --write', 'freeze-plan --branch origin/develop --until "${CANDIDATE}^"', '--freeze-floor "${FREEZE_FLOOR}"', 'git checkout --detach "${CANDIDATE}"']
+    run_contains: ['git worktree add --detach "${RUNNER_TEMP}/candidate-parent-tree" "${CANDIDATE}^"', 'git worktree add --detach "${RUNNER_TEMP}/candidate-tree" "${CANDIDATE}"', 'cd "${RUNNER_TEMP}/candidate-parent-tree" && nix develop -c go run ./cmd/schema-gen status --write', 'freeze-plan --branch origin/develop --until "${CANDIDATE}^"', '--freeze-floor "${FREEZE_FLOOR}"', 'cd "${RUNNER_TEMP}/candidate-tree" && nix develop -c go build']
+    run_excludes: ['git checkout']
   - name: candidate-freeze-is-checked
     workflow: release-batch.yml
     job: plan
     step: Verify the candidate freeze
     id: verify-freeze
     if_contains: ["!cancelled()", "steps.plan.outputs.action == 'verify'"]
+    working_directory: "${{ runner.temp }}/candidate-tree"
     run_contains: ["schema-gen freeze --check", "--plan", "--state"]
   - name: release-tree-job-checks-mounted-tree
     workflow: tests.yml

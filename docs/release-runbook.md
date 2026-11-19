@@ -101,17 +101,18 @@ releases.
 
 ## Working and frozen specs
 
-Types, Village, Local, and segmented read use committed `generated/<stem>-next.*` working
-files. Their numbered files are frozen, and `versions.go` points the public
-accessors and exported validators to the latest frozen bytes. The Village
-publish-request and annotation-push-request JSON Schemas follow the Village
-version. The TypeScript generator, module tests and contract report read
-working documents. For segmented read, `SegmentedReadSpecVersion` names the
-frozen document, while `SegmentedReadAPIVersion` names the current wire
-protocol and `SegmentedReadMinVersion` the oldest served protocol. A document
-freeze moves only the spec version; it does not change the selector table, the
-minimum document, or a protocol echo. A breaking protocol change requiring a
-new `v=` generation is separate P1 work, not a document freeze.
+Types, Village, Local, and segmented read use committed
+`generated/<stem>-next.*` working files. Their numbered files are frozen, and
+`versions.go` points the public accessors and exported validators to the
+latest frozen bytes. The Village publish-request and annotation-push-request
+JSON Schemas follow the Village version. The TypeScript generator, module
+tests and contract report read working documents. For segmented read,
+`SegmentedReadSpecVersion` names the frozen document, while
+`SegmentedReadAPIVersion` names the current wire protocol and
+`SegmentedReadMinVersion` the oldest served protocol. A document freeze moves
+only the spec version; it does not change the selector table, the minimum
+document, or a protocol echo. A breaking protocol change requiring a new `v=`
+generation is separate P1 work, not a document freeze.
 
 `schema-gen status --write state.yaml` computes `clean`, `docs-ahead`, or
 `ahead`. Description-only changes remain docs-ahead and are copied at the next
@@ -136,6 +137,16 @@ bypasses the queue check, pre-tag verification rejects it; the next release
 freezes the next number and retains the wrong numbered file in the registry.
 That burns one spec number without moving a tag.
 
+The release job takes the migration boundary (the freeze floor) from the
+first first-parent `develop` commit whose `.github/release-intent.yaml`
+gained the literal line `spec_freeze: true`. Later edits to that line do not
+move it. If no commit ever wrote the line literally, the step fails instead
+of guessing; `TestFreezeFloorSearch` runs the step against fixture histories.
+
+The changelog and npm version field are reserved to the release PR. The
+generator currently emits plain `## X.Y.Z` headings; changing that style is a
+separate follow-up.
+
 ## Release PR checks
 
 A release PR (or a merge group) whose whole `base..head` change is
@@ -143,16 +154,17 @@ A release PR (or a merge group) whose whole `base..head` change is
 `make check`. The path filter alone cannot skip it: a version-only edit under
 `typescript/*` classifies as `code=true`, so inheritance is what saves the
 run. Only the bot release PR, or a merge group whose entry is that PR, runs
-`inherit-verdict`; every other run skips it without building the tool. The `changes` job runs `release-intent inherit-verdict`, which
-reads the `merge-gate` verdict that the exact base commit's merge-queue run
-recorded. When that verdict is missing, pending past the 20-minute wait,
-failed, cancelled, ambiguous or from another producer, the job fails and the
-release candidate is not merged; it never falls back to the suite. Fix it by
-waiting for or rerunning the base commit's merge-queue run, then rerun the
-candidate's checks. The contract gates, the title guard, the release tree
-freeze check and the release group's vendor-hash check still run. Spec-freeze outputs (`versions.go`,
-numbered `generated/` documents) are never release-only and always run the
-full suite.
+`inherit-verdict`; every other run skips it without building the tool. The
+`changes` job runs `release-intent inherit-verdict`, which reads the
+`merge-gate` verdict that the exact base commit's merge-queue run recorded.
+When that verdict is missing, pending past the 20-minute wait, failed,
+cancelled, ambiguous or from another producer, the job fails and the release
+candidate is not merged; it never falls back to the suite. Fix it by waiting
+for or rerunning the base commit's merge-queue run, then rerun the candidate's
+checks. The contract gates, the title guard, the release tree freeze check and
+the release group's vendor-hash check still run. Spec-freeze outputs
+(`versions.go`, numbered `generated/` documents) are never release-only and
+always run the full suite.
 
 `merge-gate` ends with one `verdict-source: full|inherited|unaffected` step
 per run, so a later release candidate can tell a verdict that rests on a
