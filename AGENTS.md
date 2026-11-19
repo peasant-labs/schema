@@ -214,8 +214,11 @@ Install the locked TypeScript development toolchain with
 
 `make check` is the authoritative full-repository gate: fmt, vet, the
 release-workflow guard, TypeScript typecheck/tests/package smoke, and
-`go test -race ./...` (which carries the freshness, immutability,
-leaf-audit, vendor-hash, and synthetic-break checks). `make gates
+`go test ./...` (which carries the freshness, immutability,
+leaf-audit, vendor-hash, and synthetic-break checks). It runs without the race
+detector by default; `make check RACE=1` opts in. `make race-selective` runs
+`-race` over the module's only production concurrency (the validator schema
+caches), and the merge-queue run requires it. `make gates
 BASE_REF=origin/develop` runs the breaking-change gates (`oasdiff`, `go-apidiff`,
 `vacuum`) and needs the flake tools. `TESTING.md` has the full gate table and the
 real test behind each one.

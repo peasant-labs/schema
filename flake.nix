@@ -216,7 +216,8 @@
               # tests); git is present only for isolated local-runner fixtures.
               # The whole suite runs as a packaging sanity gate. No
               # -race: the detector requires cgo and this build is CGO_ENABLED=0;
-              # the authoritative race-enabled suite runs in CI (`go test -race`).
+              # CI's merge queue runs `make race-selective` over the module's
+              # concurrency, and `make check RACE=1` is the full race pass.
               checkPhase = ''
                 runHook preCheck
                 go test ./...

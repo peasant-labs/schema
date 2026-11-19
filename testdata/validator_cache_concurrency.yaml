@@ -1,0 +1,72 @@
+# Validator cache concurrency corpus. The schema's only production
+# concurrency is the lazy schema compilation behind three validators: the
+# sync.Once caches of ValidatePublishRequest and ValidateAnnotationPushRequest
+# and the sync.Map cache of ValidateDescribedValue. Each case is called from
+# many goroutines released at the same moment, so under `make race-selective`
+# the first compilation and every cache read race each other. Every call must
+# return the case's verdict.
+#
+# validator is one of publish-request, annotation-push-request or
+# described-value. constraint_spec and datatype apply to described-value only;
+# each described case uses its own constraint so its sync.Map entry is first
+# compiled under contention, not by an earlier case.
+required_names:
+  - publish request minimal body is accepted
+  - publish request without model is rejected
+  - annotation push empty batch is accepted
+  - annotation push null batch is rejected
+  - described value inside its range is accepted
+  - described value outside its range is rejected
+cases:
+  - name: publish request minimal body is accepted
+    input:
+      validator: publish-request
+      body: '{"model": {"harness": "claude-code", "model": "claude-opus-4-6"}}'
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "publish verdict corpus row minimal-valid, validated under concurrent first use"}
+    mutation: {description: "smallest body the frozen publish-request schema accepts"}
+  - name: publish request without model is rejected
+    input:
+      validator: publish-request
+      body: '{}'
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "publish verdict corpus row empty-object, validated under concurrent first use"}
+    mutation: {description: "drops the required model object"}
+  - name: annotation push empty batch is accepted
+    input:
+      validator: annotation-push-request
+      body: '{"annotations": []}'
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "annotation push batches permit an empty annotations array"}
+    mutation: {description: "supplies an empty non-null annotation array"}
+  - name: annotation push null batch is rejected
+    input:
+      validator: annotation-push-request
+      body: '{"annotations": null}'
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "annotation push batches require a non-null annotations array"}
+    mutation: {description: "replaces the annotation array with null"}
+  - name: described value inside its range is accepted
+    input:
+      validator: described-value
+      datatype: real
+      constraint_spec: '{"minimum":0,"maximum":10,"$comment":"concurrency-accept"}'
+      value: "7.5"
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "described values validate through the cached compiled constraint"}
+    mutation: {description: "a real value inside the constraint range"}
+  - name: described value outside its range is rejected
+    input:
+      validator: described-value
+      datatype: real
+      constraint_spec: '{"minimum":0,"maximum":10,"$comment":"concurrency-reject"}'
+      value: "12"
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "described values validate through the cached compiled constraint"}
+    mutation: {description: "a real value above the constraint maximum"}

@@ -103,6 +103,30 @@ The changelog and npm version field are already reserved to the release PR.
 The generator currently emits plain `## X.Y.Z` headings; changing that style
 is a separate follow-up.
 
+## Release PR checks
+
+A release PR (or a merge group) whose whole `base..head` change is
+`CHANGELOG.md` plus the `typescript/package.json` version does not rerun
+`make check`. The path filter alone cannot skip it: a version-only edit under
+`typescript/*` classifies as `code=true`, so inheritance is what saves the
+run. Only the bot release PR, or a merge group whose entry is that PR, runs
+`inherit-verdict`; every other run skips it without building the tool. The `changes` job runs `release-intent inherit-verdict`, which
+reads the `merge-gate` verdict that the exact base commit's merge-queue run
+recorded. When that verdict is missing, pending past the 20-minute wait,
+failed, cancelled, ambiguous or from another producer, the job fails and the
+release candidate is not merged; it never falls back to the suite. Fix it by
+waiting for or rerunning the base commit's merge-queue run, then rerun the
+candidate's checks. The contract gates, the title guard and the release
+group's vendor-hash check still run. Spec-freeze outputs (`versions.go`,
+numbered `generated/` documents) are never release-only and always run the
+full suite.
+
+`merge-gate` ends with one `verdict-source: full|inherited|unaffected` step
+per run, so a later release candidate can tell a verdict that rests on a
+`make check` run from an inherited one. `make check` runs without the race
+detector on every event; the merge-queue run adds `make race-selective`, the
+race pass over the validator schema caches.
+
 ## Vendor hash
 
 After a dependency-affecting push to `develop`, `nix-vendor-hash.yml` computes

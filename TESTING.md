@@ -30,7 +30,8 @@ inside `nix develop` (or after `direnv allow`).
 
 ```bash
 make check                          # the authoritative quality gate (bare-go runnable)
-make test                           # go test -race ./...
+make test                           # go test ./... (RACE=1 adds -race)
+make race-selective                 # go test -race over the validator schema caches
 make gates BASE_REF=origin/develop  # the breaking-change contract gates (needs the flake tools)
 make freshness                      # git-diff backstop on the generated artifacts
 pnpm --dir typescript run typecheck
@@ -40,16 +41,34 @@ pnpm --dir typescript run package:smoke
 ```
 
 `make check` is `fmt` + `vet` + `freshness` + the release-workflow guard
-(`release-guard check-workflow`) + `go test -race ./...`. The race suite is the
+(`release-guard check-workflow`) + `go test ./...`. That suite is the
 authoritative run: it includes the leaf audit, the vendor-hash guard, and the
 `oasdiff` / `go-apidiff` synthetic-break tests (which skip when their binary is
 absent).
 
+The default is no race detector, on every CI event and locally. The module's
+only production concurrency is the lazy schema compilation behind
+`ValidatePublishRequest`, `ValidateAnnotationPushRequest` (`sync.Once`) and
+`ValidateDescribedValue` (`sync.Map`). `make race-selective` runs
+`TestValidatorCachesConcurrently` (fixture
+`testdata/validator_cache_concurrency.yaml`) alone under `-race`, so the first
+compilation and every cache read contend; the merge-queue run requires it.
+`make check RACE=1` (or `make test RACE=1`) is the opt-in full race pass.
+
+`race-selective` names its tests in `RACE_SELECTIVE_TESTS` (Makefile) and
+fails unless each one runs and passes, so a renamed test cannot leave it
+passing with zero tests. New production concurrency must add a test that
+exercises it from many goroutines and extend `RACE_SELECTIVE_TESTS`. The
+`sync.Once` caches race if replaced by an unguarded nil check and the
+`sync.Map` cache races if replaced by a plain map (both verified to report
+`DATA RACE`); `sync.Map` is race-safe by construction, so for it the test
+only guards against such a replacement.
+
 Run one test or one package:
 
 ```bash
-go test -race ./cmd/schema-gen/ -run TestRetiredSpecsImmutable -v
-go test -race ./internal/contractgates/ -run TestOasdiffSyntheticBreak -v   # skips without oasdiff
+go test ./cmd/schema-gen/ -run TestRetiredSpecsImmutable -v
+go test ./internal/contractgates/ -run TestOasdiffSyntheticBreak -v   # skips without oasdiff
 ```
 
 ### Bare `go` vs `nix develop`
