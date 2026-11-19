@@ -6,14 +6,104 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
+	caseassert "github.com/peasant-labs/schema/testcase/assert"
 	"gopkg.in/yaml.v3"
 )
 
 //go:embed testdata/release_adoption.yaml
 var releaseAdoptionFixture []byte
+
+//go:embed testdata/release_publication_wiring_manifest.yaml
+var releasePublicationWiringManifest []byte
+
+// TestReleaseAdoptionPublicationWiring checks the production release jobs.
+func TestReleaseAdoptionPublicationWiring(t *testing.T) {
+	var fixture struct {
+		Cases []struct {
+			Name        string            `yaml:"name"`
+			Job         string            `yaml:"job"`
+			Needs       []string          `yaml:"needs"`
+			Permissions map[string]string `yaml:"permissions"`
+			Environment string            `yaml:"environment"`
+		} `yaml:"publication_wiring_cases"`
+	}
+	if err := yaml.Unmarshal(releaseAdoptionFixture, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, c := range fixture.Cases {
+		names = append(names, c.Name)
+	}
+	caseassert.RequireManifestNames(t, "release publication wiring", releasePublicationWiringManifest, names)
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil || len(doc.Content) == 0 {
+		t.Fatalf("parse release.yml: %v", err)
+	}
+	jobs := workflowMappingChild(doc.Content[0], "jobs")
+	for _, c := range fixture.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			job := workflowMappingChild(jobs, c.Job)
+			if job == nil || job.Kind != yaml.MappingNode {
+				t.Fatalf("release.yml must contain jobs.%s as a mapping", c.Job)
+			}
+			if len(c.Needs) != 0 {
+				node := workflowMappingChild(job, "needs")
+				var actual []string
+				switch {
+				case node == nil:
+					t.Fatalf("jobs.%s has no needs", c.Job)
+				case node.Kind == yaml.ScalarNode && node.Tag == "!!str":
+					actual = []string{node.Value}
+				case node.Kind == yaml.SequenceNode:
+					for _, item := range node.Content {
+						if item.Kind != yaml.ScalarNode || item.Tag != "!!str" || item.Value == "" {
+							t.Fatalf("jobs.%s has an invalid needs entry", c.Job)
+						}
+						actual = append(actual, item.Value)
+					}
+				default:
+					t.Fatalf("jobs.%s needs must be a string or a sequence of strings", c.Job)
+				}
+				want := slices.Clone(c.Needs)
+				slices.Sort(actual)
+				slices.Sort(want)
+				if !slices.Equal(actual, want) {
+					t.Errorf("jobs.%s needs = %v, want %v", c.Job, actual, want)
+				}
+			}
+			if len(c.Permissions) != 0 {
+				permissions := workflowMappingChild(job, "permissions")
+				if permissions == nil || permissions.Kind != yaml.MappingNode {
+					t.Fatalf("jobs.%s permissions must be a job-level mapping", c.Job)
+				}
+				for key, want := range c.Permissions {
+					value := workflowMappingChild(permissions, key)
+					if value == nil || value.Kind != yaml.ScalarNode || value.Tag != "!!str" || value.Value != want {
+						t.Errorf("jobs.%s permissions.%s must equal %q", c.Job, key, want)
+					}
+				}
+			}
+			if c.Environment != "" {
+				value := workflowMappingChild(job, "environment")
+				if value == nil || value.Kind != yaml.ScalarNode || value.Tag != "!!str" || value.Value != c.Environment {
+					t.Errorf("jobs.%s environment must be the scalar %q", c.Job, c.Environment)
+				}
+			}
+		})
+	}
+}
 
 func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 	var fixture struct {

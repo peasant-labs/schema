@@ -237,6 +237,10 @@ BASE_REF=origin/develop` runs the breaking-change gates (`oasdiff`, `go-apidiff`
 `vacuum`) and needs the flake tools. `TESTING.md` has the full gate table and the
 real test behind each one.
 
+`TestReleaseAdoptionPublicationWiring` in `cmd/schema-gen` checks the release
+publication jobs, their dependencies, and npm OIDC binding. CI also runs the
+pinned infra `check-workflows` policy; neither check replaces the other.
+
 ## Static guard
 
 `make check` runs the unstring static guard. The pin lives in one place, the

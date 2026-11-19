@@ -10,7 +10,9 @@ name: Release
 # release-e2e / e2e / smoke. The publisher is a single GitHub Release carrying the
 # generated/ OpenAPI specs as downloadable ASSETS (prerelease for -rcN).
 #
-# The pinned release-intent workflow checks run in title-guard.yml.
+# title-guard.yml runs the pinned release-intent workflow checks.
+# TestReleaseAdoptionPublicationWiring also pins the publication job graph,
+# npm OIDC permission, and environment in the schema test suite.
 on:
   push:
     tags:

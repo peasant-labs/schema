@@ -1,0 +1,6 @@
+requiredNames:
+  - release-tag-guard-exists
+  - vendor-hash-follows-guard
+  - contract-gates-follow-guards
+  - github-release-follows-gates
+  - npm-publish-follows-gates-with-oidc
