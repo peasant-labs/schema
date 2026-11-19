@@ -6,7 +6,7 @@ import { collectiveContractIssue } from "../../../collective-validation.js";
 import * as z from 'zod';
 import type * as ClosedSets from "../enums.gen.js";
 
-type ClosedSet<S extends z.ZodType, T> = Omit<S, "_zod"> & { _zod: Omit<S["_zod"], "input" | "output"> & { input: T; output: T } };
+type ClosedSet<S extends z.ZodType, T> = Omit<S, "_zod" | "optional" | "nullable" | "nullish"> & { _zod: Omit<S["_zod"], "input" | "output"> & { input: T; output: T }; optional(): z.ZodOptional<Extract<ClosedSet<S, T>, z.ZodType>>; nullable(): z.ZodNullable<Extract<ClosedSet<S, T>, z.ZodType>>; nullish(): z.ZodOptional<z.ZodNullable<Extract<ClosedSet<S, T>, z.ZodType>>> };
 const closedSet = <T>() => <S extends z.ZodType<T>>(schema: S & ([T] extends [z.output<S>] ? unknown : never)): ClosedSet<S, T> => schema as unknown as ClosedSet<S, T>;
 
 export const zActivityEdge = z.object({
@@ -1249,6 +1249,11 @@ export const zLocalKickstartErrorCode = closedSet<ClosedSets.LocalKickstartError
     'kickstart_commit_refused',
     'kickstart_session_not_found',
     'kickstart_preview_row_not_found',
+    'kickstart_preview_capture_not_found',
+    'kickstart_preview_source_changed',
+    'kickstart_preview_late_result',
+    'kickstart_preview_capacity',
+    'kickstart_preview_out_of_order',
     'kickstart_failed',
     'kickstart_status_unreadable',
     'kickstart_config_unreadable',
@@ -1449,6 +1454,98 @@ export const zLocalKickstartPreview = z.object({
 }).strict();
 
 export type LocalKickstartPreview = z.infer<typeof zLocalKickstartPreview>;
+
+/**
+ * Preview close reason
+ *
+ * Why the capture closed
+ */
+export const zLocalKickstartPreviewCloseReason = closedSet<ClosedSets.LocalKickstartPreviewCloseReason>()(z.enum([
+    'closed_by_client',
+    'replaced',
+    'session_closed',
+    'rescanned',
+    'idle',
+    'evicted',
+    'shutdown',
+    'source_changed',
+    'late_result',
+    'unreadable',
+    'out_of_order',
+    'slow_client',
+    'row_not_found',
+    'not_a_session_row',
+    'unavailable',
+    'no_turns',
+    'capacity'
+]));
+
+export type LocalKickstartPreviewCloseReason = z.infer<typeof zLocalKickstartPreviewCloseReason>;
+
+/**
+ * Preview continuation
+ *
+ * Whether the capture can continue
+ */
+export const zLocalKickstartPreviewContinuation = closedSet<ClosedSets.LocalKickstartPreviewContinuation>()(z.enum([
+    'more',
+    'end',
+    'cut'
+]));
+
+export type LocalKickstartPreviewContinuation = z.infer<typeof zLocalKickstartPreviewContinuation>;
+
+/**
+ * Preview cut reason
+ *
+ * Why the capture ended early
+ */
+export const zLocalKickstartPreviewCutReason = closedSet<ClosedSets.LocalKickstartPreviewCutReason>()(z.enum([
+    'source_budget',
+    'serialized_budget',
+    'turn_budget',
+    'oversized_record',
+    'origin_not_resumable'
+]));
+
+export type LocalKickstartPreviewCutReason = z.infer<typeof zLocalKickstartPreviewCutReason>;
+
+/**
+ * Preview event kind
+ *
+ * Kind of capture event
+ */
+export const zLocalKickstartPreviewEventKind = closedSet<ClosedSets.LocalKickstartPreviewEventKind>()(z.enum([
+    'opened',
+    'segment',
+    'closed'
+]));
+
+export type LocalKickstartPreviewEventKind = z.infer<typeof zLocalKickstartPreviewEventKind>;
+
+/**
+ * Preview operation
+ *
+ * Operation on a connection-owned capture
+ */
+export const zLocalKickstartPreviewOp = closedSet<ClosedSets.LocalKickstartPreviewOp>()(z.enum([
+    'open',
+    'more',
+    'close'
+]));
+
+export type LocalKickstartPreviewOp = z.infer<typeof zLocalKickstartPreviewOp>;
+
+export const zLocalKickstartPreviewRequest = z.object({
+    after: z.int().gte(0).lte(4294967295).optional(),
+    captureId: z.string().length(22).regex(/^[A-Za-z0-9_-]{21}[AQgw]$/).optional(),
+    nodeId: z.string().max(512).optional(),
+    op: zLocalKickstartPreviewOp,
+    requestId: z.string().min(1).max(32).regex(/^[A-Za-z0-9_-]+$/),
+    sessionId: z.string().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/)
+});
+
+export type LocalKickstartPreviewRequest = z.infer<typeof zLocalKickstartPreviewRequest>;
 
 /**
  * Kickstart Resolution
@@ -1808,13 +1905,15 @@ export const zMessageType = closedSet<ClosedSets.MessageType>()(z.enum([
     'project_familiarity',
     'connected',
     'error',
-    'kickstart'
+    'kickstart',
+    'kickstart_preview'
 ]));
 
 export type MessageType = z.infer<typeof zMessageType>;
 
 export const zClientMessage = z.object({
     channels: z.array(zChannelSubscription).optional(),
+    preview: zLocalKickstartPreviewRequest.nullish(),
     type: zMessageType
 });
 
@@ -4211,6 +4310,21 @@ export const zTranscriptSegmentRef = z.object({
 
 export type TranscriptSegmentRef = z.infer<typeof zTranscriptSegmentRef>;
 
+export const zLocalKickstartPreviewDirectory = z.object({
+    complete: z.boolean(),
+    loadedConversationTurns: z.int().gte(0).lte(9007199254740991).optional(),
+    loadedSegments: z.int().gte(0).lte(9007199254740991),
+    loadedTurns: z.int().gte(0).lte(9007199254740991),
+    revision: z.string().min(1),
+    segments: z.array(zTranscriptSegmentRef),
+    sessionId: zSessionID,
+    totalConversationTurns: z.int().gte(0).lte(9007199254740991).optional(),
+    totalSegments: z.int().gte(0).lte(9007199254740991).optional(),
+    totalTurns: z.int().gte(0).lte(9007199254740991).optional()
+});
+
+export type LocalKickstartPreviewDirectory = z.infer<typeof zLocalKickstartPreviewDirectory>;
+
 export const zTranscriptSegmentDirectory = z.object({
     directoryPage: z.int().gte(1).lte(9007199254740991).optional(),
     directoryPerPage: z.int().gte(1).lte(9007199254740991).optional(),
@@ -4664,6 +4778,21 @@ export const zTranscriptTurn = z.object({
 
 export type TranscriptTurn = z.infer<typeof zTranscriptTurn>;
 
+export const zLocalKickstartPreviewSegment = z.object({
+    byteLength: z.int().gte(0).lte(9007199254740991),
+    firstTurn: z.int().gte(0).lte(9007199254740991),
+    hasNewer: z.boolean(),
+    hasOlder: z.boolean(),
+    index: z.int().gte(0).lte(9007199254740991),
+    lastTurn: z.int().gte(0).lte(9007199254740991),
+    nativeMetadata: z.array(zNativeMetadataRecord).optional(),
+    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
+    revision: z.string().min(1),
+    turns: z.array(zTranscriptTurn)
+});
+
+export type LocalKickstartPreviewSegment = z.infer<typeof zLocalKickstartPreviewSegment>;
+
 export const zTranscriptSegment = z.object({
     byteLength: z.int().gte(0).lte(9007199254740991),
     firstTurn: z.int().gte(0).lte(9007199254740991),
@@ -4752,6 +4881,25 @@ export const zSessionDetailPayload = z.object({
 });
 
 export type SessionDetailPayload = z.infer<typeof zSessionDetailPayload>;
+
+export const zLocalKickstartPreviewEvent = z.object({
+    captureId: z.string().optional(),
+    code: zLocalKickstartErrorCode.optional(),
+    continuation: zLocalKickstartPreviewContinuation.optional(),
+    cutReason: zLocalKickstartPreviewCutReason.optional(),
+    directory: zLocalKickstartPreviewDirectory.optional(),
+    header: zSessionDetailPayload.optional(),
+    kind: zLocalKickstartPreviewEventKind,
+    lines: z.array(zLocalKickstartLine).optional(),
+    message: z.string().optional(),
+    reason: zLocalKickstartPreviewCloseReason.optional(),
+    requestId: z.string().optional(),
+    segment: zLocalKickstartPreviewSegment.optional(),
+    seq: z.int().gte(0).lte(4294967295),
+    sessionId: z.string()
+});
+
+export type LocalKickstartPreviewEvent = z.infer<typeof zLocalKickstartPreviewEvent>;
 
 export const zSessionDetailReadPayload = z.object({
     childSessions: z.array(zChildSessionRef).optional(),

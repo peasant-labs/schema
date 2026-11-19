@@ -3,7 +3,7 @@ info:
   description: Shared domain type catalog for Peasant APIs. No operations; register
     these components for SDK code generation and cross-API type sharing.
   title: Peasant Types
-  version: 0.51.0
+  version: 0.52.0
 components:
   schemas:
     ActivityEdge:
@@ -2068,6 +2068,10 @@ components:
           items:
             $ref: '#/components/schemas/ChannelSubscription'
           type: array
+        preview:
+          anyOf:
+          - $ref: '#/components/schemas/LocalKickstartPreviewRequest'
+          - type: "null"
         type:
           $ref: '#/components/schemas/MessageType'
       required:
@@ -4115,6 +4119,11 @@ components:
       - kickstart_commit_refused
       - kickstart_session_not_found
       - kickstart_preview_row_not_found
+      - kickstart_preview_capture_not_found
+      - kickstart_preview_source_changed
+      - kickstart_preview_late_result
+      - kickstart_preview_capacity
+      - kickstart_preview_out_of_order
       - kickstart_failed
       - kickstart_status_unreadable
       - kickstart_config_unreadable
@@ -4145,6 +4154,11 @@ components:
       - kickstart_commit_refused
       - kickstart_session_not_found
       - kickstart_preview_row_not_found
+      - kickstart_preview_capture_not_found
+      - kickstart_preview_source_changed
+      - kickstart_preview_late_result
+      - kickstart_preview_capacity
+      - kickstart_preview_out_of_order
       - kickstart_failed
       - kickstart_status_unreadable
       - kickstart_config_unreadable
@@ -4485,6 +4499,264 @@ components:
           type: array
       required:
       - lines
+      type: object
+    LocalKickstartPreviewCloseReason:
+      description: Why the capture closed
+      enum:
+      - closed_by_client
+      - replaced
+      - session_closed
+      - rescanned
+      - idle
+      - evicted
+      - shutdown
+      - source_changed
+      - late_result
+      - unreadable
+      - out_of_order
+      - slow_client
+      - row_not_found
+      - not_a_session_row
+      - unavailable
+      - no_turns
+      - capacity
+      examples:
+      - closed_by_client
+      - replaced
+      - session_closed
+      - rescanned
+      - idle
+      - evicted
+      - shutdown
+      - source_changed
+      - late_result
+      - unreadable
+      - out_of_order
+      - slow_client
+      - row_not_found
+      - not_a_session_row
+      - unavailable
+      - no_turns
+      - capacity
+      title: Preview close reason
+      type: string
+    LocalKickstartPreviewContinuation:
+      description: Whether the capture can continue
+      enum:
+      - more
+      - end
+      - cut
+      examples:
+      - more
+      - end
+      - cut
+      title: Preview continuation
+      type: string
+    LocalKickstartPreviewCutReason:
+      description: Why the capture ended early
+      enum:
+      - source_budget
+      - serialized_budget
+      - turn_budget
+      - oversized_record
+      - origin_not_resumable
+      examples:
+      - source_budget
+      - serialized_budget
+      - turn_budget
+      - oversized_record
+      - origin_not_resumable
+      title: Preview cut reason
+      type: string
+    LocalKickstartPreviewDirectory:
+      additionalProperties: false
+      properties:
+        complete:
+          type: boolean
+        loadedConversationTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        loadedSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        loadedTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            $ref: '#/components/schemas/TranscriptSegmentRef'
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+        totalConversationTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - complete
+      - loadedSegments
+      - loadedTurns
+      - segments
+      type: object
+    LocalKickstartPreviewEvent:
+      additionalProperties: false
+      properties:
+        captureId:
+          type: string
+        code:
+          $ref: '#/components/schemas/LocalKickstartErrorCode'
+        continuation:
+          $ref: '#/components/schemas/LocalKickstartPreviewContinuation'
+        cutReason:
+          $ref: '#/components/schemas/LocalKickstartPreviewCutReason'
+        directory:
+          $ref: '#/components/schemas/LocalKickstartPreviewDirectory'
+        header:
+          $ref: '#/components/schemas/SessionDetailPayload'
+        kind:
+          $ref: '#/components/schemas/LocalKickstartPreviewEventKind'
+        lines:
+          items:
+            $ref: '#/components/schemas/LocalKickstartLine'
+          type: array
+        message:
+          type: string
+        reason:
+          $ref: '#/components/schemas/LocalKickstartPreviewCloseReason'
+        requestId:
+          type: string
+        segment:
+          $ref: '#/components/schemas/LocalKickstartPreviewSegment'
+        seq:
+          maximum: 4.294967295e+09
+          minimum: 0
+          type: integer
+        sessionId:
+          type: string
+      required:
+      - kind
+      - sessionId
+      - seq
+      type: object
+    LocalKickstartPreviewEventKind:
+      description: Kind of capture event
+      enum:
+      - opened
+      - segment
+      - closed
+      examples:
+      - opened
+      - segment
+      - closed
+      title: Preview event kind
+      type: string
+    LocalKickstartPreviewOp:
+      description: Operation on a connection-owned capture
+      enum:
+      - open
+      - more
+      - close
+      examples:
+      - open
+      - more
+      - close
+      title: Preview operation
+      type: string
+    LocalKickstartPreviewRequest:
+      additionalProperties: false
+      properties:
+        after:
+          maximum: 4.294967295e+09
+          minimum: 0
+          type: integer
+        captureId:
+          maxLength: 22
+          minLength: 22
+          pattern: ^[A-Za-z0-9_-]{21}[AQgw]$
+          type: string
+        nodeId:
+          maxLength: 512
+          type: string
+        op:
+          $ref: '#/components/schemas/LocalKickstartPreviewOp'
+        requestId:
+          maxLength: 32
+          minLength: 1
+          pattern: ^[A-Za-z0-9_-]+$
+          type: string
+        sessionId:
+          maxLength: 128
+          minLength: 1
+          pattern: ^[A-Za-z0-9_-]+$
+          type: string
+      required:
+      - op
+      - requestId
+      - sessionId
+      type: object
+    LocalKickstartPreviewSegment:
+      additionalProperties: false
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        nativeMetadata:
+          items:
+            $ref: '#/components/schemas/NativeMetadataRecord'
+          type: array
+        retainedUnknown:
+          items:
+            $ref: '#/components/schemas/RetainedUnknownRecord'
+          type: array
+        revision:
+          minLength: 1
+          type: string
+        turns:
+          items:
+            $ref: '#/components/schemas/TranscriptTurn'
+          type: array
+      required:
+      - index
+      - revision
+      - firstTurn
+      - lastTurn
+      - byteLength
+      - hasOlder
+      - hasNewer
+      - turns
       type: object
     LocalKickstartResolution:
       description: 'Which side of one conflict row to keep: mine is the draft, theirs
@@ -5541,6 +5813,7 @@ components:
       - connected
       - error
       - kickstart
+      - kickstart_preview
       examples:
       - subscribe
       - unsubscribe
@@ -5554,6 +5827,7 @@ components:
       - connected
       - error
       - kickstart
+      - kickstart_preview
       title: Message Type
       type: string
     MockConfigResponse:

@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
 	schema "github.com/peasant-labs/schema"
@@ -319,6 +320,10 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"QualityPayload", new(schema.QualityPayload)},
 		{"ClientMessage", new(schema.ClientMessage)},
+		{"LocalKickstartPreviewRequest", new(schema.LocalKickstartPreviewRequest)},
+		{"LocalKickstartPreviewEvent", new(schema.LocalKickstartPreviewEvent)},
+		{"LocalKickstartPreviewDirectory", new(schema.LocalKickstartPreviewDirectory)},
+		{"LocalKickstartPreviewSegment", new(schema.LocalKickstartPreviewSegment)},
 		{"ServerMessage", new(schema.ServerMessage)},
 		{"LocalSessionPage", new(schema.LocalSessionPage)},
 		{"TranscriptSegmentDirectory", new(schema.TranscriptSegmentDirectory)},
@@ -345,6 +350,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		sm, err := s.ToSchemaOrBool().ToSimpleMap()
 		if err != nil {
 			return nil, fmt.Errorf("marshal WS schema %s: %w", p.name, err)
+		}
+		if p.name == "LocalKickstartPreviewSegment" {
+			applyGoRequiredFields(sm, reflect.TypeOf(p.val), p.name)
 		}
 		r.SpecEns().ComponentsEns().WithSchemasItem(p.name, sm)
 	}

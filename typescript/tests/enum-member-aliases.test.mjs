@@ -9,12 +9,17 @@ import { TypesVersion } from "../dist/index.js";
 
 const fixture = parse(await readFile(new URL("../../testdata/typescript/enums.yaml", import.meta.url), "utf8"));
 const spec = JSON.parse(await readFile(new URL(`../../generated/types-${TypesVersion}.json`, import.meta.url), "utf8"));
+// The Zod wrappers Hey API applies to a named closed-set schema for an optional,
+// nullable or nullish field; each must keep the set's name on the field.
+const wrappers = ["optional", "nullable", "nullish"];
 const probePath = fileURLToPath(new URL("./enum-member-aliases.probe.ts", import.meta.url));
 const probeSource = [
   `import type { TurnDetail } from "@peasant-labs/schema";`,
   `import { ${fixture.enums.map((row) => `z${row.name}`).join(", ")} } from "@peasant-labs/schema";`,
   `export const turnRole = null as unknown as TurnDetail["role"];`,
+  `export const turnEntryType = null as unknown as TurnDetail["entryType"];`,
   ...fixture.enums.map((row) => `export const schema${row.name} = null as unknown as (typeof z${row.name})["_zod"]["output"];`),
+  ...wrappers.flatMap((wrapper) => fixture.enums.map((row) => `export const ${wrapper}${row.name} = null as unknown as ReturnType<(typeof z${row.name})["${wrapper}"]>["_zod"]["output"];`)),
 ].join("\n");
 
 const config = ts.getParsedCommandLineOfConfigFile(fileURLToPath(new URL("../tsconfig.test.json", import.meta.url)), {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: (diagnostic) => { throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")); } });
@@ -60,6 +65,12 @@ test("generated enum schemas and fields report the named set type", async (t) =>
     assert.equal(constTableBesideAlias(type.aliasSymbol), true, "the Role alias has no const member table beside it");
   });
 
+  await t.test("TurnDetail optional entryType", () => {
+    const type = checker.getNonNullableType(declaredType("turnEntryType"));
+    assert.equal(type.aliasSymbol?.getName(), "EntryType", `TurnDetail["entryType"] is ${checker.typeToString(declaredType("turnEntryType"))}, not the named EntryType set or undefined`);
+    assert.equal(constTableBesideAlias(type.aliasSymbol), true, "the EntryType alias has no const member table beside it");
+  });
+
   // A one-member set is a single literal type, which TypeScript cannot alias.
   for (const row of fixture.enums.filter((candidate) => candidate.members.length > 1)) {
     await t.test(`z${row.name} output`, () => {
@@ -67,6 +78,13 @@ test("generated enum schemas and fields report the named set type", async (t) =>
       assert.equal(type.aliasSymbol?.getName(), row.name, `z${row.name} reports ${checker.typeToString(type)}, not the named ${row.name} set`);
       assert.equal(constTableBesideAlias(type.aliasSymbol), true, `the ${row.name} alias has no const member table beside it`);
     });
+    for (const wrapper of wrappers) {
+      await t.test(`z${row.name}.${wrapper}() output`, () => {
+        const declared = declaredType(`${wrapper}${row.name}`);
+        const type = checker.getNonNullableType(declared);
+        assert.equal(type.aliasSymbol?.getName(), row.name, `z${row.name}.${wrapper}() reports ${checker.typeToString(declared)}, not the named ${row.name} set; the ClosedSet helper must re-declare .${wrapper}() to wrap the ClosedSet itself`);
+      });
+    }
   }
 });
 

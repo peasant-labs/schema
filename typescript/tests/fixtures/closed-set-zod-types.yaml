@@ -1,0 +1,70 @@
+# Field expressions run through the closed-set pass on a minimal generated file
+# whose catalog normally contains only `Example`. An `accepted` case must render unchanged
+# beside the wrapped schema; a rejected case must fail generation with the
+# message that matches `error`.
+cases:
+  - name: a-bare-reference-is-accepted
+    field: zExample
+    outcome: accepted
+  - name: an-optional-call-is-accepted
+    field: zExample.optional()
+    outcome: accepted
+  - name: a-nullable-call-is-accepted
+    field: zExample.nullable()
+    outcome: accepted
+  - name: a-nullish-call-is-accepted
+    field: zExample.nullish()
+    outcome: accepted
+  - name: an-optional-chained-wrapper-call-is-accepted
+    field: zExample?.optional()
+    outcome: accepted
+  - name: a-wrapper-call-split-across-lines-is-accepted
+    field: "zExample\n    .nullish()"
+    outcome: accepted
+  - name: a-name-sharing-a-prefix-is-accepted
+    field: zExampleOther.default()
+    outcome: accepted
+  - name: an-object-key-is-accepted
+    field: '{ zExample: z.string() }'
+    outcome: accepted
+  - name: two-sets-in-one-catalog-are-accepted
+    twoSets: true
+    field: '{ first: zExample.optional(), second: zExampleTwo.nullable() }'
+    outcome: accepted
+  - name: the-second-catalog-set-rejects-an-undeclared-member
+    twoSets: true
+    field: zExampleTwo.default('first')
+    outcome: undeclared-member
+    error: 'found member "zExampleTwo\.default".*lose the named ExampleTwo set'
+  - name: a-catalog-member-in-a-comment-fails
+    field: "zExample\n// zExample.extract()\n"
+    outcome: undeclared-member
+    error: 'found member "zExample\.extract".*lose the named Example set'
+  - name: an-undeclared-method-call-fails
+    field: zExample.default('first')
+    outcome: undeclared-member
+    error: 'found member "zExample\.default".*re-declares only \.optional\(\), \.nullable\(\), \.nullish\(\).*lose the named Example set'
+  - name: an-optional-chained-undeclared-call-fails
+    field: zExample?.default('first')
+    outcome: undeclared-member
+    error: 'found member "zExample\?\.default".*lose the named Example set'
+  - name: spaces-around-the-dot-do-not-hide-an-undeclared-call
+    field: zExample . default ('first')
+    outcome: undeclared-member
+    error: 'found member "zExample\.default".*lose the named Example set'
+  - name: a-newline-before-the-dot-does-not-hide-an-undeclared-call
+    field: "zExample\n    .default('first')"
+    outcome: undeclared-member
+    error: 'found member "zExample\.default".*lose the named Example set'
+  - name: an-undeclared-method-passed-by-reference-fails
+    field: zExample.default
+    outcome: undeclared-member
+    error: 'found member "zExample\.default".*lose the named Example set'
+  - name: a-bracket-access-fails-as-unverifiable
+    field: zExample['default']('first')
+    outcome: computed-member
+    error: 'computed member access "zExample\[".*cannot verify that the field keeps the named Example set.*extend the guard'
+  - name: an-optional-chained-bracket-access-fails-as-unverifiable
+    field: zExample?.['optional']()
+    outcome: computed-member
+    error: 'computed member access "zExample\?\.\[".*cannot verify.*extend the guard'

@@ -1,4 +1,4 @@
-tool_pin: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
+tool_pin: 7d2a604afe5b50a3dcc20df06f02e85c2a0d4027
 version_guard_required:
   - matching-version
   - mismatched-version-is-refused
@@ -31,15 +31,15 @@ existing_release_cases:
   - name: draft-with-assets
     response: '{"isDraft":true,"assets":[{"name":"spec.json"}]}'
     expected_exit: 1
-    expected_output: 'release is an unpublished draft; delete it with gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" (without --cleanup-tag), then rerun; do not create a new tag'
+    expected_output: 'release is an unpublished draft; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; do not create a new tag'
   - name: draft-without-assets
     response: '{"isDraft":true,"assets":[]}'
     expected_exit: 1
-    expected_output: 'release is an unpublished draft; delete it with gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" (without --cleanup-tag), then rerun; do not create a new tag'
+    expected_output: 'release is an unpublished draft; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; do not create a new tag'
   - name: draft-with-invalid-assets
     response: '{"isDraft":true,"assets":null}'
     expected_exit: 1
-    expected_output: 'release is an unpublished draft; delete it with gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" (without --cleanup-tag), then rerun; do not create a new tag'
+    expected_output: 'release is an unpublished draft; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; do not create a new tag'
   - name: published-without-assets
     response: '{"isDraft":false,"assets":[]}'
     expected_exit: 1
@@ -60,6 +60,102 @@ existing_release_cases:
     api_exit: 1
     expected_exit: 1
     expected_output: "mock API unavailable"
+draft_release_required:
+  - draft-with-assets
+  - draft-without-assets
+  - draft-with-invalid-assets
+  - published-instead-of-draft
+  - missing-draft-state
+  - api-failure
+draft_release_cases:
+  - name: draft-with-assets
+    response: '{"isDraft":true,"assets":[{"name":"spec.json"},{"name":"spec.yaml"}]}'
+    expected_exit: 0
+    expected_output: "draft holds 2 assets"
+  - name: draft-without-assets
+    response: '{"isDraft":true,"assets":[]}'
+    expected_exit: 1
+    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
+  - name: draft-with-invalid-assets
+    response: '{"isDraft":true,"assets":null}'
+    expected_exit: 1
+    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
+  - name: published-instead-of-draft
+    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
+  - name: missing-draft-state
+    response: '{"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
+published_release_required:
+  - published-immutable-with-assets
+  - still-a-draft
+  - not-immutable
+  - published-without-assets
+  - missing-immutable-state
+  - api-failure
+published_release_cases:
+  - name: published-immutable-with-assets
+    response: '{"isDraft":false,"isImmutable":true,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 0
+    expected_output: "release is published, immutable and holds 1 assets"
+  - name: still-a-draft
+    response: '{"isDraft":true,"isImmutable":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
+  - name: not-immutable
+    response: '{"isDraft":false,"isImmutable":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
+  - name: published-without-assets
+    response: '{"isDraft":false,"isImmutable":true,"assets":[]}'
+    expected_exit: 1
+    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
+  - name: missing-immutable-state
+    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
+    expected_exit: 1
+    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
+release_list_required:
+  - no-release-for-the-tag
+  - draft-exists
+  - published-release-exists
+  - another-tag-only
+  - api-failure
+  - malformed-output
+release_list_cases:
+  - name: no-release-for-the-tag
+    response: '[]'
+    expected_exit: 0
+    expected_output: "no release or draft exists for this tag"
+  - name: draft-exists
+    response: '[{"tagName":"v1.2.3","isDraft":true}]'
+    expected_exit: 1
+    expected_output: "a release or draft already exists for this tag, so nothing was created"
+  - name: published-release-exists
+    response: '[{"tagName":"v1.2.3","isDraft":false}]'
+    expected_exit: 1
+    expected_output: "a release or draft already exists for this tag, so nothing was created"
+  - name: another-tag-only
+    response: '[{"tagName":"v1.2.2","isDraft":false},{"tagName":"v1.2.4","isDraft":true}]'
+    expected_exit: 0
+    expected_output: "no release or draft exists for this tag"
+  - name: api-failure
+    api_exit: 1
+    expected_exit: 1
+    expected_output: "mock API unavailable"
+  - name: malformed-output
+    response: "not-json"
+    expected_exit: 1
+    expected_output: "parse error"
 prepared_tag_required:
   - release-commit-snapshot
   - branch-advances-after-plan
@@ -118,6 +214,11 @@ prepared_tag_cases:
   - name: unavailable-plan-source
     unavailable_source: true
     error_contains: "could not fetch the recorded plan source"
+# merge-gate cases run the workflow's real merge-gate script. Omitted fields
+# take the ordinary merge-group value: event merge_group, code true,
+# release_candidate false, release_only false, inherit false. Every reject
+# names the message it must fail with, so a jq or shell syntax fault cannot
+# pass as a rejection.
 merge_gate_required:
   - release-vendor-failed
   - release-vendor-skipped
@@ -126,20 +227,39 @@ merge_gate_required:
   - content-vendor-skipped
   - content-vendor-success
   - content-other-job-failed
+  - content-check-skipped-for-code
+  - content-docs-only-skips-check
+  - changes-failed-is-refused
+  - contract-gates-skipped-is-refused
   - unknown-release-is-refused
+  - unknown-candidate-is-refused
+  - unknown-inherit-is-refused
+  - inherited-release-skips-check
+  - inherited-release-check-ran-is-refused
+  - inherited-without-release-only-is-refused
+  - inherited-without-candidate-is-refused
+  - inherited-on-push-is-refused
+  - not-inherited-code-requires-check
+  - pull-request-inherited-release
   - release-tree-failed
   - release-tree-skipped
+  - pull-request-release-tree-skipped
 merge_gate_cases:
   - name: release-vendor-failed
     release: "true"
+    release_candidate: "true"
     results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"failure"}}'
     expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
   - name: release-vendor-skipped
     release: "true"
+    release_candidate: "true"
     results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
+    expected_stderr: "a release group needs a current vendor hash"
   - name: release-vendor-success
     release: "true"
+    release_candidate: "true"
     results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
     expected_exit: 0
   - name: content-vendor-failed
@@ -158,18 +278,118 @@ merge_gate_cases:
     release: "false"
     results_json: '{"changes":{"result":"success"},"check":{"result":"failure"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
     expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
+  - name: content-check-skipped-for-code
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "make check is required for a code change"
+  - name: content-docs-only-skips-check
+    release: "false"
+    code: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
+  - name: changes-failed-is-refused
+    release: "false"
+    results_json: '{"changes":{"result":"failure"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
+  - name: contract-gates-skipped-is-refused
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "contract gates are required"
   - name: unknown-release-is-refused
     release: ""
     results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
+    expected_stderr: "release classification is missing or invalid"
+  - name: unknown-candidate-is-refused
+    release: "false"
+    release_candidate: ""
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "release candidate classification is missing or invalid"
+  - name: unknown-inherit-is-refused
+    release: "false"
+    inherit: "maybe"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "verdict inheritance is missing or invalid"
+  - name: inherited-release-skips-check
+    release: "true"
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 0
+  - name: inherited-release-check-ran-is-refused
+    release: "true"
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "make check ran although the verdict was inherited"
+  - name: inherited-without-release-only-is-refused
+    release: "true"
+    release_candidate: "true"
+    release_only: "false"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "an inherited verdict needs a release-only change"
+  - name: inherited-without-candidate-is-refused
+    release: "false"
+    release_candidate: "false"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "only a release candidate inherits a verdict"
+  - name: inherited-on-push-is-refused
+    release: "false"
+    event: push
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"skipped"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "only pull_request and merge_group runs inherit a verdict"
+  - name: not-inherited-code-requires-check
+    release: "true"
+    release_candidate: "true"
+    release_only: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "make check is required for a code change"
+  - name: pull-request-inherited-release
+    release: "false"
+    event: pull_request
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
   - name: release-tree-failed
     release: "true"
+    release_candidate: "true"
     results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"failure"},"vendor-hash":{"result":"success"}}'
     expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
   - name: release-tree-skipped
     release: "true"
+    release_candidate: "true"
     results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"success"}}'
     expected_exit: 1
+    expected_stderr: "a release candidate needs a frozen release tree"
+  - name: pull-request-release-tree-skipped
+    release: "false"
+    event: pull_request
+    release_candidate: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "a release candidate needs a frozen release tree"
 pre_tag_commands:
   contract: 'release-intent check-contract --report "${RUNNER_TEMP}/candidate-report.yaml" --until "${CANDIDATE}" --floor "${FLOOR}"'
   freeze: 'nix develop -c schema-gen freeze --check --plan "${RUNNER_TEMP}/candidate-freeze-plan.yaml" --state "${RUNNER_TEMP}/candidate-surface-state.yaml"'
@@ -324,9 +544,12 @@ required:
   - npm-published-version-has-no-shell-banner
   - release-checks-for-existing
   - existing-release-must-be-complete
-  - release-creates-a-draft
-  - release-uploads-before-publishing
-  - release-publishes-after-upload
+  - release-refuses-an-existing-release-for-the-tag
+  - release-creates-a-draft-with-its-assets
+  - release-verifies-the-draft
+  - release-publishes-after-verifying-the-draft
+  - release-verifies-the-published-release
+  - release-assets-are-files-beside-the-notes
   - vendor-hash-mints-only-for-work
   - precheck-identifies-repository
   - plan-mode-and-floor-env
@@ -356,7 +579,7 @@ cases:
     workflow: tests.yml
     job: merge-gate
     step: Require successful or intentionally skipped jobs
-    run_contains: ['if [ "$RELEASE" = true ]', '."vendor-hash".result']
+    run_contains: ['if [ "$RELEASE" = true ]', '[ "$(result vendor-hash)" = success ]']
   - name: vendor-hash-is-advisory-on-content-pr
     workflow: tests.yml
     job: vendor-hash
@@ -457,11 +680,14 @@ cases:
     id: view
     continue_contains: ["true"]
     run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"']
-    run_excludes: ['--json', 'isImmutable']
-    job_run_excludes: ['gh release upload', 'isImmutable']
+    run_excludes: ['--json']
+    job_run_excludes: ['gh release upload', 'gh release delete "']
+    job_uses_excludes: [softprops/, action-gh-release, upload-release-asset, release-action]
     job_run_only:
-      gh release create: Create the draft release
+      gh release create: Create the draft release with its assets
       gh release edit: Publish the release
+      isImmutable: Verify the published release
+      gh release list: Refuse an existing release for the tag
   - name: existing-release-must-be-complete
     workflow: release.yml
     job: release
@@ -472,44 +698,70 @@ cases:
     no_job_continue: true
     env_values:
       GH_TOKEN: "${{ github.token }}"
-    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"', '--json isDraft,assets', '--jq', 'unpublished draft', 'gh release delete', '\u0024TAG', '\u0024GITHUB_REPOSITORY', 'without --cleanup-tag', 'do not create a new tag', 'published release has no assets', 'fix forward with a new tag']
-  - name: release-creates-a-draft
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"', '--json isDraft,assets', '--jq', 'unpublished draft', 'gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id>', 'never gh release delete', 'do not create a new tag', 'published release has no assets', 'fix forward with a new tag']
+  - name: release-refuses-an-existing-release-for-the-tag
     workflow: release.yml
     job: release
-    step: Create the draft release
-    id: create
-    after: Verify the existing release is complete
+    step: Refuse an existing release for the tag
+    id: list
+    after: Look for an existing release
     if_value: "steps.view.outcome == 'failure'"
+    no_continue: true
+    no_job_continue: true
     env_values:
-      PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"
-    run_contains: ['gh release create "$TAG"', '--repo "$GITHUB_REPOSITORY"', '--draft', '--verify-tag', '--title "$TAG"', '--notes-file dist/release-notes.md', '--prerelease="$PRERELEASE"']
-    run_excludes: ['dist/*', '--latest']
-  - name: release-uploads-before-publishing
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft --jq', 'select(.tagName == env.TAG)', 'error(', 'delete stale drafts by id', 'no new tag is needed']
+    run_excludes: ['--exclude-drafts']
+  - name: release-creates-a-draft-with-its-assets
     workflow: release.yml
     job: release
-    step: Upload the release assets
-    uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe
-    after: Create the draft release
+    step: Create the draft release with its assets
+    id: create
+    after: Refuse an existing release for the tag
+    if_value: "steps.view.outcome == 'failure' && steps.list.outcome == 'success'"
+    no_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+      PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"
+    run_contains: ['gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "$TAG" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" ''dist/assets/*''']
+    run_excludes: ['--latest', '$(', "\n"]
+  - name: release-verifies-the-draft
+    workflow: release.yml
+    job: release
+    step: Verify the draft before publishing
+    after: Create the draft release with its assets
     if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
-    with_values:
-      tag_name: "${{ github.ref_name }}"
-      repository: "${{ github.repository }}"
-      files: "dist/*"
-      fail_on_unmatched_files: "true"
-      overwrite_files: "true"
-      draft: "true"
-      prerelease: "${{ needs.guard.outputs.prerelease }}"
-    with_excludes: [make_latest]
-  - name: release-publishes-after-upload
+    no_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq', '.isDraft != true', '(.assets | length) == 0', 'was not published', 'gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id>', 'never gh release delete', 'no new tag is needed']
+  - name: release-publishes-after-verifying-the-draft
     workflow: release.yml
     job: release
     step: Publish the release
-    after: Upload the release assets
+    after: Verify the draft before publishing
     if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
+    no_continue: true
     env_values:
       PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"
       LATEST: "${{ needs.guard.outputs.kind == 'final' }}"
     run_contains: ['gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease="$PRERELEASE" --latest="$LATEST"']
+  - name: release-verifies-the-published-release
+    workflow: release.yml
+    job: release
+    step: Verify the published release
+    after: Publish the release
+    if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
+    no_continue: true
+    env_values:
+      GH_TOKEN: "${{ github.token }}"
+    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,assets --jq', '.isDraft != false', '.isImmutable != true', '(.assets | length) == 0', 'fix forward with a new tag']
+  - name: release-assets-are-files-beside-the-notes
+    workflow: release.yml
+    job: build
+    step: Prepare the generated contracts and release notes
+    run_contains: ['mkdir -p dist/assets', './scripts/collect-release-assets.sh generated dist/assets', '> dist/release-notes.md']
+    run_excludes: ['dist/assets/release-notes.md']
   - name: vendor-hash-mints-only-for-work
     workflow: nix-vendor-hash.yml
     job: update
@@ -547,8 +799,8 @@ cases:
     workflow: release.yml
     job: build
     step: Prepare the generated contracts and release notes
-    run_contains: ["./scripts/collect-release-assets.sh generated dist"]
-    run_excludes: ["cp generated/*.json"]
+    run_contains: ["./scripts/collect-release-assets.sh generated dist/assets"]
+    run_excludes: ["cp generated/", "collect-release-assets.sh generated dist\n"]
   - name: prepared-title-verified
     workflow: release-batch.yml
     job: verify

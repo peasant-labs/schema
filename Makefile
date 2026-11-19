@@ -1,4 +1,4 @@
-.PHONY: schema check fmt vet test freshness freeze-check gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check check-unstring unstring-update
+.PHONY: schema check fmt vet test race-selective freshness freeze-check gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check check-unstring unstring-update
 
 GO ?= go
 UNSTRING ?= go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.4
@@ -8,6 +8,19 @@ UNSTRING ?= go run github.com/peasant-labs/infra/unstring/cmd/unstring@v0.0.4
 # override on the CLI: `make gates BASE_REF=HEAD~1`.
 BASE_REF ?= origin/develop
 export TITLE
+
+# RACE=1 runs the Go suites under the race detector. The default is no race:
+# the detector roughly doubles to triples the suite's wall time, and the
+# module's only production concurrency is the lazy schema-compilation caches,
+# which `make race-selective` covers under -race in seconds. Opt in for a
+# full race pass with `make check RACE=1` or `make test RACE=1`.
+RACE ?= 0
+GORACE_FLAG := $(if $(filter 1,$(RACE)),-race,)
+
+# The tests race-selective runs, by exact name, space-separated. Each one
+# must run and pass, so a renamed or deleted test fails the target instead of
+# passing with zero tests. New production concurrency adds its test here.
+RACE_SELECTIVE_TESTS ?= TestValidatorCachesConcurrently
 
 # Regenerate OpenAPI/Redoc from Go, then derive the TypeScript contract package.
 schema: typescript-deps
@@ -39,22 +52,23 @@ vet:
 	$(GO) vet ./...
 	cd tools/redaction-categories && GOWORK=off $(GO) vet ./...
 
-# check is the schema repo's quality gate — the make-check-equivalent of peasant's
+# check is the schema repo's quality gate - the make-check-equivalent of peasant's
 # `make check`, minus the peasant-specific web build. The unstring static guard
-# runs here and needs ast-grep 0.51.2 from the dev shell. The Go race suite
+# runs here and needs ast-grep 0.51.2 from the dev shell. The Go suite
 # includes the leaf-audit test and the oasdiff/go-apidiff synthetic-break tests,
 # which t.Skip with an actionable message when a gate binary is absent (e.g.
 # outside `nix develop`) and run for real inside the flake dev shell. The full
 # gate also requires the locked TypeScript dependencies.
 #
 # The release-workflow guard (release-guard check-workflow) keeps publication
-# behind the required gates; the race suite is the authoritative test run.
+# behind the required gates; the Go suite is the authoritative test run, without
+# the race detector unless RACE=1 (see RACE above).
 # The root package needs headroom beyond Go's default 10-minute timeout in CI.
 check: fmt vet freshness typescript-check
 	$(UNSTRING) check
 	$(GO) run ./cmd/release-guard check-workflow --policy .github/release-guard.policy.yml --release .github/workflows/release.yml
-	$(GO) test -race -timeout 20m ./...
-	cd tools/redaction-categories && GOWORK=off $(GO) test -race ./...
+	$(GO) test $(GORACE_FLAG) -timeout 20m ./...
+	cd tools/redaction-categories && GOWORK=off $(GO) test $(GORACE_FLAG) ./...
 
 check-unstring:
 	$(UNSTRING) check
@@ -63,8 +77,24 @@ unstring-update:
 	$(UNSTRING) update
 
 test:
-	# Match check's CI headroom for the root package race suite.
-	$(GO) test -race -timeout 20m ./...
+	# Match check's CI headroom for the root package suite.
+	$(GO) test $(GORACE_FLAG) -timeout 20m ./...
+	cd tools/redaction-categories && GOWORK=off $(GO) test $(GORACE_FLAG) ./...
+
+# race-selective runs the race detector over the module's only production
+# concurrency: the sync.Once and sync.Map schema-compilation caches behind the
+# publish-request, annotation-push and described-value validators. The merge
+# queue runs it beside the no-race `make check`.
+race-selective:
+	@set -eu; \
+	log=$$(mktemp "$${TMPDIR:-/tmp}/schema-race-selective.XXXXXXXX"); \
+	trap 'rm -f "$$log"' EXIT; \
+	pattern="^($$(printf '%s' '$(RACE_SELECTIVE_TESTS)' | tr -s ' ' '|'))$$"; \
+	$(GO) test -race -count=1 -v -run "$$pattern" . > "$$log" 2>&1 || { cat "$$log"; exit 1; }; \
+	grep -E '^(--- |ok|PASS|FAIL)' "$$log"; \
+	for name in $(RACE_SELECTIVE_TESTS); do \
+		grep -q -- "^--- PASS: $$name " "$$log" || { echo "race-selective: $$name did not run and pass under -race; a renamed or deleted test must be updated in RACE_SELECTIVE_TESTS"; exit 1; }; \
+	done
 
 # freshness is the git-diff backstop: regenerate the specs and fail
 # if the committed generated/ artifacts drift from the Go source. It is largely

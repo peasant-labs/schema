@@ -14,6 +14,10 @@ export { readTranscriptServedTurn, type TranscriptServedTurn } from "./transcrip
 import { requiredContentCapabilities, KnownContentCapability } from "./internal/generated/content-capabilities.gen.js";
 
 import { zHarness, zObservedModelID, zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";
+import { zLocalKickstartPreview, zLocalKickstartPreviewRequest, zLocalKickstartPreviewEvent, type LocalKickstartPreview, type LocalKickstartPreviewRequest, type LocalKickstartPreviewEvent, type LocalKickstartPreviewDirectory, type LocalKickstartPreviewSegment } from "./internal/generated/contract/zod.gen.js";
+import { LocalKickstartPreviewOp, LocalKickstartPreviewEventKind, LocalKickstartPreviewContinuation, MessageType } from "./internal/generated/enums.gen.js";
+import { MaxLocalKickstartPreviewNodeIDBytes, MaxTranscriptDirectoryRefs } from "./internal/generated/kickstart-limits.gen.js";
+import { isConversationTurn } from "./conversation-turn.js";
 import { maxNativeMetadataStringBytes } from "./internal/generated/metadata-limits.gen.js";
 import { wireAliasShapes } from "./internal/generated/wire-alias-shapes.gen.js";
 
@@ -737,3 +741,135 @@ function validateRawGraphValue(value: unknown): void {
   }
 }
 function failSemantic(reason: string): never { throw new TypeError(`Session detail validation failed at @peasant-labs/schema public parser during semantic validation: ${reason}; consumers cannot safely attribute transcript evidence; correct the payload and retry.`); }
+
+function previewFailure(): never {
+  throw new TypeError("Preview validation failed at @peasant-labs/schema during stream validation: the frame or request is inconsistent; the capture cannot be rendered safely; open the preview again.");
+}
+
+/** Parse the typed-line HTTP preview for project and branch rows. */
+export function parseLocalKickstartPreviewValue(value: unknown): LocalKickstartPreview {
+  const result = zLocalKickstartPreview.safeParse(value);
+  if (!result.success) return previewFailure();
+  return result.data;
+}
+
+/** Parse the bounded request before putting it on the WebSocket. */
+export function parseLocalKickstartPreviewRequest(value: unknown): LocalKickstartPreviewRequest {
+  const result = zLocalKickstartPreviewRequest.strict().safeParse(value);
+  if (!result.success) return previewFailure();
+  const request = result.data;
+  if ((request.after ?? 0) > 0xffffffff) return previewFailure();
+  if (request.op === LocalKickstartPreviewOp.Open) {
+    if (!request.nodeId || new TextEncoder().encode(request.nodeId).length > MaxLocalKickstartPreviewNodeIDBytes || request.captureId !== undefined || (request.after ?? 0) !== 0) return previewFailure();
+  } else if (request.nodeId !== undefined || request.captureId?.length !== 22 || (request.op === LocalKickstartPreviewOp.Close && (request.after ?? 0) !== 0)) {
+    return previewFailure();
+  }
+  if (new TextEncoder().encode(JSON.stringify({ type: MessageType.KickstartPreview, preview: request })).length > 4096) return previewFailure();
+  return request;
+}
+
+/** Parse and validate an individual event, without exposing source data in errors. */
+export function parseLocalKickstartPreviewEvent(value: unknown): LocalKickstartPreviewEvent {
+  const parsed = zLocalKickstartPreviewEvent.strict().safeParse(value);
+  if (!parsed.success) return previewFailure();
+  const frame = parsed.data;
+  if (!frame.sessionId || frame.seq > 0xffffffff) return previewFailure();
+  if (frame.kind === LocalKickstartPreviewEventKind.Closed) {
+    if (!frame.reason || frame.header != null || frame.directory != null || frame.segment != null || frame.continuation !== undefined || frame.cutReason !== undefined) return previewFailure();
+    return frame;
+  }
+  if (!frame.header || !frame.directory || !frame.captureId || !/^[A-Za-z0-9_-]{21}[AQgw]$/.test(frame.captureId) || !frame.continuation || frame.reason !== undefined || frame.code !== undefined || frame.message !== undefined) return previewFailure();
+  if (frame.kind === LocalKickstartPreviewEventKind.Opened && (frame.seq !== 0 || !frame.requestId || !/^[A-Za-z0-9_-]{1,32}$/.test(frame.requestId) || frame.segment != null || frame.continuation !== LocalKickstartPreviewContinuation.More)) return previewFailure();
+  if (frame.kind === LocalKickstartPreviewEventKind.Segment && (frame.requestId !== undefined || (frame.segment == null && frame.continuation === LocalKickstartPreviewContinuation.More))) return previewFailure();
+  if ((frame.continuation === LocalKickstartPreviewContinuation.Cut) !== (frame.cutReason !== undefined)) return previewFailure();
+  return frame;
+}
+
+export interface LocalKickstartPreviewState {
+  readonly sessionId: string;
+  readonly captureId: string;
+  readonly seq: number;
+  readonly header: import("./internal/generated/contract/zod.gen.js").SessionDetailPayload;
+  readonly directory: LocalKickstartPreviewDirectory;
+  readonly segments: readonly LocalKickstartPreviewSegment[];
+  readonly continuation: import("./internal/generated/contract/zod.gen.js").LocalKickstartPreviewContinuation;
+  readonly closed?: LocalKickstartPreviewEvent;
+}
+
+/**
+ * Apply one immutable frame in sequence. Declared turn lengths and their sum
+ * are checked, but bytes are not recomputed: the Go producer owns the
+ * TranscriptTurnByteLength measure. Errors never copy source data.
+ */
+export function mergeLocalKickstartPreview(held: LocalKickstartPreviewState | undefined, input: unknown): LocalKickstartPreviewState {
+  const frame = parseLocalKickstartPreviewEvent(input);
+  if (held?.closed) return previewFailure();
+  if (frame.kind === LocalKickstartPreviewEventKind.Closed) {
+    if (!held || frame.seq !== held.seq + 1 || frame.sessionId !== held.sessionId || frame.captureId !== held.captureId) return previewFailure();
+    return { ...held, seq: frame.seq, closed: frame };
+  }
+  const d = frame.directory;
+  const header = frame.header;
+  if (!d || !header || !frame.captureId || !frame.continuation || !d.segments || (header.turns?.length ?? 0) !== 0 || (header.retainedUnknown?.length ?? 0) !== 0) return previewFailure();
+  if (d.sessionId !== header.id || !/^[0-9]+$/.test(d.revision) || d.loadedSegments !== d.segments.length || d.loadedSegments > MaxTranscriptDirectoryRefs || !Number.isSafeInteger(d.loadedTurns) || d.loadedTurns < 0) return previewFailure();
+  if (d.complete !== (frame.continuation !== LocalKickstartPreviewContinuation.More)) return previewFailure();
+  if (d.complete) {
+    if (d.totalSegments !== d.loadedSegments || d.totalTurns !== d.loadedTurns || (d.totalConversationTurns ?? undefined) !== (d.loadedConversationTurns ?? undefined)) return previewFailure();
+  } else if (d.totalSegments != null || d.totalTurns != null || d.totalConversationTurns != null) return previewFailure();
+  let conversations = 0;
+  for (let i = 0; i < d.segments.length; i++) {
+    const ref = d.segments[i]!;
+    if (ref.index !== i || ref.lastTurn < ref.firstTurn || (i > 0 && ref.firstTurn <= d.segments[i - 1]!.lastTurn) || (ref.conversationTurns == null) !== (d.loadedConversationTurns == null)) return previewFailure();
+    if (ref.conversationTurns) {
+      if (ref.conversationTurns.before !== conversations || ref.conversationTurns.count < 0) return previewFailure();
+      conversations += ref.conversationTurns.count;
+    }
+  }
+  if (d.loadedConversationTurns != null && d.loadedConversationTurns !== conversations) return previewFailure();
+  if (!held) {
+    if (frame.kind !== LocalKickstartPreviewEventKind.Opened || d.segments.length !== 0 || d.complete) return previewFailure();
+  } else {
+    if (frame.kind !== LocalKickstartPreviewEventKind.Segment || held.directory.complete || frame.seq !== held.seq + 1 || frame.sessionId !== held.sessionId || frame.captureId !== held.captureId || d.revision !== held.directory.revision || d.sessionId !== held.directory.sessionId || header.id !== held.header.id) return previewFailure();
+    const oldRefs = held.directory.segments;
+    if (!oldRefs || d.segments.length < oldRefs.length || d.segments.length > oldRefs.length + 1 || oldRefs.some((ref, i) => JSON.stringify(ref) !== JSON.stringify(d.segments![i]))) return previewFailure();
+    if (held.header.diagnostics?.partial && !header.diagnostics?.partial) return previewFailure();
+  }
+  const segments = [...(held?.segments ?? [])];
+  const segment = frame.segment;
+  try {
+    parseNativeMetadataRecordsValue(header.nativeMetadata ?? [], []);
+  } catch {
+    return previewFailure();
+  }
+  if (segment) {
+    const ref = d.segments[segments.length];
+    if (!ref || d.segments.length !== segments.length + 1 || segment.index !== segments.length || segment.revision !== d.revision || segment.hasOlder !== (segment.index > 0) || (!d.complete && !segment.hasNewer) || segment.turns.length === 0 || segment.firstTurn !== segment.turns[0]!.index || segment.lastTurn !== segment.turns.at(-1)!.index || ref.firstTurn !== segment.firstTurn || ref.lastTurn !== segment.lastTurn || ref.byteLength !== segment.byteLength) return previewFailure();
+    let bytes = 0, previous = -1;
+    for (const turn of segment.turns) {
+      if (turn.index <= previous || !Number.isSafeInteger(turn.byteLength)) return previewFailure();
+      previous = turn.index;
+      bytes += turn.byteLength;
+    }
+    if (bytes !== segment.byteLength) return previewFailure();
+    if (ref.conversationTurns && ref.conversationTurns.count !== segment.turns.filter(isConversationTurn).length) return previewFailure();
+    try {
+      parseNativeMetadataRecordsValue(segment.nativeMetadata ?? [], segment.turns);
+    } catch {
+      return previewFailure();
+    }
+    segments.push(segment);
+  } else if (d.segments.length !== segments.length || (held && !d.complete)) return previewFailure();
+  const turns = segments.flatMap((s) => s.turns);
+  if (turns.length !== d.loadedTurns) return previewFailure();
+  try {
+    parseSessionDetailPayloadValue({
+      ...header,
+      turns,
+      nativeMetadata: [...(header.nativeMetadata ?? []), ...segments.flatMap((s) => s.nativeMetadata ?? [])],
+      retainedUnknown: segments.flatMap((s) => s.retainedUnknown ?? []),
+    });
+  } catch {
+    return previewFailure();
+  }
+  return { sessionId: frame.sessionId, captureId: frame.captureId, seq: frame.seq, header, directory: d, segments, continuation: frame.continuation };
+}

@@ -30,7 +30,8 @@ inside `nix develop` (or after `direnv allow`).
 
 ```bash
 make check                          # the authoritative quality gate (bare-go runnable)
-make test                           # go test -race ./...
+make test                           # go test ./... (RACE=1 adds -race)
+make race-selective                 # go test -race over the validator schema caches
 make gates BASE_REF=origin/develop  # the breaking-change contract gates (needs the flake tools)
 make freshness                      # git-diff backstop on the generated artifacts
 pnpm --dir typescript run typecheck
@@ -40,16 +41,34 @@ pnpm --dir typescript run package:smoke
 ```
 
 `make check` is `fmt` + `vet` + `freshness` + the release-workflow guard
-(`release-guard check-workflow`) + `go test -race ./...`. The race suite is the
+(`release-guard check-workflow`) + `go test ./...`. That suite is the
 authoritative run: it includes the leaf audit, the vendor-hash guard, and the
 `oasdiff` / `go-apidiff` synthetic-break tests (which skip when their binary is
 absent).
 
+The default is no race detector, on every CI event and locally. The module's
+only production concurrency is the lazy schema compilation behind
+`ValidatePublishRequest`, `ValidateAnnotationPushRequest` (`sync.Once`) and
+`ValidateDescribedValue` (`sync.Map`). `make race-selective` runs
+`TestValidatorCachesConcurrently` (fixture
+`testdata/validator_cache_concurrency.yaml`) alone under `-race`, so the first
+compilation and every cache read contend; the merge-queue run requires it.
+`make check RACE=1` (or `make test RACE=1`) is the opt-in full race pass.
+
+`race-selective` names its tests in `RACE_SELECTIVE_TESTS` (Makefile) and
+fails unless each one runs and passes, so a renamed test cannot leave it
+passing with zero tests. New production concurrency must add a test that
+exercises it from many goroutines and extend `RACE_SELECTIVE_TESTS`. The
+`sync.Once` caches race if replaced by an unguarded nil check and the
+`sync.Map` cache races if replaced by a plain map (both verified to report
+`DATA RACE`); `sync.Map` is race-safe by construction, so for it the test
+only guards against such a replacement.
+
 Run one test or one package:
 
 ```bash
-go test -race ./cmd/schema-gen/ -run TestRetiredSpecsImmutable -v
-go test -race ./internal/contractgates/ -run TestOasdiffSyntheticBreak -v   # skips without oasdiff
+go test ./cmd/schema-gen/ -run TestRetiredSpecsImmutable -v
+go test ./internal/contractgates/ -run TestOasdiffSyntheticBreak -v   # skips without oasdiff
 ```
 
 ### Bare `go` vs `nix develop`
@@ -60,6 +79,46 @@ go test -race ./internal/contractgates/ -run TestOasdiffSyntheticBreak -v   # sk
 - **Inside `nix develop`** (or `direnv allow`) `oasdiff` / `go-apidiff` /
   `vacuum` are on `PATH`, so the synthetic-break tests and `make gates` run for
   real. CI runs `make gates` with `fetch-depth: 0` so the base ref is resolvable.
+
+### Tests never read your git configuration
+
+A test result must not depend on the machine. Every package whose tests start a
+process (git, a shell script, `go`) has a `TestMain` that calls
+`testutil.RunWithIsolatedGitConfig` (`internal/testutil/gitconfig.go`). Before
+any test runs it sets `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`,
+and unsets `GIT_CONFIG_COUNT`, `GIT_CONFIG_PARAMETERS` and the repository
+location variables (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`,
+`GIT_COMMON_DIR`, `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`)
+that a hook or `rebase -x` exports. A global `commit.gpgsign`, a
+`url.*.insteadOf` rewrite or injected `GIT_CONFIG_*` values therefore never
+reach a child, and a test's git never acts on an outer repository.
+`GIT_CONFIG_GLOBAL` needs git 2.32 or newer; older git ignores it. Do not add
+per-call `-c commit.gpgsign=false` or `GIT_CONFIG_GLOBAL` workarounds. Set the
+commit identity per call (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`), as the existing
+helpers do.
+
+`TestEveryPackageThatStartsProcessesIsolatesGitConfig` scans test files that
+import `os/exec`. Their package must have an unconstrained `TestMain` ending in
+`os.Exit(testutil.RunWithIsolatedGitConfig(...))`, with no other `m.Run`,
+`goleak.VerifyTestMain`, `os.Exit`, or isolation-helper call. Setup before the
+exit is allowed. The helper's own package instead calls unexported
+`isolateGitConfig` in a top-level `if err := isolateGitConfig(); err != nil`
+that exits nonzero, then ends with `os.Exit(m.Run())`, without a competing
+runner, exit, or isolation call. It runs independently so a broken helper
+cannot skip its own tests. The fixture corpus is
+`internal/testutil/testdata/git_isolation_scanner.yaml`.
+`TestIsolatedChildGitReadsNoHostileSource` runs a real child git under every
+hostile source and checks that it reads none of them once isolated.
+
+The guard cannot see:
+
+- a test that starts git only through non-test code (it checks `_test.go`
+  imports only);
+- a process started without `os/exec` (`os.StartProcess`, `syscall.Exec`);
+- git run by a dependency outside the module;
+- a `TestMain` that calls the helper on only some paths;
+- a child whose environment a test rebuilds from scratch without the isolation
+  variables.
 
 ## Layer 1: the contract gates
 

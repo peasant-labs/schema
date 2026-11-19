@@ -875,6 +875,10 @@ export interface components {
          * @enum {string}
          */
         LocalKickstartEventKind: Schema.LocalKickstartEventKind;
+        LocalKickstartPreviewDirectory: Schema.LocalKickstartPreviewDirectory;
+        LocalKickstartPreviewEvent: Schema.LocalKickstartPreviewEvent;
+        LocalKickstartPreviewRequest: Schema.LocalKickstartPreviewRequest;
+        LocalKickstartPreviewSegment: Schema.LocalKickstartPreviewSegment;
         LocalSessionPage: Schema.LocalSessionPage;
         LocalSyncProjectOption: Schema.LocalSyncProjectOption;
         LocalSyncProjectOptions: Schema.LocalSyncProjectOptions;
@@ -1364,6 +1368,11 @@ export interface components {
          * @example kickstart_commit_refused
          * @example kickstart_session_not_found
          * @example kickstart_preview_row_not_found
+         * @example kickstart_preview_capture_not_found
+         * @example kickstart_preview_source_changed
+         * @example kickstart_preview_late_result
+         * @example kickstart_preview_capacity
+         * @example kickstart_preview_out_of_order
          * @example kickstart_failed
          * @example kickstart_status_unreadable
          * @example kickstart_config_unreadable
@@ -1452,6 +1461,70 @@ export interface components {
         SchemaLocalKickstartOverwrite: Schema.LocalKickstartOverwrite;
         SchemaLocalKickstartPatchResult: Schema.LocalKickstartPatchResult;
         SchemaLocalKickstartPreview: Schema.LocalKickstartPreview;
+        /**
+         * Preview close reason
+         * @description Why the capture closed
+         * @example closed_by_client
+         * @example replaced
+         * @example session_closed
+         * @example rescanned
+         * @example idle
+         * @example evicted
+         * @example shutdown
+         * @example source_changed
+         * @example late_result
+         * @example unreadable
+         * @example out_of_order
+         * @example slow_client
+         * @example row_not_found
+         * @example not_a_session_row
+         * @example unavailable
+         * @example no_turns
+         * @example capacity
+         * @enum {string}
+         */
+        SchemaLocalKickstartPreviewCloseReason: Schema.LocalKickstartPreviewCloseReason;
+        /**
+         * Preview continuation
+         * @description Whether the capture can continue
+         * @example more
+         * @example end
+         * @example cut
+         * @enum {string}
+         */
+        SchemaLocalKickstartPreviewContinuation: Schema.LocalKickstartPreviewContinuation;
+        /**
+         * Preview cut reason
+         * @description Why the capture ended early
+         * @example source_budget
+         * @example serialized_budget
+         * @example turn_budget
+         * @example oversized_record
+         * @example origin_not_resumable
+         * @enum {string}
+         */
+        SchemaLocalKickstartPreviewCutReason: Schema.LocalKickstartPreviewCutReason;
+        SchemaLocalKickstartPreviewDirectory: Schema.LocalKickstartPreviewDirectory;
+        /**
+         * Preview event kind
+         * @description Kind of capture event
+         * @example opened
+         * @example segment
+         * @example closed
+         * @enum {string}
+         */
+        SchemaLocalKickstartPreviewEventKind: Schema.LocalKickstartPreviewEventKind;
+        /**
+         * Preview operation
+         * @description Operation on a connection-owned capture
+         * @example open
+         * @example more
+         * @example close
+         * @enum {string}
+         */
+        SchemaLocalKickstartPreviewOp: Schema.LocalKickstartPreviewOp;
+        SchemaLocalKickstartPreviewRequest: Schema.LocalKickstartPreviewRequest;
+        SchemaLocalKickstartPreviewSegment: Schema.LocalKickstartPreviewSegment;
         /**
          * Kickstart Resolution
          * @description Which side of one conflict row to keep: mine is the draft, theirs is the file
@@ -1587,6 +1660,7 @@ export interface components {
          * @example connected
          * @example error
          * @example kickstart
+         * @example kickstart_preview
          * @enum {string}
          */
         SchemaMessageType: Schema.MessageType;
@@ -1781,6 +1855,7 @@ export interface components {
         SchemaSearchResult: Schema.SearchResult;
         SchemaSessionAssociation: Schema.SessionAssociation;
         SchemaSessionCommitsResponse: Schema.SessionCommitsResponse;
+        SchemaSessionDetailPayload: Schema.SessionDetailPayload;
         SchemaSessionDetailReadPayload: Schema.SessionDetailReadPayload;
         /**
          * Session ID

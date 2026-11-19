@@ -265,7 +265,8 @@ const (
 	// turnCount was re-documented in folded-turn units (additive = minor bump).
 	// Bumped to 0.38.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	PeasantLocalAPIVersion = "0.38.0"
+	// Bumped for the connection-owned preview stream.
+	PeasantLocalAPIVersion = "0.39.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -388,7 +389,8 @@ const (
 	// Bumped to 0.50.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
 	// Bumped to 0.51.0 for the positioned segmented transcript read catalog.
-	TypesVersion = "0.51.0"
+	// Bumped for preview stream payloads and closed sets.
+	TypesVersion = "0.52.0"
 
 	// SegmentedReadAPIVersion identifies the newest declared segmented read
 	// protocol. Version 0.1.0 (additive) first declares the already-shipped

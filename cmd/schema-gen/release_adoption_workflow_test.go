@@ -31,6 +31,7 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 			RunExcludes      []string          `yaml:"run_excludes"`
 			JobRunExcludes   []string          `yaml:"job_run_excludes"`
 			JobRunOnly       map[string]string `yaml:"job_run_only"`
+			JobUsesExcludes  []string          `yaml:"job_uses_excludes"`
 			ContinueContains []string          `yaml:"continue_contains"`
 			NoContinue       bool              `yaml:"no_continue"`
 			NoJobContinue    bool              `yaml:"no_job_continue"`
@@ -69,6 +70,13 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 				t.Fatalf("job %s has no steps", c.Job)
 			}
 			for _, step := range steps.Content {
+				if uses := workflowMappingChild(step, "uses"); uses != nil {
+					for _, excluded := range c.JobUsesExcludes {
+						if strings.Contains(uses.Value, excluded) {
+							t.Errorf("job %s unexpectedly uses %q", c.Job, uses.Value)
+						}
+					}
+				}
 				if run := workflowMappingChild(step, "run"); run != nil {
 					for _, excluded := range c.JobRunExcludes {
 						if strings.Contains(run.Value, excluded) {

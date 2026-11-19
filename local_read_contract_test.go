@@ -16,9 +16,31 @@ import (
 //go:embed testdata/local-api/local_read_contract.yaml
 var localReadContractYAML []byte
 
+// localReadFixtureKind identifies the local read fixture's subject, not a
+// WebSocket message or preview event.
+type localReadFixtureKind string
+
+const (
+	localReadDetail              localReadFixtureKind = "detail"
+	localReadRow                 localReadFixtureKind = "row"
+	localReadItem                localReadFixtureKind = "item"
+	localReadMembers             localReadFixtureKind = "members"
+	localReadList                localReadFixtureKind = "list"
+	localReadSyncPayload         localReadFixtureKind = "sync-payload"
+	localReadSessions            localReadFixtureKind = "sessions"
+	localReadCommits             localReadFixtureKind = "commits"
+	localReadPullRequests        localReadFixtureKind = "pull-requests"
+	localReadQualityPage         localReadFixtureKind = "quality-page"
+	localReadSegmentDirectory    localReadFixtureKind = "segment-directory"
+	localReadSegment             localReadFixtureKind = "segment"
+	localReadWindow              localReadFixtureKind = "window"
+	localReadDetailHeader        localReadFixtureKind = "detail-header"
+	localReadDetailHeaderPayload localReadFixtureKind = "detail-header-payload"
+)
+
 type localReadInput struct {
-	Kind string `yaml:"kind"`
-	JSON string `yaml:"json"`
+	Kind localReadFixtureKind `yaml:"kind"`
+	JSON string               `yaml:"json"`
 }
 type localReadExpected struct {
 	Valid         bool     `yaml:"valid"`
@@ -83,7 +105,7 @@ func TestLocalReadContractRoundTrip(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, key := range c.Expected.RequiredKeys {
-				if key == "inputSubmissionCount" && c.Input.Kind == "row" {
+				if key == "inputSubmissionCount" && c.Input.Kind == localReadRow {
 					var row map[string]json.RawMessage
 					_ = json.Unmarshal(root["session"], &row)
 					if _, ok := row[key]; !ok {
@@ -173,35 +195,35 @@ func TestLocalReadContractValidation(t *testing.T) {
 func decodeValidateLocal(input localReadInput) ([]byte, error) {
 	var value any
 	switch input.Kind {
-	case "detail":
+	case localReadDetail:
 		value = &schema.SessionDetailReadPayload{}
-	case "row":
+	case localReadRow:
 		value = &schema.LocalSessionRow{}
-	case "item":
+	case localReadItem:
 		value = &schema.LocalSessionListItem{}
-	case "members":
+	case localReadMembers:
 		value = &schema.LocalHelperMembersPayload{}
-	case "list":
+	case localReadList:
 		value = &schema.LocalSessionListPayload{}
-	case "sync-payload":
+	case localReadSyncPayload:
 		value = &schema.LocalSyncSessionsPayload{}
-	case "sessions":
+	case localReadSessions:
 		value = &schema.SessionsPayload{}
-	case "commits":
+	case localReadCommits:
 		value = &schema.SessionCommitsResponse{}
-	case "pull-requests":
+	case localReadPullRequests:
 		value = &schema.SessionPullRequestsResponse{}
-	case "quality-page":
+	case localReadQualityPage:
 		value = &schema.QualityPage{}
-	case "segment-directory":
+	case localReadSegmentDirectory:
 		value = &schema.TranscriptSegmentDirectory{}
-	case "segment":
+	case localReadSegment:
 		value = &schema.TranscriptSegment{}
-	case "window":
+	case localReadWindow:
 		value = &schema.TranscriptWindow{}
-	case "detail-header":
+	case localReadDetailHeader:
 		value = &schema.SessionDetailHeader{}
-	case "detail-header-payload":
+	case localReadDetailHeaderPayload:
 		value = &schema.SessionDetailHeaderPayload{}
 	default:
 		return nil, fmt.Errorf("unknown local read fixture kind %q", input.Kind)

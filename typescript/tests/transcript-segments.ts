@@ -2,6 +2,7 @@ import type {
   SessionDetailHeader,
   SessionDetailHeaderPayload,
   SessionDetailReadPayload,
+  LocalKickstartPreviewSegment,
   TranscriptSegment,
   TranscriptSegmentDirectory,
   TranscriptSegmentRef,
@@ -41,6 +42,7 @@ const turnRowIsTurnDetailPlusFacts: Same<TranscriptTurnKeys, ExpectedTurnKeys> =
 const turnIndexHasOneDefinition: Same<TranscriptTurn["index"], TurnDetail["index"]> = true;
 const turnContentHasOneDefinition: Same<TranscriptTurn["content"], TurnDetail["content"]> = true;
 const segmentTurnsAreRows: Same<TranscriptSegment["turns"][number], TranscriptTurn> = true;
+const previewReusesRequiredSegmentFields: Same<Pick<LocalKickstartPreviewSegment, keyof TranscriptSegment>, TranscriptSegment> = true;
 const segmentHasNoPosition: HasKey<TranscriptSegment, "position"> = false;
 
 // The header is a metadata-only projection and a distinct root type. The
@@ -97,6 +99,7 @@ void [
   turnIndexHasOneDefinition,
   turnContentHasOneDefinition,
   segmentTurnsAreRows,
+  previewReusesRequiredSegmentFields,
   segmentHasNoPosition,
   headerHasNoTurns,
   headerHasNoNativeMetadata,

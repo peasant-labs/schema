@@ -104,7 +104,8 @@ never `nix search nixpkgs` (it is slow and can hang).
 
 ```bash
 pnpm --dir typescript install --frozen-lockfile --ignore-scripts
-make check                 # gofmt + vet + release-workflow guard + go test -race ./...
+make check                 # gofmt + vet + release-workflow guard + go test ./... (RACE=1 adds -race)
+make race-selective        # go test -race over the validator schema caches, in seconds
 make gates BASE_REF=origin/develop  # oasdiff + go-apidiff + vacuum vs a base ref
 make schema                # regenerate OpenAPI, docs, and TypeScript contract outputs
 nix build                  # hermetic build + go test ./... sanity gate

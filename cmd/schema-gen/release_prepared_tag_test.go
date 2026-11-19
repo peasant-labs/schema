@@ -82,7 +82,6 @@ func TestPreparedTagSnapshot(t *testing.T) {
 			origin := filepath.Join(dir, "origin")
 			verify := filepath.Join(dir, "verify")
 			env := append(os.Environ(),
-				"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
 				"GIT_AUTHOR_NAME=fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
 				"GIT_COMMITTER_NAME=fixture", "GIT_COMMITTER_EMAIL=fixture@example.invalid",
 			)

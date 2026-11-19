@@ -3,7 +3,7 @@
   "info": {
     "title": "Peasant Local Dashboard API",
     "description": "Local web dashboard API for viewing AI agent session analytics. Includes REST endpoints and WebSocket channel message schemas.",
-    "version": "0.38.0"
+    "version": "0.39.0"
   },
   "paths": {
     "/api/v1/annotation-types": {
@@ -3285,6 +3285,16 @@
             },
             "type": "array"
           },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalKickstartPreviewRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "$ref": "#/components/schemas/SchemaMessageType"
           }
@@ -3404,6 +3414,229 @@
         ],
         "title": "Kickstart Event Kind",
         "type": "string"
+      },
+      "LocalKickstartPreviewDirectory": {
+        "additionalProperties": false,
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "loadedConversationTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "loadedSegments": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "loadedTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegmentRef"
+            },
+            "type": "array"
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/SchemaSessionID"
+          },
+          "totalConversationTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalSegments": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionId",
+          "revision",
+          "complete",
+          "loadedSegments",
+          "loadedTurns",
+          "segments"
+        ],
+        "type": "object"
+      },
+      "LocalKickstartPreviewEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "captureId": {
+            "type": "string"
+          },
+          "code": {
+            "$ref": "#/components/schemas/SchemaLocalKickstartErrorCode"
+          },
+          "continuation": {
+            "$ref": "#/components/schemas/SchemaLocalKickstartPreviewContinuation"
+          },
+          "cutReason": {
+            "$ref": "#/components/schemas/SchemaLocalKickstartPreviewCutReason"
+          },
+          "directory": {
+            "$ref": "#/components/schemas/LocalKickstartPreviewDirectory"
+          },
+          "header": {
+            "$ref": "#/components/schemas/SessionDetailPayload"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SchemaLocalKickstartPreviewEventKind"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaLocalKickstartLine"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/SchemaLocalKickstartPreviewCloseReason"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "segment": {
+            "$ref": "#/components/schemas/LocalKickstartPreviewSegment"
+          },
+          "seq": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sessionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "sessionId",
+          "seq"
+        ],
+        "type": "object"
+      },
+      "LocalKickstartPreviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "captureId": {
+            "maxLength": 22,
+            "minLength": 22,
+            "pattern": "^[A-Za-z0-9_-]{21}[AQgw]$",
+            "type": "string"
+          },
+          "nodeId": {
+            "maxLength": 512,
+            "type": "string"
+          },
+          "op": {
+            "$ref": "#/components/schemas/SchemaLocalKickstartPreviewOp"
+          },
+          "requestId": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "sessionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "op",
+          "requestId",
+          "sessionId"
+        ],
+        "type": "object"
+      },
+      "LocalKickstartPreviewSegment": {
+        "additionalProperties": false,
+        "properties": {
+          "byteLength": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "firstTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "index": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "lastTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaNativeMetadataRecord"
+            },
+            "type": "array"
+          },
+          "retainedUnknown": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaRetainedUnknownRecord"
+            },
+            "type": "array"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptTurn"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "index",
+          "revision",
+          "firstTurn",
+          "lastTurn",
+          "byteLength",
+          "hasOlder",
+          "hasNewer",
+          "turns"
+        ],
+        "type": "object"
       },
       "LocalSessionPage": {
         "properties": {
@@ -6997,6 +7230,11 @@
           "kickstart_commit_refused",
           "kickstart_session_not_found",
           "kickstart_preview_row_not_found",
+          "kickstart_preview_capture_not_found",
+          "kickstart_preview_source_changed",
+          "kickstart_preview_late_result",
+          "kickstart_preview_capacity",
+          "kickstart_preview_out_of_order",
           "kickstart_failed",
           "kickstart_status_unreadable",
           "kickstart_config_unreadable",
@@ -7028,6 +7266,11 @@
           "kickstart_commit_refused",
           "kickstart_session_not_found",
           "kickstart_preview_row_not_found",
+          "kickstart_preview_capture_not_found",
+          "kickstart_preview_source_changed",
+          "kickstart_preview_late_result",
+          "kickstart_preview_capacity",
+          "kickstart_preview_out_of_order",
           "kickstart_failed",
           "kickstart_status_unreadable",
           "kickstart_config_unreadable",
@@ -7422,6 +7665,278 @@
         },
         "required": [
           "lines"
+        ],
+        "type": "object"
+      },
+      "SchemaLocalKickstartPreviewCloseReason": {
+        "description": "Why the capture closed",
+        "enum": [
+          "closed_by_client",
+          "replaced",
+          "session_closed",
+          "rescanned",
+          "idle",
+          "evicted",
+          "shutdown",
+          "source_changed",
+          "late_result",
+          "unreadable",
+          "out_of_order",
+          "slow_client",
+          "row_not_found",
+          "not_a_session_row",
+          "unavailable",
+          "no_turns",
+          "capacity"
+        ],
+        "examples": [
+          "closed_by_client",
+          "replaced",
+          "session_closed",
+          "rescanned",
+          "idle",
+          "evicted",
+          "shutdown",
+          "source_changed",
+          "late_result",
+          "unreadable",
+          "out_of_order",
+          "slow_client",
+          "row_not_found",
+          "not_a_session_row",
+          "unavailable",
+          "no_turns",
+          "capacity"
+        ],
+        "title": "Preview close reason",
+        "type": "string"
+      },
+      "SchemaLocalKickstartPreviewContinuation": {
+        "description": "Whether the capture can continue",
+        "enum": [
+          "more",
+          "end",
+          "cut"
+        ],
+        "examples": [
+          "more",
+          "end",
+          "cut"
+        ],
+        "title": "Preview continuation",
+        "type": "string"
+      },
+      "SchemaLocalKickstartPreviewCutReason": {
+        "description": "Why the capture ended early",
+        "enum": [
+          "source_budget",
+          "serialized_budget",
+          "turn_budget",
+          "oversized_record",
+          "origin_not_resumable"
+        ],
+        "examples": [
+          "source_budget",
+          "serialized_budget",
+          "turn_budget",
+          "oversized_record",
+          "origin_not_resumable"
+        ],
+        "title": "Preview cut reason",
+        "type": "string"
+      },
+      "SchemaLocalKickstartPreviewDirectory": {
+        "additionalProperties": false,
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "loadedConversationTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "loadedSegments": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "loadedTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegmentRef"
+            },
+            "type": "array"
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/SchemaSessionID"
+          },
+          "totalConversationTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalSegments": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionId",
+          "revision",
+          "complete",
+          "loadedSegments",
+          "loadedTurns",
+          "segments"
+        ],
+        "type": "object"
+      },
+      "SchemaLocalKickstartPreviewEventKind": {
+        "description": "Kind of capture event",
+        "enum": [
+          "opened",
+          "segment",
+          "closed"
+        ],
+        "examples": [
+          "opened",
+          "segment",
+          "closed"
+        ],
+        "title": "Preview event kind",
+        "type": "string"
+      },
+      "SchemaLocalKickstartPreviewOp": {
+        "description": "Operation on a connection-owned capture",
+        "enum": [
+          "open",
+          "more",
+          "close"
+        ],
+        "examples": [
+          "open",
+          "more",
+          "close"
+        ],
+        "title": "Preview operation",
+        "type": "string"
+      },
+      "SchemaLocalKickstartPreviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "captureId": {
+            "maxLength": 22,
+            "minLength": 22,
+            "pattern": "^[A-Za-z0-9_-]{21}[AQgw]$",
+            "type": "string"
+          },
+          "nodeId": {
+            "maxLength": 512,
+            "type": "string"
+          },
+          "op": {
+            "$ref": "#/components/schemas/SchemaLocalKickstartPreviewOp"
+          },
+          "requestId": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "sessionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "op",
+          "requestId",
+          "sessionId"
+        ],
+        "type": "object"
+      },
+      "SchemaLocalKickstartPreviewSegment": {
+        "additionalProperties": false,
+        "properties": {
+          "byteLength": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "firstTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "index": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "lastTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaNativeMetadataRecord"
+            },
+            "type": "array"
+          },
+          "retainedUnknown": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaRetainedUnknownRecord"
+            },
+            "type": "array"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptTurn"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "index",
+          "revision",
+          "firstTurn",
+          "lastTurn",
+          "byteLength",
+          "hasOlder",
+          "hasNewer",
+          "turns"
         ],
         "type": "object"
       },
@@ -8791,7 +9306,8 @@
           "project_familiarity",
           "connected",
           "error",
-          "kickstart"
+          "kickstart",
+          "kickstart_preview"
         ],
         "examples": [
           "subscribe",
@@ -8805,7 +9321,8 @@
           "project_familiarity",
           "connected",
           "error",
-          "kickstart"
+          "kickstart",
+          "kickstart_preview"
         ],
         "title": "Message Type",
         "type": "string"
@@ -10019,6 +10536,185 @@
         },
         "required": [
           "commits"
+        ],
+        "type": "object"
+      },
+      "SchemaSessionDetailPayload": {
+        "properties": {
+          "childSessions": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaChildSessionRef"
+            },
+            "type": "array"
+          },
+          "conversationTurnCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/SchemaInterpretationDiagnostics"
+          },
+          "durationMins": {
+            "format": "double",
+            "type": "number"
+          },
+          "earlierHistory": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaEarlierHistorySection"
+            },
+            "type": "array"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "gitBranch": {
+            "type": "string"
+          },
+          "gitRemote": {
+            "type": "string"
+          },
+          "harness": {
+            "$ref": "#/components/schemas/BestiaryHarness"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputSubmissionCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaNativeMetadataRecord"
+            },
+            "type": "array"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SchemaSessionOutcome"
+          },
+          "parentSessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaSessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project": {
+            "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SchemaSessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaSessionRelationship"
+            },
+            "type": "array"
+          },
+          "retainedUnknown": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaRetainedUnknownRecord"
+            },
+            "type": "array"
+          },
+          "rootSessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaSessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "scorecard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaSessionScorecard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sessionOrigin": {
+            "$ref": "#/components/schemas/SchemaSessionOrigin"
+          },
+          "source": {
+            "type": "string"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "thinkingLevel": {
+            "$ref": "#/components/schemas/SchemaThinkingLevel"
+          },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaThinkingLevelChange"
+            },
+            "type": "array"
+          },
+          "thinkingLevelRaw": {
+            "$ref": "#/components/schemas/SchemaThinkingLevelRaw"
+          },
+          "tokensIn": {
+            "type": "integer"
+          },
+          "tokensOut": {
+            "type": "integer"
+          },
+          "toolCallCount": {
+            "type": "integer"
+          },
+          "totalTokens": {
+            "type": "integer"
+          },
+          "turnCount": {
+            "description": "Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount.",
+            "type": "integer"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaTurnDetail"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "workingDirectory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "harness",
+          "startTime",
+          "endTime",
+          "durationMins",
+          "totalTokens",
+          "tokensIn",
+          "tokensOut",
+          "turnCount",
+          "toolCallCount",
+          "turns"
         ],
         "type": "object"
       },
