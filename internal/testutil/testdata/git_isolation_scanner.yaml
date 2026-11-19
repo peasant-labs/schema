@@ -323,3 +323,53 @@ cases:
       ref: "the isolation result must be the sole final exit status"
     mutation:
       description: "competing goleak runner is rejected"
+  - name: helper package alone is exempt
+    input:
+      files:
+        go.mod: "module github.com/peasant-labs/schema\n\ngo 1.25\n"
+        internal/testutil/tool_test.go: |
+          package tool
+          import "os/exec"
+          var _ = exec.Command
+    expected:
+      needs: [internal/testutil]
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: "only the helper package may isolate without calling itself"
+    mutation:
+      description: "helper package alone is exempt"
+  - name: other package in helper module is not exempt
+    input:
+      files:
+        go.mod: "module github.com/peasant-labs/schema\n\ngo 1.25\n"
+        other/testutil/tool_test.go: |
+          package tool
+          import "os/exec"
+          var _ = exec.Command
+    expected:
+      needs: [other/testutil]
+      violations: [other/testutil]
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: "only the helper package may isolate without calling itself"
+    mutation:
+      description: "other package in helper module is not exempt"
+  - name: same helper directory in another module is not exempt
+    input:
+      files:
+        go.mod: "module example.com/unrelated\n\ngo 1.25\n"
+        internal/testutil/tool_test.go: |
+          package tool
+          import "os/exec"
+          var _ = exec.Command
+    expected:
+      needs: [internal/testutil]
+      violations: [internal/testutil]
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: "only the helper package may isolate without calling itself"
+    mutation:
+      description: "same helper directory in another module is not exempt"

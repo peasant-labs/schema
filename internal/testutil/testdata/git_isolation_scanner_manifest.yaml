@@ -15,3 +15,6 @@ requiredNames:
   - a prelude before the isolated exit passes
   - competing exit before isolation is rejected
   - competing goleak runner is rejected
+  - helper package alone is exempt
+  - other package in helper module is not exempt
+  - same helper directory in another module is not exempt
