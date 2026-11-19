@@ -42,7 +42,14 @@ var gitIsolationPackagesManifest []byte
 //go:embed testdata/git_isolation_scanner.yaml
 var gitIsolationScannerCorpus []byte
 
-const isolationCall = "RunWithIsolatedGitConfig"
+const (
+	isolationCall = "RunWithIsolatedGitConfig"
+	// The embed directives above must name the same files.
+	gitIsolationPackagesPath = "testdata/git_isolation_packages.yaml"
+	gitIsolationScannerPath  = "testdata/git_isolation_scanner.yaml"
+	// testdataDirName is the directory the go tool ignores; nothing in it is a package.
+	testdataDirName = "testdata"
+)
 
 type gitIsolationInput struct {
 	Files map[string]string `yaml:"files"`
@@ -84,7 +91,7 @@ func scanGitIsolation(root string) (gitIsolationReport, error) {
 		}
 		if d.IsDir() {
 			name := d.Name()
-			if p != root && (name == "testdata" || name == "node_modules" || strings.HasPrefix(name, ".") || strings.HasPrefix(name, "_")) {
+			if p != root && (name == testdataDirName || name == "node_modules" || strings.HasPrefix(name, ".") || strings.HasPrefix(name, "_")) {
 				return filepath.SkipDir
 			}
 			if p != root {
@@ -269,12 +276,12 @@ func TestEveryPackageThatStartsProcessesIsolatesGitConfig(t *testing.T) {
 		RequiredNames []string `yaml:"requiredNames"`
 	}
 	if err := yaml.Unmarshal(gitIsolationPackagesManifest, &manifest); err != nil || len(manifest.RequiredNames) == 0 {
-		t.Fatalf("read testdata/git_isolation_packages.yaml: names %v, error %v", manifest.RequiredNames, err)
+		t.Fatalf("read %s: names %v, error %v", gitIsolationPackagesPath, manifest.RequiredNames, err)
 	}
 	for _, name := range manifest.RequiredNames {
 		if !slices.Contains(report.Needs, name) {
 			t.Errorf("package %s runs git in its tests but the scanner no longer detects it (detected: %v); "+
-				"the scanner lost coverage, so fix the scanner rather than removing the name from testdata/git_isolation_packages.yaml", name, report.Needs)
+				"the scanner lost coverage, so fix the scanner rather than removing the name from %s", name, report.Needs, gitIsolationPackagesPath)
 		}
 	}
 	for _, pkg := range report.Violations {
@@ -290,7 +297,7 @@ func TestEveryPackageThatStartsProcessesIsolatesGitConfig(t *testing.T) {
 func TestGitIsolationScannerCorpus(t *testing.T) {
 	corpus, err := testcase.LoadCorpus[gitIsolationInput, gitIsolationExpected](gitIsolationScannerCorpus)
 	if err != nil {
-		t.Fatalf("load testdata/git_isolation_scanner.yaml: %v", err)
+		t.Fatalf("load %s: %v", gitIsolationScannerPath, err)
 	}
 	assert.RequireMin(t, corpus, 6)
 	assert.RequireValid(t, corpus)
