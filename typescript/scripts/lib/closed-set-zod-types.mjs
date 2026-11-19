@@ -19,6 +19,8 @@
 // (`optional`, `nullable`, `nullish`) to wrap the `ClosedSet` itself, and the
 // pass fails generation if the output reaches any other member of a closed-set
 // schema, because that method would silently drop the alias the same way.
+// This scans text, so comments and string literals mentioning a catalog member
+// also fail generation when they contain an unsupported member access.
 // `Extract<..., z.ZodType>` defers the wrapper's constraint check until the
 // helper is instantiated; it resolves to the `ClosedSet` itself.
 const HELPER = `import type * as ClosedSets from "../enums.gen.js";
@@ -56,6 +58,7 @@ export function applyClosedSetZodTypes(source, catalog) {
 // (`zRole[...]` or `zRole?.[...]`) cannot be resolved by a text scan, so it fails
 // instead of passing unseen.
 function assertOnlyReDeclaredWrappers(rendered, names) {
+  // Catalog names are plain identifiers and need no regex escaping.
   const alternatives = names.join("|");
   const computed = new RegExp(`\\bz(${alternatives})\\s*(?:\\?\\.\\s*)?\\[`).exec(rendered);
   if (computed !== null) {
@@ -65,7 +68,7 @@ function assertOnlyReDeclaredWrappers(rendered, names) {
   for (const access of rendered.matchAll(new RegExp(`\\bz(${alternatives})\\s*(?:\\?\\.|\\.)\\s*([A-Za-z_$][\\w$]*)`, "g"))) {
     const [, name, method] = access;
     if (!RE_DECLARED_WRAPPERS.has(method)) {
-      throw new Error(`TypeScript closed-set generation found "${access[0]}" in src/internal/generated/contract/zod.gen.ts; the ClosedSet helper re-declares only ${wrappers}, so .${method}() would resolve against the unwrapped schema and the field would lose the named ${name} set; add .${method}() to the ClosedSet helper in typescript/scripts/lib/closed-set-zod-types.mjs (and to tests/closed-set-drift.ts) with a return type that wraps the ClosedSet itself.`);
+      throw new Error(`TypeScript closed-set generation found member "${access[0].replace(/\s+/g, "")}" in src/internal/generated/contract/zod.gen.ts; the ClosedSet helper re-declares only ${wrappers}, so .${method} would resolve against the unwrapped schema and the field would lose the named ${name} set; add .${method}() to the ClosedSet helper in typescript/scripts/lib/closed-set-zod-types.mjs (and to tests/closed-set-drift.ts) with a return type that wraps the ClosedSet itself.`);
     }
   }
 }
