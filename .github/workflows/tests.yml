@@ -172,10 +172,8 @@ jobs:
     secrets:
       RUNNER_STATUS_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
 
-  # make check runs without the race detector on every event. The merge-queue
-  # run adds the selective race pass over the module's only concurrency, the
-  # validator schema caches. Both are skipped for a release-only candidate
-  # that inherited its base's queue verdict, which already covered them.
+  # The merge queue runs the selective race pass in parallel with make check.
+  # Release-only candidates inherit both results from their base queue verdict.
   check:
     name: make check
     needs: [changes, determine-runner]
@@ -189,13 +187,97 @@ jobs:
         with:
           persist-credentials: false
       - uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
+      - name: Set Go cache paths
+        run: |
+          echo "GOCACHE=$RUNNER_TEMP/schema-go-build" >> "$GITHUB_ENV"
+          echo "GOMODCACHE=$RUNNER_TEMP/schema-go-mod" >> "$GITHUB_ENV"
+      - name: Restore Go build and module caches
+        id: cache-go
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ${{ env.GOCACHE }}
+            ${{ env.GOMODCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-check-${{ hashFiles('flake.nix', 'flake.lock') }}-${{ hashFiles('go.sum', 'tools/redaction-categories/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-check-${{ hashFiles('flake.nix', 'flake.lock') }}-
+      - name: Report runner and Go cache
+        env:
+          CACHE_HIT: ${{ steps.cache-go.outputs.cache-hit }}
+          CACHE_MATCHED_KEY: ${{ steps.cache-go.outputs.cache-matched-key }}
+        run: |
+          nproc
+          nix develop -c go env GOMAXPROCS GOFLAGS GOCACHE GOMODCACHE
+          for file in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/cpu/cpu.cfs_quota_us /sys/fs/cgroup/cpu/cpu.cfs_period_us; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+          free -m
+          printf 'cache-hit=%s cache-matched-key=%s\n' "$CACHE_HIT" "$CACHE_MATCHED_KEY"
       - name: make check
         run: |
           nix develop -c pnpm --dir typescript install --frozen-lockfile --ignore-scripts
           nix develop -c make check
+      # Only trusted branch and merge-queue runs populate caches; PRs restore only.
+      - name: Save Go build and module caches
+        if: success() && steps.cache-go.outputs.cache-hit != 'true' && (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/develop'))
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ${{ env.GOCACHE }}
+            ${{ env.GOMODCACHE }}
+          key: ${{ steps.cache-go.outputs.cache-primary-key }}
+
+  race:
+    name: make race-selective
+    needs: [changes, determine-runner]
+    if: github.event_name == 'merge_group' && needs.changes.outputs.code == 'true' && needs.changes.outputs.inherit != 'true'
+    runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
+      - name: Set Go cache paths
+        run: |
+          echo "GOCACHE=$RUNNER_TEMP/schema-go-build" >> "$GITHUB_ENV"
+          echo "GOMODCACHE=$RUNNER_TEMP/schema-go-mod" >> "$GITHUB_ENV"
+      - name: Restore Go build and module caches
+        id: cache-go
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ${{ env.GOCACHE }}
+            ${{ env.GOMODCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-race-${{ hashFiles('flake.nix', 'flake.lock') }}-${{ hashFiles('go.sum', 'tools/redaction-categories/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-go-race-${{ hashFiles('flake.nix', 'flake.lock') }}-
+            ${{ runner.os }}-${{ runner.arch }}-go-check-${{ hashFiles('flake.nix', 'flake.lock') }}-
+      - name: Report runner and Go cache
+        env:
+          CACHE_HIT: ${{ steps.cache-go.outputs.cache-hit }}
+          CACHE_MATCHED_KEY: ${{ steps.cache-go.outputs.cache-matched-key }}
+        run: |
+          nproc
+          nix develop -c go env GOMAXPROCS GOFLAGS GOCACHE GOMODCACHE
+          for file in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/cpu/cpu.cfs_quota_us /sys/fs/cgroup/cpu/cpu.cfs_period_us; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+          free -m
+          printf 'cache-hit=%s cache-matched-key=%s\n' "$CACHE_HIT" "$CACHE_MATCHED_KEY"
       - name: make race-selective
-        if: github.event_name == 'merge_group'
-        run: nix develop -c make race-selective
+        run: |
+          nix develop -c make race-selective
+      # Only trusted branch and merge-queue runs populate caches; PRs restore only.
+      - name: Save Go build and module caches
+        if: success() && steps.cache-go.outputs.cache-hit != 'true' && (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/develop'))
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ${{ env.GOCACHE }}
+            ${{ env.GOMODCACHE }}
+          key: ${{ steps.cache-go.outputs.cache-primary-key }}
 
   contract-gates:
     name: contract gates
@@ -358,7 +440,7 @@ jobs:
 
   merge-gate:
     name: merge-gate
-    needs: [changes, determine-runner, check, contract-gates, release-tree, vendor-hash]
+    needs: [changes, determine-runner, check, race, contract-gates, release-tree, vendor-hash]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -392,8 +474,12 @@ jobs:
             [ "$RELEASE_CANDIDATE" = true ] || fail "only a release candidate inherits a verdict"
             [ "$RELEASE_ONLY" = true ] || fail "an inherited verdict needs a release-only change"
             [ "$(result check)" = skipped ] || fail "make check ran although the verdict was inherited"
+            [ "$(result race)" = skipped ] || fail "race ran although the verdict was inherited"
           elif [ "$CODE" = true ]; then
             [ "$(result check)" = success ] || fail "make check is required for a code change"
+            if [ "$EVENT" = merge_group ]; then
+              [ "$(result race)" = success ] || fail "the selective race pass is required for a merge-group code change"
+            fi
           fi
           if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
             [ "$(result contract-gates)" = success ] || fail "contract gates are required"
@@ -405,7 +491,7 @@ jobs:
             [ "$(result vendor-hash)" = success ] || fail "a release group needs a current vendor hash"
           fi
       - name: "verdict-source: full"
-        if: needs.check.result == 'success'
+        if: needs.check.result == 'success' && (github.event_name != 'merge_group' || needs.race.result == 'success')
         run: echo "verdict-source=full" >> "$GITHUB_STEP_SUMMARY"
       - name: "verdict-source: inherited"
         if: needs.changes.outputs.inherit == 'true' && needs.check.result == 'skipped'

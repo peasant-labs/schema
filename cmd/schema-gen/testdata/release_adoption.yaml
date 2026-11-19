@@ -220,6 +220,9 @@ prepared_tag_cases:
 # names the message it must fail with, so a jq or shell syntax fault cannot
 # pass as a rejection.
 merge_gate_required:
+  - merge-group-race-skipped
+  - merge-group-race-failed
+  - inherited-race-ran
   - release-vendor-failed
   - release-vendor-skipped
   - release-vendor-success
@@ -250,72 +253,72 @@ merge_gate_cases:
   - name: release-vendor-failed
     release: "true"
     release_candidate: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"failure"}}'
     expected_exit: 1
     expected_stderr: "a needed job failed or was cancelled"
   - name: release-vendor-skipped
     release: "true"
     release_candidate: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "a release group needs a current vendor hash"
   - name: release-vendor-success
     release: "true"
     release_candidate: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
     expected_exit: 0
   - name: content-vendor-failed
     release: "false"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
     expected_exit: 0
   - name: content-vendor-skipped
     release: "false"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 0
   - name: content-vendor-success
     release: "false"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
     expected_exit: 0
   - name: content-other-job-failed
     release: "false"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"failure"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"failure"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"failure"}}'
     expected_exit: 1
     expected_stderr: "a needed job failed or was cancelled"
   - name: content-check-skipped-for-code
     release: "false"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "make check is required for a code change"
   - name: content-docs-only-skips-check
     release: "false"
     code: "false"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 0
   - name: changes-failed-is-refused
     release: "false"
-    results_json: '{"changes":{"result":"failure"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"failure"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "a needed job failed or was cancelled"
   - name: contract-gates-skipped-is-refused
     release: "false"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "contract gates are required"
   - name: unknown-release-is-refused
     release: ""
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "release classification is missing or invalid"
   - name: unknown-candidate-is-refused
     release: "false"
     release_candidate: ""
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "release candidate classification is missing or invalid"
   - name: unknown-inherit-is-refused
     release: "false"
     inherit: "maybe"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "verdict inheritance is missing or invalid"
   - name: inherited-release-skips-check
@@ -323,14 +326,14 @@ merge_gate_cases:
     release_candidate: "true"
     release_only: "true"
     inherit: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
     expected_exit: 0
   - name: inherited-release-check-ran-is-refused
     release: "true"
     release_candidate: "true"
     release_only: "true"
     inherit: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
     expected_exit: 1
     expected_stderr: "make check ran although the verdict was inherited"
   - name: inherited-without-release-only-is-refused
@@ -338,7 +341,7 @@ merge_gate_cases:
     release_candidate: "true"
     release_only: "false"
     inherit: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
     expected_exit: 1
     expected_stderr: "an inherited verdict needs a release-only change"
   - name: inherited-without-candidate-is-refused
@@ -346,7 +349,7 @@ merge_gate_cases:
     release_candidate: "false"
     release_only: "true"
     inherit: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "only a release candidate inherits a verdict"
   - name: inherited-on-push-is-refused
@@ -355,14 +358,14 @@ merge_gate_cases:
     release_candidate: "true"
     release_only: "true"
     inherit: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"skipped"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"skipped"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "only pull_request and merge_group runs inherit a verdict"
   - name: not-inherited-code-requires-check
     release: "true"
     release_candidate: "true"
     release_only: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
     expected_exit: 1
     expected_stderr: "make check is required for a code change"
   - name: pull-request-inherited-release
@@ -371,39 +374,57 @@ merge_gate_cases:
     release_candidate: "true"
     release_only: "true"
     inherit: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 0
   - name: release-tree-failed
     release: "true"
     release_candidate: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"failure"},"vendor-hash":{"result":"success"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"failure"},"vendor-hash":{"result":"success"}}'
     expected_exit: 1
     expected_stderr: "a needed job failed or was cancelled"
   - name: release-tree-skipped
     release: "true"
     release_candidate: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"success"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"success"}}'
     expected_exit: 1
     expected_stderr: "a release candidate needs a frozen release tree"
   - name: pull-request-release-tree-skipped
     release: "false"
     event: pull_request
     release_candidate: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
     expected_stderr: "a release candidate needs a frozen release tree"
   - name: push-candidate-release-tree-skipped
     release: "false"
     event: push
     release_candidate: "true"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"skipped"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"success"},"contract-gates":{"result":"skipped"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 0
   - name: pull-request-non-candidate-release-tree-skipped
     release: "false"
     event: pull_request
     release_candidate: "false"
-    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    results_json: '{"changes":{"result":"success"},"race":{"result":"skipped"},"check":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 0
+  - name: merge-group-race-skipped
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"race":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "the selective race pass is required for a merge-group code change"
+  - name: merge-group-race-failed
+    release: "false"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"race":{"result":"failure"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+    expected_stderr: "a needed job failed or was cancelled"
+  - name: inherited-race-ran
+    release: "true"
+    release_candidate: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"race":{"result":"success"},"contract-gates":{"result":"success"},"release-tree":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+    expected_stderr: "race ran although the verdict was inherited"
 pre_tag_commands:
   contract: 'release-intent check-contract --report "${RUNNER_TEMP}/candidate-report.yaml" --until "${CANDIDATE}" --floor "${FLOOR}"'
   freeze: 'nix develop -c schema-gen freeze --check --plan "${RUNNER_TEMP}/candidate-freeze-plan.yaml" --state "${RUNNER_TEMP}/candidate-surface-state.yaml"'

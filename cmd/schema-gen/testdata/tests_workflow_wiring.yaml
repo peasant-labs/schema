@@ -15,19 +15,21 @@ verdict_markers:
 # The aggregator's final steps, in order, with the condition that makes
 # exactly one of them run.
 aggregator_job: merge-gate
+aggregator_needs: [check, race]
 marker_steps:
-  - {name: "verdict-source: full", if: "needs.check.result == 'success'"}
+  - {name: "verdict-source: full", if: "needs.check.result == 'success' && (github.event_name != 'merge_group' || needs.race.result == 'success')"}
   - {name: "verdict-source: inherited", if: "needs.changes.outputs.inherit == 'true' && needs.check.result == 'skipped'"}
   - {name: "verdict-source: unaffected", if: "needs.changes.outputs.inherit != 'true' && needs.check.result == 'skipped'"}
 # The full-suite job is skipped exactly when the verdict was inherited (or
 # no code changed).
 check_job: check
 check_if: "needs.changes.outputs.code == 'true' && needs.changes.outputs.inherit != 'true'"
-# The selective race pass runs in the full-suite job on merge groups only, and
+# The selective race pass runs in its own job on merge groups only, and
 # nowhere else.
 race_selective:
+  job: race
   step: make race-selective
-  if: "github.event_name == 'merge_group'"
+  if: "github.event_name == 'merge_group' && needs.changes.outputs.code == 'true' && needs.changes.outputs.inherit != 'true'"
   run: nix develop -c make race-selective
 # The proof step: always runs, never fails softly.
 inherit_step: {job: changes, id: inherit}

@@ -20,14 +20,16 @@ type testsWorkflowWiring struct {
 		Version int      `yaml:"version"`
 		Names   []string `yaml:"names"`
 	} `yaml:"verdict_markers"`
-	AggregatorJob string `yaml:"aggregator_job"`
-	MarkerSteps   []struct {
+	AggregatorJob   string   `yaml:"aggregator_job"`
+	AggregatorNeeds []string `yaml:"aggregator_needs"`
+	MarkerSteps     []struct {
 		Name string `yaml:"name"`
 		If   string `yaml:"if"`
 	} `yaml:"marker_steps"`
 	CheckJob      string `yaml:"check_job"`
 	CheckIf       string `yaml:"check_if"`
 	RaceSelective struct {
+		Job  string `yaml:"job"`
 		Step string `yaml:"step"`
 		If   string `yaml:"if"`
 		Run  string `yaml:"run"`
@@ -82,6 +84,18 @@ func TestTestsWorkflowWiring(t *testing.T) {
 		t.Fatalf("marker steps %q differ from infra's marker set version %d %q", names, want.VerdictMarkers.Version, want.VerdictMarkers.Names)
 	}
 	steps := workflowMappingChild(workflowMappingChild(jobs, want.AggregatorJob), "steps")
+	needs := workflowMappingChild(workflowMappingChild(jobs, want.AggregatorJob), "needs")
+	for _, expected := range want.AggregatorNeeds {
+		found := false
+		if needs != nil {
+			for _, need := range needs.Content {
+				found = found || need.Value == expected
+			}
+		}
+		if !found {
+			t.Errorf("jobs.%s does not depend on %s", want.AggregatorJob, expected)
+		}
+	}
 	if steps == nil || len(steps.Content) < len(want.MarkerSteps) {
 		t.Fatalf("jobs.%s has fewer steps than the %d marker steps", want.AggregatorJob, len(want.MarkerSteps))
 	}
@@ -100,6 +114,11 @@ func TestTestsWorkflowWiring(t *testing.T) {
 		t.Errorf("jobs.%s if = %q, want %q", want.CheckJob, got, want.CheckIf)
 	}
 
+	raceJob := workflowMappingChild(jobs, want.RaceSelective.Job)
+	if got := workflowScalar(raceJob, "if"); got != want.RaceSelective.If {
+		t.Errorf("jobs.%s if = %q, want %q", want.RaceSelective.Job, got, want.RaceSelective.If)
+	}
+
 	raceSteps := 0
 	for i := 0; i+1 < len(jobs.Content); i += 2 {
 		job := jobs.Content[i].Value
@@ -112,11 +131,11 @@ func TestTestsWorkflowWiring(t *testing.T) {
 				continue
 			}
 			raceSteps++
-			if job != want.CheckJob || workflowScalar(step, "name") != want.RaceSelective.Step {
-				t.Errorf("race-selective runs in jobs.%s step %q, want only jobs.%s step %q", job, workflowScalar(step, "name"), want.CheckJob, want.RaceSelective.Step)
+			if job != want.RaceSelective.Job || workflowScalar(step, "name") != want.RaceSelective.Step {
+				t.Errorf("race-selective runs in jobs.%s step %q, want only jobs.%s step %q", job, workflowScalar(step, "name"), want.RaceSelective.Job, want.RaceSelective.Step)
 			}
-			if got := workflowScalar(step, "if"); got != want.RaceSelective.If {
-				t.Errorf("race-selective step if = %q, want %q", got, want.RaceSelective.If)
+			if got := workflowScalar(step, "if"); got != "" {
+				t.Errorf("race-selective step unexpectedly has if = %q", got)
 			}
 			if got := strings.TrimSpace(workflowScalar(step, "run")); got != want.RaceSelective.Run {
 				t.Errorf("race-selective step runs %q, want %q", got, want.RaceSelective.Run)
