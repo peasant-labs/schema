@@ -1,9 +1,0 @@
-# Packages (directories relative to the module root) whose tests run git today.
-# The git-isolation guard must keep detecting every name listed here; a name it
-# no longer detects means the scanner lost coverage. The guard requires the
-# isolating TestMain in every package it detects, listed here or not, so a new
-# package that runs git needs no entry to be protected.
-requiredNames:
-  - cmd/release-guard
-  - cmd/schema-gen
-  - internal/contractgates

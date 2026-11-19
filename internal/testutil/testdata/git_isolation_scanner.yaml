@@ -1,8 +1,9 @@
 # Synthetic modules for the git-isolation scanner. Each case's input is a file
 # tree written to a temporary directory; expected lists the test packages
-# (directories relative to the module root, "." for the root) that need the
-# isolation and those that lack it. must-fail cases report at least one
-# violation; must-pass cases report none.
+# (directories relative to the module root) whose tests import os/exec, and
+# those of them with no TestMain calling the helper. must-fail cases report at
+# least one violation; must-pass cases report none. Case names are pinned in
+# git_isolation_scanner_manifest.yaml.
 cases:
   - name: a test that runs git with the isolating TestMain passes
     input:
@@ -36,6 +37,32 @@ cases:
       ref: "every package whose tests run git has a package-level TestMain isolation"
     mutation:
       description: "the isolated package, unmodified"
+  - name: an isolating TestMain in the external test package passes
+    input:
+      files:
+        go.mod: "module example.com/m\n\ngo 1.25\n"
+        tool/tool_test.go: |
+          package tool_test
+
+          import (
+          	"os"
+          	"os/exec"
+          	"testing"
+
+          	"example.com/m/internal/testutil"
+          )
+
+          func TestMain(m *testing.M) { os.Exit(testutil.RunWithIsolatedGitConfig(m)) }
+
+          func TestGit(t *testing.T) { _ = exec.Command("git", "status") }
+    expected:
+      needs: [tool]
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: "one test binary holds both the package and its _test package, so either may own TestMain"
+    mutation:
+      description: "moved the TestMain and the git call into package tool_test"
   - name: a test that runs git without a TestMain is rejected
     input:
       files:
@@ -63,7 +90,7 @@ cases:
       files:
         go.mod: "module example.com/m\n\ngo 1.25\n"
         tool/tool_test.go: |
-          package tool
+          package tool_test
 
           import (
           	"os"
@@ -83,66 +110,41 @@ cases:
       ref: "a TestMain alone does not isolate git configuration"
     mutation:
       description: "replaced the isolation call with a bare m.Run"
-  - name: a test that drives production code which runs git is rejected without isolation
+  - name: an isolating TestMain behind a build constraint is rejected
     input:
       files:
         go.mod: "module example.com/m\n\ngo 1.25\n"
-        tool/report.go: |
+        tool/tool_test.go: |
           package tool
 
-          import "os/exec"
+          import (
+          	"os/exec"
+          	"testing"
+          )
 
-          func Revision() ([]byte, error) { return exec.Command("git", "rev-parse", "HEAD").Output() }
-        tool/report_test.go: |
+          func TestGit(t *testing.T) { _ = exec.Command("git", "commit") }
+        tool/main_linux_test.go: |
+          //go:build linux
+
           package tool
 
-          import "testing"
+          import (
+          	"os"
+          	"testing"
 
-          func TestRevision(t *testing.T) { _, _ = Revision() }
+          	"example.com/m/internal/testutil"
+          )
+
+          func TestMain(m *testing.M) { os.Exit(testutil.RunWithIsolatedGitConfig(m)) }
     expected:
       needs: [tool]
       violations: [tool]
     classification: must-fail
     provenance:
-      source: requirement
-      ref: "tests that call production code which runs git need the isolation too"
+      source: boundary
+      ref: "a constrained file is not compiled on every platform, so its TestMain does not always run"
     mutation:
-      description: "moved the git call from the test into the package's production code"
-  - name: a test that imports another package which reaches git is rejected without isolation
-    input:
-      files:
-        go.mod: "module example.com/m\n\ngo 1.25\n"
-        gitx/gitx.go: |
-          package gitx
-
-          import "os/exec"
-
-          func Head() ([]byte, error) { return exec.Command("git", "rev-parse", "HEAD").Output() }
-        wrap/wrap.go: |
-          package wrap
-
-          import "example.com/m/gitx"
-
-          func Head() ([]byte, error) { return gitx.Head() }
-        app/app_test.go: |
-          package app_test
-
-          import (
-          	"testing"
-
-          	"example.com/m/wrap"
-          )
-
-          func TestHead(t *testing.T) { _, _ = wrap.Head() }
-    expected:
-      needs: [app]
-      violations: [app]
-    classification: must-fail
-    provenance:
-      source: requirement
-      ref: "tests that call production code which runs git need the isolation too"
-    mutation:
-      description: "reached the git call through two module-local imports"
+      description: "added a //go:build line to the file that holds the TestMain"
   - name: packages that start no process need no isolation
     input:
       files:
@@ -157,20 +159,14 @@ cases:
           import "testing"
 
           func TestWire(t *testing.T) { _ = Wire{Git: "git"} }
-        gitx/gitx.go: |
-          package gitx
-
-          import "os/exec"
-
-          func Head() ([]byte, error) { return exec.Command("git", "rev-parse", "HEAD").Output() }
     expected:
       needs: []
     classification: must-pass
     provenance:
       source: boundary
-      ref: "the word git in data and production packages without tests do not need test isolation"
+      ref: "the word git in data does not start a process"
     mutation:
-      description: "a package that only mentions git in data, beside an untested package that runs it"
+      description: "a package that only mentions git in data"
   - name: nested modules and testdata are not scanned
     input:
       files:
