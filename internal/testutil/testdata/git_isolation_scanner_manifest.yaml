@@ -8,3 +8,16 @@ requiredNames:
   - an isolating TestMain behind a build constraint is rejected
   - packages that start no process need no isolation
   - nested modules and testdata are not scanned
+  - isolation after running tests is rejected
+  - discarded isolation result is rejected
+  - discarded exit code is rejected
+  - deferred isolation exit is rejected
+  - a prelude before the isolated exit passes
+  - competing exit before isolation is rejected
+  - competing goleak runner is rejected
+  - direct isolation with checked error passes
+  - direct isolation without TestMain is rejected
+  - direct runner without isolation is rejected
+  - direct isolation after running tests is rejected
+  - direct isolation without error check is rejected
+  - final call is not os.Exit
