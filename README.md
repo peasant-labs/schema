@@ -447,7 +447,7 @@ contract dependencies, enforced by `TestLeafAudit_GoModRequiresAreAllowed`:
 
 ```
 github.com/dayvidpham/bestiary
-github.com/google/go-github/v88          # runtime seam for cmd/release-guard's GitHub API, not a dev tool
+github.com/google/go-github/v88          # retained dependency pin
 github.com/santhosh-tekuri/jsonschema/v5
 github.com/swaggest/jsonschema-go
 github.com/swaggest/openapi-go
@@ -491,8 +491,7 @@ change then updates one corpus instead of N inline tables, and a new test follow
 this by default.
 The corpora sit under `testdata/` (`annotations`, `contract`,
 `publish`, `pull`, `quality`, `session-detail`, `sync`),
-`internal/release/testdata/` (`grammar`, `workflow`), and
-`cmd/release-guard/testdata/github`.
+and `internal/release/testdata/grammar`.
 
 See **[`TESTING.md`](TESTING.md)** for the full strategy and the test behind each
 gate.
@@ -525,7 +524,7 @@ cutover and recovery.
 | `typescript/` | Published `@peasant-labs/schema` package source: generated named wire types, testcase helpers, typed fixtures, and package gates |
 | `external/`, `testdata/`, `fixtures.go` | Vendored external schemas + typed test fixtures |
 | `cmd/schema-gen/` | Regenerates `generated/` and the route members; hosts the freshness / immutability / surface gate tests |
-| `cmd/release-guard/` + `internal/release/` | Tag classification, tag-workflow guard, and retained legacy commands used by consumers |
+| `cmd/release-guard/` + `internal/release/` | Release tag validation and classification |
 | `docs/release-runbook.md` · `CONTRIBUTING.md` · `CHANGELOG.md` | Operator + contributor references |
 | `docs/content-capability-negotiation.md` | Authoritative optional-content negotiation protocol and contributor decision policy |
 

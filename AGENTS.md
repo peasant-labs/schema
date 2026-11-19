@@ -227,8 +227,7 @@ Install the locked TypeScript development toolchain with
 
 ## Gates
 
-`make check` is the authoritative full-repository gate: fmt, vet, the
-release-workflow guard, TypeScript typecheck/tests/package smoke, and
+`make check` is the authoritative full-repository gate: fmt, vet, TypeScript typecheck/tests/package smoke, and
 `go test ./...` (which carries the freshness, immutability,
 leaf-audit, vendor-hash, and synthetic-break checks). It runs without the race
 detector by default; `make check RACE=1` opts in. `make race-selective` runs

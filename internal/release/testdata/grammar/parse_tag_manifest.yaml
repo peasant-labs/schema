@@ -1,0 +1,8 @@
+requiredNames:
+  - final tag parses
+  - rc tag parses
+  - pkg-namespaced tag is rejected
+  - rc without a number is rejected
+  - missing v prefix is rejected
+  - non-version garbage is rejected
+  - empty tag is rejected

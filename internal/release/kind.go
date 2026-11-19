@@ -1,15 +1,7 @@
-// Package release holds the pure, table-driven-testable logic that the release
-// CI workflows depend on: the release-PR title grammar, the git-tag grammar, the
-// typed release-kind derivation, and release workflow policy checks.
-//
-// Everything here is deliberately side-effect-free so the negative paths (a
-// malformed title, a non-release tag, or a broken workflow graph) are
-// unit-testable BEFORE they run in a workflow. The thin CLI in
-// cmd/release-guard wires these functions to real workflow files; the workflows
-// shell out to that CLI.
+// Package release holds the tag grammar and typed release-kind derivation.
 package release
 
-// ReleaseKind classifies a release reference (a PR title or a git tag) as a
+// ReleaseKind classifies a release reference (a git tag) as a
 // release candidate, a final release, or an invalid/unrecognized reference.
 //
 // It is a strongly-typed enum (per the repo's no-stringly-typed-API rule) so

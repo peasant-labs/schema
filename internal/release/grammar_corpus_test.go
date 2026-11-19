@@ -1,15 +1,7 @@
 package release_test
 
-// The version_kind and parse_tag grammar corpora, migrated onto the canonical
-// github.com/peasant-labs/schema/testcase corpus standard: the rows load through
-// testcase.LoadCorpus, carry classification + provenance + mutation metadata
-// (Corpus.Validate enforces non-vacuity), and each suite guards coverage two
-// ways. An EXACT case-count control catches a silent drop or a stray add (a
-// min-floor RequireMin would pass a drop that stays above the floor). Because an
-// exact count cannot see a count-preserving swap (drop a real case, add a filler,
-// count unchanged), a lean value-based coverage assertion checks the load-bearing
-// cases are still there. All prior assertions from the pre-migration table tests
-// are preserved.
+// The version-kind and parse-tag corpora cover the frozen tag grammar.
+// The tag corpus uses a required-name manifest and preserves value coverage.
 
 import (
 	_ "embed"
@@ -17,6 +9,7 @@ import (
 
 	"github.com/peasant-labs/schema/internal/release"
 	"github.com/peasant-labs/schema/testcase"
+	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
 
 // versionKindExpected is the derived output of one version_kind case.
@@ -38,17 +31,22 @@ var versionKindCorpusYAML []byte
 //go:embed testdata/grammar/parse_tag_corpus.yaml
 var parseTagCorpusYAML []byte
 
+//go:embed testdata/grammar/version_kind_manifest.yaml
+var versionKindManifestYAML []byte
+
+//go:embed testdata/grammar/parse_tag_manifest.yaml
+var parseTagManifestYAML []byte
+
 func TestVersionKindBaseIsRC(t *testing.T) {
 	corpus, err := testcase.LoadCorpus[string, versionKindExpected](versionKindCorpusYAML)
 	if err != nil {
 		t.Fatalf("load version_kind corpus: %v", err)
 	}
-	// Exact case-count control: a silent drop or a stray add reddens (a min floor
-	// would not). It cannot see a count-preserving swap, so the value-coverage check below
-	// guards the load-bearing cases.
-	if got := len(corpus.Cases); got != 3 {
-		t.Fatalf("version_kind corpus has %d cases, want exactly 3", got)
+	names := make([]string, 0, len(corpus.Cases))
+	for _, c := range corpus.Cases {
+		names = append(names, c.Name)
 	}
+	caseassert.RequireManifestNames(t, "version kind cases", versionKindManifestYAML, names)
 	if err := corpus.Validate(); err != nil {
 		t.Fatalf("version_kind corpus is under-populated: %v", err)
 	}
@@ -91,9 +89,11 @@ func TestParseTag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load parse_tag corpus: %v", err)
 	}
-	if got := len(corpus.Cases); got != 7 {
-		t.Fatalf("parse_tag corpus has %d cases, want exactly 7", got)
+	names := make([]string, 0, len(corpus.Cases))
+	for _, c := range corpus.Cases {
+		names = append(names, c.Name)
 	}
+	caseassert.RequireManifestNames(t, "parse tag cases", parseTagManifestYAML, names)
 	if err := corpus.Validate(); err != nil {
 		t.Fatalf("parse_tag corpus is under-populated: %v", err)
 	}
