@@ -19,7 +19,6 @@ import (
 // surface, not a tool that leaked in.
 var allowedDirectRequires = map[string]bool{
 	"github.com/dayvidpham/bestiary":           true,
-	"github.com/google/go-github/v88":          true, // Retained module pin; no longer used by release-guard.
 	"github.com/santhosh-tekuri/jsonschema/v5": true,
 	"github.com/swaggest/jsonschema-go":        true,
 	"github.com/swaggest/openapi-go":           true,

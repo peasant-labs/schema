@@ -447,7 +447,6 @@ contract dependencies, enforced by `TestLeafAudit_GoModRequiresAreAllowed`:
 
 ```
 github.com/dayvidpham/bestiary
-github.com/google/go-github/v88          # retained dependency pin
 github.com/santhosh-tekuri/jsonschema/v5
 github.com/swaggest/jsonschema-go
 github.com/swaggest/openapi-go

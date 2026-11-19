@@ -456,12 +456,16 @@ publication_needs:
 publication_wiring_cases:
   - name: release-tag-guard-exists
     job: guard
+    needs: []
   - name: vendor-hash-follows-guard
     job: nix-vendor-hash
     needs: [guard]
   - name: contract-gates-follow-guards
     job: contract-gates
     needs: [guard, nix-vendor-hash]
+  - name: build-follows-gates
+    job: build
+    needs: [guard, nix-vendor-hash, contract-gates, verify-tag]
   - name: github-release-follows-gates
     job: release
     needs: [guard, nix-vendor-hash, contract-gates, verify-tag, build]

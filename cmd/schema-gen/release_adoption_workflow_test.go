@@ -23,10 +23,12 @@ var releasePublicationWiringManifest []byte
 // TestReleaseAdoptionPublicationWiring checks the production release jobs.
 func TestReleaseAdoptionPublicationWiring(t *testing.T) {
 	var fixture struct {
-		Cases []struct {
+		PublicationRequired []string            `yaml:"publication_required"`
+		PublicationNeeds    map[string][]string `yaml:"publication_needs"`
+		Cases               []struct {
 			Name        string            `yaml:"name"`
 			Job         string            `yaml:"job"`
-			Needs       []string          `yaml:"needs"`
+			Needs       *[]string         `yaml:"needs"`
 			Permissions map[string]string `yaml:"permissions"`
 			Environment string            `yaml:"environment"`
 		} `yaml:"publication_wiring_cases"`
@@ -36,9 +38,37 @@ func TestReleaseAdoptionPublicationWiring(t *testing.T) {
 	}
 	var names []string
 	for _, c := range fixture.Cases {
+		if c.Needs == nil {
+			t.Fatalf("publication wiring case %q must declare needs, even when empty", c.Name)
+		}
 		names = append(names, c.Name)
 	}
 	caseassert.RequireManifestNames(t, "release publication wiring", releasePublicationWiringManifest, names)
+	for _, required := range fixture.PublicationRequired {
+		expected, ok := fixture.PublicationNeeds[required]
+		if !ok || len(expected) == 0 {
+			t.Fatalf("publication_needs lacks dependencies for %s", required)
+		}
+		var matches int
+		for _, c := range fixture.Cases {
+			if c.Job != required {
+				continue
+			}
+			matches++
+			if c.Needs == nil {
+				t.Fatalf("publication wiring for %s has no needs field", required)
+			}
+			got, want := slices.Clone(*c.Needs), slices.Clone(expected)
+			slices.Sort(got)
+			slices.Sort(want)
+			if !slices.Equal(got, want) {
+				t.Fatalf("publication wiring needs for %s = %v, publication_needs = %v", required, got, want)
+			}
+		}
+		if matches != 1 {
+			t.Fatalf("publication wiring has %d cases for %s, want one", matches, required)
+		}
+	}
 	root, err := findModuleRoot()
 	if err != nil {
 		t.Fatal(err)
@@ -58,13 +88,16 @@ func TestReleaseAdoptionPublicationWiring(t *testing.T) {
 			if job == nil || job.Kind != yaml.MappingNode {
 				t.Fatalf("release.yml must contain jobs.%s as a mapping", c.Job)
 			}
-			if len(c.Needs) != 0 {
+			if c.Needs != nil {
 				node := workflowMappingChild(job, "needs")
 				var actual []string
 				switch {
 				case node == nil:
-					t.Fatalf("jobs.%s has no needs", c.Job)
+					// An absent needs key is equivalent to an empty list.
 				case node.Kind == yaml.ScalarNode && node.Tag == "!!str":
+					if node.Value == "" {
+						t.Fatalf("jobs.%s has an empty needs entry", c.Job)
+					}
 					actual = []string{node.Value}
 				case node.Kind == yaml.SequenceNode:
 					for _, item := range node.Content {
@@ -76,7 +109,14 @@ func TestReleaseAdoptionPublicationWiring(t *testing.T) {
 				default:
 					t.Fatalf("jobs.%s needs must be a string or a sequence of strings", c.Job)
 				}
-				want := slices.Clone(c.Needs)
+				seenNeeds := make(map[string]bool, len(actual))
+				for _, need := range actual {
+					if seenNeeds[need] {
+						t.Fatalf("jobs.%s has duplicate needs entry %q", c.Job, need)
+					}
+					seenNeeds[need] = true
+				}
+				want := slices.Clone(*c.Needs)
 				slices.Sort(actual)
 				slices.Sort(want)
 				if !slices.Equal(actual, want) {

@@ -1,7 +1,7 @@
 # Testing the peasant-labs/schema contract
 
 This module is a contract-only leaf: types, closed enums, generated OpenAPI specs,
-a publish-request validator, typed fixtures, and the codegen + release-guard
+a publish-request validator, typed fixtures, the code generator, and the release-tag parser
 tooling. It has no runtime server. So the test suite is not about request/response
 behaviour; it is about keeping the **contract honest**:
 
@@ -353,7 +353,7 @@ through 600 seconds and fails closed for isolated setup or cleanup errors.
 
 `TestLeafAudit_GoModRequiresAreAllowed` (`leaf_audit_test.go`) asserts the module's
 `go.mod` direct `require` set is a subset of an explicit allowed set (`bestiary`,
-`go-github/v88`, the two `jsonschema` libraries, `openapi-go`, `x/crypto`,
+the two `jsonschema` libraries, `openapi-go`, `x/crypto`,
 `yaml.v3`). Dev and CI tools live in the flake dev shell, never in `go.mod`, so
 this audit is the only mechanical enforcement of the leaf boundary. Its
 `parseDirectRequires` helper parses `go.mod` by hand on purpose: importing a

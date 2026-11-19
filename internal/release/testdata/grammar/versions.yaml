@@ -1,10 +1,5 @@
-# Release-version / release-tag / release-PR-title grammar corpus.
-#
-# Drives the pure grammar table-tests in parse_test.go: NewVersion,
-# Version.Kind()/Base()/IsRC(), ParseReleaseTitle, and ParseTag. Each row is one
-# input paired with its expected outcome; a must-fail row sets `wantErr: true`
-# and carries no expected value (the test asserts KindInvalid on the error path
-# for the title/tag parsers).
+# Release-version grammar corpus for NewVersion in parse_test.go.
+# A must-fail row sets `wantErr: true` and carries no expected value.
 
 # NewVersion(raw) -> Version (leading "v", vMAJOR.MINOR.PATCH[-rcN])
 new_version:

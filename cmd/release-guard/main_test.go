@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
-	caseassert "github.com/peasant-labs/schema/testcase/assert"
-	"gopkg.in/yaml.v3"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/peasant-labs/schema/internal/release"
+	caseassert "github.com/peasant-labs/schema/testcase/assert"
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed testdata/output.yaml
@@ -46,36 +49,76 @@ func TestFormatOutput_ByteParity(t *testing.T) {
 	}
 }
 
-func TestRunParseTag_RejectsNamespacedTag(t *testing.T) {
-	t.Parallel()
-	if err := runParseTag([]string{"pkg/schema/v1.2.3"}); err == nil {
-		t.Fatal("runParseTag(namespaced tag) = nil, want rejection")
-	}
-}
+//go:embed testdata/cli.yaml
+var cliCasesYAML []byte
 
-func TestEmit_AppendsToGitHubOutput(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "github_output")
-	// Seed a prior line so the test proves emit APPENDS (O_APPEND), never
-	// truncates — the file accumulates outputs across a job's steps.
-	if err := os.WriteFile(path, []byte("preexisting=1\n"), 0o644); err != nil {
-		t.Fatalf("seed $GITHUB_OUTPUT: %v", err)
-	}
-	t.Setenv("GITHUB_OUTPUT", path)
+//go:embed testdata/cli_manifest.yaml
+var cliManifestYAML []byte
 
-	v, kind, err := release.ParseTag("v1.2.3-rc4")
-	if err != nil {
-		t.Fatalf("ParseTag: %v", err)
+func TestReleaseGuardCLI(t *testing.T) {
+	if os.Getenv("RELEASE_GUARD_TEST_PROCESS") == "1" {
+		for i, arg := range os.Args {
+			if arg == "--" {
+				os.Args = append([]string{"release-guard"}, os.Args[i+1:]...)
+				main()
+				os.Exit(0)
+			}
+		}
+		os.Exit(2)
 	}
-	if err := emit(v, kind); err != nil {
-		t.Fatalf("emit: %v", err)
+	var fixture struct {
+		Cases []struct {
+			Name         string   `yaml:"name"`
+			Args         []string `yaml:"args"`
+			Stdout       string   `yaml:"stdout"`
+			Stderr       string   `yaml:"stderr"`
+			Exit         int      `yaml:"exit"`
+			GitHubOutput string   `yaml:"github_output"`
+		} `yaml:"cases"`
 	}
-
-	got, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read $GITHUB_OUTPUT: %v", err)
+	if err := yaml.Unmarshal(cliCasesYAML, &fixture); err != nil {
+		t.Fatal(err)
 	}
-	want := "preexisting=1\nversion=v1.2.3-rc4\nkind=rc\n"
-	if string(got) != want {
-		t.Fatalf("$GITHUB_OUTPUT = %q, want %q (emit appends version=/kind=)", string(got), want)
+	var names []string
+	for _, c := range fixture.Cases {
+		names = append(names, c.Name)
+	}
+	caseassert.RequireManifestNames(t, "release-guard CLI cases", cliManifestYAML, names)
+	for _, c := range fixture.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "github_output")
+			if err := os.WriteFile(path, []byte("preexisting=1\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			args := append([]string{"-test.run=^TestReleaseGuardCLI$", "--"}, c.Args...)
+			cmd := exec.Command(os.Args[0], args...)
+			for _, entry := range os.Environ() {
+				if !strings.HasPrefix(entry, "GITHUB_OUTPUT=") && !strings.HasPrefix(entry, "RELEASE_GUARD_TEST_PROCESS=") {
+					cmd.Env = append(cmd.Env, entry)
+				}
+			}
+			cmd.Env = append(cmd.Env, "RELEASE_GUARD_TEST_PROCESS=1", "GITHUB_OUTPUT="+path)
+			var stdout, stderr bytes.Buffer
+			cmd.Stdout, cmd.Stderr = &stdout, &stderr
+			err := cmd.Run()
+			exit := 0
+			if err != nil {
+				failure, ok := err.(*exec.ExitError)
+				if !ok {
+					t.Fatal(err)
+				}
+				exit = failure.ExitCode()
+			}
+			if exit != c.Exit || stdout.String() != c.Stdout || stderr.String() != c.Stderr {
+				t.Errorf("exit/stdout/stderr = %d/%q/%q, want %d/%q/%q", exit, stdout.String(), stderr.String(), c.Exit, c.Stdout, c.Stderr)
+			}
+			output, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(output) != c.GitHubOutput {
+				t.Errorf("$GITHUB_OUTPUT = %q, want %q", output, c.GitHubOutput)
+			}
+		})
 	}
 }

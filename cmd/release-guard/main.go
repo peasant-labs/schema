@@ -9,9 +9,11 @@ import (
 	"github.com/peasant-labs/schema/internal/release"
 )
 
+const usage = "usage: release-guard parse-tag \"<git tag>\""
+
 func main() {
 	if len(os.Args) < 2 {
-		fatalf("usage: release-guard parse-tag \"<git tag>\"")
+		fatalf("%s", usage)
 	}
 	if os.Args[1] != "parse-tag" {
 		fatalf("unknown subcommand %q: expected parse-tag", os.Args[1])
@@ -23,7 +25,7 @@ func main() {
 
 func runParseTag(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("usage: release-guard parse-tag \"<git tag>\"")
+		return fmt.Errorf("%s", usage)
 	}
 	v, kind, err := release.ParseTag(args[0])
 	if err != nil {
@@ -34,9 +36,8 @@ func runParseTag(args []string) error {
 
 // --- output helpers ---
 
-// formatOutput renders the version/kind lines exactly as written to
-// $GITHUB_OUTPUT and stdout. It is the byte-parity surface: the format is
-// "version=<v>\nkind=<k>\n", unchanged across the go-github swap.
+// formatOutput renders the version and kind lines written to both
+// $GITHUB_OUTPUT and stdout.
 func formatOutput(v release.Version, kind release.ReleaseKind) string {
 	return fmt.Sprintf("version=%s\nkind=%s\n", v, kind)
 }

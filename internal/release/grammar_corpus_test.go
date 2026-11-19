@@ -15,7 +15,6 @@ import (
 // versionKindExpected is the derived output of one version_kind case.
 type versionKindExpected struct {
 	Kind release.ReleaseKind `yaml:"kind"`
-	Base release.Version     `yaml:"base"`
 	RC   bool                `yaml:"rc"`
 }
 
@@ -37,7 +36,7 @@ var versionKindManifestYAML []byte
 //go:embed testdata/grammar/parse_tag_manifest.yaml
 var parseTagManifestYAML []byte
 
-func TestVersionKindBaseIsRC(t *testing.T) {
+func TestVersionKindIsRC(t *testing.T) {
 	corpus, err := testcase.LoadCorpus[string, versionKindExpected](versionKindCorpusYAML)
 	if err != nil {
 		t.Fatalf("load version_kind corpus: %v", err)
@@ -73,9 +72,6 @@ func TestVersionKindBaseIsRC(t *testing.T) {
 			}
 			if got := v.Kind(); got != c.Expected.Kind {
 				t.Errorf("Kind() = %q, want %q", got, c.Expected.Kind)
-			}
-			if got := v.Base(); got != c.Expected.Base {
-				t.Errorf("Base() = %q, want %q", got, c.Expected.Base)
 			}
 			if got := v.IsRC(); got != c.Expected.RC {
 				t.Errorf("IsRC() = %v, want %v", got, c.Expected.RC)

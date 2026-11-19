@@ -53,7 +53,7 @@
       # in this leaf module (proven by TestVendorHashStableOnFirstPartyEdit).
       # Recompute ONLY on a go.mod/go.sum dep bump: set this to
       # nixpkgs.lib.fakeHash, run `nix build`, copy the reported `got:` hash here.
-      vendorHash = "sha256-Z5x7DuLZFziyowaYlXvW5i2V2sgVNyIcl4FaCn37Ei8=";
+      vendorHash = "sha256-x5e7s9kfP5EF2e6uVJAN20yJZ5eustiQTh48Ipmhqbw=";
 
       # Extra CLI tools available in the dev shell. The contract-gate CLIs
       # (oasdiff / go-apidiff / vacuum) are dev/CI tools and MUST NOT enter
@@ -193,7 +193,7 @@
 
               # Build the schema repo's dev/CI tools. cmd/schema-gen regenerates
               # the OpenAPI specs + Redoc HTML; cmd/release-guard is the release
-              # pipeline's title/tag/guard CLI. The schema module ships NO runtime
+              # pipeline's release-tag parser (`parse-tag`). The schema module ships NO runtime
               # binary (it is a contract-only leaf). The default `./...` would also
               # try to "build" the library packages, which is fine, but we name the
               # two commands explicitly so the package output is just those tools.
