@@ -61,6 +61,27 @@ go test -race ./internal/contractgates/ -run TestOasdiffSyntheticBreak -v   # sk
   `vacuum` are on `PATH`, so the synthetic-break tests and `make gates` run for
   real. CI runs `make gates` with `fetch-depth: 0` so the base ref is resolvable.
 
+### Tests never read your git configuration
+
+A test result must not depend on the machine. Every package whose tests start a
+process (git, a shell script, `go`) has a `TestMain` that calls
+`testutil.RunWithIsolatedGitConfig` (`internal/testutil/gitconfig.go`). It sets
+`GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1` and unsets
+`GIT_CONFIG_COUNT` and `GIT_CONFIG_PARAMETERS` before any test runs, so a global
+`commit.gpgsign`, a `url.*.insteadOf` rewrite, or injected `GIT_CONFIG_*`
+values never reach a child. Do not add per-call `-c commit.gpgsign=false` or
+`GIT_CONFIG_GLOBAL` workarounds; set the commit identity per call
+(`GIT_AUTHOR_*`, `GIT_COMMITTER_*`) as the existing helpers do.
+
+`TestEveryPackageThatStartsProcessesIsolatesGitConfig`
+(`internal/testutil/gitconfig_guard_test.go`) fails when a test package imports
+`os/exec`, or reaches it through module code it tests or imports, without that
+`TestMain`. Its scanner cases live in
+`internal/testutil/testdata/git_isolation_scanner.yaml`, and
+`git_isolation_packages.yaml` names the packages it must keep detecting. It
+cannot see a process started without `os/exec`, git run by a dependency outside
+the module, or a child whose environment a test rebuilds from scratch.
+
 ## Layer 1: the contract gates
 
 These are the load-bearing invariants. Each has a real, named test (or gate
