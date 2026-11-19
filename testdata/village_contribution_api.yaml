@@ -2,7 +2,7 @@ required_names:
   views: [view-grouped, view-paged, view-snapshot, view-empty-is-not-a-token, view-flat-is-not-a-token, view-capitalised, view-padded, view-unknown]
   error_codes: [code-moved, code-missing, code-private-unapproved, code-conflict, code-policy, code-membership, code-stale-selection, code-snapshot-timeout, code-snapshot-busy, code-snapshot-too-large, code-live-retired, code-empty, code-capitalised, code-unknown]
   bounds: [page-limit-default, page-limit-minimum, page-limit-maximum, snapshot-max-bytes, selection-max-transcripts]
-  shapes: [page-response-family, page-response-empty-helpers, page-response-matched-absent, page-response-session-end, page-response-retired-snapshot-limit, snapshot-response-compact, snapshot-record-no-parent, snapshot-record-retired-title, snapshot-response-retired-truncated, project-page-counts, project-page-retired-project-q, error-response-moved, error-response-policy-without-transcript, error-response-legacy-text-only, error-response-snapshot-too-large, selection-request, selection-request-retired-expand-helpers]
+  shapes: [page-response-family, page-response-empty-helpers, page-response-matched-absent, page-response-session-end, page-response-retired-snapshot-limit, snapshot-response-compact, snapshot-record-no-parent, snapshot-record-untitled, snapshot-record-always-states-title, snapshot-record-retired-display-name, snapshot-response-retired-truncated, project-page-counts, project-page-retired-project-q, error-response-moved, error-response-policy-without-transcript, error-response-legacy-text-only, error-response-snapshot-too-large, selection-request, selection-request-retired-expand-helpers]
 views:
   cases:
     - name: view-grouped
@@ -245,29 +245,45 @@ shapes:
           group_id: 11111111-1111-4111-8111-111111111111
           project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           records:
-            - {id: root-a, visibility: private, latest_status: pending, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
-            - {id: helper-a, visibility: shared, project_hash: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, parent_transcript_id: root-a}
+            - {id: root-a, title: fix the importer, visibility: private, latest_status: pending, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+            - {id: helper-a, title: null, visibility: shared, project_hash: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, parent_transcript_id: root-a}
           count: 2
-      expected: {valid: true, present: [group_id, project_hash, records, count], nested_absent: [records.0.parent_transcript_id, records.1.latest_status], nested_present: [records.1.parent_transcript_id, records.0.latest_status]}
+      expected: {valid: true, present: [group_id, project_hash, records, count], nested_absent: [records.0.parent_transcript_id, records.1.latest_status], nested_present: [records.0.title, records.1.parent_transcript_id, records.0.latest_status]}
       classification: must-pass
       provenance: *shapes
       mutation: {description: a helper keeps its own project and parent link while a root omits the parent link}
     - name: snapshot-record-no-parent
       input:
         target: snapshot-record
-        json: {id: root-a, visibility: public, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
-      expected: {valid: true, present: [id, visibility, project_hash], absent: [latest_status, parent_transcript_id]}
+        json: {id: root-a, title: fix the importer, visibility: public, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      expected: {valid: true, present: [id, title, visibility, project_hash], absent: [latest_status, parent_transcript_id]}
       classification: must-pass
       provenance: *shapes
       mutation: {description: a root without a contribution attempt omits both optional fields}
-    - name: snapshot-record-retired-title
+    - name: snapshot-record-untitled
       input:
         target: snapshot-record
-        json: {id: root-a, visibility: public, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, title: heavy}
+        json: {id: root-a, title: null, visibility: private, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      expected: {valid: true, present: [id, title, visibility, project_hash]}
+      classification: must-pass
+      provenance: &snapshot-title {source: requirement, ref: snapshot-record-names-each-session}
+      mutation: {description: a session without a title carries a null title, as its contributable row does}
+    - name: snapshot-record-always-states-title
+      input:
+        target: snapshot-record
+        json: {id: root-a, visibility: private, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      expected: {valid: true, present: [title]}
+      classification: must-pass
+      provenance: *snapshot-title
+      mutation: {description: a producer always writes the title, null when unset, so a client can name each session a person consents to without loading its row}
+    - name: snapshot-record-retired-display-name
+      input:
+        target: snapshot-record
+        json: {id: root-a, title: fix the importer, visibility: private, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, project_display_name: heavy}
       expected: {valid: false}
       classification: must-fail
       provenance: {source: requirement, ref: snapshot-record-is-compact}
-      mutation: {description: the snapshot record carries no display fields}
+      mutation: {description: the title is the record's only display field; project names come from the project picker}
     - name: snapshot-response-retired-truncated
       input:
         target: snapshot

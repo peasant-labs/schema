@@ -198,10 +198,15 @@ type VillageContributionPageResponse struct {
 }
 
 // VillageContributionSnapshotRecord is the compact record of one session in a
-// snapshot: its identity, visibility, latest contribution status, own project
-// and parent link, and nothing else.
+// snapshot: its identity, title, visibility, latest contribution status, own
+// project and parent link, and nothing else. The title is carried so a client
+// can name every session a person is asked to consent to, including sessions
+// it never loaded as a row.
 type VillageContributionSnapshotRecord struct {
-	ID         TranscriptID                `json:"id"`
+	ID TranscriptID `json:"id"`
+	// Title is the session's title, null when the session has none. It is the
+	// same value the session's contributable row carries.
+	Title      *string                     `json:"title" description:"The session's title, null when it has none. The same value the session's contributable row carries, so a client can name a session it never loaded as a row."`
 	Visibility VillageTranscriptVisibility `json:"visibility"`
 	// LatestStatus is the status of the latest contribution attempt; absence
 	// means no attempt.

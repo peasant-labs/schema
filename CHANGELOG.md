@@ -28,8 +28,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   never affect the position of their family. A family belongs to
   its root's project; a helper may be in another project and carries its own
   `project_hash`. `view=snapshot` returns the compact record of every session in
-  the matching families of one project (id, visibility, latest contribution
-  status, project, parent link) in one document with no record-count cap. The
+  the matching families of one project (id, title, visibility, latest
+  contribution status, project, parent link) in one document with no record-count cap. The
   document is limited to 8 MiB (8388608 bytes) of response body
   (`VillageContributionSnapshotMaxBytes`); a snapshot that would exceed the
   limit is refused whole with a 413 whose code is the new
