@@ -223,6 +223,13 @@ merge_gate_required:
   - content-vendor-success
   - content-other-job-failed
   - unknown-release-is-refused
+  - inherited-release-skips-check
+  - inherited-release-check-ran-is-refused
+  - inherited-without-release-only-is-refused
+  - inherited-on-push-is-refused
+  - unknown-inherit-is-refused
+  - not-inherited-code-requires-check
+  - pull-request-inherited-release
 merge_gate_cases:
   - name: release-vendor-failed
     release: "true"
@@ -256,6 +263,51 @@ merge_gate_cases:
     release: ""
     results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
     expected_exit: 1
+  # A release-only candidate that inherited its base's queue verdict skips
+  # make check; merge-gate accepts the skip only with release_only and on a
+  # pull_request or merge_group run.
+  - name: inherited-release-skips-check
+    release: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 0
+  - name: inherited-release-check-ran-is-refused
+    release: "true"
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+  - name: inherited-without-release-only-is-refused
+    release: "true"
+    release_only: "false"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+  - name: inherited-on-push-is-refused
+    release: "false"
+    event: push
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"skipped"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+  - name: unknown-inherit-is-refused
+    release: "false"
+    inherit: "maybe"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"success"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 1
+  - name: not-inherited-code-requires-check
+    release: "true"
+    release_only: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"success"}}'
+    expected_exit: 1
+  - name: pull-request-inherited-release
+    release: "false"
+    event: pull_request
+    release_only: "true"
+    inherit: "true"
+    results_json: '{"changes":{"result":"success"},"check":{"result":"skipped"},"contract-gates":{"result":"success"},"vendor-hash":{"result":"skipped"}}'
+    expected_exit: 0
 pre_tag_commands:
   contract: 'release-intent check-contract --report "${RUNNER_TEMP}/candidate-report.yaml" --until "${CANDIDATE}" --floor "${FLOOR}"'
 precheck:

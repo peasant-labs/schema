@@ -9,6 +9,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// orDefault keeps a fixture row short: an omitted field is the ordinary
+// merge-group value.
+func orDefault(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
 // TestMergeGateVendorHash runs the actual merge-gate shell with fixture needs.
 func TestMergeGateVendorHash(t *testing.T) {
 	var fixture struct {
@@ -16,6 +25,10 @@ func TestMergeGateVendorHash(t *testing.T) {
 		Cases    []struct {
 			Name         string `yaml:"name"`
 			Release      string `yaml:"release"`
+			Event        string `yaml:"event"`
+			Code         string `yaml:"code"`
+			ReleaseOnly  string `yaml:"release_only"`
+			Inherit      string `yaml:"inherit"`
 			ResultsJSON  string `yaml:"results_json"`
 			ExpectedExit int    `yaml:"expected_exit"`
 		} `yaml:"merge_gate_cases"`
@@ -59,7 +72,9 @@ func TestMergeGateVendorHash(t *testing.T) {
 		seen[c.Name] = true
 		t.Run(c.Name, func(t *testing.T) {
 			cmd := exec.Command("bash", "-c", script)
-			cmd.Env = append(os.Environ(), "RESULTS="+c.ResultsJSON, "EVENT=merge_group", "CODE=true", "RELEASE="+c.Release)
+			cmd.Env = append(os.Environ(), "RESULTS="+c.ResultsJSON, "RELEASE="+c.Release,
+				"EVENT="+orDefault(c.Event, "merge_group"), "CODE="+orDefault(c.Code, "true"),
+				"RELEASE_ONLY="+orDefault(c.ReleaseOnly, "false"), "INHERIT="+orDefault(c.Inherit, "false"))
 			out, err := cmd.CombinedOutput()
 			exit := 0
 			if err != nil {
