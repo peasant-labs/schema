@@ -15727,12 +15727,27 @@
             "$ref": "#/components/schemas/SchemaProjectHash",
             "description": "The session's own project, which may differ from the project of the root of its family."
           },
+          "title": {
+            "anyOf": [
+              {
+                "description": "The session's title, null when it has none. The same value the session's contributable row carries, so a client can name a session it never loaded as a row.",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "visibility": {
             "$ref": "#/components/schemas/SchemaVillageTranscriptVisibility"
           }
         },
         "required": [
           "id",
+          "title",
           "visibility",
           "project_hash"
         ],

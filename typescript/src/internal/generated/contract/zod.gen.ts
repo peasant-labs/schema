@@ -5413,6 +5413,7 @@ export const zVillageContributionSnapshotRecord = z.object({
     latest_status: zVillageShareStatus.optional(),
     parent_transcript_id: zTranscriptID.optional(),
     project_hash: zProjectHash,
+    title: z.string().nullable(),
     visibility: zVillageTranscriptVisibility
 });
 
