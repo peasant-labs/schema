@@ -80,7 +80,7 @@ exit 1
 			}
 			git("init", "-q")
 			git("add", "scripts", "generated")
-			git("-c", "commit.gpgsign=false", "commit", "-qm", "fixture")
+			git("commit", "-qm", "fixture")
 			outDir := t.TempDir()
 			signal := filepath.Join(outDir, "changes.txt")
 			report := filepath.Join(outDir, "report.yaml")

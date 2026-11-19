@@ -42,8 +42,8 @@ func TestContractGatesAllAndReleaseVerdict(t *testing.T) {
 	scratch := t.TempDir()
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
-	env := append(os.Environ(), "GOWORK=off", "GOFLAGS=-mod=mod", "GIT_CONFIG_NOSYSTEM=1",
-		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_AUTHOR_NAME=fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
+	env := append(os.Environ(), "GOWORK=off", "GOFLAGS=-mod=mod",
+		"GIT_AUTHOR_NAME=fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
 		"GIT_COMMITTER_NAME=fixture", "GIT_COMMITTER_EMAIL=fixture@example.invalid")
 	run := func(workdir, name string, args ...string) ([]byte, error) {
 		t.Helper()
@@ -121,7 +121,7 @@ func TestContractGatesAllAndReleaseVerdict(t *testing.T) {
 		write("generated/village-api-"+c.BaseVersion+".yaml", []byte(c.BaseSpec))
 		git("init", "-q")
 		git("add", ".")
-		git("-c", "commit.gpgsign=false", "commit", "-qm", "chore: establish fixture")
+		git("commit", "-qm", "chore: establish fixture")
 		base := git("rev-parse", "HEAD")
 		git("tag", "v"+c.BaseVersion, base)
 		write("versions.go", versions(c.HeadVersion))
