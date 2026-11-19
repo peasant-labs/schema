@@ -3,6 +3,10 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.59.0
+
+- freeze spec documents in the release PR (#275) (BREAKING)
+
 ## 0.58.1
 
 - keep the closed-set alias on optional, nullable and nullish fields (#260)
