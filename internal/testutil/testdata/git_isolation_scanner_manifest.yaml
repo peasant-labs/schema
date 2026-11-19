@@ -8,3 +8,10 @@ requiredNames:
   - an isolating TestMain behind a build constraint is rejected
   - packages that start no process need no isolation
   - nested modules and testdata are not scanned
+  - isolation after running tests is rejected
+  - discarded isolation result is rejected
+  - discarded exit code is rejected
+  - deferred isolation exit is rejected
+  - a prelude before the isolated exit passes
+  - competing exit before isolation is rejected
+  - competing goleak runner is rejected
