@@ -187,6 +187,41 @@ cases:
       required: false
       media:
         application/json: SchemaVillageCreateAPIKeyRequest
+- name: listMyAPIKeys
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village backend/internal/handler/auth.go
+  mutation:
+    description: operation contract changes
+  input:
+    method: GET
+    path: /api/v1/auth/api-keys
+  expected:
+    operation_id: listMyAPIKeys
+    tag: auth
+    servers: []
+    parameters: []
+    responses:
+      '200':
+        media:
+          application/json: '[]SchemaVillageAPIKey|null'
+        headers: {}
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+    description_anchors:
+    - including revoked
 - name: revokeMyAPIKey
   classification: must-pass
   provenance:
