@@ -6484,7 +6484,8 @@ paths:
       - transcripts
     post:
       description: Attest to a visible transcript as a verified organization member.
-        Duplicate errors can return 409; errors containing violates return 403 first.
+        A caller who is not a verified member of the organization, and a duplicate
+        of an existing attestation, are both refused with 403.
       operationId: createTranscriptAttestation
       parameters:
       - description: Transcript identifier
@@ -6524,19 +6525,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
-          description: Forbidden
+          description: Forbidden. The caller is not a verified member of the organization,
+            or the same attestation already exists; the database refusal is not told
+            apart.
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Not Found
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SchemaVillageErrorResponse'
-          description: Conflict
         "500":
           content:
             application/json:

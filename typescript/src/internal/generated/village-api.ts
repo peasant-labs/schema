@@ -1569,7 +1569,7 @@ export interface paths {
         /** @description List attestations for a visible transcript; inaccessible transcripts return 404. */
         get: operations["listTranscriptAttestations"];
         put?: never;
-        /** @description Attest to a visible transcript as a verified organization member. Duplicate errors can return 409; errors containing violates return 403 first. */
+        /** @description Attest to a visible transcript as a verified organization member. A caller who is not a verified member of the organization, and a duplicate of an existing attestation, are both refused with 403. */
         post: operations["createTranscriptAttestation"];
         delete?: never;
         options?: never;
@@ -9252,7 +9252,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Forbidden. The caller is not a verified member of the organization, or the same attestation already exists; the database refusal is not told apart. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -9263,15 +9263,6 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Conflict */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
