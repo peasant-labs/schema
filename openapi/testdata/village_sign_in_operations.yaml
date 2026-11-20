@@ -681,7 +681,7 @@ cases:
     source: requirement
     ref: Village router mounts the CLI code exchange behind the sign-in limiter
   mutation:
-    description: Pin the limiter headers and 429 on the CLI code exchange
+    description: Pin the limiter headers, the 429, the handler refusals and the required body on the CLI code exchange
   input:
     method: POST
     path: /api/v1/auth/cli/exchange
@@ -690,7 +690,7 @@ cases:
     tag: auth
     parameters: []
     request_body:
-      required: false
+      required: true
       media:
         application/json: SchemaExchangeCodeRequest
     responses:
@@ -701,6 +701,33 @@ cases:
           X-RateLimit-Limit: true
           X-RateLimit-Remaining: true
           X-RateLimit-Reset: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+        description_anchors:
+        - code or state is empty
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+        description_anchors:
+        - No unexchanged code
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+        description_anchors:
+        - could not be generated or stored
       '429':
         media:
           text/plain: string

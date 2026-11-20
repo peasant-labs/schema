@@ -202,10 +202,21 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		method: http.MethodPost, path: "/api/v1/auth/cli/exchange", id: "cliExchangeCode", tag: "auth",
 		description: "Exchange an OAuth authorization code and state for API credentials. " +
 			"Called by the CLI's local callback server after receiving the browser redirect.",
-		rateLimited: true,
-		requests:    []interface{}{new(schema.ExchangeCodeRequest)},
-		response:    new(schema.ExchangeCodeResponse),
+		rateLimited:   true,
+		requests:      []interface{}{new(schema.ExchangeCodeRequest)},
+		response:      new(schema.ExchangeCodeResponse),
+		errorStatuses: []int{http.StatusBadRequest, http.StatusUnauthorized, http.StatusInternalServerError},
+		errorSummaries: map[int]string{
+			http.StatusBadRequest:          "Bad Request. The body is missing or does not decode as the request, or code or state is empty.",
+			http.StatusUnauthorized:        "Unauthorized. No unexchanged code issued within the last five minutes matches this code and state.",
+			http.StatusInternalServerError: "Internal Server Error. The API key could not be generated or stored.",
+		},
 	}}); err != nil {
+		return nil, err
+	}
+	// The handler decodes the body unconditionally and refuses a missing one
+	// with 400, so the body is required.
+	if err := requireRequestBody(r.Spec, http.MethodPost, "/api/v1/auth/cli/exchange"); err != nil {
 		return nil, err
 	}
 
