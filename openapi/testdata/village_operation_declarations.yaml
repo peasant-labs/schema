@@ -9,9 +9,9 @@
 #   check            checkVillageOperation alone
 #   verify_statuses  reflect alone, then verifyVillageStatuses, which sees what
 #                    the reflector left behind
-# Bodies are named: status is VillageStatusResponse, error is
-# VillageErrorResponse. The request sign_in_callback carries a query parameter
-# state and a cookie parameter oauth_state.
+# Sessions, bodies and requests are named by their Go identifiers. The request
+# villageProbeSignInRequest carries a query parameter state and a cookie
+# parameter oauth_state.
 # Every case name is listed in requiredVillageDeclarationCases in
 # village_operation_declarations_internal_test.go.
 cases:
@@ -40,7 +40,7 @@ cases:
         method: GET
         path: /api/v1/probe/read
         id: probeRead
-        response: status
+        response: VillageStatusResponse
         error_statuses: [500]
         browser_error_statuses: [500]
     expected:
@@ -56,8 +56,8 @@ cases:
         method: GET
         path: /api/v1/probe/read
         id: probeRead
-        session: required
-        response: status
+        session: villageSessionRequired
+        response: VillageStatusResponse
         browser_error_statuses: [503]
     expected:
       error_contains: "status 503 is declared by both the required session and browserErrorStatuses"
@@ -92,7 +92,7 @@ cases:
         responses:
           - status: 200
             description: "OK."
-            media: [{type: text/plain, body: status}]
+            media: [{type: text/plain, body: VillageStatusResponse}]
     expected:
       error_contains: "declares text/plain with a Go body"
 
@@ -170,7 +170,7 @@ cases:
         path: /api/v1/probe/stub
         id: probeStub
         declared_stub: true
-        response: status
+        response: VillageStatusResponse
         error_statuses: [501]
     expected:
       error_contains: "declaredStub is set but the operation declares a success response"
@@ -202,7 +202,7 @@ cases:
         path: /api/v1/probe/read
         id: probeRead
         rate_limited: true
-        response: status
+        response: VillageStatusResponse
         error_statuses: [429]
     expected:
       error_contains: "status 429 is listed by hand on a rate-limited operation"
@@ -217,8 +217,8 @@ cases:
         method: GET
         path: /api/v1/probe/read
         id: probeRead
-        session: required
-        response: status
+        session: villageSessionRequired
+        response: VillageStatusResponse
         error_statuses: [401, 500]
     expected:
       error_contains: "status 401 is listed by hand on an operation behind the required session"
@@ -233,7 +233,7 @@ cases:
         method: GET
         path: /api/v1/probe/read
         id: probeRead
-        response: status
+        response: VillageStatusResponse
         servers: ["/"]
     expected:
       error_contains: "servers overrides the document's servers on a path under /api/v1/"
@@ -335,7 +335,7 @@ cases:
         path: /api/v1/probe/read
         id: probeRead
         rate_limited: true
-        response: status
+        response: VillageStatusResponse
     expected:
       error_contains: "the declaration states status 429, which the document does not carry"
 
@@ -351,7 +351,7 @@ cases:
         id: probeSignIn
         description: "Start a probe sign-in."
         rate_limited: true
-        request: sign_in_callback
+        request: villageProbeSignInRequest
         responses:
           - status: 307
             description: "Redirect to the provider."
@@ -383,8 +383,8 @@ cases:
         method: GET
         path: /api/v1/probe/me
         id: probeMe
-        session: required
-        response: status
+        session: villageSessionRequired
+        response: VillageStatusResponse
         error_statuses: [500]
     expected:
       document:
@@ -411,8 +411,8 @@ cases:
         method: DELETE
         path: /api/v1/probe/item
         id: probeDelete
-        session: required
-        response: status
+        session: villageSessionRequired
+        response: VillageStatusResponse
         error_statuses: [503]
     expected:
       document:
@@ -436,7 +436,7 @@ cases:
         method: POST
         path: /api/v1/probe/batch
         id: probeBatch
-        session: required
+        session: villageSessionRequired
         declared_stub: true
         error_statuses: [501]
     expected:
@@ -465,7 +465,7 @@ cases:
           - status: 200
             description: "Alive."
             headers: [{name: Cache-Control, required: true}]
-            media: [{type: application/json, body: status}]
+            media: [{type: application/json, body: VillageStatusResponse}]
     expected:
       document:
         operation_id: probeHealth

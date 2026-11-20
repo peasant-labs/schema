@@ -72,21 +72,20 @@ func TestVillageComponentShapes(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var normalized map[string]interface{}
-			if err = json.Unmarshal(raw, &normalized); err != nil {
+			var component villageComponentShape
+			if err = json.Unmarshal(raw, &component); err != nil {
 				t.Fatal(err)
 			}
 			if c.MutationRemoveRequired != "" {
-				required := normalized["required"].([]interface{})
-				var changed []interface{}
-				for _, n := range required {
+				var changed []string
+				for _, n := range component.Required {
 					if n != c.MutationRemoveRequired {
 						changed = append(changed, n)
 					}
 				}
-				normalized["required"] = changed
+				component.Required = changed
 			}
-			matches := villageShapeMatches(normalized, c)
+			matches := villageShapeMatches(t, component, c)
 			if c.MutationRemoveRequired != "" {
 				if matches {
 					t.Fatal("required-field mutation went undetected")
@@ -100,50 +99,57 @@ func TestVillageComponentShapes(t *testing.T) {
 	}
 }
 
-func villageShapeMatches(got map[string]interface{}, c villageShapeCase) bool {
-	var actual []string
-	required, _ := got["required"].([]interface{})
-	for _, v := range required {
-		actual = append(actual, v.(string))
-	}
+// villageComponentShape is the part of a component schema the shape cases
+// compare: its required members and its properties.
+type villageComponentShape struct {
+	Required   []string                   `json:"required"`
+	Properties map[string]json.RawMessage `json:"properties"`
+}
+
+// villageShapeProjection keeps the members of a property schema that decide
+// its shape: type, format, reference, alternatives and items.
+type villageShapeProjection struct {
+	Type   any                      `json:"type,omitempty"`
+	Format string                   `json:"format,omitempty"`
+	Ref    string                   `json:"$ref,omitempty"`
+	AnyOf  []villageShapeProjection `json:"anyOf,omitempty"`
+	Items  *villageShapeProjection  `json:"items,omitempty"`
+}
+
+func villageShapeMatches(t *testing.T, got villageComponentShape, c villageShapeCase) bool {
+	t.Helper()
+	actual := append([]string(nil), got.Required...)
 	expected := append([]string(nil), c.Required...)
 	sort.Strings(actual)
 	sort.Strings(expected)
 	if !reflect.DeepEqual(actual, expected) {
 		return false
 	}
-	props, ok := got["properties"].(map[string]interface{})
-	if !ok {
+	if got.Properties == nil {
 		return false
 	}
-	projected := make(map[string]interface{}, len(props))
-	for k, v := range props {
-		projected[k] = villageShapeProjection(v)
+	projected := make(map[string]villageShapeProjection, len(got.Properties))
+	for name, raw := range got.Properties {
+		var projection villageShapeProjection
+		if err := json.Unmarshal(raw, &projection); err != nil {
+			t.Fatalf("decode property %s of %s: %v", name, c.Component, err)
+		}
+		projected[name] = projection
 	}
-	// Normalize YAML numbers and maps through JSON before comparing.
-	b, _ := json.Marshal(c.Properties)
-	var expectedProps map[string]interface{}
-	_ = json.Unmarshal(b, &expectedProps)
-	return reflect.DeepEqual(projected, expectedProps)
+	// Normalize both sides through JSON before comparing: YAML numbers and
+	// maps on one side, the projection's omitted members on the other.
+	return normalizedJSON(t, projected) != nil && reflect.DeepEqual(normalizedJSON(t, projected), normalizedJSON(t, c.Properties))
 }
 
-func villageShapeProjection(v interface{}) interface{} {
-	switch x := v.(type) {
-	case map[string]interface{}:
-		out := map[string]interface{}{}
-		for _, k := range []string{"type", "format", "$ref", "anyOf", "items"} {
-			if val, ok := x[k]; ok {
-				out[k] = villageShapeProjection(val)
-			}
-		}
-		return out
-	case []interface{}:
-		out := make([]interface{}, len(x))
-		for i, v := range x {
-			out[i] = villageShapeProjection(v)
-		}
-		return out
-	default:
-		return x
+func normalizedJSON(t *testing.T, value any) any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("marshal for comparison: %v", err)
 	}
+	var normalized any
+	if err := json.Unmarshal(raw, &normalized); err != nil {
+		t.Fatalf("decode for comparison: %v", err)
+	}
+	return normalized
 }

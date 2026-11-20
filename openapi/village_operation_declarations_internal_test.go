@@ -108,44 +108,57 @@ type villageProbeSignInRequest struct {
 	OAuthState string `cookie:"oauth_state" description:"State cookie set when sign-in started."`
 }
 
+// probeBodies, probeRequests and probeSessions resolve the names a probe
+// uses. Each name is the Go identifier of the value it stands for.
+var (
+	probeBodies = map[string]func() interface{}{
+		"VillageStatusResponse": func() interface{} { return new(schema.VillageStatusResponse) },
+		"VillageErrorResponse":  func() interface{} { return new(schema.VillageErrorResponse) },
+	}
+	probeRequests = map[string]func() interface{}{
+		"villageProbeSignInRequest": func() interface{} { return new(villageProbeSignInRequest) },
+	}
+	probeSessions = map[string]villageSession{
+		"villageSessionNone":     villageSessionNone,
+		"villageSessionOptional": villageSessionOptional,
+		"villageSessionRequired": villageSessionRequired,
+	}
+)
+
 func probeBody(t *testing.T, name string) interface{} {
 	t.Helper()
-	switch name {
-	case "":
+	if name == "" {
 		return nil
-	case "status":
-		return new(schema.VillageStatusResponse)
-	case "error":
-		return new(schema.VillageErrorResponse)
 	}
-	t.Fatalf("probe names the unknown body %q; use status or error", name)
-	return nil
+	body, ok := probeBodies[name]
+	if !ok {
+		t.Fatalf("probe names the unknown body %q; name a type listed in probeBodies", name)
+	}
+	return body()
 }
 
 func probeRequest(t *testing.T, name string) []interface{} {
 	t.Helper()
-	switch name {
-	case "":
+	if name == "" {
 		return nil
-	case "sign_in_callback":
-		return []interface{}{new(villageProbeSignInRequest)}
 	}
-	t.Fatalf("probe names the unknown request %q; use sign_in_callback", name)
-	return nil
+	request, ok := probeRequests[name]
+	if !ok {
+		t.Fatalf("probe names the unknown request %q; name a type listed in probeRequests", name)
+	}
+	return []interface{}{request()}
 }
 
 func probeSession(t *testing.T, name string) villageSession {
 	t.Helper()
-	switch name {
-	case "", "none":
+	if name == "" {
 		return villageSessionNone
-	case "optional":
-		return villageSessionOptional
-	case "required":
-		return villageSessionRequired
 	}
-	t.Fatalf("probe names the unknown session %q; use none, optional or required", name)
-	return villageSessionNone
+	session, ok := probeSessions[name]
+	if !ok {
+		t.Fatalf("probe names the unknown session %q; name a constant listed in probeSessions", name)
+	}
+	return session
 }
 
 func (p villageProbe) spec(t *testing.T) villageOperationSpec {
@@ -180,7 +193,7 @@ func (p villageProbe) spec(t *testing.T) villageOperationSpec {
 func TestVillageOperationDeclarationsRefuseMistakes(t *testing.T) {
 	corpus, err := testcase.LoadCorpus[villageDeclarationInput, villageDeclarationExpected](villageOperationDeclarationsYAML)
 	if err != nil {
-		t.Fatalf("load Village declaration corpus testdata/village_operation_declarations.yaml: %v", err)
+		t.Fatalf("load the Village declaration corpus: %v", err)
 	}
 	assert.RequireMin(t, corpus, 1)
 	assert.RequireValid(t, corpus)
@@ -229,8 +242,7 @@ func TestVillageOperationDeclarationsRefuseMistakes(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s refused a valid declaration: %v", c.Input.Call, err)
 			}
-			document := villageDocument(t, reflector.Spec)
-			for _, problem := range checkVillageOperationExpectation(document, strings.ToLower(op.method), op.path, *c.Expected.Document) {
+			for _, problem := range checkVillageOperationExpectation(reflector.Spec, op.method, op.path, *c.Expected.Document) {
 				t.Error(problem)
 			}
 		})
