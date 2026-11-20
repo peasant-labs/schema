@@ -452,8 +452,85 @@ type villageOperationSpec struct {
 	successStatus        int
 	errorStatuses        []int
 	// errorSummaries, when set, replaces the default description of the named
-	// error statuses. Each key must be a status in errorStatuses.
+	// error statuses. Each key must be a status in errorStatuses or
+	// browserErrorStatuses.
 	errorSummaries map[int]string
+
+	// The fields below describe what the reflector cannot express on its own.
+	// Their zero values declare nothing, so an operation that leaves them unset
+	// generates the same document it always did. checkVillageOperation refuses
+	// contradictory combinations before anything is reflected.
+
+	// session is the session middleware in front of the handler. Only
+	// villageSessionRequired adds statuses: the middleware's 401 and 503.
+	session villageSession
+	// rateLimited declares the per-client limiter in front of the handler: the
+	// limiter headers on every response, and a 429 text/plain refusal with
+	// Retry-After. 429 is then never listed by hand.
+	rateLimited bool
+	// responses lists statuses the success and error fields cannot express: a
+	// body-less redirect, a response with headers, or a text body. A JSON
+	// success with headers (for example a Cache-Control or a Set-Cookie) is
+	// declared here rather than through response.
+	responses []villageResponse
+	// browserErrorStatuses are refusals the server negotiates by Accept: an
+	// HTML page when the first recognised media type is text/html or
+	// application/xhtml+xml, a VillageErrorResponse otherwise. The status is the
+	// same both ways.
+	browserErrorStatuses []int
+	// declaredStub marks a mounted route whose behaviour is not implemented
+	// yet: it declares only its refusals, one of them 501, and no success.
+	// Without it, an operation with no success response is refused as a
+	// forgotten response.
+	declaredStub bool
+	// servers overrides the document's servers on this path item. It is
+	// allowed only outside the API prefix, for a route the server mounts at
+	// its root.
+	servers []string
+}
+
+// villageSession is the session middleware an operation sits behind.
+type villageSession int
+
+const (
+	// villageSessionNone means no session middleware. It is the zero value, so
+	// an operation that predates this field and lists 401 by hand is
+	// unaffected.
+	villageSessionNone villageSession = iota
+	// villageSessionOptional reads a session when one is present and never
+	// refuses, so it declares nothing.
+	villageSessionOptional
+	// villageSessionRequired refuses a request without a valid session with
+	// 401, and answers 503 with Retry-After when the account behind the
+	// session cannot be read. Both are VillageErrorResponse JSON.
+	villageSessionRequired
+)
+
+// villageHeader is one response header.
+type villageHeader struct {
+	name        string
+	description string
+	required    bool
+	// schema is the header value's JSON schema; nil means {"type":"string"}.
+	schema map[string]interface{}
+}
+
+// villageMedia is one media type of a response.
+type villageMedia struct {
+	// mediaType is application/json, text/html or text/plain.
+	mediaType string
+	// body is the Go value reflected for application/json, and nil for a text
+	// medium, which is declared as a plain string.
+	body interface{}
+}
+
+// villageResponse is one status the reflector cannot express on its own.
+type villageResponse struct {
+	status      int
+	description string
+	headers     []villageHeader
+	// media empty means the response has no body, as a redirect does.
+	media []villageMedia
 }
 
 // The two copies of the 410 a transcript read can answer. They name no
@@ -487,6 +564,12 @@ func describeVillageErrorSummaries(spec *openapi31.Spec, op villageOperationSpec
 	for _, status := range op.errorStatuses {
 		declared[status] = struct{}{}
 	}
+	// A browser refusal's summary is applied by declareVillageResponses,
+	// which adds the Accept negotiation to it.
+	browser := make(map[int]struct{}, len(op.browserErrorStatuses))
+	for _, status := range op.browserErrorStatuses {
+		browser[status] = struct{}{}
+	}
 	item, ok := declaredPathItem(spec, op.path)
 	if !ok {
 		return fmt.Errorf("%s: the path is not in the document, so its error statuses cannot be described; add the operation before describing it", where)
@@ -496,8 +579,11 @@ func describeVillageErrorSummaries(spec *openapi31.Spec, op villageOperationSpec
 		return fmt.Errorf("%s: the path has no %s operation, so its error statuses cannot be described", where, op.method)
 	}
 	for status, summary := range op.errorSummaries {
+		if _, ok := browser[status]; ok {
+			continue
+		}
 		if _, ok := declared[status]; !ok {
-			return fmt.Errorf("%s: errorSummaries names status %d, which errorStatuses does not declare; declare the status or drop its summary", where, status)
+			return fmt.Errorf("%s: errorSummaries names status %d, which neither errorStatuses nor browserErrorStatuses declares; declare the status or drop its summary", where, status)
 		}
 		key := statusText(status)
 		response, ok := operation.Responses.MapOfResponseOrReferenceValues[key]
@@ -1300,37 +1386,22 @@ func setVillageAlternativeResponse(spec *openapi31.Spec, path string, legacy map
 	return nil
 }
 
-// addVillageOperations reflects one table of Village operations. Every request
-// structure is added, the success response takes its declared status, and each
-// error status shares the common VillageErrorResponse envelope.
+// addVillageOperations declares one table of Village operations. Each
+// declaration is checked first, so a contradictory one fails before anything
+// is reflected. Every request structure is added, the success response takes
+// its declared status, each error status shares the common
+// VillageErrorResponse envelope, and the responses the reflector cannot express
+// are completed afterwards.
 func addVillageOperations(r *openapi31.Reflector, operations []villageOperationSpec) error {
 	for _, op := range operations {
-		oc, err := r.NewOperationContext(op.method, op.path)
-		if err != nil {
-			return fmt.Errorf("new Village operation %s %s: %w", op.method, op.path, err)
+		if err := checkVillageOperation(op); err != nil {
+			return err
 		}
-		for _, request := range op.requests {
-			oc.AddReqStructure(request)
+		if err := reflectVillageOperation(r, op); err != nil {
+			return err
 		}
-		if len(op.responseAlternatives) > 0 {
-			for _, response := range op.responseAlternatives {
-				oc.AddRespStructure(response)
-			}
-		} else if op.response != nil {
-			if op.successStatus != 0 && op.successStatus != http.StatusOK {
-				oc.AddRespStructure(op.response, openapicore.WithHTTPStatus(op.successStatus))
-			} else {
-				oc.AddRespStructure(op.response)
-			}
-		}
-		for _, status := range op.errorStatuses {
-			oc.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(status))
-		}
-		oc.SetDescription(op.description)
-		oc.SetID(op.id)
-		oc.SetTags(op.tag)
-		if err := r.AddOperation(oc); err != nil {
-			return fmt.Errorf("add Village operation %s %s: %w", op.method, op.path, err)
+		if err := declareVillageResponses(r.Spec, op); err != nil {
+			return err
 		}
 		if err := describeVillageErrorSummaries(r.Spec, op); err != nil {
 			return err

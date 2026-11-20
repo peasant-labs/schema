@@ -1,0 +1,21 @@
+# Operations and components of the last frozen Village document that the
+# working document may change. Every other operation of the frozen document
+# must be generated unchanged, together with every component it references,
+# directly or through other components.
+#
+# against_version names the frozen document these changes are measured from.
+# While VillageAPIVersion equals it, the operations and components that differ
+# must be exactly the ones listed here. Once a later version is frozen, the
+# frozen document already carries these changes, so nothing may differ until a
+# change sets against_version to the then-current version and lists itself.
+against_version: 0.42.0
+allowed_changes:
+  operations:
+    # Declared with a 204 its handler never sends; it answers a redirect.
+    - cliLogin
+    # Unchanged itself; its response component gains two members.
+    - getAuthenticatedVillageUser
+  components:
+    # Gains preview_before_attach and auto_attach_pull_requests, which the
+    # server already sends.
+    - SchemaVillageUser
