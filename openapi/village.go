@@ -410,6 +410,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := addVillagePullRequestOperations(r); err != nil {
 		return nil, err
 	}
+	if err := addVillageBrowseOperations(r); err != nil { return nil, err }
 	if err := addVillageInvitationOperations(r); err != nil {
 		return nil, err
 	}

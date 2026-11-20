@@ -1,0 +1,156 @@
+cases:
+  - name: searchOrganizations
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village mounted browse route"}
+    mutation: {description: "Declare searchOrganizations with its mounted response and parameters"}
+    input: {method: GET, path: "/api/v1/orgs/search"}
+    expected:
+      operation_id: searchOrganizations
+      tag: organizations
+      parameters:
+        - {name: q, in: query, required: false, schema: string}
+        - {name: limit, in: query, required: false, schema: string}
+      responses:
+        "200":
+          media: {application/json: "SchemaVillageOrganizationSearchResponse"}
+        "500":
+          media: {application/json: SchemaVillageErrorResponse}
+      description_anchors: ["Search organizations"]
+  - name: listTags
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village mounted browse route"}
+    mutation: {description: "Declare listTags with its mounted response and parameters"}
+    input: {method: GET, path: "/api/v1/tags"}
+    expected:
+      operation_id: listTags
+      tag: tags
+      responses:
+        "200":
+          media: {application/json: "[]SchemaVillageTagUsage|null"}
+        "500":
+          media: {application/json: SchemaVillageErrorResponse}
+      description_anchors: ["ordered by name"]
+  - name: listPopularTags
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village mounted browse route"}
+    mutation: {description: "Declare listPopularTags with its mounted response and parameters"}
+    input: {method: GET, path: "/api/v1/tags/popular"}
+    expected:
+      operation_id: listPopularTags
+      tag: tags
+      parameters:
+        - {name: limit, in: query, required: false, schema: string}
+      responses:
+        "200":
+          media: {application/json: "[]SchemaVillageTagUsage|null"}
+        "500":
+          media: {application/json: SchemaVillageErrorResponse}
+      description_anchors: ["descending usage"]
+  - name: getUserProfile
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village mounted browse route"}
+    mutation: {description: "Declare getUserProfile with its mounted response and parameters"}
+    input: {method: GET, path: "/api/v1/users/{username}"}
+    expected:
+      operation_id: getUserProfile
+      tag: users
+      parameters:
+        - {name: username, in: path, required: true, schema: string}
+      responses:
+        "200":
+          media: {application/json: "SchemaVillagePublicOwner"}
+        "404":
+          media: {application/json: SchemaVillageErrorResponse}
+      description_anchors: ["public profile"]
+  - name: listUserOrganizations
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village mounted browse route"}
+    mutation: {description: "Declare listUserOrganizations with its mounted response and parameters"}
+    input: {method: GET, path: "/api/v1/users/{username}/orgs"}
+    expected:
+      operation_id: listUserOrganizations
+      tag: users
+      parameters:
+        - {name: username, in: path, required: true, schema: string}
+      responses:
+        "200":
+          media: {application/json: "[]SchemaVillageListUserOrganization|null"}
+        "404":
+          media: {application/json: SchemaVillageErrorResponse}
+        "500":
+          media: {application/json: SchemaVillageErrorResponse}
+      description_anchors: ["visible organizations"]
+  - name: getUserProject
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village mounted browse route"}
+    mutation: {description: "Declare getUserProject with its mounted response and parameters"}
+    input: {method: GET, path: "/api/v1/users/{username}/projects/{projectHash}"}
+    expected:
+      operation_id: getUserProject
+      tag: users
+      parameters:
+        - {name: username, in: path, required: true, schema: string}
+        - {name: projectHash, in: path, required: true, schema: SchemaProjectHash}
+      responses:
+        "200":
+          media: {application/json: "SchemaVillageUserProjectResponse"}
+        "400":
+          media: {application/json: SchemaVillageErrorResponse}
+        "404":
+          media: {application/json: SchemaVillageErrorResponse}
+        "500":
+          media: {application/json: SchemaVillageErrorResponse}
+      description_anchors: ["visible to the caller"]
+  - name: setMyProjectDisplayName
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village mounted browse route"}
+    mutation: {description: "Declare setMyProjectDisplayName with its mounted response and parameters"}
+    input: {method: PATCH, path: "/api/v1/users/me/projects/{projectHash}"}
+    expected:
+      operation_id: setMyProjectDisplayName
+      tag: users
+      parameters:
+        - {name: projectHash, in: path, required: true, schema: SchemaProjectHash}
+      request_body:
+        required: true
+        media: {application/json: SchemaVillageProjectDisplayNameRequest}
+      responses:
+        "200":
+          media: {application/json: "SchemaVillageResolvedProject"}
+        "401":
+          media: {application/json: SchemaVillageErrorResponse}
+        "400":
+          media: {application/json: SchemaVillageErrorResponse}
+        "404":
+          media: {application/json: SchemaVillageErrorResponse}
+        "500":
+          media: {application/json: SchemaVillageErrorResponse}
+        "503":
+          media: {application/json: SchemaVillageErrorResponse}
+          headers: {Retry-After: true}
+      description_anchors: ["at most 255 bytes"]
+  - name: clearMyProjectDisplayName
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village mounted browse route"}
+    mutation: {description: "Declare clearMyProjectDisplayName with its mounted response and parameters"}
+    input: {method: DELETE, path: "/api/v1/users/me/projects/{projectHash}/display-name"}
+    expected:
+      operation_id: clearMyProjectDisplayName
+      tag: users
+      parameters:
+        - {name: projectHash, in: path, required: true, schema: SchemaProjectHash}
+      responses:
+        "200":
+          media: {application/json: "SchemaVillageResolvedProject"}
+        "401":
+          media: {application/json: SchemaVillageErrorResponse}
+        "400":
+          media: {application/json: SchemaVillageErrorResponse}
+        "404":
+          media: {application/json: SchemaVillageErrorResponse}
+        "500":
+          media: {application/json: SchemaVillageErrorResponse}
+        "503":
+          media: {application/json: SchemaVillageErrorResponse}
+          headers: {Retry-After: true}
+      description_anchors: ["missing correction"]
