@@ -16085,6 +16085,80 @@
         "title": "Value Domain Kind",
         "type": "string"
       },
+      "VillageAPIKey": {
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "key_prefix": {
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_used": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "key_prefix",
+          "label",
+          "created_at",
+          "last_used",
+          "revoked_at"
+        ],
+        "type": "object"
+      },
       "VillageAssignableCollectiveRole": {
         "description": "Collective roles an owner may assign through the member role endpoint",
         "enum": [
@@ -16096,6 +16170,23 @@
           "member"
         ],
         "title": "Village Assignable Group Role",
+        "type": "string"
+      },
+      "VillageAttestationType": {
+        "description": "Usage attestation type",
+        "enum": [
+          "used_in_training",
+          "referenced",
+          "evaluated",
+          "deployed"
+        ],
+        "examples": [
+          "used_in_training",
+          "referenced",
+          "evaluated",
+          "deployed"
+        ],
+        "title": "Village Attestation Type",
         "type": "string"
       },
       "VillageAvailableRepositoriesResponse": {
@@ -17980,6 +18071,34 @@
         "title": "Village Contribution Status",
         "type": "string"
       },
+      "VillageCreateAPIKeyRequest": {
+        "properties": {
+          "label": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "VillageCreateAttestationRequest": {
+        "properties": {
+          "attestation_type": {
+            "$ref": "#/components/schemas/VillageAttestationType"
+          },
+          "note": {
+            "description": "Empty or omitted stores no note (null).",
+            "type": "string"
+          },
+          "org_login": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "org_login",
+          "attestation_type"
+        ],
+        "type": "object"
+      },
       "VillageCreateCollectiveRequest": {
         "properties": {
           "acceptance_mode": {
@@ -18013,6 +18132,46 @@
         ],
         "type": "object"
       },
+      "VillageCreatedAPIKey": {
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "key": {
+            "description": "The plaintext key. Returned only here, once.",
+            "type": "string"
+          },
+          "label": {
+            "description": "The label as sent; an empty label is stored as null and listed as null.",
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "key",
+          "label",
+          "prefix"
+        ],
+        "type": "object"
+      },
       "VillageDeprecatedGroupedContributableResponse": {
         "deprecated": true,
         "description": "Released groupId envelope for GET /api/v1/groups/{id}/contributable during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable.",
@@ -18027,6 +18186,17 @@
         "required": [
           "groupId",
           "transcriptList"
+        ],
+        "type": "object"
+      },
+      "VillageDiscoverabilityRequest": {
+        "properties": {
+          "is_discoverable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_discoverable"
         ],
         "type": "object"
       },
@@ -18145,6 +18315,34 @@
         "required": [
           "group_id",
           "transcriptList"
+        ],
+        "type": "object"
+      },
+      "VillageHealthResponse": {
+        "properties": {
+          "buildRevision": {
+            "pattern": "^[0-9a-f]{7,12}$",
+            "type": "string"
+          },
+          "migrations": {
+            "description": "Highest applied migration version; absent when the registry could not be read within one second.",
+            "type": "integer"
+          },
+          "serves": {
+            "description": "Forward-open capability tokens (currently publish-revision-n and segmented-reads-v2). Match exactly; ignore unknown tokens.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "description": "Always ok when the process answers.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "serves"
         ],
         "type": "object"
       },
@@ -18395,6 +18593,48 @@
         ],
         "type": "object"
       },
+      "VillageManualAnnotationRequest": {
+        "properties": {
+          "endIndex": {
+            "description": "Exclusive end; defaults to entryIndex+1; must be greater than entryIndex.",
+            "type": "integer"
+          },
+          "entryIndex": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "typeId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "value": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "typeId",
+          "value",
+          "entryIndex"
+        ],
+        "type": "object"
+      },
       "VillageMetadataUserOrganization": {
         "properties": {
           "avatar_url": {
@@ -18517,6 +18757,79 @@
         },
         "required": [
           "collectives"
+        ],
+        "type": "object"
+      },
+      "VillageOrganizationSearchResponse": {
+        "properties": {
+          "organizations": {
+            "items": {
+              "$ref": "#/components/schemas/VillageOrganizationSearchResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "organizations"
+        ],
+        "type": "object"
+      },
+      "VillageOrganizationSearchResult": {
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "member_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "org_login": {
+            "type": "string"
+          },
+          "transcript_count": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "org_login",
+          "avatar_url",
+          "member_count",
+          "transcript_count"
+        ],
+        "type": "object"
+      },
+      "VillageOrganizationVisibilityRequest": {
+        "properties": {
+          "visible": {
+            "description": "Omitted means false.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "VillageOrganizationVisibilityResponse": {
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "visible"
         ],
         "type": "object"
       },
@@ -18644,6 +18957,67 @@
           "project_name",
           "branch",
           "shared_at"
+        ],
+        "type": "object"
+      },
+      "VillageProjectCollective": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "linked_github_org": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "transcript_count": {
+            "description": "Approved transcripts of this project in the collective.",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "linked_github_org",
+          "transcript_count"
+        ],
+        "type": "object"
+      },
+      "VillageProjectDisplayNameRequest": {
+        "properties": {
+          "display_name": {
+            "description": "Trimmed; must be non-empty and at most 255 bytes.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
         ],
         "type": "object"
       },
@@ -19306,6 +19680,29 @@
         ],
         "type": "object"
       },
+      "VillageResolvedProject": {
+        "properties": {
+          "project_display_name": {
+            "type": "string"
+          },
+          "project_hash": {
+            "$ref": "#/components/schemas/ProjectHash"
+          },
+          "project_name_source": {
+            "$ref": "#/components/schemas/VillageProjectNameSource"
+          },
+          "project_remote_label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_hash",
+          "project_display_name",
+          "project_name_source",
+          "project_remote_label"
+        ],
+        "type": "object"
+      },
       "VillageReviewDecision": {
         "description": "Decision applied by a collective owner to pending submissions",
         "enum": [
@@ -19611,6 +20008,26 @@
         "required": [
           "id",
           "name"
+        ],
+        "type": "object"
+      },
+      "VillageTagUsage": {
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "usage_count": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "usage_count"
         ],
         "type": "object"
       },
@@ -20497,6 +20914,20 @@
         ],
         "type": "object"
       },
+      "VillageTranscriptAnnotationsResponse": {
+        "properties": {
+          "annotations": {
+            "items": {
+              "$ref": "#/components/schemas/AnnotationSummary"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "annotations"
+        ],
+        "type": "object"
+      },
       "VillageTranscriptAttestation": {
         "properties": {
           "attestation_type": {
@@ -20602,6 +21033,110 @@
         },
         "required": [
           "collectives"
+        ],
+        "type": "object"
+      },
+      "VillageTranscriptCommit": {
+        "properties": {
+          "authorEmail": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "authorName": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "authoredAt": {
+            "anyOf": [
+              {
+                "description": "Unix milliseconds.",
+                "format": "int64",
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "committedAt": {
+            "anyOf": [
+              {
+                "description": "Unix milliseconds.",
+                "format": "int64",
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "order": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "sha": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sha",
+          "message",
+          "authorName",
+          "authorEmail",
+          "authoredAt",
+          "committedAt",
+          "order"
+        ],
+        "type": "object"
+      },
+      "VillageTranscriptCommitsResponse": {
+        "properties": {
+          "commits": {
+            "items": {
+              "$ref": "#/components/schemas/VillageTranscriptCommit"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "commits"
         ],
         "type": "object"
       },
@@ -21015,6 +21550,9 @@
       },
       "VillageUser": {
         "properties": {
+          "auto_attach_pull_requests": {
+            "type": "boolean"
+          },
           "avatar_url": {
             "anyOf": [
               {
@@ -21058,6 +21596,9 @@
           "is_discoverable": {
             "type": "boolean"
           },
+          "preview_before_attach": {
+            "type": "boolean"
+          },
           "provider": {
             "type": "string"
           },
@@ -21097,7 +21638,9 @@
           "provider",
           "provider_user_id",
           "username_chosen",
-          "provider_username"
+          "provider_username",
+          "preview_before_attach",
+          "auto_attach_pull_requests"
         ],
         "type": "object"
       },
@@ -21383,6 +21926,35 @@
         ],
         "type": "object"
       },
+      "VillageUserProjectResponse": {
+        "properties": {
+          "collectives": {
+            "items": {
+              "$ref": "#/components/schemas/VillageProjectCollective"
+            },
+            "type": "array"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/VillagePublicOwner"
+          },
+          "project": {
+            "$ref": "#/components/schemas/VillageResolvedProject"
+          },
+          "transcripts": {
+            "items": {
+              "$ref": "#/components/schemas/VillageTranscript"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "collectives",
+          "owner",
+          "project",
+          "transcripts"
+        ],
+        "type": "object"
+      },
       "VillageUserSettings": {
         "properties": {
           "auto_attach_pull_requests": {
@@ -21447,6 +22019,18 @@
           "total_duration_ms",
           "total_tokens",
           "pull_request_count"
+        ],
+        "type": "object"
+      },
+      "VillageUsernameRequest": {
+        "properties": {
+          "username": {
+            "description": "Trimmed and lowercased, then matched against ^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
         ],
         "type": "object"
       },

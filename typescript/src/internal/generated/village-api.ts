@@ -35,6 +35,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List API keys newest first, including revoked keys, without plaintext or hashes; an empty list is []. */
+        get: operations["listMyAPIKeys"];
+        put?: never;
+        /** @description Create an API key; plaintext is returned only here. A missing or invalid body gives an empty label. */
+        post: operations["createMyAPIKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/api-keys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Revoke the caller's API key; a nonmatching key also returns revoked. */
+        delete: operations["revokeMyAPIKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/cli/exchange": {
         parameters: {
             query?: never;
@@ -69,6 +104,159 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/codeberg": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Start Codeberg sign-in by redirecting to the provider. The oauth_state cookie expires after 300 seconds and is HttpOnly and SameSite=Lax; Secure is set for HTTPS. An unconfigured provider returns 503. */
+        get: operations["startCodebergSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/codeberg/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Complete Codeberg sign-in after verifying the oauth_state cookie. The web redirect carries a session token in its query. An unconfigured provider returns 503. */
+        get: operations["completeCodebergSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/github": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Start GitHub sign-in by redirecting to the provider. The oauth_state cookie expires after 300 seconds and is HttpOnly and SameSite=Lax; Secure is set for HTTPS. */
+        get: operations["startGitHubSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/github/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Complete GitHub sign-in after verifying the oauth_state cookie. The web redirect carries a session token in its query. A CLI sign-in instead redirects to its local callback with a one-time exchange code and CLI state. */
+        get: operations["completeGitHubSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/gitlab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Start GitLab sign-in by redirecting to the provider. The oauth_state cookie expires after 300 seconds and is HttpOnly and SameSite=Lax; Secure is set for HTTPS. An unconfigured provider returns 503. */
+        get: operations["startGitLabSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/gitlab/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Complete GitLab sign-in after verifying the oauth_state cookie. The web redirect carries a session token in its query. An unconfigured provider returns 503. */
+        get: operations["completeGitLabSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/huggingface": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Start Hugging Face sign-in by redirecting to the provider. The oauth_state cookie expires after 300 seconds and is HttpOnly and SameSite=Lax; Secure is set for HTTPS. An unconfigured provider returns 503. */
+        get: operations["startHuggingFaceSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/huggingface/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Complete Hugging Face sign-in after verifying the oauth_state cookie. The web redirect carries a session token in its query. An unconfigured provider returns 503. */
+        get: operations["completeHuggingFaceSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Clear the session cookie; bearer tokens are not revoked. */
+        post: operations["logOut"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
@@ -80,10 +268,45 @@ export interface paths {
         get: operations["getAuthenticatedVillageUser"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** @description Permanently delete the authenticated account and clear the session cookie. */
+        delete: operations["deleteMyAccount"];
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Update discoverability; is_discoverable must be present and non-null. */
+        patch: operations["updateMyDiscoverability"];
+        trace?: never;
+    };
+    "/api/v1/auth/me/username": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Set a username after trimming and lowercasing; invalid or reserved names are refused and taken names conflict. */
+        patch: operations["setMyUsername"];
         trace?: never;
     };
     "/api/v1/auth/orgs": {
@@ -95,6 +318,57 @@ export interface paths {
         };
         /** @description Read the authenticated user organizations for scoped metadata discovery. Organization membership alone does not disclose linked collectives; use the viewer-authorized organization collective projection. Query failure is 500, never a successful empty set. */
         get: operations["listAuthenticatedVillageOrganizations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/orgs/{orgLogin}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Set organization visibility; omitted visible means false and a nonmatching organization still returns updated. */
+        patch: operations["setMyOrganizationVisibility"];
+        trace?: never;
+    };
+    "/api/v1/auth/sourcehut": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Start SourceHut sign-in by redirecting to the provider. The oauth_state cookie expires after 300 seconds and is HttpOnly and SameSite=Lax; Secure is set for HTTPS. An unconfigured provider returns 503. */
+        get: operations["startSourceHutSignIn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sourcehut/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Complete SourceHut sign-in after verifying the oauth_state cookie. The web redirect carries a session token in its query. An unconfigured provider returns 503. */
+        get: operations["completeSourceHutSignIn"];
         put?: never;
         post?: never;
         delete?: never;
@@ -890,6 +1164,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/integrations/github/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Record a GitHub App installation and redirect to the bound collective settings or the collective list. */
+        get: operations["completeGitHubAppInstall"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/github/install": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Start a GitHub App installation for a collective owned by the caller. */
+        get: operations["startGitHubAppInstall"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/integrations/github/webhook": {
         parameters: {
             query?: never;
@@ -901,6 +1209,40 @@ export interface paths {
         put?: never;
         /** @description Receive a GitHub App webhook delivery. The body is GitHub's payload, authenticated by the X-Hub-Signature-256 HMAC over the raw body; X-GitHub-Delivery makes redelivery idempotent. Handles installation, pull_request, check_run, and issue_comment events and acknowledges every other event without acting. Returns 501 when the App or its webhook secret is not configured. */
         post: operations["receiveGitHubWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/openapi.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Return the frozen Village API document this server pins, which declares this operation. */
+        get: operations["getVillageAPIDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Search organizations by login. Results are ordered by member count then transcript count, descending; an empty query returns an empty list. */
+        get: operations["searchOrganizations"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1078,6 +1420,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List tags ordered by name, including tags with no transcripts. */
+        get: operations["listTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tags/popular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List tags with transcripts by descending usage. The limit defaults to 10 and has no cap. */
+        get: operations["listPopularTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/transcript-groups/{groupId}/members": {
         parameters: {
             query?: never;
@@ -1129,6 +1505,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transcripts/publish/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Batch publish is not implemented. No request body is declared; the body and success shapes arrive with the implementation in a later version. */
+        post: operations["publishTranscriptBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/transcripts/{id}": {
         parameters: {
             query?: never;
@@ -1140,11 +1533,65 @@ export interface paths {
         get: operations["getTranscriptMetadata"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** @description Delete an owned transcript and its stored content. A missing blob store also returns 503; Retry-After is present only for a session lookup failure. */
+        delete: operations["deleteTranscript"];
         options?: never;
         head?: never;
         /** @description Update an owned transcript's metadata and governance axes. Every field is optional: omission preserves stored state; empty title, description, or tags clear those fields; license null requests clear; and a canonical license replaces. Explicit null for title, description, tags, or visibility is rejected, as are unknown fields and invalid or duplicate tags. Clearing an already granted Creative Commons license remains subject to the server's irrevocability rule. Only the owner may call this operation. A successful update returns the complete typed authoritative editable state, including the canonical transcript URL and positive update timestamp. Visibility accepts private and public; organization-scoped visibility remains deferred. */
         patch: operations["updateTranscript"];
+        trace?: never;
+    };
+    "/api/v1/transcripts/{id}/annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List annotations on a visible transcript; inaccessible transcripts return 404. */
+        get: operations["listTranscriptAnnotations"];
+        put?: never;
+        /** @description Create a manual entry annotation on a visible transcript. */
+        post: operations["createTranscriptAnnotation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcripts/{id}/attestations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List attestations for a visible transcript; inaccessible transcripts return 404. */
+        get: operations["listTranscriptAttestations"];
+        put?: never;
+        /** @description Attest to a visible transcript as a verified organization member. Duplicate errors can return 409; errors containing violates return 403 first. */
+        post: operations["createTranscriptAttestation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcripts/{id}/attestations/{attestationID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Delete the caller's attestation; also returns deleted when none matched. The transcript id is not checked. */
+        delete: operations["deleteTranscriptAttestation"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/transcripts/{id}/collectives": {
@@ -1156,6 +1603,23 @@ export interface paths {
         };
         /** @description List visible collectives that hold a transcript. The server returns an empty collectives array, not a refusal, when memberships are hidden by collective visibility or contributor opt-in policy. */
         get: operations["listTranscriptCollectives"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcripts/{id}/commits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404. */
+        get: operations["listTranscriptCommits"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1475,6 +1939,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/me/projects/{projectHash}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Set the display name of the caller's project. The name is trimmed and must be non-empty and at most 255 bytes. */
+        patch: operations["setMyProjectDisplayName"];
+        trace?: never;
+    };
+    "/api/v1/users/me/projects/{projectHash}/display-name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Remove the caller's project display-name correction. A missing correction answers 404. */
+        delete: operations["clearMyProjectDisplayName"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me/prompt-requests": {
         parameters: {
             query?: never;
@@ -1527,6 +2025,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read a public profile. An unknown or undiscoverable user answers 404 unless the caller owns the hidden profile. */
+        get: operations["getUserProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{username}/orgs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the visible organizations of a discoverable user, or the caller's own hidden profile. Unknown and hidden users answer 404. */
+        get: operations["listUserOrganizations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{username}/projects/{projectHash}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read a user's project and the transcripts and collectives visible to the caller. Unknown users, hidden users and unowned hashes share one 404. */
+        get: operations["getUserProject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liveness probe. Answers 200 even if the migration registry cannot be read, when migrations is absent. */
+        get: operations["getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1567,6 +2133,15 @@ export interface components {
         OpenapiTranscriptUpdateErrorResponse: {
             error: string;
         };
+        OpenapiVillageAPIDocument: {
+            info: {
+                [key: string]: unknown;
+            };
+            openapi: string;
+            paths: {
+                [key: string]: unknown;
+            };
+        };
         /** @enum {string} */
         OpenapiVillageGroupedView: "grouped";
         /**
@@ -1595,6 +2170,7 @@ export interface components {
          * @enum {string}
          */
         SchemaAnnotationPushStatus: Schema.AnnotationPushStatus;
+        SchemaAnnotationSummary: Schema.AnnotationSummary;
         /**
          * Annotator Kind
          * @description Type of entity that produced an annotation: human, agent (AI model), or rule (automated classifier)
@@ -2174,6 +2750,7 @@ export interface components {
          * @enum {string}
          */
         SchemaUsageScope: Schema.UsageScope;
+        SchemaVillageAPIKey: Schema.VillageAPIKey;
         /**
          * Village Assignable Group Role
          * @description Collective roles an owner may assign through the member role endpoint
@@ -2182,6 +2759,16 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageAssignableCollectiveRole: Schema.VillageAssignableCollectiveRole;
+        /**
+         * Village Attestation Type
+         * @description Usage attestation type
+         * @example used_in_training
+         * @example referenced
+         * @example evaluated
+         * @example deployed
+         * @enum {string}
+         */
+        SchemaVillageAttestationType: Schema.VillageAttestationType;
         SchemaVillageAvailableRepositoriesResponse: Schema.VillageAvailableRepositoriesResponse;
         SchemaVillageAvailableRepository: Schema.VillageAvailableRepository;
         SchemaVillageBatchReviewRequest: Schema.VillageBatchReviewRequest;
@@ -2257,12 +2844,16 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageContributionStatus: Schema.VillageContributionStatus;
+        SchemaVillageCreateAPIKeyRequest: Schema.VillageCreateAPIKeyRequest;
+        SchemaVillageCreateAttestationRequest: Schema.VillageCreateAttestationRequest;
         SchemaVillageCreateCollectiveRequest: Schema.VillageCreateCollectiveRequest;
+        SchemaVillageCreatedAPIKey: Schema.VillageCreatedAPIKey;
         /**
          * @deprecated
          * @description Released groupId envelope for GET /api/v1/groups/{id}/contributable during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable.
          */
         SchemaVillageDeprecatedGroupedContributableResponse: Schema.VillageDeprecatedGroupedContributableResponse;
+        SchemaVillageDiscoverabilityRequest: Schema.VillageDiscoverabilityRequest;
         SchemaVillageEnrichedTranscriptShare: Schema.VillageEnrichedTranscriptShare;
         SchemaVillageErrorResponse: Schema.VillageErrorResponse;
         /**
@@ -2272,6 +2863,7 @@ export interface components {
         SchemaVillageGitHubWebhookPayload: Schema.VillageGitHubWebhookPayload;
         SchemaVillageGroupedCollectiveDetailResponse: Schema.VillageGroupedCollectiveDetailResponse;
         SchemaVillageGroupedContributableResponse: Schema.VillageGroupedContributableResponse;
+        SchemaVillageHealthResponse: Schema.VillageHealthResponse;
         SchemaVillageHelperMembersPayload: Schema.VillageHelperMembersPayload;
         SchemaVillageInvitedCollective: Schema.VillageInvitedCollective;
         SchemaVillageLinkRepositoryRequest: Schema.VillageLinkRepositoryRequest;
@@ -2279,12 +2871,19 @@ export interface components {
         SchemaVillageLinkedRepository: Schema.VillageLinkedRepository;
         SchemaVillageListTranscriptAttestation: Schema.VillageListTranscriptAttestation;
         SchemaVillageListUserOrganization: Schema.VillageListUserOrganization;
+        SchemaVillageManualAnnotationRequest: Schema.VillageManualAnnotationRequest;
         SchemaVillageMetadataUserOrganization: Schema.VillageMetadataUserOrganization;
         SchemaVillageMyInvitationsResponse: Schema.VillageMyInvitationsResponse;
         SchemaVillageNotificationEmail: Schema.VillageNotificationEmail;
         SchemaVillageOrganizationCollective: Schema.VillageOrganizationCollective;
         SchemaVillageOrganizationCollectivesResponse: Schema.VillageOrganizationCollectivesResponse;
+        SchemaVillageOrganizationSearchResponse: Schema.VillageOrganizationSearchResponse;
+        SchemaVillageOrganizationSearchResult: Schema.VillageOrganizationSearchResult;
+        SchemaVillageOrganizationVisibilityRequest: Schema.VillageOrganizationVisibilityRequest;
+        SchemaVillageOrganizationVisibilityResponse: Schema.VillageOrganizationVisibilityResponse;
         SchemaVillagePendingShare: Schema.VillagePendingShare;
+        SchemaVillageProjectCollective: Schema.VillageProjectCollective;
+        SchemaVillageProjectDisplayNameRequest: Schema.VillageProjectDisplayNameRequest;
         /**
          * Village Project Name Source
          * @description Which source tier produced a resolved project display name
@@ -2331,6 +2930,7 @@ export interface components {
         SchemaVillageRemoveCollectiveMemberResponse: Schema.VillageRemoveCollectiveMemberResponse;
         SchemaVillageRepositoryCommit: Schema.VillageRepositoryCommit;
         SchemaVillageRepositoryCommitsResponse: Schema.VillageRepositoryCommitsResponse;
+        SchemaVillageResolvedProject: Schema.VillageResolvedProject;
         /**
          * Village Review Decision
          * @description Decision applied by a collective owner to pending submissions
@@ -2370,10 +2970,14 @@ export interface components {
         SchemaVillageShareTranscriptRequest: Schema.VillageShareTranscriptRequest;
         SchemaVillageStatusResponse: Schema.VillageStatusResponse;
         SchemaVillageTag: Schema.VillageTag;
+        SchemaVillageTagUsage: Schema.VillageTagUsage;
         SchemaVillageTranscript: Schema.VillageTranscript;
+        SchemaVillageTranscriptAnnotationsResponse: Schema.VillageTranscriptAnnotationsResponse;
         SchemaVillageTranscriptAttestation: Schema.VillageTranscriptAttestation;
         SchemaVillageTranscriptCollective: Schema.VillageTranscriptCollective;
         SchemaVillageTranscriptCollectivesResponse: Schema.VillageTranscriptCollectivesResponse;
+        SchemaVillageTranscriptCommit: Schema.VillageTranscriptCommit;
+        SchemaVillageTranscriptCommitsResponse: Schema.VillageTranscriptCommitsResponse;
         /**
          * Village Transcript Deletion Policy
          * @description Whether leaving a collective retracts contributed transcripts by default
@@ -2410,8 +3014,10 @@ export interface components {
         SchemaVillageUser: Schema.VillageUser;
         SchemaVillageUserCollective: Schema.VillageUserCollective;
         SchemaVillageUserCollectiveShare: Schema.VillageUserCollectiveShare;
+        SchemaVillageUserProjectResponse: Schema.VillageUserProjectResponse;
         SchemaVillageUserSettings: Schema.VillageUserSettings;
         SchemaVillageUserStats: Schema.VillageUserStats;
+        SchemaVillageUsernameRequest: Schema.VillageUsernameRequest;
         SchemaVillageVerifyNotificationEmailRequest: Schema.VillageVerifyNotificationEmailRequest;
         SchemaVillageVisibleCollective: Schema.VillageVisibleCollective;
         /**
@@ -2491,7 +3097,56 @@ export interface operations {
             };
         };
     };
-    cliExchangeCode: {
+    listMyAPIKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["SchemaVillageAPIKey"][];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    createMyAPIKey: {
         parameters: {
             query?: never;
             header?: never;
@@ -2500,9 +3155,60 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["SchemaExchangeCodeRequest"];
+                "application/json": components["schemas"]["SchemaVillageCreateAPIKeyRequest"];
             };
         };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCreatedAPIKey"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    revokeMyAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -2510,18 +3216,148 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    cliExchangeCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaExchangeCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["SchemaExchangeCodeResponse"];
+                };
+            };
+            /** @description Bad Request. The body is missing or does not decode as the request, or code or state is empty. */
+            400: {
+                headers: {
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. No unexchanged code issued within the last five minutes matches this code and state. */
+            401: {
+                headers: {
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before the window allows another request. */
+                    "Retry-After": number;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Internal Server Error. The API key could not be generated or stored. */
+            500: {
+                headers: {
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
         };
     };
     cliLogin: {
         parameters: {
-            query?: {
+            query: {
                 /** @description Local callback server port */
-                port?: number;
+                port: number;
                 /** @description OAuth state parameter for CSRF protection */
-                state?: string;
+                state: string;
             };
             header?: never;
             path?: never;
@@ -2529,12 +3365,633 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description Redirect to GitHub with an OAuth state cookie. */
+            307: {
                 headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    /** @description oauth_state cookie with Path=/, Max-Age=300, HttpOnly and SameSite=Lax; Secure when the server base URL is HTTPS. */
+                    "Set-Cookie": string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            400: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before the window allows another request. */
+                    "Retry-After": number;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            500: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    startCodebergSignIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the provider authorization URL, including client_id, redirect_uri, response_type, scope and state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    /** @description oauth_state cookie with Path=/, Max-Age=300, HttpOnly and SameSite=Lax; Secure when the server base URL is HTTPS. */
+                    "Set-Cookie": string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before the window allows another request. */
+                    "Retry-After": number;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            503: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    completeCodebergSignIn: {
+        parameters: {
+            query?: {
+                /** @description Authorization code from the provider. */
+                code?: string;
+                /** @description State echoed by the provider. */
+                state?: string;
+                /** @description Provider refusal, when present. */
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                /** @description State cookie set at sign-in. */
+                oauth_state?: string;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the sign-in destination. The web destination carries the session token; GitHub CLI sign-in uses a loopback URL with an exchange code and CLI state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            400: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            500: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            503: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    startGitHubSignIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the provider authorization URL, including client_id, redirect_uri, response_type, scope and state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    /** @description oauth_state cookie with Path=/, Max-Age=300, HttpOnly and SameSite=Lax; Secure when the server base URL is HTTPS. */
+                    "Set-Cookie": string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before the window allows another request. */
+                    "Retry-After": number;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+        };
+    };
+    completeGitHubSignIn: {
+        parameters: {
+            query?: {
+                /** @description Authorization code from the provider. */
+                code?: string;
+                /** @description State echoed by the provider. */
+                state?: string;
+                /** @description Provider refusal, when present. */
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                /** @description State cookie set at sign-in. */
+                oauth_state?: string;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the sign-in destination. The web destination carries the session token; GitHub CLI sign-in uses a loopback URL with an exchange code and CLI state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            400: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            500: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    startGitLabSignIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the provider authorization URL, including client_id, redirect_uri, response_type, scope and state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    /** @description oauth_state cookie with Path=/, Max-Age=300, HttpOnly and SameSite=Lax; Secure when the server base URL is HTTPS. */
+                    "Set-Cookie": string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before the window allows another request. */
+                    "Retry-After": number;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            503: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    completeGitLabSignIn: {
+        parameters: {
+            query?: {
+                /** @description Authorization code from the provider. */
+                code?: string;
+                /** @description State echoed by the provider. */
+                state?: string;
+                /** @description Provider refusal, when present. */
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                /** @description State cookie set at sign-in. */
+                oauth_state?: string;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the sign-in destination. The web destination carries the session token; GitHub CLI sign-in uses a loopback URL with an exchange code and CLI state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            400: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            500: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            503: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    startHuggingFaceSignIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the provider authorization URL, including client_id, redirect_uri, response_type, scope and state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    /** @description oauth_state cookie with Path=/, Max-Age=300, HttpOnly and SameSite=Lax; Secure when the server base URL is HTTPS. */
+                    "Set-Cookie": string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before the window allows another request. */
+                    "Retry-After": number;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            503: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    completeHuggingFaceSignIn: {
+        parameters: {
+            query?: {
+                /** @description Authorization code from the provider. */
+                code?: string;
+                /** @description State echoed by the provider. */
+                state?: string;
+                /** @description Provider refusal, when present. */
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                /** @description State cookie set at sign-in. */
+                oauth_state?: string;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the sign-in destination. The web destination carries the session token; GitHub CLI sign-in uses a loopback URL with an exchange code and CLI state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            400: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            500: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            503: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    logOut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logged out. */
+            200: {
+                headers: {
+                    /** @description Clears peasant_token with Path=/, Max-Age=0 and HttpOnly. */
+                    "Set-Cookie": string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
             };
         };
     };
@@ -2568,6 +4025,190 @@ export interface operations {
             /** @description Internal Server Error */
             500: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteMyAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    /** @description Clears peasant_token with Path=/, Max-Age=0 and HttpOnly. */
+                    "Set-Cookie": string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMyDiscoverability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageDiscoverabilityRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUser"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    setMyUsername: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageUsernameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUser"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2610,6 +4251,211 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    setMyOrganizationVisibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgLogin: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageOrganizationVisibilityRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageOrganizationVisibilityResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    startSourceHutSignIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the provider authorization URL, including client_id, redirect_uri, response_type, scope and state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    /** @description oauth_state cookie with Path=/, Max-Age=300, HttpOnly and SameSite=Lax; Secure when the server base URL is HTTPS. */
+                    "Set-Cookie": string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before the window allows another request. */
+                    "Retry-After": number;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            503: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    completeSourceHutSignIn: {
+        parameters: {
+            query?: {
+                /** @description Authorization code from the provider. */
+                code?: string;
+                /** @description State echoed by the provider. */
+                state?: string;
+                /** @description Provider refusal, when present. */
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                /** @description State cookie set at sign-in. */
+                oauth_state?: string;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the sign-in destination. The web destination carries the session token; GitHub CLI sign-in uses a loopback URL with an exchange code and CLI state. */
+            307: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            400: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            500: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            503: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
                 };
             };
         };
@@ -5889,6 +7735,191 @@ export interface operations {
             };
         };
     };
+    completeGitHubAppInstall: {
+        parameters: {
+            query: {
+                /** @description GitHub App installation ID. */
+                installation_id: number;
+                /** @description Optional signed installation state. */
+                state?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the collective destination. */
+            302: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            400: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            500: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Not Implemented. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            501: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    startGitHubAppInstall: {
+        parameters: {
+            query: {
+                /** @description Collective to bind to the installation. */
+                group_id: components["schemas"]["SchemaVillageUUID"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the GitHub App installation page. */
+            302: {
+                headers: {
+                    /** @description Redirect destination. */
+                    Location: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            400: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            500: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Not Implemented. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
+            501: {
+                headers: {
+                    /** @description Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant. */
+                    "Content-Security-Policy"?: string;
+                    /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "text/html": string;
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     receiveGitHubWebhook: {
         parameters: {
             query?: never;
@@ -5938,6 +7969,60 @@ export interface operations {
             };
             /** @description Not Implemented */
             501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getVillageAPIDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiVillageAPIDocument"];
+                };
+            };
+        };
+    };
+    searchOrganizations: {
+        parameters: {
+            query?: {
+                /** @description Trimmed search text; empty returns an empty list. */
+                q?: string;
+                /** @description Positive integer; defaults to 10 and is capped at 50. Invalid values are ignored. */
+                limit?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageOrganizationSearchResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6491,6 +8576,67 @@ export interface operations {
             };
         };
     };
+    listTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["SchemaVillageTagUsage"][];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listPopularTags: {
+        parameters: {
+            query?: {
+                /** @description Positive integer; defaults to 10. Invalid values are ignored. */
+                limit?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["SchemaVillageTagUsage"][];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     listTranscriptGroupMembers: {
         parameters: {
             query: {
@@ -6639,6 +8785,46 @@ export interface operations {
             };
         };
     };
+    publishTranscriptBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     getTranscriptMetadata: {
         parameters: {
             query?: never;
@@ -6690,6 +8876,85 @@ export interface operations {
             /** @description Internal Server Error */
             500: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. Either the account behind the session could not be read, in which case Retry-After is set, or the operation's own dependency is unavailable. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. Present only when the account lookup behind the session failed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6770,6 +9035,335 @@ export interface operations {
             };
         };
     };
+    listTranscriptAnnotations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageTranscriptAnnotationsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    createTranscriptAnnotation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageManualAnnotationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaAnnotationSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listTranscriptAttestations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["SchemaVillageTranscriptAttestation"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    createTranscriptAttestation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageCreateAttestationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageTranscriptAttestation"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteTranscriptAttestation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier (not checked by this operation) */
+                id: components["schemas"]["SchemaTranscriptID"];
+                /** @description Attestation identifier */
+                attestationID: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     listTranscriptCollectives: {
         parameters: {
             query?: never;
@@ -6789,6 +9383,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaVillageTranscriptCollectivesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listTranscriptCommits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageTranscriptCommitsResponse"];
                 };
             };
             /** @description Bad Request */
@@ -8163,6 +10807,148 @@ export interface operations {
             };
         };
     };
+    setMyProjectDisplayName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectHash: components["schemas"]["SchemaProjectHash"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageProjectDisplayNameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageResolvedProject"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    clearMyProjectDisplayName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectHash: components["schemas"]["SchemaProjectHash"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageResolvedProject"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized. The request carries no valid session or API key. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying the account lookup behind the session. */
+                    "Retry-After": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     listMyPromptRequests: {
         parameters: {
             query?: never;
@@ -8324,6 +11110,149 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getUserProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A person as another viewer sees them. The server resolves anonymity per viewer; consumers render what they receive and never re-derive the rule. profile carries id, username, display_name, and avatar_url; anonymous carries only its kind, with no id. Readers treat an unknown kind as anonymous. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillagePublicOwner"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listUserOrganizations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["SchemaVillageListUserOrganization"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getUserProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+                projectHash: components["schemas"]["SchemaProjectHash"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUserProjectResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Process is alive. */
+            200: {
+                headers: {
+                    /** @description no-store */
+                    "Cache-Control": string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageHealthResponse"];
                 };
             };
         };
