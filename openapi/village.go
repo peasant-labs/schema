@@ -181,6 +181,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("new login operation: %w", err)
 	}
 	loginOC.AddReqStructure(new(schema.CLILoginQuery))
+	for _, status := range []int{http.StatusBadRequest, http.StatusInternalServerError} {
+		loginOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(status))
+	}
 	loginOC.SetDescription("Initiate CLI login via browser OAuth flow. " +
 		"The CLI opens this URL in the user's browser with a local callback port and CSRF state. " +
 		"After authentication, the village redirects the browser to the CLI's local callback server.")
@@ -188,6 +191,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	loginOC.SetTags("auth")
 	if err := r.AddOperation(loginOC); err != nil {
 		return nil, fmt.Errorf("add login operation: %w", err)
+	}
+	if err := declareVillageResponses(r.Spec, cliLoginResponses()); err != nil {
+		return nil, err
 	}
 
 	// POST /api/v1/auth/cli/exchange — exchange OAuth code for credentials.
@@ -405,6 +411,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 
 	if err := addVillageCollectiveOperations(r); err != nil {
+		return nil, err
+	}
+	if err := addVillageOperations(r, villageSignInOperations()); err != nil {
 		return nil, err
 	}
 	if err := addVillagePullRequestOperations(r); err != nil {

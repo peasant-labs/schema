@@ -1,0 +1,605 @@
+cases:
+- name: startGitHubSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/github
+  expected:
+    operation_id: startGitHubSignIn
+    tag: auth
+    parameters: []
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+          Set-Cookie: true
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '429':
+        media:
+          text/plain: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+          Retry-After: true
+    description_anchors:
+    - Start GitHub sign-in
+- name: completeGitHubSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/github/callback
+  expected:
+    operation_id: completeGitHubSignIn
+    tag: auth
+    parameters:
+    - name: code
+      in: query
+      required: false
+      schema: string
+    - name: state
+      in: query
+      required: false
+      schema: string
+    - name: error
+      in: query
+      required: false
+      schema: string
+    - name: oauth_state
+      in: cookie
+      required: false
+      schema: string
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+    description_anchors:
+    - Complete GitHub sign-in
+- name: startGitLabSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/gitlab
+  expected:
+    operation_id: startGitLabSignIn
+    tag: auth
+    parameters: []
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+          Set-Cookie: true
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '429':
+        media:
+          text/plain: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+          Retry-After: true
+    description_anchors:
+    - Start GitLab sign-in
+- name: completeGitLabSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/gitlab/callback
+  expected:
+    operation_id: completeGitLabSignIn
+    tag: auth
+    parameters:
+    - name: code
+      in: query
+      required: false
+      schema: string
+    - name: state
+      in: query
+      required: false
+      schema: string
+    - name: error
+      in: query
+      required: false
+      schema: string
+    - name: oauth_state
+      in: cookie
+      required: false
+      schema: string
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+    description_anchors:
+    - Complete GitLab sign-in
+- name: startHuggingFaceSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/huggingface
+  expected:
+    operation_id: startHuggingFaceSignIn
+    tag: auth
+    parameters: []
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+          Set-Cookie: true
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '429':
+        media:
+          text/plain: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+          Retry-After: true
+    description_anchors:
+    - Start Hugging Face sign-in
+- name: completeHuggingFaceSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/huggingface/callback
+  expected:
+    operation_id: completeHuggingFaceSignIn
+    tag: auth
+    parameters:
+    - name: code
+      in: query
+      required: false
+      schema: string
+    - name: state
+      in: query
+      required: false
+      schema: string
+    - name: error
+      in: query
+      required: false
+      schema: string
+    - name: oauth_state
+      in: cookie
+      required: false
+      schema: string
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+    description_anchors:
+    - Complete Hugging Face sign-in
+- name: startCodebergSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/codeberg
+  expected:
+    operation_id: startCodebergSignIn
+    tag: auth
+    parameters: []
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+          Set-Cookie: true
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '429':
+        media:
+          text/plain: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+          Retry-After: true
+    description_anchors:
+    - Start Codeberg sign-in
+- name: completeCodebergSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/codeberg/callback
+  expected:
+    operation_id: completeCodebergSignIn
+    tag: auth
+    parameters:
+    - name: code
+      in: query
+      required: false
+      schema: string
+    - name: state
+      in: query
+      required: false
+      schema: string
+    - name: error
+      in: query
+      required: false
+      schema: string
+    - name: oauth_state
+      in: cookie
+      required: false
+      schema: string
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+    description_anchors:
+    - Complete Codeberg sign-in
+- name: startSourceHutSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/sourcehut
+  expected:
+    operation_id: startSourceHutSignIn
+    tag: auth
+    parameters: []
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+          Set-Cookie: true
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '429':
+        media:
+          text/plain: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+          Retry-After: true
+    description_anchors:
+    - Start SourceHut sign-in
+- name: completeSourceHutSignIn
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/sourcehut/callback
+  expected:
+    operation_id: completeSourceHutSignIn
+    tag: auth
+    parameters:
+    - name: code
+      in: query
+      required: false
+      schema: string
+    - name: state
+      in: query
+      required: false
+      schema: string
+    - name: error
+      in: query
+      required: false
+      schema: string
+    - name: oauth_state
+      in: cookie
+      required: false
+      schema: string
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+    description_anchors:
+    - Complete SourceHut sign-in
+- name: startGitHubAppInstall
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/integrations/github/install
+  expected:
+    operation_id: startGitHubAppInstall
+    tag: integrations
+    parameters:
+    - name: group_id
+      in: query
+      required: true
+      schema: SchemaVillageUUID
+    responses:
+      '302':
+        media:
+          text/html: string
+        headers:
+          Location: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '501':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+      '403':
+        media:
+          application/json: SchemaVillageErrorResponse
+    description_anchors:
+    - GitHub App installation
+- name: completeGitHubAppInstall
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/integrations/github/callback
+  expected:
+    operation_id: completeGitHubAppInstall
+    tag: integrations
+    parameters:
+    - name: installation_id
+      in: query
+      required: true
+    - name: state
+      in: query
+      required: false
+      schema: string
+    responses:
+      '302':
+        media:
+          text/html: string
+        headers:
+          Location: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '501':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+    description_anchors:
+    - GitHub App installation
+- name: cliLogin
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village handler and router
+  mutation:
+    description: Pin the mounted operation contract
+  input:
+    method: GET
+    path: /api/v1/auth/cli/login
+  expected:
+    operation_id: cliLogin
+    tag: auth
+    parameters:
+    - name: port
+      in: query
+      required: false
+      schema: integer
+    - name: state
+      in: query
+      required: false
+      schema: string
+    responses:
+      '307':
+        media:
+          text/html: string
+        headers:
+          Location: true
+          Set-Cookie: true
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+          text/html: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '429':
+        media:
+          text/plain: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+          Retry-After: true
+    description_anchors:
+    - Initiate CLI login
