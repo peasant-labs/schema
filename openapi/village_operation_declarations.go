@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	schema "github.com/peasant-labs/schema"
+	jsonschema "github.com/swaggest/jsonschema-go"
 	openapicore "github.com/swaggest/openapi-go"
 	"github.com/swaggest/openapi-go/openapi31"
 )
@@ -22,14 +23,15 @@ const (
 // villageAPIPrefix is the prefix of every route Village mounts inside its API
 // group. A servers override is refused under it: those routes resolve against
 // the document's own servers.
+// unstring-allow: go-endpoint-literal — the API prefix itself, which no route member carries
 const villageAPIPrefix = "/api/v1/"
 
 // villageLimiterHeaders are the headers the per-client limiter sets on every
 // response it lets through and on its own 429.
 var villageLimiterHeaders = []villageHeader{
-	{name: "X-RateLimit-Limit", required: true, description: "Requests one client may make in the current window.", schema: map[string]interface{}{"type": "integer"}},
-	{name: "X-RateLimit-Remaining", required: true, description: "Requests the client has left in the current window.", schema: map[string]interface{}{"type": "integer"}},
-	{name: "X-RateLimit-Reset", required: true, description: "Unix time, in seconds, at which the current window ends.", schema: map[string]interface{}{"type": "integer"}},
+	{name: "X-RateLimit-Limit", required: true, description: "Requests one client may make in the current window.", valueType: jsonschema.Integer},
+	{name: "X-RateLimit-Remaining", required: true, description: "Requests the client has left in the current window.", valueType: jsonschema.Integer},
+	{name: "X-RateLimit-Reset", required: true, description: "Unix time, in seconds, at which the current window ends.", valueType: jsonschema.Integer},
 }
 
 const (
@@ -329,10 +331,14 @@ func declareVillageResponses(spec *openapi31.Spec, op villageOperationSpec) erro
 				}
 				continue
 			}
-			setTextMedia(response, medium.mediaType)
+			if err := setTextMedia(response, medium.mediaType); err != nil {
+				return fmt.Errorf("%s: %w", where, err)
+			}
 		}
 		for _, header := range declaredResponse.headers {
-			setVillageHeader(response, header)
+			if err := setVillageHeader(response, header); err != nil {
+				return fmt.Errorf("%s: %w", where, err)
+			}
 		}
 		responses[key] = openapi31.ResponseOrReference{Response: response}
 	}
@@ -345,9 +351,13 @@ func declareVillageResponses(spec *openapi31.Spec, op villageOperationSpec) erro
 			summary = http.StatusText(status) + "."
 		}
 		response.Description = summary + " " + villageBrowserNegotiationSentence
-		setTextMedia(response, villageMediaHTML)
+		if err := setTextMedia(response, villageMediaHTML); err != nil {
+			return fmt.Errorf("%s: %w", where, err)
+		}
 		for _, header := range villageBrowserPageHeaders {
-			setVillageHeader(response, header)
+			if err := setVillageHeader(response, header); err != nil {
+				return fmt.Errorf("%s: %w", where, err)
+			}
 		}
 		responses[key] = openapi31.ResponseOrReference{Response: response}
 	}
@@ -358,7 +368,7 @@ func declareVillageResponses(spec *openapi31.Spec, op villageOperationSpec) erro
 		responses[statusText(http.StatusUnauthorized)] = openapi31.ResponseOrReference{Response: unauthorized}
 
 		unavailable := ensureInlineResponse(responses, statusText(http.StatusServiceUnavailable))
-		retryAfter := villageHeader{name: "Retry-After", required: true, description: villageSessionRetryAfter, schema: map[string]interface{}{"type": "integer"}}
+		retryAfter := villageHeader{name: "Retry-After", required: true, description: villageSessionRetryAfter, valueType: jsonschema.Integer}
 		unavailable.Description = villageSessionLookupDescription
 		if op.declaresStatus(http.StatusServiceUnavailable) {
 			// The handler answers 503 too, without Retry-After.
@@ -366,22 +376,30 @@ func declareVillageResponses(spec *openapi31.Spec, op villageOperationSpec) erro
 			retryAfter.description = villageSessionMergedRetryAfter
 			unavailable.Description = villageSessionMergedDescription
 		}
-		setVillageHeader(unavailable, retryAfter)
+		if err := setVillageHeader(unavailable, retryAfter); err != nil {
+			return fmt.Errorf("%s: %w", where, err)
+		}
 		responses[statusText(http.StatusServiceUnavailable)] = openapi31.ResponseOrReference{Response: unavailable}
 	}
 
 	if op.rateLimited {
 		limited := ensureInlineResponse(responses, statusText(http.StatusTooManyRequests))
 		limited.Description = villageRateLimitedDescription
-		setTextMedia(limited, villageMediaPlain)
-		setVillageHeader(limited, villageHeader{name: "Retry-After", required: true, description: villageRateLimitRetryAfter, schema: map[string]interface{}{"type": "integer"}})
+		if err := setTextMedia(limited, villageMediaPlain); err != nil {
+			return fmt.Errorf("%s: %w", where, err)
+		}
+		if err := setVillageHeader(limited, villageHeader{name: "Retry-After", required: true, description: villageRateLimitRetryAfter, valueType: jsonschema.Integer}); err != nil {
+			return fmt.Errorf("%s: %w", where, err)
+		}
 		responses[statusText(http.StatusTooManyRequests)] = openapi31.ResponseOrReference{Response: limited}
 		for key, response := range responses {
 			if response.Response == nil {
 				return fmt.Errorf("%s: response %s is a reference, so the limiter headers cannot be attached; declare it inline", where, key)
 			}
 			for _, header := range villageLimiterHeaders {
-				setVillageHeader(response.Response, header)
+				if err := setVillageHeader(response.Response, header); err != nil {
+					return fmt.Errorf("%s: %w", where, err)
+				}
 			}
 			responses[key] = response
 		}
@@ -449,21 +467,31 @@ func ensureInlineResponse(responses map[string]openapi31.ResponseOrReference, ke
 	return &openapi31.Response{}
 }
 
-func setTextMedia(response *openapi31.Response, mediaType string) {
+func setTextMedia(response *openapi31.Response, mediaType string) error {
+	schema, err := villageTypeSchema(jsonschema.String)
+	if err != nil {
+		return err
+	}
 	if response.Content == nil {
 		response.Content = map[string]openapi31.MediaType{}
 	}
-	response.Content[mediaType] = openapi31.MediaType{Schema: map[string]interface{}{"type": "string"}}
+	response.Content[mediaType] = openapi31.MediaType{Schema: schema}
+	return nil
 }
 
-func setVillageHeader(response *openapi31.Response, header villageHeader) {
+func setVillageHeader(response *openapi31.Response, header villageHeader) error {
+	valueType := header.valueType
+	if valueType == "" {
+		valueType = jsonschema.String
+	}
+	schema, err := villageTypeSchema(valueType)
+	if err != nil {
+		return fmt.Errorf("declare header %s: %w", header.name, err)
+	}
 	if response.Headers == nil {
 		response.Headers = map[string]openapi31.HeaderOrReference{}
 	}
-	value := openapi31.Header{Schema: header.schema}
-	if value.Schema == nil {
-		value.Schema = map[string]interface{}{"type": "string"}
-	}
+	value := openapi31.Header{Schema: schema}
 	if header.description != "" {
 		description := header.description
 		value.Description = &description
@@ -473,4 +501,15 @@ func setVillageHeader(response *openapi31.Response, header villageHeader) {
 		value.Required = &required
 	}
 	response.Headers[header.name] = openapi31.HeaderOrReference{Header: &value}
+	return nil
+}
+
+// villageTypeSchema is the JSON schema that admits one simple type, for a
+// header value or a text body.
+func villageTypeSchema(valueType jsonschema.SimpleType) (map[string]interface{}, error) {
+	schema, err := valueType.ToSchemaOrBool().ToSimpleMap()
+	if err != nil {
+		return nil, fmt.Errorf("build the %s schema: %w", valueType, err)
+	}
+	return schema, nil
 }

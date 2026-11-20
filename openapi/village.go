@@ -203,6 +203,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		description: "Exchange an OAuth authorization code and state for API credentials. " +
 			"Called by the CLI's local callback server after receiving the browser redirect.",
 		rateLimited:   true,
+		requiredBody:  true,
 		requests:      []interface{}{new(schema.ExchangeCodeRequest)},
 		response:      new(schema.ExchangeCodeResponse),
 		errorStatuses: []int{http.StatusBadRequest, http.StatusUnauthorized, http.StatusInternalServerError},
@@ -212,11 +213,6 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 			http.StatusInternalServerError: "Internal Server Error. The API key could not be generated or stored.",
 		},
 	}}); err != nil {
-		return nil, err
-	}
-	// The handler decodes the body unconditionally and refuses a missing one
-	// with 400, so the body is required.
-	if err := requireRequestBody(r.Spec, http.MethodPost, "/api/v1/auth/cli/exchange"); err != nil {
 		return nil, err
 	}
 
@@ -510,6 +506,9 @@ type villageOperationSpec struct {
 	// Without it, an operation with no success response is refused as a
 	// forgotten response.
 	declaredStub bool
+	// requiredBody marks the request body required: the handler decodes it
+	// unconditionally and refuses a request without one.
+	requiredBody bool
 	// servers overrides the document's servers on this path item. It is
 	// allowed only outside the API prefix, for a route the server mounts at
 	// its root.
@@ -538,8 +537,8 @@ type villageHeader struct {
 	name        string
 	description string
 	required    bool
-	// schema is the header value's JSON schema; nil means {"type":"string"}.
-	schema map[string]interface{}
+	// valueType is the type of the header value; empty means a string.
+	valueType jsonschema.SimpleType
 }
 
 // villageMedia is one media type of a response.
@@ -1432,6 +1431,11 @@ func addVillageOperations(r *openapi31.Reflector, operations []villageOperationS
 		}
 		if err := describeVillageErrorSummaries(r.Spec, op); err != nil {
 			return err
+		}
+		if op.requiredBody {
+			if err := requireRequestBody(r.Spec, op.method, op.path); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

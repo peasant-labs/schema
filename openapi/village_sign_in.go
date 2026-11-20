@@ -32,6 +32,7 @@ func villageRedirect(status int, description string, cookie bool) villageRespons
 
 func cliLoginResponses() villageOperationSpec {
 	return villageOperationSpec{
+		// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 		method: http.MethodGet, path: "/api/v1/auth/cli/login", rateLimited: true,
 		responses:            []villageResponse{villageRedirect(http.StatusTemporaryRedirect, "Redirect to GitHub with an OAuth state cookie.", true)},
 		browserErrorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError},
@@ -48,6 +49,7 @@ func villageSignInOperations() []villageOperationSpec {
 	}
 	operations := make([]villageOperationSpec, 0, 12)
 	for _, provider := range providers {
+		// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 		path := "/api/v1/auth/" + provider.path
 		entry := villageOperationSpec{
 			method: http.MethodGet, path: path, id: "start" + provider.name + "SignIn", tag: "auth",
@@ -74,6 +76,7 @@ func villageSignInOperations() []villageOperationSpec {
 	}
 	operations = append(operations,
 		villageOperationSpec{
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodGet, path: "/api/v1/integrations/github/install", id: "startGitHubAppInstall", tag: "integrations",
 			description: "Start a GitHub App installation for a collective owned by the caller.",
 			session:     villageSessionRequired, requests: []interface{}{new(villageInstallQuery)},
@@ -82,6 +85,7 @@ func villageSignInOperations() []villageOperationSpec {
 			browserErrorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError, http.StatusNotImplemented},
 		},
 		villageOperationSpec{
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodGet, path: "/api/v1/integrations/github/callback", id: "completeGitHubAppInstall", tag: "integrations",
 			description: "Record a GitHub App installation and redirect to the bound collective settings or the collective list.",
 			session:     villageSessionRequired, requests: []interface{}{new(villageInstallCallbackQuery)},

@@ -25,6 +25,7 @@ func addVillageTranscriptAuxOperations(r *openapi31.Reflector) error {
 	})
 	ops := []villageOperationSpec{
 		{
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodDelete, path: "/api/v1/transcripts/{id}", id: "deleteTranscript", tag: "transcripts",
 			description: "Delete an owned transcript and its stored content. A missing blob store also returns 503; Retry-After is present only for a session lookup failure.",
 			requests:    []interface{}{transcriptPath}, session: villageSessionRequired,
@@ -32,48 +33,56 @@ func addVillageTranscriptAuxOperations(r *openapi31.Reflector) error {
 			errorStatuses: []int{400, 403, 404, 500, 503},
 		},
 		{
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/attestations", id: "listTranscriptAttestations", tag: "transcripts",
 			description: "List attestations for a visible transcript; inaccessible transcripts return 404.",
 			requests:    []interface{}{transcriptPath}, session: villageSessionOptional,
 			response: new([]schema.VillageTranscriptAttestation), errorStatuses: []int{400, 404, 500},
 		},
 		{
-			method: http.MethodPost, path: "/api/v1/transcripts/{id}/attestations", id: "createTranscriptAttestation", tag: "transcripts",
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
+			method: http.MethodPost, path: "/api/v1/transcripts/{id}/attestations", id: "createTranscriptAttestation", requiredBody: true, tag: "transcripts",
 			description: "Attest to a visible transcript as a verified organization member. Duplicate errors can return 409; errors containing violates return 403 first.",
 			requests:    []interface{}{transcriptPath, new(schema.VillageCreateAttestationRequest)}, session: villageSessionRequired,
 			response: new(schema.VillageTranscriptAttestation), successStatus: http.StatusCreated,
 			errorStatuses: []int{400, 403, 404, 409, 500},
 		},
 		{
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodDelete, path: "/api/v1/transcripts/{id}/attestations/{attestationID}", id: "deleteTranscriptAttestation", tag: "transcripts",
 			description: "Delete the caller's attestation; also returns deleted when none matched. The transcript id is not checked.",
 			requests:    []interface{}{attestationPath}, session: villageSessionRequired,
 			response: new(schema.VillageStatusResponse), errorStatuses: []int{400, 500},
 		},
 		{
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/annotations", id: "listTranscriptAnnotations", tag: "transcripts",
 			description: "List annotations on a visible transcript; inaccessible transcripts return 404.",
 			requests:    []interface{}{transcriptPath}, session: villageSessionOptional,
 			response: new(schema.VillageTranscriptAnnotationsResponse), errorStatuses: []int{400, 404, 500},
 		},
 		{
-			method: http.MethodPost, path: "/api/v1/transcripts/{id}/annotations", id: "createTranscriptAnnotation", tag: "transcripts",
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
+			method: http.MethodPost, path: "/api/v1/transcripts/{id}/annotations", id: "createTranscriptAnnotation", requiredBody: true, tag: "transcripts",
 			description: "Create a manual entry annotation on a visible transcript.",
 			requests:    []interface{}{transcriptPath, new(schema.VillageManualAnnotationRequest)}, session: villageSessionRequired,
 			response: new(schema.AnnotationSummary), successStatus: http.StatusCreated, errorStatuses: []int{400, 404, 500},
 		},
 		{
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/commits", id: "listTranscriptCommits", tag: "transcripts",
 			description: "List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404.",
 			requests:    []interface{}{transcriptPath}, session: villageSessionOptional,
 			response: new(schema.VillageTranscriptCommitsResponse), errorStatuses: []int{400, 404, 500},
 		},
 		{
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodPost, path: "/api/v1/transcripts/publish/batch", id: "publishTranscriptBatch", tag: "transcripts",
 			description: "Batch publish is not implemented. No request body is declared; the body and success shapes arrive with the implementation in a later version.",
 			session:     villageSessionRequired, declaredStub: true, errorStatuses: []int{http.StatusNotImplemented},
 		},
 		{
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodGet, path: "/api/v1/openapi.json", id: "getVillageAPIDocument", tag: "operations",
 			description: "Return the frozen Village API document this server pins, which declares this operation.",
 			response:    new(villageAPIDocument),
@@ -87,11 +96,5 @@ func addVillageTranscriptAuxOperations(r *openapi31.Reflector) error {
 				media:   []villageMedia{{mediaType: villageMediaJSON, body: new(schema.VillageHealthResponse)}}}},
 		},
 	}
-	if err := addVillageOperations(r, ops); err != nil {
-		return err
-	}
-	if err := requireRequestBody(r.Spec, http.MethodPost, "/api/v1/transcripts/{id}/attestations"); err != nil {
-		return err
-	}
-	return requireRequestBody(r.Spec, http.MethodPost, "/api/v1/transcripts/{id}/annotations")
+	return addVillageOperations(r, ops)
 }
