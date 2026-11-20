@@ -413,6 +413,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := addVillageInvitationOperations(r); err != nil {
 		return nil, err
 	}
+	if err := addVillageTranscriptAuxOperations(r); err != nil {
+		return nil, err
+	}
 
 	// The reflector automatically registers component schemas for all types referenced
 	// in PublishRequest, including SessionEntry, ToolCallKind, StopReason,
