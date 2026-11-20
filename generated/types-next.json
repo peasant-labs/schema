@@ -18329,7 +18329,7 @@
             "type": "integer"
           },
           "serves": {
-            "description": "Forward-open capability tokens (currently publish-revision-n and segmented-reads-v2). Match exactly; ignore unknown tokens.",
+            "description": "Forward-open capability tokens this deployment advertises. Village owns the token set and may add tokens without a contract change. Match exactly; ignore unknown tokens.",
             "items": {
               "type": "string"
             },
