@@ -629,11 +629,11 @@ cases:
     parameters:
     - name: port
       in: query
-      required: false
+      required: true
       schema: integer
     - name: state
       in: query
-      required: false
+      required: true
       schema: string
     responses:
       '307':

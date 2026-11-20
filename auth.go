@@ -17,7 +17,10 @@ type ExchangeCodeResponse struct {
 
 // CLILoginQuery represents the query parameters for the CLI login initiation endpoint.
 // GET /api/v1/auth/cli/login?port={port}&state={state}
+//
+// Both parameters are required: Village refuses a request missing either with
+// 400, as it does a port that is not an integer from 1024 to 65535.
 type CLILoginQuery struct {
-	Port  int    `json:"port" query:"port" description:"Local callback server port"`
-	State string `json:"state" query:"state" description:"OAuth state parameter for CSRF protection"`
+	Port  int    `json:"port" query:"port" required:"true" description:"Local callback server port"`
+	State string `json:"state" query:"state" required:"true" description:"OAuth state parameter for CSRF protection"`
 }
