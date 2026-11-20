@@ -140,5 +140,5 @@ type VillageHealthResponse struct { // healthProbe order
 	Status        string   `json:"status" description:"Always ok when the process answers."`
 	BuildRevision string   `json:"buildRevision,omitempty" pattern:"^[0-9a-f]{7,12}$"`
 	Migrations    *int64   `json:"migrations,omitempty" nullable:"false" description:"Highest applied migration version; absent when the registry could not be read within one second."`
-	Serves        []string `json:"serves" nullable:"false" description:"Forward-open capability tokens (currently publish-revision-n and segmented-reads-v2). Match exactly; ignore unknown tokens."`
+	Serves        []string `json:"serves" nullable:"false" description:"Forward-open capability tokens this deployment advertises. Village owns the token set and may add tokens without a contract change. Match exactly; ignore unknown tokens."`
 }
