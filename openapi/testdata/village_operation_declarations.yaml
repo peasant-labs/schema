@@ -502,7 +502,9 @@ cases:
             headers: {Location: true}
           "400":
             media: {application/json: SchemaVillageErrorResponse, text/html: string}
+            headers: {Content-Security-Policy: false, X-Content-Type-Options: false}
             description_anchors: ["The state cookie is missing or does not match.", "first recognised media type in Accept is text/html"]
           "500":
             media: {application/json: SchemaVillageErrorResponse, text/html: string}
+            headers: {Content-Security-Policy: false, X-Content-Type-Options: false}
             description_anchors: ["Internal Server Error.", "as a VillageErrorResponse"]

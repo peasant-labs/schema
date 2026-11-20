@@ -44,6 +44,15 @@ const (
 	villageReflectorPlaceholderSummary = "No Content"
 )
 
+// villageBrowserPageHeaders are the headers Village sets only when it serves a
+// browser refusal as its HTML page. OpenAPI declares headers per response, not
+// per media type, so they are optional on the response and the description
+// says which variant carries them. The values restate Village's page renderer.
+var villageBrowserPageHeaders = []villageHeader{
+	{name: "Content-Security-Policy", description: "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant."},
+	{name: "X-Content-Type-Options", description: "Present only on the text/html variant, with the value nosniff. Absent on the application/json variant."},
+}
+
 // checkVillageOperation refuses a contradictory declaration before anything is
 // reflected. It is pure: it reads only the declaration.
 func checkVillageOperation(op villageOperationSpec) error {
@@ -337,6 +346,9 @@ func declareVillageResponses(spec *openapi31.Spec, op villageOperationSpec) erro
 		}
 		response.Description = summary + " " + villageBrowserNegotiationSentence
 		setTextMedia(response, villageMediaHTML)
+		for _, header := range villageBrowserPageHeaders {
+			setVillageHeader(response, header)
+		}
 		responses[key] = openapi31.ResponseOrReference{Response: response}
 	}
 
