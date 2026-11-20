@@ -675,3 +675,39 @@ cases:
           Retry-After: true
     description_anchors:
     - Initiate CLI login
+- name: cliExchangeCode
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village router mounts the CLI code exchange behind the sign-in limiter
+  mutation:
+    description: Pin the limiter headers and 429 on the CLI code exchange
+  input:
+    method: POST
+    path: /api/v1/auth/cli/exchange
+  expected:
+    operation_id: cliExchangeCode
+    tag: auth
+    parameters: []
+    request_body:
+      required: false
+      media:
+        application/json: SchemaExchangeCodeRequest
+    responses:
+      '200':
+        media:
+          application/json: SchemaExchangeCodeResponse
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '429':
+        media:
+          text/plain: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+          Retry-After: true
+    description_anchors:
+    - Exchange an OAuth authorization code

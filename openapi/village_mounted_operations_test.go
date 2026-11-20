@@ -82,9 +82,11 @@ var requiredMountedOperationIDs = []string{
 // requiredCorrectedOperationIDs are operations declared before these routes
 // whose declaration was corrected alongside them and is pinned by a row in
 // the same fixtures. cliLogin was declared with a 204 its handler never sends;
-// it answers a redirect, as the sign-in routes do.
+// it answers a redirect, as the sign-in routes do. cliExchangeCode sits behind
+// the sign-in limiter, whose headers and 429 it did not declare.
 var requiredCorrectedOperationIDs = []string{
 	"cliLogin",
+	"cliExchangeCode",
 }
 
 // villageMountedOperationInput locates one operation in the document.

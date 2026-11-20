@@ -196,19 +196,17 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
-	// POST /api/v1/auth/cli/exchange — exchange OAuth code for credentials.
-	exchangeOC, err := r.NewOperationContext(http.MethodPost, "/api/v1/auth/cli/exchange")
-	if err != nil {
-		return nil, fmt.Errorf("new exchange operation: %w", err)
-	}
-	exchangeOC.AddReqStructure(new(schema.ExchangeCodeRequest))
-	exchangeOC.AddRespStructure(new(schema.ExchangeCodeResponse))
-	exchangeOC.SetDescription("Exchange an OAuth authorization code and state for API credentials. " +
-		"Called by the CLI's local callback server after receiving the browser redirect.")
-	exchangeOC.SetID("cliExchangeCode")
-	exchangeOC.SetTags("auth")
-	if err := r.AddOperation(exchangeOC); err != nil {
-		return nil, fmt.Errorf("add exchange operation: %w", err)
+	// POST /api/v1/auth/cli/exchange: exchange OAuth code for credentials. It
+	// sits behind the same per-client limiter as the sign-in entry points.
+	if err := addVillageOperations(r, []villageOperationSpec{{
+		method: http.MethodPost, path: "/api/v1/auth/cli/exchange", id: "cliExchangeCode", tag: "auth",
+		description: "Exchange an OAuth authorization code and state for API credentials. " +
+			"Called by the CLI's local callback server after receiving the browser redirect.",
+		rateLimited: true,
+		requests:    []interface{}{new(schema.ExchangeCodeRequest)},
+		response:    new(schema.ExchangeCodeResponse),
+	}}); err != nil {
+		return nil, err
 	}
 
 	// POST /api/v1/annotations accepts owner-authenticated annotation pushes.

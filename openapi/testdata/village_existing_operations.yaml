@@ -13,6 +13,8 @@ allowed_changes:
   operations:
     # Declared with a 204 its handler never sends; it answers a redirect.
     - cliLogin
+    # Sits behind the sign-in limiter; gains its headers and its 429.
+    - cliExchangeCode
     # Unchanged itself; its response component gains two members.
     - getAuthenticatedVillageUser
   components:
