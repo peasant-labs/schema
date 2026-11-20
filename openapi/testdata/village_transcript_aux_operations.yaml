@@ -1,0 +1,156 @@
+cases:
+  - name: deleteTranscript
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village DeleteTranscript"}
+    mutation: {description: "declare deletion and its merged service-unavailable response"}
+    input: {method: DELETE, path: "/api/v1/transcripts/{id}"}
+    expected:
+      operation_id: deleteTranscript
+      tag: transcripts
+      parameters: [{name: id, in: path, required: true, schema: SchemaTranscriptID}]
+      description_anchors: ["Retry-After"]
+      responses:
+        "200": {media: {application/json: SchemaVillageStatusResponse}}
+        "400": {media: {application/json: SchemaVillageErrorResponse}}
+        "401": {media: {application/json: SchemaVillageErrorResponse}}
+        "403": {media: {application/json: SchemaVillageErrorResponse}}
+        "404": {media: {application/json: SchemaVillageErrorResponse}}
+        "500": {media: {application/json: SchemaVillageErrorResponse}}
+        "503": {media: {application/json: SchemaVillageErrorResponse}, headers: {Retry-After: false}}
+  - name: listTranscriptAttestations
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village ListTranscriptAttestations"}
+    mutation: {description: "declare visible transcript attestations"}
+    input: {method: GET, path: "/api/v1/transcripts/{id}/attestations"}
+    expected:
+      operation_id: listTranscriptAttestations
+      tag: transcripts
+      parameters: [{name: id, in: path, required: true, schema: SchemaTranscriptID}]
+      description_anchors: ["visible transcript"]
+      responses:
+        "200": {media: {application/json: "[]SchemaVillageTranscriptAttestation|null"}}
+        "400": {media: {application/json: SchemaVillageErrorResponse}}
+        "404": {media: {application/json: SchemaVillageErrorResponse}}
+        "500": {media: {application/json: SchemaVillageErrorResponse}}
+  - name: createTranscriptAttestation
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village CreateAttestation"}
+    mutation: {description: "declare attestation creation"}
+    input: {method: POST, path: "/api/v1/transcripts/{id}/attestations"}
+    expected:
+      operation_id: createTranscriptAttestation
+      tag: transcripts
+      parameters: [{name: id, in: path, required: true, schema: SchemaTranscriptID}]
+      request_body: {required: true, media: {application/json: SchemaVillageCreateAttestationRequest}}
+      description_anchors: ["verified organization member", "Duplicate errors"]
+      responses:
+        "201": {media: {application/json: SchemaVillageTranscriptAttestation}}
+        "400": {media: {application/json: SchemaVillageErrorResponse}}
+        "401": {media: {application/json: SchemaVillageErrorResponse}}
+        "403": {media: {application/json: SchemaVillageErrorResponse}}
+        "404": {media: {application/json: SchemaVillageErrorResponse}}
+        "409": {media: {application/json: SchemaVillageErrorResponse}}
+        "500": {media: {application/json: SchemaVillageErrorResponse}}
+        "503": {media: {application/json: SchemaVillageErrorResponse}, headers: {Retry-After: true}}
+  - name: deleteTranscriptAttestation
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village DeleteAttestation"}
+    mutation: {description: "declare caller-scoped deletion without transcript validation"}
+    input: {method: DELETE, path: "/api/v1/transcripts/{id}/attestations/{attestationID}"}
+    expected:
+      operation_id: deleteTranscriptAttestation
+      tag: transcripts
+      parameters:
+        - {name: id, in: path, required: true, schema: SchemaTranscriptID}
+        - {name: attestationID, in: path, required: true, schema: SchemaVillageUUID}
+      description_anchors: ["not checked"]
+      responses:
+        "200": {media: {application/json: SchemaVillageStatusResponse}}
+        "400": {media: {application/json: SchemaVillageErrorResponse}}
+        "401": {media: {application/json: SchemaVillageErrorResponse}}
+        "500": {media: {application/json: SchemaVillageErrorResponse}}
+        "503": {media: {application/json: SchemaVillageErrorResponse}, headers: {Retry-After: true}}
+  - name: listTranscriptAnnotations
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village ListTranscriptAnnotations"}
+    mutation: {description: "declare annotations envelope"}
+    input: {method: GET, path: "/api/v1/transcripts/{id}/annotations"}
+    expected:
+      operation_id: listTranscriptAnnotations
+      tag: transcripts
+      parameters: [{name: id, in: path, required: true, schema: SchemaTranscriptID}]
+      description_anchors: ["visible transcript"]
+      responses:
+        "200": {media: {application/json: SchemaVillageTranscriptAnnotationsResponse}}
+        "400": {media: {application/json: SchemaVillageErrorResponse}}
+        "404": {media: {application/json: SchemaVillageErrorResponse}}
+        "500": {media: {application/json: SchemaVillageErrorResponse}}
+  - name: createTranscriptAnnotation
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village CreateTranscriptAnnotation"}
+    mutation: {description: "declare manual annotation creation"}
+    input: {method: POST, path: "/api/v1/transcripts/{id}/annotations"}
+    expected:
+      operation_id: createTranscriptAnnotation
+      tag: transcripts
+      parameters: [{name: id, in: path, required: true, schema: SchemaTranscriptID}]
+      request_body: {required: true, media: {application/json: SchemaVillageManualAnnotationRequest}}
+      description_anchors: ["manual entry annotation"]
+      responses:
+        "201": {media: {application/json: SchemaAnnotationSummary}}
+        "400": {media: {application/json: SchemaVillageErrorResponse}}
+        "401": {media: {application/json: SchemaVillageErrorResponse}}
+        "404": {media: {application/json: SchemaVillageErrorResponse}}
+        "500": {media: {application/json: SchemaVillageErrorResponse}}
+        "503": {media: {application/json: SchemaVillageErrorResponse}, headers: {Retry-After: true}}
+  - name: listTranscriptCommits
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village ListTranscriptCommits"}
+    mutation: {description: "declare commits envelope"}
+    input: {method: GET, path: "/api/v1/transcripts/{id}/commits"}
+    expected:
+      operation_id: listTranscriptCommits
+      tag: transcripts
+      parameters: [{name: id, in: path, required: true, schema: SchemaTranscriptID}]
+      description_anchors: ["payload order"]
+      responses:
+        "200": {media: {application/json: SchemaVillageTranscriptCommitsResponse}}
+        "400": {media: {application/json: SchemaVillageErrorResponse}}
+        "404": {media: {application/json: SchemaVillageErrorResponse}}
+        "500": {media: {application/json: SchemaVillageErrorResponse}}
+  - name: publishTranscriptBatch
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village PublishBatch"}
+    mutation: {description: "declare the unimplemented batch route without a body"}
+    input: {method: POST, path: "/api/v1/transcripts/publish/batch"}
+    expected:
+      operation_id: publishTranscriptBatch
+      tag: transcripts
+      description_anchors: ["No request body is declared", "body and success shapes arrive"]
+      responses:
+        "401": {media: {application/json: SchemaVillageErrorResponse}}
+        "501": {media: {application/json: SchemaVillageErrorResponse}}
+        "503": {media: {application/json: SchemaVillageErrorResponse}, headers: {Retry-After: true}}
+  - name: getVillageAPIDocument
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village ServeOpenAPI"}
+    mutation: {description: "declare the pinned API document"}
+    input: {method: GET, path: "/api/v1/openapi.json"}
+    expected:
+      operation_id: getVillageAPIDocument
+      tag: operations
+      description_anchors: ["frozen Village API document", "declares this operation"]
+      responses:
+        "200": {media: {application/json: OpenapiVillageAPIDocument}}
+  - name: getHealth
+    classification: must-pass
+    provenance: {source: requirement, ref: "Village Health"}
+    mutation: {description: "declare root liveness with no-store"}
+    input: {method: GET, path: /health}
+    expected:
+      operation_id: getHealth
+      tag: operations
+      servers: ["/"]
+      description_anchors: ["migration registry", "migrations is absent"]
+      responses:
+        "200": {media: {application/json: SchemaVillageHealthResponse}, headers: {Cache-Control: true}}
