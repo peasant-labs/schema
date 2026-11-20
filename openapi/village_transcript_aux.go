@@ -42,10 +42,13 @@ func addVillageTranscriptAuxOperations(r *openapi31.Reflector) error {
 		{
 			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodPost, path: "/api/v1/transcripts/{id}/attestations", id: "createTranscriptAttestation", requiredBody: true, tag: "transcripts",
-			description: "Attest to a visible transcript as a verified organization member. Duplicate errors can return 409; errors containing violates return 403 first.",
+			description: "Attest to a visible transcript as a verified organization member. A caller who is not a verified member of the organization, and a duplicate of an existing attestation, are both refused with 403.",
 			requests:    []interface{}{transcriptPath, new(schema.VillageCreateAttestationRequest)}, session: villageSessionRequired,
 			response: new(schema.VillageTranscriptAttestation), successStatus: http.StatusCreated,
-			errorStatuses: []int{400, 403, 404, 409, 500},
+			errorStatuses: []int{400, 403, 404, 500},
+			errorSummaries: map[int]string{
+				http.StatusForbidden: "Forbidden. The caller is not a verified member of the organization, or the same attestation already exists; the database refusal is not told apart.",
+			},
 		},
 		{
 			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it

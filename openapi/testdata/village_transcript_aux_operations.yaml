@@ -35,21 +35,20 @@ cases:
   - name: createTranscriptAttestation
     classification: must-pass
     provenance: {source: requirement, ref: "Village CreateAttestation"}
-    mutation: {description: "declare attestation creation"}
+    mutation: {description: "declare attestation creation, whose duplicate answers 403 and never 409"}
     input: {method: POST, path: "/api/v1/transcripts/{id}/attestations"}
     expected:
       operation_id: createTranscriptAttestation
       tag: transcripts
       parameters: [{name: id, in: path, required: true, schema: SchemaTranscriptID}]
       request_body: {required: true, media: {application/json: SchemaVillageCreateAttestationRequest}}
-      description_anchors: ["verified organization member", "Duplicate errors"]
+      description_anchors: ["verified organization member", "a duplicate of an existing attestation, are both refused with 403"]
       responses:
         "201": {media: {application/json: SchemaVillageTranscriptAttestation}}
         "400": {media: {application/json: SchemaVillageErrorResponse}}
         "401": {media: {application/json: SchemaVillageErrorResponse}}
-        "403": {media: {application/json: SchemaVillageErrorResponse}}
+        "403": {media: {application/json: SchemaVillageErrorResponse}, description_anchors: ["the same attestation already exists"]}
         "404": {media: {application/json: SchemaVillageErrorResponse}}
-        "409": {media: {application/json: SchemaVillageErrorResponse}}
         "500": {media: {application/json: SchemaVillageErrorResponse}}
         "503": {media: {application/json: SchemaVillageErrorResponse}, headers: {Retry-After: true}}
   - name: deleteTranscriptAttestation
