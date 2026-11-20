@@ -564,6 +564,12 @@ func describeVillageErrorSummaries(spec *openapi31.Spec, op villageOperationSpec
 	for _, status := range op.errorStatuses {
 		declared[status] = struct{}{}
 	}
+	// A browser refusal's summary is applied by declareVillageResponses,
+	// which adds the Accept negotiation to it.
+	browser := make(map[int]struct{}, len(op.browserErrorStatuses))
+	for _, status := range op.browserErrorStatuses {
+		browser[status] = struct{}{}
+	}
 	item, ok := declaredPathItem(spec, op.path)
 	if !ok {
 		return fmt.Errorf("%s: the path is not in the document, so its error statuses cannot be described; add the operation before describing it", where)
@@ -573,8 +579,11 @@ func describeVillageErrorSummaries(spec *openapi31.Spec, op villageOperationSpec
 		return fmt.Errorf("%s: the path has no %s operation, so its error statuses cannot be described", where, op.method)
 	}
 	for status, summary := range op.errorSummaries {
+		if _, ok := browser[status]; ok {
+			continue
+		}
 		if _, ok := declared[status]; !ok {
-			return fmt.Errorf("%s: errorSummaries names status %d, which errorStatuses does not declare; declare the status or drop its summary", where, status)
+			return fmt.Errorf("%s: errorSummaries names status %d, which neither errorStatuses nor browserErrorStatuses declares; declare the status or drop its summary", where, status)
 		}
 		key := statusText(status)
 		response, ok := operation.Responses.MapOfResponseOrReferenceValues[key]
@@ -1377,37 +1386,22 @@ func setVillageAlternativeResponse(spec *openapi31.Spec, path string, legacy map
 	return nil
 }
 
-// addVillageOperations reflects one table of Village operations. Every request
-// structure is added, the success response takes its declared status, and each
-// error status shares the common VillageErrorResponse envelope.
+// addVillageOperations declares one table of Village operations. Each
+// declaration is checked first, so a contradictory one fails before anything
+// is reflected. Every request structure is added, the success response takes
+// its declared status, each error status shares the common
+// VillageErrorResponse envelope, and the responses the reflector cannot express
+// are completed afterwards.
 func addVillageOperations(r *openapi31.Reflector, operations []villageOperationSpec) error {
 	for _, op := range operations {
-		oc, err := r.NewOperationContext(op.method, op.path)
-		if err != nil {
-			return fmt.Errorf("new Village operation %s %s: %w", op.method, op.path, err)
+		if err := checkVillageOperation(op); err != nil {
+			return err
 		}
-		for _, request := range op.requests {
-			oc.AddReqStructure(request)
+		if err := reflectVillageOperation(r, op); err != nil {
+			return err
 		}
-		if len(op.responseAlternatives) > 0 {
-			for _, response := range op.responseAlternatives {
-				oc.AddRespStructure(response)
-			}
-		} else if op.response != nil {
-			if op.successStatus != 0 && op.successStatus != http.StatusOK {
-				oc.AddRespStructure(op.response, openapicore.WithHTTPStatus(op.successStatus))
-			} else {
-				oc.AddRespStructure(op.response)
-			}
-		}
-		for _, status := range op.errorStatuses {
-			oc.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(status))
-		}
-		oc.SetDescription(op.description)
-		oc.SetID(op.id)
-		oc.SetTags(op.tag)
-		if err := r.AddOperation(oc); err != nil {
-			return fmt.Errorf("add Village operation %s %s: %w", op.method, op.path, err)
+		if err := declareVillageResponses(r.Spec, op); err != nil {
+			return err
 		}
 		if err := describeVillageErrorSummaries(r.Spec, op); err != nil {
 			return err
