@@ -127,8 +127,8 @@ type VillageTranscriptCommit struct { // transcriptCommitResponse order
 	Message     *string `json:"message"`
 	AuthorName  *string `json:"authorName"`
 	AuthorEmail *string `json:"authorEmail"`
-	AuthoredAt  *int64  `json:"authoredAt" description:"Unix milliseconds."`
-	CommittedAt *int64  `json:"committedAt" description:"Unix milliseconds."`
+	AuthoredAt  *int64  `json:"authoredAt" format:"int64" description:"Unix milliseconds."`
+	CommittedAt *int64  `json:"committedAt" format:"int64" description:"Unix milliseconds."`
 	Order       int32   `json:"order"`
 }
 type VillageTranscriptCommitsResponse struct {
