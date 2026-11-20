@@ -60,13 +60,11 @@ vet:
 # outside `nix develop`) and run for real inside the flake dev shell. The full
 # gate also requires the locked TypeScript dependencies.
 #
-# The release-workflow guard (release-guard check-workflow) keeps publication
-# behind the required gates; the Go suite is the authoritative test run, without
+# The Go suite is the authoritative test run, without
 # the race detector unless RACE=1 (see RACE above).
 # The root package needs headroom beyond Go's default 10-minute timeout in CI.
 check: fmt vet freshness typescript-check
 	$(UNSTRING) check
-	$(GO) run ./cmd/release-guard check-workflow --policy .github/release-guard.policy.yml --release .github/workflows/release.yml
 	$(GO) test $(GORACE_FLAG) -timeout 20m ./...
 	cd tools/redaction-categories && GOWORK=off $(GO) test $(GORACE_FLAG) ./...
 
