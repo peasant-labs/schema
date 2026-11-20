@@ -1,0 +1,313 @@
+cases:
+- name: logOut
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village backend/internal/handler/auth.go
+  mutation:
+    description: operation contract changes
+  input:
+    method: POST
+    path: /api/v1/auth/logout
+  expected:
+    operation_id: logOut
+    tag: auth
+    servers: []
+    parameters: []
+    responses:
+      '200':
+        media:
+          application/json: SchemaVillageStatusResponse
+        headers:
+          Set-Cookie: true
+    description_anchors:
+    - session cookie
+- name: deleteMyAccount
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village backend/internal/handler/auth.go
+  mutation:
+    description: operation contract changes
+  input:
+    method: DELETE
+    path: /api/v1/auth/me
+  expected:
+    operation_id: deleteMyAccount
+    tag: auth
+    servers: []
+    parameters: []
+    responses:
+      '200':
+        media:
+          application/json: SchemaVillageStatusResponse
+        headers:
+          Set-Cookie: true
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+    description_anchors:
+    - Permanently delete
+- name: updateMyDiscoverability
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village backend/internal/handler/auth.go
+  mutation:
+    description: operation contract changes
+  input:
+    method: PATCH
+    path: /api/v1/auth/me/settings
+  expected:
+    operation_id: updateMyDiscoverability
+    tag: auth
+    servers: []
+    parameters: []
+    responses:
+      '200':
+        media:
+          application/json: SchemaVillageUser
+        headers: {}
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+    description_anchors:
+    - non-null
+    request_body:
+      required: true
+      media:
+        application/json: SchemaVillageDiscoverabilityRequest
+- name: setMyUsername
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village backend/internal/handler/auth.go
+  mutation:
+    description: operation contract changes
+  input:
+    method: PATCH
+    path: /api/v1/auth/me/username
+  expected:
+    operation_id: setMyUsername
+    tag: auth
+    servers: []
+    parameters: []
+    responses:
+      '200':
+        media:
+          application/json: SchemaVillageUser
+        headers: {}
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '409':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+    description_anchors:
+    - trimming and lowercasing
+    request_body:
+      required: true
+      media:
+        application/json: SchemaVillageUsernameRequest
+- name: createMyAPIKey
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village backend/internal/handler/auth.go
+  mutation:
+    description: operation contract changes
+  input:
+    method: POST
+    path: /api/v1/auth/api-keys
+  expected:
+    operation_id: createMyAPIKey
+    tag: auth
+    servers: []
+    parameters: []
+    responses:
+      '201':
+        media:
+          application/json: SchemaVillageCreatedAPIKey
+        headers: {}
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+    description_anchors:
+    - plaintext is returned only here
+    request_body:
+      required: false
+      media:
+        application/json: SchemaVillageCreateAPIKeyRequest
+- name: listMyAPIKeys
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village backend/internal/handler/auth.go
+  mutation:
+    description: operation contract changes
+  input:
+    method: GET
+    path: /api/v1/auth/api-keys
+  expected:
+    operation_id: listMyAPIKeys
+    tag: auth
+    servers: []
+    parameters: []
+    responses:
+      '200':
+        media:
+          application/json: '[]SchemaVillageAPIKey|null'
+        headers: {}
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+    description_anchors:
+    - including revoked
+- name: revokeMyAPIKey
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village backend/internal/handler/auth.go
+  mutation:
+    description: operation contract changes
+  input:
+    method: DELETE
+    path: /api/v1/auth/api-keys/{id}
+  expected:
+    operation_id: revokeMyAPIKey
+    tag: auth
+    servers: []
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: SchemaVillageUUID
+    responses:
+      '200':
+        media:
+          application/json: SchemaVillageStatusResponse
+        headers: {}
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+    description_anchors:
+    - nonmatching key
+- name: setMyOrganizationVisibility
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village backend/internal/handler/orgs.go
+  mutation:
+    description: operation contract changes
+  input:
+    method: PATCH
+    path: /api/v1/auth/orgs/{orgLogin}/visibility
+  expected:
+    operation_id: setMyOrganizationVisibility
+    tag: auth
+    servers: []
+    parameters:
+    - name: orgLogin
+      in: path
+      required: true
+    responses:
+      '200':
+        media:
+          application/json: SchemaVillageOrganizationVisibilityResponse
+        headers: {}
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '401':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers: {}
+      '503':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          Retry-After: true
+    description_anchors:
+    - omitted visible means false
+    request_body:
+      required: true
+      media:
+        application/json: SchemaVillageOrganizationVisibilityRequest
