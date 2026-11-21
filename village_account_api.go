@@ -124,7 +124,7 @@ type VillageTranscriptAnnotationsResponse struct {
 }
 type VillageTranscriptCommit struct { // transcriptCommitResponse order
 	Sha         string  `json:"sha"`
-	Message     *string `json:"message"`
+	Message     *string `json:"message" description:"Null when the transcript's owner is anonymous to the caller, because a message can name its authors in trailers, and when the commit records no message. A caller who may see the owner receives the recorded value."`
 	AuthorName  *string `json:"authorName" description:"Null when the transcript's owner is anonymous to the caller, and when the commit records no author name. A caller who may see the owner receives the recorded value."`
 	AuthorEmail *string `json:"authorEmail" description:"Null when the transcript's owner is anonymous to the caller, and when the commit records no author email. A caller who may see the owner receives the recorded value."`
 	AuthoredAt  *int64  `json:"authoredAt" format:"int64" description:"Unix milliseconds."`

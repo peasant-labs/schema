@@ -111,7 +111,7 @@ cases:
       operation_id: listTranscriptCommits
       tag: transcripts
       parameters: [{name: id, in: path, required: true, schema: SchemaTranscriptID}]
-      description_anchors: ["payload order", "authorName and authorEmail are null"]
+      description_anchors: ["payload order", "message, authorName and authorEmail are null"]
       responses:
         "200": {media: {application/json: SchemaVillageTranscriptCommitsResponse}}
         "400": {media: {application/json: SchemaVillageErrorResponse}}

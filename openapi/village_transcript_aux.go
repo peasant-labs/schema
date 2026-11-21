@@ -79,7 +79,7 @@ func addVillageTranscriptAuxOperations(r *openapi31.Reflector) error {
 		{
 			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/commits", id: "listTranscriptCommits", tag: "transcripts",
-			description: "List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404. When the transcript's owner is anonymous to the caller, every commit's authorName and authorEmail are null.",
+			description: "List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404. When the transcript's owner is anonymous to the caller, every commit's message, authorName and authorEmail are null.",
 			requests:    []interface{}{transcriptPath}, session: villageSessionOptional,
 			response: new(schema.VillageTranscriptCommitsResponse), errorStatuses: []int{400, 404, 500},
 		},
