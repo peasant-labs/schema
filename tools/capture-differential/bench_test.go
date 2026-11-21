@@ -10,6 +10,9 @@ import (
 	schema "github.com/peasant-labs/schema"
 )
 
+// subjectsFixture holds the benchmark subjects.
+const subjectsFixture = "testdata/subjects.yaml"
+
 // benchTurns is the turn count of both benchmark subjects.
 const benchTurns = 100000
 
@@ -37,7 +40,7 @@ func retainedBytes(doc []byte) (uint64, error) {
 // BenchmarkPartitionPass is evidence only: it reports timing and memory and
 // asserts nothing about them.
 func BenchmarkPartitionPass(b *testing.B) {
-	f, err := loadSubjectsFile("testdata/subjects.yaml")
+	f, err := loadSubjectsFile(subjectsFixture)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -78,7 +81,7 @@ func BenchmarkPartitionPass(b *testing.B) {
 }
 
 func TestBenchmarkSubjectsCapture(t *testing.T) {
-	f, err := loadSubjectsFile("testdata/subjects.yaml")
+	f, err := loadSubjectsFile(subjectsFixture)
 	if err != nil {
 		t.Fatal(err)
 	}

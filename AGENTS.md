@@ -54,6 +54,8 @@ types: `TranscriptTurnByteLength` and `TranscriptJSONStringByteLength` (the byte
 measure), `CutTranscriptSegments` (the cut, with each segment's conversation
 turn span), `ResolveTranscriptWindow` (the anchor window) and the constants
 `TranscriptSegmentBudgetBytes` and `TranscriptWindowSpan{Default,Minimum,Maximum}`.
+`CutTranscriptCookTurns` and `TranscriptCookTurn.Facts`
+(`transcript_cook_facts.go`) apply the same cut and measure to captured turns.
 They are pure functions over wire types and live here because every server that
 serves the segmented transcript reads must cut the same turns into the same
 segments; a copy per backend would let boundaries drift, and a directory from

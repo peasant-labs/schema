@@ -37,6 +37,9 @@ types:
   - {go_name: TranscriptContentHashWord, disposition: runtime-only, reason: producer input for header validation identity}
   - {go_name: TranscriptRetainedOwnerVisibility, disposition: runtime-only, reason: producer input for header validation identity}
   - {go_name: TranscriptCookTurn, disposition: runtime-only, reason: paired raw and decoded producer input}
+  - {go_name: TranscriptCookTurnFacts, disposition: runtime-only, reason: producer partition index facts of a captured turn}
+  - {go_name: TranscriptCaptureRefusal, disposition: runtime-only, reason: Go-only capture refusal class}
+  - {go_name: TranscriptCaptureError, disposition: runtime-only, reason: Go-only capture refusal error}
   - {go_name: CookedTurn, disposition: runtime-only, reason: producer cooking verdict}
   - {go_name: PositionedWindowTurn, disposition: runtime-only, reason: producer window resolver input}
   - {go_name: PositionedWindowInput, disposition: runtime-only, reason: producer window resolver input}
