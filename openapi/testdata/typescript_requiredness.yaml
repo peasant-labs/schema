@@ -37,8 +37,8 @@ cases:
       component: VillageCreatedAPIKey
       required: ["created_at", "id", "key", "label", "prefix"]
       optional: []
-      nullable: ["created_at"]
-      nonnullable: ["id", "key", "label", "prefix"]
+      nullable: []
+      nonnullable: ["created_at", "id", "key", "label", "prefix"]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: Village route contract}

@@ -46,18 +46,8 @@
       ],
       "properties": {
         "created_at": {
-          "anyOf": [
-            {
-              "format": "date-time",
-              "type": [
-                "null",
-                "string"
-              ]
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "format": "date-time",
+          "type": "string"
         },
         "id": {
           "$ref": "#/components/schemas/VillageUUID"

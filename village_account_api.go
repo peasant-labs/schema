@@ -43,7 +43,7 @@ type VillageCreateAPIKeyRequest struct {
 
 // Members in alphabetical order: the handler emitted a map.
 type VillageCreatedAPIKey struct {
-	CreatedAt *time.Time  `json:"created_at"`
+	CreatedAt time.Time   `json:"created_at" description:"When the key was created. The database sets it as the key is stored, so it is always present here."`
 	ID        VillageUUID `json:"id"`
 	Key       string      `json:"key" description:"The plaintext key. Returned only here, once."`
 	Label     string      `json:"label" description:"The label as sent; an empty label is stored as null and listed as null."`
