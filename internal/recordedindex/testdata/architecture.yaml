@@ -1,37 +1,52 @@
-cases:
-  - name: recorded-index-zero-on-both-architectures
-    classification: must-pass
-    provenance: &bounds {source: boundary, ref: "Recorded indexes must fit both the JSON-safe range and native int"}
-    mutation: {description: "Zero remains present"}
-    input: '{"index":0}'
-    expected: {state32: present, state64: present, index32: 0, index64: 0}
-  - name: recorded-index-max-native-32
-    classification: must-pass
-    provenance: *bounds
-    mutation: {description: "The highest signed 32-bit int remains present"}
-    input: '{"index":2147483647}'
-    expected: {state32: present, state64: present, index32: 2147483647, index64: 2147483647}
-  - name: recorded-index-above-native-32
-    classification: must-pass
-    provenance: *bounds
-    mutation: {description: "The first value above signed 32-bit is not narrowed into an address"}
-    input: '{"index":2147483648}'
-    expected: {state32: invalid, state64: present, index64: 2147483648}
-  - name: recorded-index-would-wrap-on-32
-    classification: must-pass
-    provenance: *bounds
-    mutation: {description: "A value that narrows to zero on 32-bit is refused there"}
-    input: '{"index":4294967296}'
-    expected: {state32: invalid, state64: present, index64: 4294967296}
-  - name: recorded-index-safe-maximum-by-architecture
-    classification: must-pass
-    provenance: *bounds
-    mutation: {description: "The safe maximum is present only where the native int can hold it"}
-    input: '{"index":9007199254740991}'
-    expected: {state32: invalid, state64: present, index64: 9007199254740991}
-  - name: recorded-index-above-safe-range-on-both
-    classification: must-pass
-    provenance: *bounds
-    mutation: {description: "A value above the safe range is invalid on both architectures"}
-    input: '{"index":9007199254740992}'
-    expected: {state32: invalid, state64: invalid}
+servedTurn:
+  cases:
+    - name: recorded-index-zero-on-both-architectures
+      classification: must-pass
+      provenance: &bounds {source: boundary, ref: "Recorded indexes must fit both the JSON-safe range and native int"}
+      mutation: {description: "Zero remains present"}
+      input: '{"index":0}'
+      expected: {state32: present, state64: present, index32: 0, index64: 0}
+    - name: recorded-index-max-native-32
+      classification: must-pass
+      provenance: *bounds
+      mutation: {description: "The highest signed 32-bit int remains present"}
+      input: '{"index":2147483647}'
+      expected: {state32: present, state64: present, index32: 2147483647, index64: 2147483647}
+    - name: recorded-index-above-native-32
+      classification: must-pass
+      provenance: *bounds
+      mutation: {description: "The first value above signed 32-bit is not narrowed into an address"}
+      input: '{"index":2147483648}'
+      expected: {state32: invalid, state64: present, index64: 2147483648}
+    - name: recorded-index-would-wrap-on-32
+      classification: must-pass
+      provenance: *bounds
+      mutation: {description: "A value that narrows to zero on 32-bit is refused there"}
+      input: '{"index":4294967296}'
+      expected: {state32: invalid, state64: present, index64: 4294967296}
+    - name: recorded-index-safe-maximum-by-architecture
+      classification: must-pass
+      provenance: *bounds
+      mutation: {description: "The safe maximum is present only where the native int can hold it"}
+      input: '{"index":9007199254740991}'
+      expected: {state32: invalid, state64: present, index64: 9007199254740991}
+    - name: recorded-index-above-safe-range-on-both
+      classification: must-pass
+      provenance: *bounds
+      mutation: {description: "A value above the safe range is invalid on both architectures"}
+      input: '{"index":9007199254740992}'
+      expected: {state32: invalid, state64: invalid}
+capturedTurn:
+  cases:
+    - name: capture-index-int32-maximum
+      classification: must-pass
+      provenance: &capture {source: boundary, ref: "The typed turn decode at capture uses the native int"}
+      mutation: {description: "The highest signed 32-bit index is captured and present on both architectures"}
+      input: '{"turns":[{"index":2147483647,"role":"user","content":"a"}]}'
+      expected: {state32: present, state64: present, index32: 2147483647, index64: 2147483647}
+    - name: capture-index-above-int32
+      classification: must-pass
+      provenance: *capture
+      mutation: {description: "The first index above signed 32-bit is refused at capture on 32-bit and present on 64-bit"}
+      input: '{"turns":[{"index":2147483648,"role":"user","content":"a"}]}'
+      expected: {refusal32: turn-type-mismatch, state64: present, index64: 2147483648}
