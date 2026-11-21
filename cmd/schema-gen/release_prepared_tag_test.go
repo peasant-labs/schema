@@ -81,10 +81,7 @@ func TestPreparedTagSnapshot(t *testing.T) {
 			dir := t.TempDir()
 			origin := filepath.Join(dir, "origin")
 			verify := filepath.Join(dir, "verify")
-			env := append(os.Environ(),
-				"GIT_AUTHOR_NAME=fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
-				"GIT_COMMITTER_NAME=fixture", "GIT_COMMITTER_EMAIL=fixture@example.invalid",
-			)
+			env := isolatedGitFixtureEnv()
 			git := func(cwd string, args ...string) string {
 				t.Helper()
 				cmd := exec.Command("git", args...)
@@ -210,4 +207,28 @@ func TestPreparedTagSnapshot(t *testing.T) {
 			t.Errorf("required prepared tag case %q missing", name)
 		}
 	}
+}
+
+// isolatedGitFixtureEnv returns an environment for Git fixture child commands
+// that isolates host Git config and disables background maintenance/gc so no
+// detached Git process can write into t.TempDir() after a test step exits.
+func isolatedGitFixtureEnv() []string {
+	var env []string
+	for _, entry := range os.Environ() {
+		if strings.HasPrefix(entry, "GIT_CONFIG_") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return append(env,
+		"GIT_CONFIG_GLOBAL="+os.DevNull,
+		"GIT_CONFIG_NOSYSTEM=1",
+		"GIT_CONFIG_COUNT=4",
+		"GIT_CONFIG_KEY_0=maintenance.auto", "GIT_CONFIG_VALUE_0=false",
+		"GIT_CONFIG_KEY_1=maintenance.autoDetach", "GIT_CONFIG_VALUE_1=false",
+		"GIT_CONFIG_KEY_2=gc.auto", "GIT_CONFIG_VALUE_2=0",
+		"GIT_CONFIG_KEY_3=gc.autoDetach", "GIT_CONFIG_VALUE_3=false",
+		"GIT_AUTHOR_NAME=fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
+		"GIT_COMMITTER_NAME=fixture", "GIT_COMMITTER_EMAIL=fixture@example.invalid",
+	)
 }
