@@ -3,7 +3,7 @@
   "info": {
     "title": "Transcript Publish API",
     "description": "Village API for transcript publishing, CLI authentication, annotation registry and manifest synchronization, schema negotiation, group-scoped transcript discovery, content, annotations, currency checks, collectives, shares, contributions, review, and linked repositories.",
-    "version": "0.42.0"
+    "version": "0.43.0"
   },
   "paths": {
     "/api/v1/annotations": {

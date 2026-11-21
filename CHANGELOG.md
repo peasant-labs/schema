@@ -3,6 +3,10 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.61.0
+
+- declare every route Village mounts (#285) (BREAKING)
+
 ## 0.60.0
 
 - retire the release-guard subcommands the computed-release flow replaced (#281) (BREAKING)

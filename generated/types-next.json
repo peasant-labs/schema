@@ -3,7 +3,7 @@
   "info": {
     "title": "Peasant Types",
     "description": "Shared domain type catalog for Peasant APIs. No operations; register these components for SDK code generation and cross-API type sharing.",
-    "version": "0.52.0"
+    "version": "0.53.0"
   },
   "components": {
     "schemas": {
