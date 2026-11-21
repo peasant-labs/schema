@@ -41,6 +41,7 @@ type villageTranscriptReadExpected struct {
 	// response component. It is a required subset, not the whole closure.
 	ReachableComponents []string `yaml:"reachableComponents"`
 	Statuses            []int    `yaml:"statuses"`
+	LocalStatuses       []int    `yaml:"localStatuses"`
 	ErrorRef            string   `yaml:"errorRef"`
 }
 

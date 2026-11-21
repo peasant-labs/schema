@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
+import { copyFile, mkdir, rm } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -11,3 +11,5 @@ if (result.error !== undefined) {
 if (result.status !== 0) {
   throw new Error(`TypeScript build failed in tsc with exit status ${String(result.status)}; the package output is incomplete; fix the reported compiler errors and rerun pnpm --dir typescript build.`);
 }
+await mkdir(new URL("../dist/fixtures/", import.meta.url), { recursive: true });
+await copyFile(new URL("../../testdata/transcript_numbering.yaml", import.meta.url), new URL("../dist/fixtures/transcript-numbering.yaml", import.meta.url));
