@@ -15,6 +15,8 @@ allowed_changes:
     - cliLogin
     # Sits behind the sign-in limiter; gains its headers and its 429.
     - cliExchangeCode
+    # Sits behind its own per-client limiter; gains its headers and its 429.
+    - unsubscribeInvitationEmails
     # Unchanged itself; its response component gains two members.
     - getAuthenticatedVillageUser
   components:

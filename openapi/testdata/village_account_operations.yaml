@@ -311,3 +311,53 @@ cases:
       required: true
       media:
         application/json: SchemaVillageOrganizationVisibilityRequest
+- name: unsubscribeInvitationEmails
+  classification: must-pass
+  provenance:
+    source: requirement
+    ref: Village router mounts the one-click unsubscribe behind its own limiter
+  mutation:
+    description: Pin the limiter headers and the 429 on the signed-out unsubscribe target
+  input:
+    method: POST
+    path: /api/v1/email/unsubscribe
+  expected:
+    operation_id: unsubscribeInvitationEmails
+    tag: users
+    parameters:
+    - name: token
+      in: query
+      required: true
+    responses:
+      '200':
+        media:
+          application/json: SchemaVillageStatusResponse
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '400':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '500':
+        media:
+          application/json: SchemaVillageErrorResponse
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+      '429':
+        media:
+          text/plain: string
+        headers:
+          X-RateLimit-Limit: true
+          X-RateLimit-Remaining: true
+          X-RateLimit-Reset: true
+          Retry-After: true
+          X-Content-Type-Options: true
+    description_anchors:
+    - without signing in
