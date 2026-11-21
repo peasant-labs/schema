@@ -1765,7 +1765,7 @@
         "tags": [
           "sessions"
         ],
-        "description": "Read the transcript segment directory by session ID: the transcript's only global index, one ref per segment with the cut's revision and scalars and no turn content. Each ref names its segment ordinal and the closed range of sparse turn identities it covers; the segment read serves those turns. A session of zero segments answers an empty segments array with totalSegments 0. Above 10,000 segments the read serves one page of 10,000 refs, keeps the true totalSegments, and sets directoryPage and directoryPerPage; page is one-based, omitted defaults to 1, and a request past the last page is served the last page. The directory is cut under the store revision it reports; a segment cut under another revision must not be placed beside it. revision is optional and the current revision is served when it is omitted. The saved ingestion selection never narrows this stored read.",
+        "description": "Read the transcript segment directory by session ID: the transcript's only global index, one ref per segment with the cut's revision and scalars and no turn content. Each ref names its segment ordinal and the closed range of sparse turn identities it covers; the segment read serves those turns. A session of zero segments answers an empty segments array with totalSegments 0. Above 10,000 segments the read serves one page of 10,000 refs, keeps the true totalSegments, and sets directoryPage and directoryPerPage; page is one-based, omitted defaults to 1, and a request past the last page is served the last page. The directory is cut under the store revision it reports; a segment cut under another revision must not be placed beside it. revision is optional and the current revision is served when it is omitted. The saved ingestion selection never narrows this stored read. With v=2 the positioned directory selects main or a history section using partition and section; its response uses PositionedDirectory. Invalid selectors are 400, a missing partition or page is 404, a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.\n\nProtocol generation selectors (omission is v=0):\n- v=0 -\u003e 0.1.0\n- v=1 -\u003e 0.1.0\n- v=2 -\u003e 0.2.0",
         "operationId": "getSessionTranscriptSegments",
         "parameters": [
           {
@@ -1788,103 +1788,54 @@
             }
           },
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaTranscriptSegmentDirectory"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sessions/{id}/transcript/segments/{index}": {
-      "get": {
-        "tags": [
-          "sessions"
-        ],
-        "description": "Read one transcript segment by its directory ordinal. The segment is cut on complete entries and whole turns, so every turn it serves is whole and its firstTurn and lastTurn are exactly the range the directory declared. Each turn row embeds the shared turn detail beside truncated and the pre-bound byteLength. hasOlder and hasNewer say whether the transcript continues on that side. revision is optional and the current revision is served when it is omitted. A non-numeric or negative index is a 400, an index at or past totalSegments is a 404 naming the directory's segment count, and a stale revision is a 409 naming both revisions. When the store returns fewer turns than the directory declared, the read answers 409 with the declared and returned ranges and the re-index command rather than serving a short segment. The saved ingestion selection never narrows this stored read.",
-        "operationId": "getSessionTranscriptSegment",
-        "parameters": [
-          {
-            "name": "revision",
+            "name": "v",
             "in": "query",
-            "description": "Revision to read; omitted serves the current revision",
+            "description": "Protocol generation selectors (omission is v=0):\n- v=0 -\u003e 0.1.0\n- v=1 -\u003e 0.1.0\n- v=2 -\u003e 0.2.0",
             "schema": {
-              "description": "Revision to read; omitted serves the current revision",
-              "type": "string"
+              "description": "Segmented read protocol generation.",
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "integer"
             }
           },
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
+            "name": "partition",
+            "in": "query",
+            "description": "Positioned partition: main or history; omitted selects main.",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/SchemaTranscriptSegmentPartitionKind",
+              "description": "Positioned partition: main or history; omitted selects main."
             }
           },
           {
-            "name": "index",
-            "in": "path",
-            "description": "Segment ordinal from the directory read",
-            "required": true,
+            "name": "section",
+            "in": "query",
+            "description": "History section index. Required for history and omitted for main.",
             "schema": {
-              "description": "Segment ordinal from the directory read",
+              "description": "History section index. Required for history and omitted for main.",
               "minimum": 0,
               "type": "integer"
             }
+          },
+          {
+            "name": "representation",
+            "in": "query",
+            "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
+            "schema": {
+              "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1893,7 +1844,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaTranscriptSegment"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SchemaTranscriptSegmentDirectory"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SchemaPositionedDirectory"
+                    }
+                  ]
                 }
               }
             }
@@ -1940,6 +1898,174 @@
           },
           "503": {
             "description": "Service Unavailable",
+            "headers": {
+              "Retry-After": {
+                "style": "simple",
+                "description": "When to retry a temporary load or admission refusal.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/transcript/segments/{index}": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "description": "Read one transcript segment by its directory ordinal. The segment is cut on complete entries and whole turns, so every turn it serves is whole and its firstTurn and lastTurn are exactly the range the directory declared. Each turn row embeds the shared turn detail beside truncated and the pre-bound byteLength. hasOlder and hasNewer say whether the transcript continues on that side. revision is optional and the current revision is served when it is omitted. A non-numeric or negative index is a 400, an index at or past totalSegments is a 404 naming the directory's segment count, and a stale revision is a 409 naming both revisions. When the store returns fewer turns than the directory declared, the read answers 409 with the declared and returned ranges and the re-index command rather than serving a short segment. The saved ingestion selection never narrows this stored read. With v=2 the positioned segment uses partition and section and carries server-numbered rows. Invalid selectors are 400, a missing segment is 404, a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.\n\nProtocol generation selectors (omission is v=0):\n- v=0 -\u003e 0.1.0\n- v=1 -\u003e 0.1.0\n- v=2 -\u003e 0.2.0",
+        "operationId": "getSessionTranscriptSegment",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "description": "Revision to read; omitted serves the current revision",
+            "schema": {
+              "description": "Revision to read; omitted serves the current revision",
+              "type": "string"
+            }
+          },
+          {
+            "name": "v",
+            "in": "query",
+            "description": "Protocol generation selectors (omission is v=0):\n- v=0 -\u003e 0.1.0\n- v=1 -\u003e 0.1.0\n- v=2 -\u003e 0.2.0",
+            "schema": {
+              "description": "Segmented read protocol generation.",
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "integer"
+            }
+          },
+          {
+            "name": "partition",
+            "in": "query",
+            "description": "Positioned partition: main or history; omitted selects main.",
+            "schema": {
+              "$ref": "#/components/schemas/SchemaTranscriptSegmentPartitionKind",
+              "description": "Positioned partition: main or history; omitted selects main."
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "description": "History section index. Required for history and omitted for main.",
+            "schema": {
+              "description": "History section index. Required for history and omitted for main.",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "representation",
+            "in": "query",
+            "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
+            "schema": {
+              "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "Segment ordinal from the directory read",
+            "required": true,
+            "schema": {
+              "description": "Segment ordinal from the directory read",
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SchemaTranscriptSegment"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SchemaPositionedSegment"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {
+              "Retry-After": {
+                "style": "simple",
+                "description": "When to retry a temporary load or admission refusal.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -1956,7 +2082,7 @@
         "tags": [
           "sessions"
         ],
-        "description": "Resolve a turn identity to a contiguous transcript window and answer a descriptor that names where the window is, never what is in it. anchor is a non-negative turn identity: when the turn there is a user turn it is the anchor, otherwise the read snaps to the nearest lower user turn, or the nearest higher one when none is lower, and requestedAnchor and anchorTurn report both. span is the number of assistant turns collected on each side, 1..10, and omitted defaults to the design value 10; the parameter narrows a window and cannot widen it. The window is the contiguous range from the first collected turn to the last, so every interleaved user, system, and subagent turn is included. segments is the ordered contiguous run of segment ordinals that covers the range; the viewer loads exactly those through the segment read. hasOlder and hasNewer are true only when the transcript continues past that edge. revision is optional and the current revision is served when it is omitted. A missing, non-numeric, or negative anchor and a span outside 1..10 are 400; a session with no user turn is a 404, because a window requires one; a stale revision is a 409 naming both revisions. The saved ingestion selection never narrows this stored read.",
+        "description": "Resolve a turn identity to a contiguous transcript window and answer a descriptor that names where the window is, never what is in it. anchor is a non-negative turn identity: when the turn there is a user turn it is the anchor, otherwise the read snaps to the nearest lower user turn, or the nearest higher one when none is lower, and requestedAnchor and anchorTurn report both. span is the number of assistant turns collected on each side, 1..10, and omitted defaults to the design value 10; the parameter narrows a window and cannot widen it. The window is the contiguous range from the first collected turn to the last, so every interleaved user, system, and subagent turn is included. segments is the ordered contiguous run of segment ordinals that covers the range; the viewer loads exactly those through the segment read. hasOlder and hasNewer are true only when the transcript continues past that edge. revision is optional and the current revision is served when it is omitted. A missing, non-numeric, or negative anchor and a span outside 1..10 are 400; a session with no user turn is a 404, because a window requires one; a stale revision is a 409 naming both revisions. The saved ingestion selection never narrows this stored read. With v=2 the positioned window uses partition and section and accepts an omitted anchor for the default window. OpenAPI retains the required v1 anchor because parameter requiredness cannot depend on v. Invalid selectors are 400, a missing window is 404, a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.\n\nProtocol generation selectors (omission is v=0):\n- v=0 -\u003e 0.1.0\n- v=1 -\u003e 0.1.0\n- v=2 -\u003e 0.2.0",
         "operationId": "getSessionTranscriptWindow",
         "parameters": [
           {
@@ -1992,6 +2118,48 @@
             }
           },
           {
+            "name": "v",
+            "in": "query",
+            "description": "Protocol generation selectors (omission is v=0):\n- v=0 -\u003e 0.1.0\n- v=1 -\u003e 0.1.0\n- v=2 -\u003e 0.2.0",
+            "schema": {
+              "description": "Segmented read protocol generation.",
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "integer"
+            }
+          },
+          {
+            "name": "partition",
+            "in": "query",
+            "description": "Positioned partition: main or history; omitted selects main.",
+            "schema": {
+              "$ref": "#/components/schemas/SchemaTranscriptSegmentPartitionKind",
+              "description": "Positioned partition: main or history; omitted selects main."
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "description": "History section index. Required for history and omitted for main.",
+            "schema": {
+              "description": "History section index. Required for history and omitted for main.",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "representation",
+            "in": "query",
+            "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
+            "schema": {
+              "description": "Optional positioned representation to revalidate; a mismatch requires reload.",
+              "type": "string"
+            }
+          },
+          {
             "name": "id",
             "in": "path",
             "required": true,
@@ -2006,7 +2174,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaTranscriptWindow"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SchemaTranscriptWindow"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SchemaPositionedWindow"
+                    }
+                  ]
                 }
               }
             }
@@ -2053,6 +2228,15 @@
           },
           "503": {
             "description": "Service Unavailable",
+            "headers": {
+              "Retry-After": {
+                "style": "simple",
+                "description": "When to retry a temporary load or admission refusal.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -9650,6 +9834,217 @@
         },
         "type": "object"
       },
+      "SchemaPositionedDirectory": {
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/SchemaTranscriptReadContext"
+          },
+          "directoryPage": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "directoryPerPage": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaTranscriptHistorySection"
+            },
+            "type": "array"
+          },
+          "partition": {
+            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartition"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaPositionedSegmentRef"
+            },
+            "type": "array"
+          },
+          "usagePresent": {
+            "$ref": "#/components/schemas/SchemaTranscriptUsagePresence"
+          }
+        },
+        "required": [
+          "context",
+          "partition",
+          "usagePresent",
+          "segments"
+        ],
+        "type": "object"
+      },
+      "SchemaPositionedSegment": {
+        "properties": {
+          "byteLength": {
+            "type": "integer"
+          },
+          "context": {
+            "$ref": "#/components/schemas/SchemaTranscriptReadContext"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaNativeMetadataRecord"
+            },
+            "type": "array"
+          },
+          "partition": {
+            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartition"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaTranscriptSegmentRow"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "context",
+          "partition",
+          "index",
+          "rows",
+          "byteLength",
+          "hasOlder",
+          "hasNewer"
+        ],
+        "type": "object"
+      },
+      "SchemaPositionedSegmentRef": {
+        "properties": {
+          "byteLength": {
+            "type": "integer"
+          },
+          "conversationTurns": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaConversationTurnSpan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstTurn": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "lastTurn": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sourceFirstPosition": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sourceLastPosition": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "sourceFirstPosition",
+          "sourceLastPosition",
+          "byteLength"
+        ],
+        "type": "object"
+      },
+      "SchemaPositionedWindow": {
+        "properties": {
+          "anchorPosition": {
+            "type": "integer"
+          },
+          "anchorSegment": {
+            "type": "integer"
+          },
+          "anchorTurn": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "context": {
+            "$ref": "#/components/schemas/SchemaTranscriptReadContext"
+          },
+          "firstPosition": {
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "lastPosition": {
+            "type": "integer"
+          },
+          "partition": {
+            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartition"
+          },
+          "requestedAnchor": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "requestedPosition": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "segments": {
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "span": {
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "context",
+          "partition",
+          "anchorPosition",
+          "anchorSegment",
+          "span",
+          "firstPosition",
+          "lastPosition",
+          "segments",
+          "hasOlder",
+          "hasNewer"
+        ],
+        "type": "object"
+      },
       "SchemaProjectAnalytics": {
         "properties": {
           "avgDurationPerActiveWeek": {
@@ -12358,6 +12753,41 @@
         "title": "Tool Call Kind",
         "type": "string"
       },
+      "SchemaTranscriptHistorySection": {
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          },
+          "totalConversationTurns": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalTurns": {
+            "type": "integer"
+          },
+          "usagePresent": {
+            "$ref": "#/components/schemas/SchemaTranscriptUsagePresence"
+          }
+        },
+        "required": [
+          "index",
+          "totalTurns",
+          "usagePresent"
+        ],
+        "type": "object"
+      },
       "SchemaTranscriptID": {
         "description": "Village-side transcript identifier (canonical lowercase-hex UUID)",
         "examples": [
@@ -12366,6 +12796,177 @@
         "format": "uuid",
         "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
         "title": "Transcript ID",
+        "type": "string"
+      },
+      "SchemaTranscriptNativePresence": {
+        "description": "Closed session graph value",
+        "enum": [
+          "absent",
+          "present",
+          "withheld"
+        ],
+        "examples": [
+          "absent",
+          "present",
+          "withheld"
+        ],
+        "title": "Transcript Native Presence",
+        "type": "string"
+      },
+      "SchemaTranscriptReadContext": {
+        "properties": {
+          "contentHash": {
+            "type": "string"
+          },
+          "contentSessionId": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "harness": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "nativePresence": {
+            "$ref": "#/components/schemas/SchemaTranscriptNativePresence"
+          },
+          "protocolVersion": {
+            "description": "Required echo of the selected positioned read protocol version. The 0.2.0 protocol carries 0.2.0. A reader must refuse a mismatch with the requested generation before installing rows.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "representation": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "thinkingLevel": {
+            "$ref": "#/components/schemas/SchemaThinkingLevel"
+          },
+          "thinkingLevelRaw": {
+            "$ref": "#/components/schemas/SchemaThinkingLevelRaw"
+          },
+          "totalConversationTurns": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalSegments": {
+            "type": "integer"
+          },
+          "totalTurns": {
+            "type": "integer"
+          },
+          "transport": {
+            "$ref": "#/components/schemas/SchemaTranscriptReadTransport"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/SchemaTranscriptReadValidation"
+          }
+        },
+        "required": [
+          "protocolVersion",
+          "transport",
+          "revision",
+          "representation",
+          "validation",
+          "nativePresence",
+          "totalTurns",
+          "totalSegments"
+        ],
+        "type": "object"
+      },
+      "SchemaTranscriptReadTransport": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SchemaTranscriptReadTransportKind"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaSessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcriptId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaVillageUUID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "SchemaTranscriptReadTransportKind": {
+        "description": "Closed session graph value",
+        "enum": [
+          "local_session",
+          "village_transcript"
+        ],
+        "examples": [
+          "local_session",
+          "village_transcript"
+        ],
+        "title": "Transcript Read Transport Kind",
+        "type": "string"
+      },
+      "SchemaTranscriptReadValidation": {
+        "description": "Closed session graph value",
+        "enum": [
+          "published_strict",
+          "served_legacy",
+          "migrated"
+        ],
+        "examples": [
+          "published_strict",
+          "served_legacy",
+          "migrated"
+        ],
+        "title": "Transcript Read Validation",
+        "type": "string"
+      },
+      "SchemaTranscriptRecordedIndexState": {
+        "description": "Closed session graph value",
+        "enum": [
+          "present",
+          "absent",
+          "invalid"
+        ],
+        "examples": [
+          "present",
+          "absent",
+          "invalid"
+        ],
+        "title": "Transcript Recorded Index State",
         "type": "string"
       },
       "SchemaTranscriptSegment": {
@@ -12469,6 +13070,43 @@
         ],
         "type": "object"
       },
+      "SchemaTranscriptSegmentPartition": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SchemaTranscriptSegmentPartitionKind"
+          },
+          "sectionIndex": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "SchemaTranscriptSegmentPartitionKind": {
+        "description": "Closed session graph value",
+        "enum": [
+          "main",
+          "history"
+        ],
+        "examples": [
+          "main",
+          "history"
+        ],
+        "title": "Transcript Segment Partition Kind",
+        "type": "string"
+      },
       "SchemaTranscriptSegmentRef": {
         "properties": {
           "byteLength": {
@@ -12501,6 +13139,39 @@
           "lastTurn",
           "byteLength"
         ],
+        "type": "object"
+      },
+      "SchemaTranscriptSegmentRow": {
+        "properties": {
+          "displayNumber": {
+            "minLength": 1,
+            "pattern": "^[1-9][0-9]*[a-z]*$",
+            "type": "string"
+          },
+          "position": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "recordedIndex": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "recordedIndexState": {
+            "$ref": "#/components/schemas/SchemaTranscriptRecordedIndexState"
+          },
+          "turn": {
+            "$ref": "#/components/schemas/SchemaTranscriptServedTurn"
+          }
+        },
+        "required": [
+          "position",
+          "recordedIndexState",
+          "turn"
+        ],
+        "type": "object"
+      },
+      "SchemaTranscriptServedTurn": {
         "type": "object"
       },
       "SchemaTranscriptTurn": {
@@ -12609,6 +13280,21 @@
           "byteLength"
         ],
         "type": "object"
+      },
+      "SchemaTranscriptUsagePresence": {
+        "description": "Closed session graph value",
+        "enum": [
+          "present",
+          "empty",
+          "unknown"
+        ],
+        "examples": [
+          "present",
+          "empty",
+          "unknown"
+        ],
+        "title": "Transcript Usage Presence",
+        "type": "string"
       },
       "SchemaTranscriptWindow": {
         "properties": {

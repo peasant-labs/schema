@@ -537,7 +537,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the transcript segment directory by session ID: the transcript's only global index, one ref per segment with the cut's revision and scalars and no turn content. Each ref names its segment ordinal and the closed range of sparse turn identities it covers; the segment read serves those turns. A session of zero segments answers an empty segments array with totalSegments 0. Above 10,000 segments the read serves one page of 10,000 refs, keeps the true totalSegments, and sets directoryPage and directoryPerPage; page is one-based, omitted defaults to 1, and a request past the last page is served the last page. The directory is cut under the store revision it reports; a segment cut under another revision must not be placed beside it. revision is optional and the current revision is served when it is omitted. The saved ingestion selection never narrows this stored read. */
+        /**
+         * @description Read the transcript segment directory by session ID: the transcript's only global index, one ref per segment with the cut's revision and scalars and no turn content. Each ref names its segment ordinal and the closed range of sparse turn identities it covers; the segment read serves those turns. A session of zero segments answers an empty segments array with totalSegments 0. Above 10,000 segments the read serves one page of 10,000 refs, keeps the true totalSegments, and sets directoryPage and directoryPerPage; page is one-based, omitted defaults to 1, and a request past the last page is served the last page. The directory is cut under the store revision it reports; a segment cut under another revision must not be placed beside it. revision is optional and the current revision is served when it is omitted. The saved ingestion selection never narrows this stored read. With v=2 the positioned directory selects main or a history section using partition and section; its response uses PositionedDirectory. Invalid selectors are 400, a missing partition or page is 404, a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.
+         *
+         *     Protocol generation selectors (omission is v=0):
+         *     - v=0 -> 0.1.0
+         *     - v=1 -> 0.1.0
+         *     - v=2 -> 0.2.0
+         */
         get: operations["getSessionTranscriptSegments"];
         put?: never;
         post?: never;
@@ -554,7 +561,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read one transcript segment by its directory ordinal. The segment is cut on complete entries and whole turns, so every turn it serves is whole and its firstTurn and lastTurn are exactly the range the directory declared. Each turn row embeds the shared turn detail beside truncated and the pre-bound byteLength. hasOlder and hasNewer say whether the transcript continues on that side. revision is optional and the current revision is served when it is omitted. A non-numeric or negative index is a 400, an index at or past totalSegments is a 404 naming the directory's segment count, and a stale revision is a 409 naming both revisions. When the store returns fewer turns than the directory declared, the read answers 409 with the declared and returned ranges and the re-index command rather than serving a short segment. The saved ingestion selection never narrows this stored read. */
+        /**
+         * @description Read one transcript segment by its directory ordinal. The segment is cut on complete entries and whole turns, so every turn it serves is whole and its firstTurn and lastTurn are exactly the range the directory declared. Each turn row embeds the shared turn detail beside truncated and the pre-bound byteLength. hasOlder and hasNewer say whether the transcript continues on that side. revision is optional and the current revision is served when it is omitted. A non-numeric or negative index is a 400, an index at or past totalSegments is a 404 naming the directory's segment count, and a stale revision is a 409 naming both revisions. When the store returns fewer turns than the directory declared, the read answers 409 with the declared and returned ranges and the re-index command rather than serving a short segment. The saved ingestion selection never narrows this stored read. With v=2 the positioned segment uses partition and section and carries server-numbered rows. Invalid selectors are 400, a missing segment is 404, a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.
+         *
+         *     Protocol generation selectors (omission is v=0):
+         *     - v=0 -> 0.1.0
+         *     - v=1 -> 0.1.0
+         *     - v=2 -> 0.2.0
+         */
         get: operations["getSessionTranscriptSegment"];
         put?: never;
         post?: never;
@@ -571,7 +585,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Resolve a turn identity to a contiguous transcript window and answer a descriptor that names where the window is, never what is in it. anchor is a non-negative turn identity: when the turn there is a user turn it is the anchor, otherwise the read snaps to the nearest lower user turn, or the nearest higher one when none is lower, and requestedAnchor and anchorTurn report both. span is the number of assistant turns collected on each side, 1..10, and omitted defaults to the design value 10; the parameter narrows a window and cannot widen it. The window is the contiguous range from the first collected turn to the last, so every interleaved user, system, and subagent turn is included. segments is the ordered contiguous run of segment ordinals that covers the range; the viewer loads exactly those through the segment read. hasOlder and hasNewer are true only when the transcript continues past that edge. revision is optional and the current revision is served when it is omitted. A missing, non-numeric, or negative anchor and a span outside 1..10 are 400; a session with no user turn is a 404, because a window requires one; a stale revision is a 409 naming both revisions. The saved ingestion selection never narrows this stored read. */
+        /**
+         * @description Resolve a turn identity to a contiguous transcript window and answer a descriptor that names where the window is, never what is in it. anchor is a non-negative turn identity: when the turn there is a user turn it is the anchor, otherwise the read snaps to the nearest lower user turn, or the nearest higher one when none is lower, and requestedAnchor and anchorTurn report both. span is the number of assistant turns collected on each side, 1..10, and omitted defaults to the design value 10; the parameter narrows a window and cannot widen it. The window is the contiguous range from the first collected turn to the last, so every interleaved user, system, and subagent turn is included. segments is the ordered contiguous run of segment ordinals that covers the range; the viewer loads exactly those through the segment read. hasOlder and hasNewer are true only when the transcript continues past that edge. revision is optional and the current revision is served when it is omitted. A missing, non-numeric, or negative anchor and a span outside 1..10 are 400; a session with no user turn is a 404, because a window requires one; a stale revision is a 409 naming both revisions. The saved ingestion selection never narrows this stored read. With v=2 the positioned window uses partition and section and accepts an omitted anchor for the default window. OpenAPI retains the required v1 anchor because parameter requiredness cannot depend on v. Invalid selectors are 400, a missing window is 404, a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.
+         *
+         *     Protocol generation selectors (omission is v=0):
+         *     - v=0 -> 0.1.0
+         *     - v=1 -> 0.1.0
+         *     - v=2 -> 0.2.0
+         */
         get: operations["getSessionTranscriptWindow"];
         put?: never;
         post?: never;
@@ -1738,6 +1759,10 @@ export interface components {
          */
         SchemaPageSize: Schema.PageSize;
         SchemaPersonalMedians: Schema.PersonalMedians;
+        SchemaPositionedDirectory: Schema.PositionedDirectory;
+        SchemaPositionedSegment: Schema.PositionedSegment;
+        SchemaPositionedSegmentRef: Schema.PositionedSegmentRef;
+        SchemaPositionedWindow: Schema.PositionedWindow;
         SchemaProjectAnalytics: Schema.ProjectAnalytics;
         /**
          * Project Hash
@@ -2073,6 +2098,7 @@ export interface components {
          * @enum {string}
          */
         SchemaToolCallKind: Schema.ToolCallKind;
+        SchemaTranscriptHistorySection: Schema.TranscriptHistorySection;
         /**
          * Transcript ID
          * Format: uuid
@@ -2080,10 +2106,67 @@ export interface components {
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          */
         SchemaTranscriptID: Schema.TranscriptID;
+        /**
+         * Transcript Native Presence
+         * @description Closed session graph value
+         * @example absent
+         * @example present
+         * @example withheld
+         * @enum {string}
+         */
+        SchemaTranscriptNativePresence: Schema.TranscriptNativePresence;
+        SchemaTranscriptReadContext: Schema.TranscriptReadContext;
+        SchemaTranscriptReadTransport: Schema.TranscriptReadTransport;
+        /**
+         * Transcript Read Transport Kind
+         * @description Closed session graph value
+         * @example local_session
+         * @example village_transcript
+         * @enum {string}
+         */
+        SchemaTranscriptReadTransportKind: Schema.TranscriptReadTransportKind;
+        /**
+         * Transcript Read Validation
+         * @description Closed session graph value
+         * @example published_strict
+         * @example served_legacy
+         * @example migrated
+         * @enum {string}
+         */
+        SchemaTranscriptReadValidation: Schema.TranscriptReadValidation;
+        /**
+         * Transcript Recorded Index State
+         * @description Closed session graph value
+         * @example present
+         * @example absent
+         * @example invalid
+         * @enum {string}
+         */
+        SchemaTranscriptRecordedIndexState: Schema.TranscriptRecordedIndexState;
         SchemaTranscriptSegment: Schema.TranscriptSegment;
         SchemaTranscriptSegmentDirectory: Schema.TranscriptSegmentDirectory;
+        SchemaTranscriptSegmentPartition: Schema.TranscriptSegmentPartition;
+        /**
+         * Transcript Segment Partition Kind
+         * @description Closed session graph value
+         * @example main
+         * @example history
+         * @enum {string}
+         */
+        SchemaTranscriptSegmentPartitionKind: Schema.TranscriptSegmentPartitionKind;
         SchemaTranscriptSegmentRef: Schema.TranscriptSegmentRef;
+        SchemaTranscriptSegmentRow: Schema.TranscriptSegmentRow;
+        SchemaTranscriptServedTurn: Schema.TranscriptServedTurn;
         SchemaTranscriptTurn: Schema.TranscriptTurn;
+        /**
+         * Transcript Usage Presence
+         * @description Closed session graph value
+         * @example present
+         * @example empty
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaTranscriptUsagePresence: Schema.TranscriptUsagePresence;
         SchemaTranscriptWindow: Schema.TranscriptWindow;
         SchemaTurnContentPart: Schema.TurnContentPart;
         SchemaTurnDetail: Schema.TurnDetail;
@@ -3429,6 +3512,19 @@ export interface operations {
                 page?: number;
                 /** @description Revision to read; omitted serves the current revision */
                 revision?: string;
+                /**
+                 * @description Protocol generation selectors (omission is v=0):
+                 *     - v=0 -> 0.1.0
+                 *     - v=1 -> 0.1.0
+                 *     - v=2 -> 0.2.0
+                 */
+                v?: 0 | 1 | 2;
+                /** @description Positioned partition: main or history; omitted selects main. */
+                partition?: components["schemas"]["SchemaTranscriptSegmentPartitionKind"];
+                /** @description History section index. Required for history and omitted for main. */
+                section?: number;
+                /** @description Optional positioned representation to revalidate; a mismatch requires reload. */
+                representation?: string;
             };
             header?: never;
             path: {
@@ -3444,11 +3540,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptSegmentDirectory"];
+                    "application/json": components["schemas"]["SchemaTranscriptSegmentDirectory"] | components["schemas"]["SchemaPositionedDirectory"];
                 };
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3477,6 +3582,8 @@ export interface operations {
             /** @description Service Unavailable */
             503: {
                 headers: {
+                    /** @description When to retry a temporary load or admission refusal. */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3490,6 +3597,19 @@ export interface operations {
             query?: {
                 /** @description Revision to read; omitted serves the current revision */
                 revision?: string;
+                /**
+                 * @description Protocol generation selectors (omission is v=0):
+                 *     - v=0 -> 0.1.0
+                 *     - v=1 -> 0.1.0
+                 *     - v=2 -> 0.2.0
+                 */
+                v?: 0 | 1 | 2;
+                /** @description Positioned partition: main or history; omitted selects main. */
+                partition?: components["schemas"]["SchemaTranscriptSegmentPartitionKind"];
+                /** @description History section index. Required for history and omitted for main. */
+                section?: number;
+                /** @description Optional positioned representation to revalidate; a mismatch requires reload. */
+                representation?: string;
             };
             header?: never;
             path: {
@@ -3507,7 +3627,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptSegment"];
+                    "application/json": components["schemas"]["SchemaTranscriptSegment"] | components["schemas"]["SchemaPositionedSegment"];
                 };
             };
             /** @description Bad Request */
@@ -3549,6 +3669,8 @@ export interface operations {
             /** @description Service Unavailable */
             503: {
                 headers: {
+                    /** @description When to retry a temporary load or admission refusal. */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3566,6 +3688,19 @@ export interface operations {
                 span?: number;
                 /** @description Revision to read; omitted serves the current revision */
                 revision?: string;
+                /**
+                 * @description Protocol generation selectors (omission is v=0):
+                 *     - v=0 -> 0.1.0
+                 *     - v=1 -> 0.1.0
+                 *     - v=2 -> 0.2.0
+                 */
+                v?: 0 | 1 | 2;
+                /** @description Positioned partition: main or history; omitted selects main. */
+                partition?: components["schemas"]["SchemaTranscriptSegmentPartitionKind"];
+                /** @description History section index. Required for history and omitted for main. */
+                section?: number;
+                /** @description Optional positioned representation to revalidate; a mismatch requires reload. */
+                representation?: string;
             };
             header?: never;
             path: {
@@ -3581,7 +3716,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptWindow"];
+                    "application/json": components["schemas"]["SchemaTranscriptWindow"] | components["schemas"]["SchemaPositionedWindow"];
                 };
             };
             /** @description Bad Request */
@@ -3623,6 +3758,8 @@ export interface operations {
             /** @description Service Unavailable */
             503: {
                 headers: {
+                    /** @description When to retry a temporary load or admission refusal. */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
