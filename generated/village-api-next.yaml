@@ -45,6 +45,148 @@ paths:
           description: OK
       tags:
       - annotations
+  /api/v1/auth/api-keys:
+    get:
+      description: List API keys newest first, including revoked keys, without plaintext
+        or hashes; an empty list is [].
+      operationId: listMyAPIKeys
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SchemaVillageAPIKey'
+                type:
+                - "null"
+                - array
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+    post:
+      description: Create an API key; plaintext is returned only here. A missing or
+        invalid body gives an empty label.
+      operationId: createMyAPIKey
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaVillageCreateAPIKeyRequest'
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageCreatedAPIKey'
+          description: Created
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/api-keys/{id}:
+    delete:
+      description: Revoke the caller's API key; a nonmatching key also returns revoked.
+      operationId: revokeMyAPIKey
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageStatusResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
   /api/v1/auth/cli/exchange:
     post:
       description: Exchange an OAuth authorization code and state for API credentials.
@@ -61,6 +203,7 @@ paths:
                   state: f47ac10b58cc4372a5670e02b2c3d479
             schema:
               $ref: '#/components/schemas/SchemaExchangeCodeRequest'
+        required: true
       responses:
         "200":
           content:
@@ -76,6 +219,143 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaExchangeCodeResponse'
           description: OK
+          headers:
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request. The body is missing or does not decode as the
+            request, or code or state is empty.
+          headers:
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. No unexchanged code issued within the last five
+            minutes matches this code and state.
+          headers:
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "429":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Too Many Requests. The client made more requests in the current
+            window than the limiter allows. The body is the plain text Too Many Requests.
+          headers:
+            Retry-After:
+              description: Seconds to wait before the window allows another request.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-Content-Type-Options:
+              description: 'nosniff: the plain-text refusal must not be read as another
+                media type. The limiter writes its refusal with Go''s http.Error,
+                which always sets it.'
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error. The API key could not be generated or
+            stored.
+          headers:
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
       tags:
       - auth
   /api/v1/auth/cli/login:
@@ -88,21 +368,1238 @@ paths:
       - description: Local callback server port
         in: query
         name: port
+        required: true
         schema:
           description: Local callback server port
+          maximum: 65535
+          minimum: 1024
           type: integer
       - description: OAuth state parameter for CSRF protection
         in: query
         name: state
+        required: true
         schema:
           description: OAuth state parameter for CSRF protection
           type: string
       responses:
-        "204":
-          description: No Content
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to GitHub with an OAuth state cookie.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Set-Cookie:
+              description: oauth_state cookie with Path=/, Max-Age=300, HttpOnly and
+                SameSite=Lax; Secure when the server base URL is HTTPS.
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Bad Request. Sent as an HTML page (text/html) when the first
+            recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "429":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Too Many Requests. The client made more requests in the current
+            window than the limiter allows. The body is the plain text Too Many Requests.
+          headers:
+            Retry-After:
+              description: Seconds to wait before the window allows another request.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-Content-Type-Options:
+              description: 'nosniff: the plain-text refusal must not be read as another
+                media type. The limiter writes its refusal with Go''s http.Error,
+                which always sets it.'
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Internal Server Error. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/codeberg:
+    get:
+      description: Start Codeberg sign-in by redirecting to the provider. The oauth_state
+        cookie expires after 300 seconds and is HttpOnly and SameSite=Lax; Secure
+        is set for HTTPS. An unconfigured provider returns 503.
+      operationId: startCodebergSignIn
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the provider authorization URL, including client_id,
+            redirect_uri, response_type, scope and state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Set-Cookie:
+              description: oauth_state cookie with Path=/, Max-Age=300, HttpOnly and
+                SameSite=Lax; Secure when the server base URL is HTTPS.
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "429":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Too Many Requests. The client made more requests in the current
+            window than the limiter allows. The body is the plain text Too Many Requests.
+          headers:
+            Retry-After:
+              description: Seconds to wait before the window allows another request.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-Content-Type-Options:
+              description: 'nosniff: the plain-text refusal must not be read as another
+                media type. The limiter writes its refusal with Go''s http.Error,
+                which always sets it.'
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Service Unavailable. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/codeberg/callback:
+    get:
+      description: Complete Codeberg sign-in after verifying the oauth_state cookie.
+        The web redirect carries a session token in its query. An unconfigured provider
+        returns 503.
+      operationId: completeCodebergSignIn
+      parameters:
+      - description: Authorization code from the provider.
+        in: query
+        name: code
+        schema:
+          description: Authorization code from the provider.
+          type: string
+      - description: State echoed by the provider.
+        in: query
+        name: state
+        schema:
+          description: State echoed by the provider.
+          type: string
+      - description: Provider refusal, when present.
+        in: query
+        name: error
+        schema:
+          description: Provider refusal, when present.
+          type: string
+      - description: State cookie set at sign-in.
+        in: cookie
+        name: oauth_state
+        schema:
+          description: State cookie set at sign-in.
+          type: string
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the sign-in destination. The web destination carries
+            the session token; GitHub CLI sign-in uses a loopback URL with an exchange
+            code and CLI state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Bad Request. Sent as an HTML page (text/html) when the first
+            recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Internal Server Error. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Service Unavailable. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/github:
+    get:
+      description: Start GitHub sign-in by redirecting to the provider. The oauth_state
+        cookie expires after 300 seconds and is HttpOnly and SameSite=Lax; Secure
+        is set for HTTPS.
+      operationId: startGitHubSignIn
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the provider authorization URL, including client_id,
+            redirect_uri, response_type, scope and state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Set-Cookie:
+              description: oauth_state cookie with Path=/, Max-Age=300, HttpOnly and
+                SameSite=Lax; Secure when the server base URL is HTTPS.
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "429":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Too Many Requests. The client made more requests in the current
+            window than the limiter allows. The body is the plain text Too Many Requests.
+          headers:
+            Retry-After:
+              description: Seconds to wait before the window allows another request.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-Content-Type-Options:
+              description: 'nosniff: the plain-text refusal must not be read as another
+                media type. The limiter writes its refusal with Go''s http.Error,
+                which always sets it.'
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/github/callback:
+    get:
+      description: Complete GitHub sign-in after verifying the oauth_state cookie.
+        The web redirect carries a session token in its query. A CLI sign-in instead
+        redirects to its local callback with a one-time exchange code and CLI state.
+      operationId: completeGitHubSignIn
+      parameters:
+      - description: Authorization code from the provider.
+        in: query
+        name: code
+        schema:
+          description: Authorization code from the provider.
+          type: string
+      - description: State echoed by the provider.
+        in: query
+        name: state
+        schema:
+          description: State echoed by the provider.
+          type: string
+      - description: Provider refusal, when present.
+        in: query
+        name: error
+        schema:
+          description: Provider refusal, when present.
+          type: string
+      - description: State cookie set at sign-in.
+        in: cookie
+        name: oauth_state
+        schema:
+          description: State cookie set at sign-in.
+          type: string
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the sign-in destination. The web destination carries
+            the session token; GitHub CLI sign-in uses a loopback URL with an exchange
+            code and CLI state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Bad Request. Sent as an HTML page (text/html) when the first
+            recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Internal Server Error. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/gitlab:
+    get:
+      description: Start GitLab sign-in by redirecting to the provider. The oauth_state
+        cookie expires after 300 seconds and is HttpOnly and SameSite=Lax; Secure
+        is set for HTTPS. An unconfigured provider returns 503.
+      operationId: startGitLabSignIn
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the provider authorization URL, including client_id,
+            redirect_uri, response_type, scope and state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Set-Cookie:
+              description: oauth_state cookie with Path=/, Max-Age=300, HttpOnly and
+                SameSite=Lax; Secure when the server base URL is HTTPS.
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "429":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Too Many Requests. The client made more requests in the current
+            window than the limiter allows. The body is the plain text Too Many Requests.
+          headers:
+            Retry-After:
+              description: Seconds to wait before the window allows another request.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-Content-Type-Options:
+              description: 'nosniff: the plain-text refusal must not be read as another
+                media type. The limiter writes its refusal with Go''s http.Error,
+                which always sets it.'
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Service Unavailable. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/gitlab/callback:
+    get:
+      description: Complete GitLab sign-in after verifying the oauth_state cookie.
+        The web redirect carries a session token in its query. An unconfigured provider
+        returns 503.
+      operationId: completeGitLabSignIn
+      parameters:
+      - description: Authorization code from the provider.
+        in: query
+        name: code
+        schema:
+          description: Authorization code from the provider.
+          type: string
+      - description: State echoed by the provider.
+        in: query
+        name: state
+        schema:
+          description: State echoed by the provider.
+          type: string
+      - description: Provider refusal, when present.
+        in: query
+        name: error
+        schema:
+          description: Provider refusal, when present.
+          type: string
+      - description: State cookie set at sign-in.
+        in: cookie
+        name: oauth_state
+        schema:
+          description: State cookie set at sign-in.
+          type: string
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the sign-in destination. The web destination carries
+            the session token; GitHub CLI sign-in uses a loopback URL with an exchange
+            code and CLI state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Bad Request. Sent as an HTML page (text/html) when the first
+            recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Internal Server Error. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Service Unavailable. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/huggingface:
+    get:
+      description: Start Hugging Face sign-in by redirecting to the provider. The
+        oauth_state cookie expires after 300 seconds and is HttpOnly and SameSite=Lax;
+        Secure is set for HTTPS. An unconfigured provider returns 503.
+      operationId: startHuggingFaceSignIn
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the provider authorization URL, including client_id,
+            redirect_uri, response_type, scope and state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Set-Cookie:
+              description: oauth_state cookie with Path=/, Max-Age=300, HttpOnly and
+                SameSite=Lax; Secure when the server base URL is HTTPS.
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "429":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Too Many Requests. The client made more requests in the current
+            window than the limiter allows. The body is the plain text Too Many Requests.
+          headers:
+            Retry-After:
+              description: Seconds to wait before the window allows another request.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-Content-Type-Options:
+              description: 'nosniff: the plain-text refusal must not be read as another
+                media type. The limiter writes its refusal with Go''s http.Error,
+                which always sets it.'
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Service Unavailable. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/huggingface/callback:
+    get:
+      description: Complete Hugging Face sign-in after verifying the oauth_state cookie.
+        The web redirect carries a session token in its query. An unconfigured provider
+        returns 503.
+      operationId: completeHuggingFaceSignIn
+      parameters:
+      - description: Authorization code from the provider.
+        in: query
+        name: code
+        schema:
+          description: Authorization code from the provider.
+          type: string
+      - description: State echoed by the provider.
+        in: query
+        name: state
+        schema:
+          description: State echoed by the provider.
+          type: string
+      - description: Provider refusal, when present.
+        in: query
+        name: error
+        schema:
+          description: Provider refusal, when present.
+          type: string
+      - description: State cookie set at sign-in.
+        in: cookie
+        name: oauth_state
+        schema:
+          description: State cookie set at sign-in.
+          type: string
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the sign-in destination. The web destination carries
+            the session token; GitHub CLI sign-in uses a loopback URL with an exchange
+            code and CLI state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Bad Request. Sent as an HTML page (text/html) when the first
+            recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Internal Server Error. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Service Unavailable. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/logout:
+    post:
+      description: Clear the session cookie; bearer tokens are not revoked.
+      operationId: logOut
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageStatusResponse'
+          description: Logged out.
+          headers:
+            Set-Cookie:
+              description: Clears peasant_token with Path=/, Max-Age=0 and HttpOnly.
+              required: true
+              schema:
+                type: string
+              style: simple
       tags:
       - auth
   /api/v1/auth/me:
+    delete:
+      description: Permanently delete the authenticated account and clear the session
+        cookie.
+      operationId: deleteMyAccount
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageStatusResponse'
+          description: Deleted.
+          headers:
+            Set-Cookie:
+              description: Clears peasant_token with Path=/, Max-Age=0 and HttpOnly.
+              required: true
+              schema:
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
     get:
       description: Read the stable authenticated user UUID before account-scoped metadata
         fetching. Usernames and credentials are not scope identity.
@@ -126,6 +1623,117 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Internal Server Error
+      tags:
+      - auth
+  /api/v1/auth/me/settings:
+    patch:
+      description: Update discoverability; is_discoverable must be present and non-null.
+      operationId: setMyDiscoverability
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaVillageDiscoverabilityRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageUser'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/me/username:
+    patch:
+      description: Set a username after trimming and lowercasing; invalid or reserved
+        names are refused and taken names conflict.
+      operationId: setMyUsername
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaVillageUsernameRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageUser'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
       tags:
       - auth
   /api/v1/auth/orgs:
@@ -160,6 +1768,329 @@ paths:
           description: Internal Server Error
       tags:
       - organizations
+  /api/v1/auth/orgs/{orgLogin}/visibility:
+    patch:
+      description: Set organization visibility; omitted visible means false and a
+        nonmatching organization still returns updated.
+      operationId: setMyOrganizationVisibility
+      parameters:
+      - in: path
+        name: orgLogin
+        required: true
+        schema:
+          minLength: 1
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaVillageOrganizationVisibilityRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageOrganizationVisibilityResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/sourcehut:
+    get:
+      description: Start SourceHut sign-in by redirecting to the provider. The oauth_state
+        cookie expires after 300 seconds and is HttpOnly and SameSite=Lax; Secure
+        is set for HTTPS. An unconfigured provider returns 503.
+      operationId: startSourceHutSignIn
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the provider authorization URL, including client_id,
+            redirect_uri, response_type, scope and state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Set-Cookie:
+              description: oauth_state cookie with Path=/, Max-Age=300, HttpOnly and
+                SameSite=Lax; Secure when the server base URL is HTTPS.
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "429":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Too Many Requests. The client made more requests in the current
+            window than the limiter allows. The body is the plain text Too Many Requests.
+          headers:
+            Retry-After:
+              description: Seconds to wait before the window allows another request.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-Content-Type-Options:
+              description: 'nosniff: the plain-text refusal must not be read as another
+                media type. The limiter writes its refusal with Go''s http.Error,
+                which always sets it.'
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Service Unavailable. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - auth
+  /api/v1/auth/sourcehut/callback:
+    get:
+      description: Complete SourceHut sign-in after verifying the oauth_state cookie.
+        The web redirect carries a session token in its query. An unconfigured provider
+        returns 503.
+      operationId: completeSourceHutSignIn
+      parameters:
+      - description: Authorization code from the provider.
+        in: query
+        name: code
+        schema:
+          description: Authorization code from the provider.
+          type: string
+      - description: State echoed by the provider.
+        in: query
+        name: state
+        schema:
+          description: State echoed by the provider.
+          type: string
+      - description: Provider refusal, when present.
+        in: query
+        name: error
+        schema:
+          description: Provider refusal, when present.
+          type: string
+      - description: State cookie set at sign-in.
+        in: cookie
+        name: oauth_state
+        schema:
+          description: State cookie set at sign-in.
+          type: string
+      responses:
+        "307":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the sign-in destination. The web destination carries
+            the session token; GitHub CLI sign-in uses a loopback URL with an exchange
+            code and CLI state.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Bad Request. Sent as an HTML page (text/html) when the first
+            recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Internal Server Error. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Service Unavailable. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+      tags:
+      - auth
   /api/v1/collectives:
     get:
       description: List collectives the authenticated caller belongs to, with the
@@ -1579,18 +3510,115 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaVillageStatusResponse'
           description: OK
+          headers:
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
         "400":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
+        "429":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Too Many Requests. The client made more requests in the current
+            window than the limiter allows. The body is the plain text Too Many Requests.
+          headers:
+            Retry-After:
+              description: Seconds to wait before the window allows another request.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-Content-Type-Options:
+              description: 'nosniff: the plain-text refusal must not be read as another
+                media type. The limiter writes its refusal with Go''s http.Error,
+                which always sets it.'
+              required: true
+              schema:
+                type: string
+              style: simple
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
         "500":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Internal Server Error
+          headers:
+            X-RateLimit-Limit:
+              description: Requests one client may make in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Remaining:
+              description: Requests the client has left in the current window.
+              required: true
+              schema:
+                type: integer
+              style: simple
+            X-RateLimit-Reset:
+              description: Unix time, in seconds, at which the current window ends.
+              required: true
+              schema:
+                type: integer
+              style: simple
       tags:
       - users
   /api/v1/groups:
@@ -3014,6 +5042,281 @@ paths:
           description: Internal Server Error
       tags:
       - collectives
+  /api/v1/integrations/github/callback:
+    get:
+      description: Record a GitHub App installation and redirect to the bound collective
+        settings or the collective list.
+      operationId: completeGitHubAppInstall
+      parameters:
+      - description: GitHub App installation ID.
+        in: query
+        name: installation_id
+        required: true
+        schema:
+          description: GitHub App installation ID.
+          format: int64
+          minimum: 1
+          type: integer
+      - description: Optional signed installation state.
+        in: query
+        name: state
+        schema:
+          description: Optional signed installation state.
+          type: string
+      responses:
+        "302":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the collective destination.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Bad Request. Sent as an HTML page (text/html) when the first
+            recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Internal Server Error. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Not Implemented. Sent as an HTML page (text/html) when the
+            first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - integrations
+  /api/v1/integrations/github/install:
+    get:
+      description: Start a GitHub App installation for a collective owned by the caller.
+      operationId: startGitHubAppInstall
+      parameters:
+      - description: Collective to bind to the installation.
+        in: query
+        name: group_id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+          description: Collective to bind to the installation.
+      responses:
+        "302":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Redirect to the GitHub App installation page.
+          headers:
+            Location:
+              description: Redirect destination.
+              required: true
+              schema:
+                type: string
+              style: simple
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Bad Request. Sent as an HTML page (text/html) when the first
+            recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Forbidden
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Internal Server Error. Sent as an HTML page (text/html) when
+            the first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+            text/html:
+              schema:
+                type: string
+          description: Not Implemented. Sent as an HTML page (text/html) when the
+            first recognised media type in Accept is text/html or application/xhtml+xml;
+            otherwise, including with no Accept or */*, as a VillageErrorResponse
+            (application/json). The status is the same both ways.
+          headers:
+            Content-Security-Policy:
+              description: 'Present only on the text/html variant: a restrictive policy
+                that denies everything by default and allows only the page''s styles
+                and web fonts, so the page runs no script, cannot be framed and submits
+                no form. Absent on the application/json variant.'
+              schema:
+                type: string
+              style: simple
+            X-Content-Type-Options:
+              description: Present only on the text/html variant, with the value nosniff.
+                Absent on the application/json variant.
+              schema:
+                type: string
+              style: simple
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - integrations
   /api/v1/integrations/github/webhook:
     post:
       description: Receive a GitHub App webhook delivery. The body is GitHub's payload,
@@ -3079,6 +5382,22 @@ paths:
           description: Not Implemented
       tags:
       - integrations
+  /api/v1/openapi.json:
+    get:
+      description: Return the frozen Village API document this server pins, which
+        declares this operation.
+      operationId: getVillageAPIDocument
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiVillageAPIDocument'
+          description: 'An OpenAPI 3.1 document: the frozen Village API document the
+            server pins. Only its envelope is described here; the document itself
+            is the contract for its members.'
+      tags:
+      - operations
   /api/v1/orgs/{login}:
     get:
       description: Read the existing organization response's viewer-permitted collectives
@@ -3114,6 +5433,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - organizations
+  /api/v1/orgs/search:
+    get:
+      description: Search organizations by login. Results are ordered by member count
+        then transcript count, descending; an empty query returns an empty list.
+      operationId: searchOrganizations
+      parameters:
+      - description: Trimmed search text; empty returns an empty list.
+        in: query
+        name: q
+        schema:
+          description: Trimmed search text; empty returns an empty list.
+          type: string
+      - description: Positive integer; defaults to 10 and is capped at 50. Invalid
+          values are ignored.
+        in: query
+        name: limit
+        schema:
+          description: Positive integer; defaults to 10 and is capped at 50. Invalid
+            values are ignored.
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageOrganizationSearchResponse'
+          description: OK
         "500":
           content:
             application/json:
@@ -3711,6 +6065,60 @@ paths:
           description: OK
       tags:
       - schema
+  /api/v1/tags:
+    get:
+      description: List tags ordered by name, including tags with no transcripts.
+      operationId: listTags
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SchemaVillageTagUsage'
+                type:
+                - "null"
+                - array
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - tags
+  /api/v1/tags/popular:
+    get:
+      description: List tags with transcripts by descending usage. The limit defaults
+        to 10 and has no cap.
+      operationId: listPopularTags
+      parameters:
+      - description: Positive integer; defaults to 10. Invalid values are ignored.
+        in: query
+        name: limit
+        schema:
+          description: Positive integer; defaults to 10. Invalid values are ignored.
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SchemaVillageTagUsage'
+                type:
+                - "null"
+                - array
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - tags
   /api/v1/transcript-groups/{groupId}/members:
     get:
       description: Page the authorized saved helper threads selected by an originating
@@ -3888,6 +6296,72 @@ paths:
       tags:
       - transcripts
   /api/v1/transcripts/{id}:
+    delete:
+      description: Delete an owned transcript and its stored content. A missing blob
+        store also returns 503; Retry-After is present only for a session lookup failure.
+      operationId: deleteTranscript
+      parameters:
+      - description: Transcript identifier
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageStatusResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. Either the account behind the session
+            could not be read, in which case Retry-After is set, or the operation's
+            own dependency is unavailable.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying. Present only when the
+                account lookup behind the session failed.
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - transcripts
     get:
       description: Get transcript metadata and viewer-authorized relationship navigation.
         Navigation is read-only and is never stored in transcript content. Nonowner
@@ -4016,6 +6490,292 @@ paths:
           description: Internal Server Error
       tags:
       - transcripts
+  /api/v1/transcripts/{id}/annotations:
+    get:
+      description: List annotations on a visible transcript; inaccessible transcripts
+        return 404.
+      operationId: listTranscriptAnnotations
+      parameters:
+      - description: Transcript identifier
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageTranscriptAnnotationsResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - transcripts
+    post:
+      description: Create a manual entry annotation on a visible transcript.
+      operationId: createTranscriptAnnotation
+      parameters:
+      - description: Transcript identifier
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaVillageManualAnnotationRequest'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaAnnotationSummary'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - transcripts
+  /api/v1/transcripts/{id}/attestations:
+    get:
+      description: List attestations for a visible transcript; inaccessible transcripts
+        return 404.
+      operationId: listTranscriptAttestations
+      parameters:
+      - description: Transcript identifier
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SchemaVillageTranscriptAttestation'
+                type:
+                - "null"
+                - array
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - transcripts
+    post:
+      description: Attest to a visible transcript as a verified organization member.
+        A caller who is not a verified member of the organization, and a duplicate
+        of an existing attestation, are both refused with 403.
+      operationId: createTranscriptAttestation
+      parameters:
+      - description: Transcript identifier
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaVillageCreateAttestationRequest'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageTranscriptAttestation'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Forbidden. The caller is not a verified member of the organization,
+            or the same attestation already exists; the database refusal is not told
+            apart.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - transcripts
+  /api/v1/transcripts/{id}/attestations/{attestationID}:
+    delete:
+      description: Delete the caller's attestation; also returns deleted when none
+        matched. The transcript id is not checked.
+      operationId: deleteTranscriptAttestation
+      parameters:
+      - description: Transcript identifier (not checked by this operation)
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier (not checked by this operation)
+      - description: Attestation identifier
+        in: path
+        name: attestationID
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+          description: Attestation identifier
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageStatusResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - transcripts
   /api/v1/transcripts/{id}/collectives:
     get:
       description: List visible collectives that hold a transcript. The server returns
@@ -4057,6 +6817,47 @@ paths:
           description: Internal Server Error
       tags:
       - contributions
+  /api/v1/transcripts/{id}/commits:
+    get:
+      description: List persisted commits on a visible transcript in payload order;
+        inaccessible transcripts return 404. When the transcript's owner is anonymous
+        to the caller, every commit's message, authorName and authorEmail are null.
+      operationId: listTranscriptCommits
+      parameters:
+      - description: Transcript identifier
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageTranscriptCommitsResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - transcripts
   /api/v1/transcripts/{id}/content:
     get:
       description: 'Get the durable transcript content envelope. This response never
@@ -5457,6 +8258,151 @@ paths:
           description: Created
       tags:
       - transcripts
+  /api/v1/transcripts/publish/batch:
+    post:
+      description: 'A declared stub: batch publish has no behaviour, and every request
+        with a valid session answers 501. This operation declares no request body
+        and no success response.'
+      operationId: publishTranscriptBatch
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Implemented. Batch publish has no behaviour; the request
+            is not read.
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - transcripts
+  /api/v1/users/{username}:
+    get:
+      description: Read a public profile. An unknown or undiscoverable user answers
+        404 unless the caller owns the hidden profile.
+      operationId: getUserProfile
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillagePublicOwner'
+          description: A person as another viewer sees them. The server resolves anonymity
+            per viewer; consumers render what they receive and never re-derive the
+            rule. profile carries id, username, display_name, and avatar_url; anonymous
+            carries only its kind, with no id. Readers treat an unknown kind as anonymous.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+      tags:
+      - users
+  /api/v1/users/{username}/orgs:
+    get:
+      description: List the visible organizations of a discoverable user, or the caller's
+        own hidden profile. Unknown and hidden users answer 404.
+      operationId: listUserOrganizations
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SchemaVillageListUserOrganization'
+                type:
+                - "null"
+                - array
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - users
+  /api/v1/users/{username}/projects/{projectHash}:
+    get:
+      description: Read a user's project and the transcripts and collectives visible
+        to the caller. Unknown users, hidden users and unowned hashes share one 404.
+      operationId: getUserProject
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: projectHash
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaProjectHash'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageUserProjectResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - users
   /api/v1/users/me/collectives/{groupId}/submissions:
     get:
       description: List every transcript-collective pair the authenticated caller
@@ -5846,6 +8792,130 @@ paths:
           description: Internal Server Error
       tags:
       - users
+  /api/v1/users/me/projects/{projectHash}:
+    patch:
+      description: Set the display name of the caller's project. The name is trimmed
+        and must be non-empty and at most 255 bytes.
+      operationId: setMyProjectDisplayName
+      parameters:
+      - in: path
+        name: projectHash
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaProjectHash'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaVillageProjectDisplayNameRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageResolvedProject'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - users
+  /api/v1/users/me/projects/{projectHash}/display-name:
+    delete:
+      description: Remove the caller's project display-name correction. A missing
+        correction answers 404.
+      operationId: clearMyProjectDisplayName
+      parameters:
+      - in: path
+        name: projectHash
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaProjectHash'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageResolvedProject'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Unauthorized. The request carries no valid session or API key.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Service Unavailable. The account behind the session could not
+            be read; retry after the Retry-After delay.
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying the account lookup behind
+                the session.
+              required: true
+              schema:
+                type: integer
+              style: simple
+      tags:
+      - users
   /api/v1/users/me/prompt-requests:
     get:
       description: List the caller's attachments that are waiting for a transcript
@@ -5973,6 +9043,30 @@ paths:
           description: Internal Server Error
       tags:
       - users
+  /health:
+    get:
+      description: Liveness probe. Answers 200 whenever the process runs; migrations
+        is absent when the migration registry could not be read.
+      operationId: getHealth
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageHealthResponse'
+          description: Process is alive.
+          headers:
+            Cache-Control:
+              description: 'no-store: a conforming cache does not store the response,
+                so each probe is answered by the process.'
+              required: true
+              schema:
+                type: string
+              style: simple
+      tags:
+      - operations
+    servers:
+    - url: /
 components:
   schemas:
     BestiaryHarness:
@@ -6061,6 +9155,24 @@ components:
           type: string
       required:
       - error
+      type: object
+    OpenapiVillageAPIDocument:
+      description: 'An OpenAPI 3.1 document: the frozen Village API document the server
+        pins. Only its envelope is described here; the document itself is the contract
+        for its members.'
+      properties:
+        info:
+          additionalProperties: {}
+          type: object
+        openapi:
+          type: string
+        paths:
+          additionalProperties: {}
+          type: object
+      required:
+      - openapi
+      - info
+      - paths
       type: object
     OpenapiVillageGroupedView:
       enum:
@@ -6402,6 +9514,110 @@ components:
       - error
       title: Annotation Push Status
       type: string
+    SchemaAnnotationSummary:
+      properties:
+        annotatorKind:
+          $ref: '#/components/schemas/SchemaAnnotatorKind'
+        annotatorName:
+          type: string
+        confidence:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        contentHash:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        createdAt:
+          format: int64
+          type: integer
+        id:
+          type: string
+        isPrimary:
+          type: boolean
+        provenance:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaProvenance'
+          - type: "null"
+        reason:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        supersededBy:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetAnnotationId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetAssociationId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaAssociationID'
+          - type: "null"
+        targetContentHash:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetEntryEndIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        targetEntryIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        targetFilePath:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetKind:
+          $ref: '#/components/schemas/SchemaTargetKind'
+        targetProjectHash:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaProjectHash'
+          - type: "null"
+        targetSessionId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        typeId:
+          type: string
+        typeName:
+          type: string
+        value:
+          type: string
+      required:
+      - id
+      - targetKind
+      - isPrimary
+      - annotatorKind
+      - annotatorName
+      - typeId
+      - typeName
+      - value
+      - createdAt
+      type: object
     SchemaAnnotatorKind:
       description: 'Type of entity that produced an annotation: human, agent (AI model),
         or rule (automated classifier)'
@@ -9957,6 +13173,47 @@ components:
       - summary
       title: Usage Scope
       type: string
+    SchemaVillageAPIKey:
+      properties:
+        created_at:
+          anyOf:
+          - format: date-time
+            type:
+            - "null"
+            - string
+          - type: "null"
+        id:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+        key_prefix:
+          type: string
+        label:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        last_used:
+          anyOf:
+          - format: date-time
+            type:
+            - "null"
+            - string
+          - type: "null"
+        revoked_at:
+          anyOf:
+          - format: date-time
+            type:
+            - "null"
+            - string
+          - type: "null"
+      required:
+      - id
+      - key_prefix
+      - label
+      - created_at
+      - last_used
+      - revoked_at
+      type: object
     SchemaVillageAssignableCollectiveRole:
       description: Collective roles an owner may assign through the member role endpoint
       enum:
@@ -9966,6 +13223,20 @@ components:
       - contributor
       - member
       title: Village Assignable Group Role
+      type: string
+    SchemaVillageAttestationType:
+      description: Usage attestation type
+      enum:
+      - used_in_training
+      - referenced
+      - evaluated
+      - deployed
+      examples:
+      - used_in_training
+      - referenced
+      - evaluated
+      - deployed
+      title: Village Attestation Type
       type: string
     SchemaVillageAvailableRepositoriesResponse:
       properties:
@@ -11089,6 +14360,25 @@ components:
       - pending
       title: Village Contribution Status
       type: string
+    SchemaVillageCreateAPIKeyRequest:
+      properties:
+        label:
+          type: string
+      type: object
+    SchemaVillageCreateAttestationRequest:
+      properties:
+        attestation_type:
+          $ref: '#/components/schemas/SchemaVillageAttestationType'
+        note:
+          description: Empty or omitted stores no note (null).
+          type: string
+        org_login:
+          minLength: 1
+          type: string
+      required:
+      - org_login
+      - attestation_type
+      type: object
     SchemaVillageCreateCollectiveRequest:
       properties:
         acceptance_mode:
@@ -11108,6 +14398,31 @@ components:
       required:
       - name
       type: object
+    SchemaVillageCreatedAPIKey:
+      properties:
+        created_at:
+          description: When the key was created. The database sets it as the key is
+            stored, so it is always present here.
+          format: date-time
+          type: string
+        id:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+        key:
+          description: The plaintext key. Returned only here, once.
+          type: string
+        label:
+          description: The label as sent; an empty label is stored as null and listed
+            as null.
+          type: string
+        prefix:
+          type: string
+      required:
+      - created_at
+      - id
+      - key
+      - label
+      - prefix
+      type: object
     SchemaVillageDeprecatedGroupedContributableResponse:
       deprecated: true
       description: Released groupId envelope for GET /api/v1/groups/{id}/contributable
@@ -11120,6 +14435,13 @@ components:
       required:
       - groupId
       - transcriptList
+      type: object
+    SchemaVillageDiscoverabilityRequest:
+      properties:
+        is_discoverable:
+          type: boolean
+      required:
+      - is_discoverable
       type: object
     SchemaVillageEnrichedTranscriptShare:
       properties:
@@ -11204,6 +14526,29 @@ components:
       required:
       - group_id
       - transcriptList
+      type: object
+    SchemaVillageHealthResponse:
+      properties:
+        buildRevision:
+          pattern: ^[0-9a-f]{7,12}$
+          type: string
+        migrations:
+          description: Highest applied migration version; absent when the registry
+            could not be read within one second.
+          type: integer
+        serves:
+          description: Forward-open capability tokens this deployment advertises.
+            Village owns the token set and may add tokens without a contract change.
+            Match exactly; ignore unknown tokens.
+          items:
+            type: string
+          type: array
+        status:
+          description: Always ok when the process answers.
+          type: string
+      required:
+      - status
+      - serves
       type: object
     SchemaVillageHelperMembersPayload:
       properties:
@@ -11361,6 +14706,34 @@ components:
       - org_login
       - avatar_url
       type: object
+    SchemaVillageManualAnnotationRequest:
+      properties:
+        endIndex:
+          description: Exclusive end; defaults to entryIndex+1; must be greater than
+            entryIndex.
+          type: integer
+        entryIndex:
+          minimum: 0
+          type: integer
+        isPrimary:
+          type: boolean
+        reason:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        typeId:
+          minLength: 1
+          type: string
+        value:
+          minLength: 1
+          type: string
+      required:
+      - typeId
+      - value
+      - entryIndex
+      type: object
     SchemaVillageMetadataUserOrganization:
       properties:
         avatar_url:
@@ -11443,6 +14816,53 @@ components:
       required:
       - collectives
       type: object
+    SchemaVillageOrganizationSearchResponse:
+      properties:
+        organizations:
+          items:
+            $ref: '#/components/schemas/SchemaVillageOrganizationSearchResult'
+          type: array
+      required:
+      - organizations
+      type: object
+    SchemaVillageOrganizationSearchResult:
+      properties:
+        avatar_url:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        member_count:
+          format: int32
+          type: integer
+        org_login:
+          type: string
+        transcript_count:
+          format: int32
+          type: integer
+      required:
+      - org_login
+      - avatar_url
+      - member_count
+      - transcript_count
+      type: object
+    SchemaVillageOrganizationVisibilityRequest:
+      properties:
+        visible:
+          description: Omitted means false.
+          type: boolean
+      type: object
+    SchemaVillageOrganizationVisibilityResponse:
+      properties:
+        status:
+          type: string
+        visible:
+          type: boolean
+      required:
+      - status
+      - visible
+      type: object
     SchemaVillagePendingShare:
       properties:
         branch:
@@ -11512,6 +14932,43 @@ components:
       - project_name
       - branch
       - shared_at
+      type: object
+    SchemaVillageProjectCollective:
+      properties:
+        description:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        id:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+        linked_github_org:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        name:
+          type: string
+        transcript_count:
+          description: Approved transcripts of this project in the collective.
+          format: int32
+          type: integer
+      required:
+      - id
+      - name
+      - description
+      - linked_github_org
+      - transcript_count
+      type: object
+    SchemaVillageProjectDisplayNameRequest:
+      properties:
+        display_name:
+          description: Trimmed; must be non-empty and at most 255 bytes.
+          type: string
+      required:
+      - display_name
       type: object
     SchemaVillageProjectNameSource:
       description: Which source tier produced a resolved project display name
@@ -11930,6 +15387,22 @@ components:
       - commit_count
       - commits
       type: object
+    SchemaVillageResolvedProject:
+      properties:
+        project_display_name:
+          type: string
+        project_hash:
+          $ref: '#/components/schemas/SchemaProjectHash'
+        project_name_source:
+          $ref: '#/components/schemas/SchemaVillageProjectNameSource'
+        project_remote_label:
+          type: string
+      required:
+      - project_hash
+      - project_display_name
+      - project_name_source
+      - project_remote_label
+      type: object
     SchemaVillageReviewDecision:
       description: Decision applied by a collective owner to pending submissions
       enum:
@@ -12131,6 +15604,20 @@ components:
       required:
       - id
       - name
+      type: object
+    SchemaVillageTagUsage:
+      properties:
+        id:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+        name:
+          type: string
+        usage_count:
+          format: int64
+          type: integer
+      required:
+      - id
+      - name
+      - usage_count
       type: object
     SchemaVillageTranscript:
       properties:
@@ -12590,6 +16077,15 @@ components:
       - license_id
       - session_origin
       type: object
+    SchemaVillageTranscriptAnnotationsResponse:
+      properties:
+        annotations:
+          items:
+            $ref: '#/components/schemas/SchemaAnnotationSummary'
+          type: array
+      required:
+      - annotations
+      type: object
     SchemaVillageTranscriptAttestation:
       properties:
         attestation_type:
@@ -12656,6 +16152,75 @@ components:
           type: array
       required:
       - collectives
+      type: object
+    SchemaVillageTranscriptCommit:
+      properties:
+        authorEmail:
+          anyOf:
+          - description: Null when the transcript's owner is anonymous to the caller,
+              and when the commit records no author email. A caller who may see the
+              owner receives the recorded value.
+            type:
+            - "null"
+            - string
+          - type: "null"
+        authorName:
+          anyOf:
+          - description: Null when the transcript's owner is anonymous to the caller,
+              and when the commit records no author name. A caller who may see the
+              owner receives the recorded value.
+            type:
+            - "null"
+            - string
+          - type: "null"
+        authoredAt:
+          anyOf:
+          - description: Unix milliseconds.
+            format: int64
+            type:
+            - "null"
+            - integer
+          - type: "null"
+        committedAt:
+          anyOf:
+          - description: Unix milliseconds.
+            format: int64
+            type:
+            - "null"
+            - integer
+          - type: "null"
+        message:
+          anyOf:
+          - description: Null when the transcript's owner is anonymous to the caller,
+              because a message can name its authors in trailers, and when the commit
+              records no message. A caller who may see the owner receives the recorded
+              value.
+            type:
+            - "null"
+            - string
+          - type: "null"
+        order:
+          format: int32
+          type: integer
+        sha:
+          type: string
+      required:
+      - sha
+      - message
+      - authorName
+      - authorEmail
+      - authoredAt
+      - committedAt
+      - order
+      type: object
+    SchemaVillageTranscriptCommitsResponse:
+      properties:
+        commits:
+          items:
+            $ref: '#/components/schemas/SchemaVillageTranscriptCommit'
+          type: array
+      required:
+      - commits
       type: object
     SchemaVillageTranscriptDeletionPolicy:
       description: Whether leaving a collective retracts contributed transcripts by
@@ -12926,6 +16491,8 @@ components:
       type: object
     SchemaVillageUser:
       properties:
+        auto_attach_pull_requests:
+          type: boolean
         avatar_url:
           anyOf:
           - type:
@@ -12949,6 +16516,8 @@ components:
         id:
           $ref: '#/components/schemas/SchemaVillageUUID'
         is_discoverable:
+          type: boolean
+        preview_before_attach:
           type: boolean
         provider:
           type: string
@@ -12978,6 +16547,8 @@ components:
       - provider_user_id
       - username_chosen
       - provider_username
+      - preview_before_attach
+      - auto_attach_pull_requests
       type: object
     SchemaVillageUserCollective:
       properties:
@@ -13152,6 +16723,26 @@ components:
       - status
       - shared_at
       type: object
+    SchemaVillageUserProjectResponse:
+      properties:
+        collectives:
+          items:
+            $ref: '#/components/schemas/SchemaVillageProjectCollective'
+          type: array
+        owner:
+          $ref: '#/components/schemas/SchemaVillagePublicOwner'
+        project:
+          $ref: '#/components/schemas/SchemaVillageResolvedProject'
+        transcripts:
+          items:
+            $ref: '#/components/schemas/SchemaVillageTranscript'
+          type: array
+      required:
+      - collectives
+      - owner
+      - project
+      - transcripts
+      type: object
     SchemaVillageUserSettings:
       properties:
         auto_attach_pull_requests:
@@ -13198,6 +16789,14 @@ components:
       - total_duration_ms
       - total_tokens
       - pull_request_count
+      type: object
+    SchemaVillageUsernameRequest:
+      properties:
+        username:
+          description: Trimmed and lowercased, then matched against ^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$
+          type: string
+      required:
+      - username
       type: object
     SchemaVillageVerifyNotificationEmailRequest:
       properties:

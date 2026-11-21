@@ -630,18 +630,20 @@ type VillageTag struct {
 // that account (GET /api/v1/auth/me). A response that shows a person to
 // anyone else carries a VillagePublicOwner instead.
 type VillageUser struct {
-	ID               VillageUUID `json:"id"`
-	GithubID         int64       `json:"github_id"`
-	GithubUsername   string      `json:"github_username"`
-	DisplayName      *string     `json:"display_name"`
-	AvatarURL        *string     `json:"avatar_url"`
-	CreatedAt        time.Time   `json:"created_at"`
-	UpdatedAt        time.Time   `json:"updated_at"`
-	IsDiscoverable   bool        `json:"is_discoverable"`
-	Provider         string      `json:"provider"`
-	ProviderUserID   string      `json:"provider_user_id"`
-	UsernameChosen   bool        `json:"username_chosen"`
-	ProviderUsername *string     `json:"provider_username"`
+	ID                     VillageUUID `json:"id"`
+	GithubID               int64       `json:"github_id"`
+	GithubUsername         string      `json:"github_username"`
+	DisplayName            *string     `json:"display_name"`
+	AvatarURL              *string     `json:"avatar_url"`
+	CreatedAt              time.Time   `json:"created_at"`
+	UpdatedAt              time.Time   `json:"updated_at"`
+	IsDiscoverable         bool        `json:"is_discoverable"`
+	Provider               string      `json:"provider"`
+	ProviderUserID         string      `json:"provider_user_id"`
+	UsernameChosen         bool        `json:"username_chosen"`
+	ProviderUsername       *string     `json:"provider_username"`
+	PreviewBeforeAttach    bool        `json:"preview_before_attach"`
+	AutoAttachPullRequests bool        `json:"auto_attach_pull_requests"`
 }
 type VillageMetadataUserOrganization struct {
 	OrgLogin  string    `json:"org_login"`

@@ -35,7 +35,9 @@ function documentOperations(document) {
   const keys = [];
   for (const [pattern, item] of Object.entries(document.paths)) {
     for (const [method, operation] of Object.entries(item)) {
-      if (method === "parameters") continue;
+      // A path item also carries members that are not operations, such as
+      // parameters and a servers override; only HTTP methods are operations.
+      if (!villageApi.isHttpMethod(method.toUpperCase())) continue;
       keys.push(`${method.toUpperCase()} ${pattern} ${operation.operationId}`);
     }
   }
