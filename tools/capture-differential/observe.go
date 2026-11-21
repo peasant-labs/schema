@@ -20,6 +20,19 @@ type observation struct {
 	Cuts    *cutObservation    `json:"cuts,omitempty" yaml:"cuts,omitempty"`
 	Kept    *keptObservation   `json:"kept,omitempty" yaml:"kept,omitempty"`
 	Digest  *digestObservation `json:"digest,omitempty" yaml:"-"`
+	// Panic records a panic during the capture or its consequences, so the
+	// comparison reports it as a differing line instead of stopping the run.
+	Panic string `json:"panic,omitempty" yaml:"-"`
+}
+
+// observeLine observes doc and turns a panic into its line.
+func observeLine(doc []byte) (o observation, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			o, err = observation{Panic: fmt.Sprint(r)}, nil
+		}
+	}()
+	return observe(doc)
 }
 
 // facts are the per-turn values a partition index keeps.

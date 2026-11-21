@@ -73,7 +73,7 @@ func runCommand(args []string) error {
 	defer w.Flush()
 	for _, s := range sets {
 		for _, in := range s.inputs {
-			o, err := observe(in.doc)
+			o, err := observeLine(in.doc)
 			if err != nil {
 				return fmt.Errorf("%s %s: %w", in.set, in.name, err)
 			}
