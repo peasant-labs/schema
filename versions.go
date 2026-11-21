@@ -148,7 +148,7 @@ const (
 	// answers the lost-content 410 and never the retracted one. The pull reads
 	// declare no 410. No type, protocol version or segmented read document
 	// changes.
-	VillageAPIVersion = "0.42.0"
+	VillageAPIVersion = "0.43.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -390,7 +390,7 @@ const (
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
 	// Bumped to 0.51.0 for the positioned segmented transcript read catalog.
 	// Bumped for preview stream payloads and closed sets.
-	TypesVersion = "0.52.0"
+	TypesVersion = "0.53.0"
 
 	// SegmentedReadAPIVersion identifies the newest declared segmented read
 	// protocol. Version 0.1.0 (additive) first declares the already-shipped
