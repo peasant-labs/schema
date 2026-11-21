@@ -217,6 +217,9 @@ jobs:
         run: |
           nix develop -c pnpm --dir typescript install --frozen-lockfile --ignore-scripts
           nix develop -c sh -c 'go env GOMAXPROCS GOFLAGS GOCACHE GOMODCACHE || true; exec make check'
+      - name: Check Nix package on build input changes
+        if: needs.changes.outputs.deps == 'true'
+        run: time nix build .#default -L --no-link
       # Only pushes to develop populate caches; all other events restore only.
       - name: Save Go build and module caches
         if: success() && steps.cache-go.outputs.cache-hit != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/develop'
@@ -299,6 +302,14 @@ jobs:
         env:
           GOWORK: "off"
         run: go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
+      - name: Check freeze title fixtures with the pinned tool
+        env:
+          SCHEMA_RELEASE_INTENT: ${{ runner.temp }}/release-intent
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/freeze-title-tests.log"
+          go test ./cmd/schema-gen -run '^TestFreezeContractTitles$' -count=1 -v | tee "$log"
+          grep -qF -- '--- PASS: TestFreezeContractTitles (' "$log"
       - uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
       - name: Resolve the entry PR and its live title
         id: pr

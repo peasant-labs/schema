@@ -87,6 +87,7 @@
       # is pure Go (modernc/zombiezen sqlite are cgo-free), so none are required.
       nativeBuildDeps = pkgs: with pkgs; [
         gitMinimal # tests exercise isolated git-runner failure boundaries
+        jq # tests execute the release and merge-gate workflow steps
       ];
 
       # Extra check commands run during `nix build` after go test
@@ -212,10 +213,9 @@
 
               nativeBuildInputs = nativeBuildDeps pkgs;
 
-              # The schema leaf is pure Go and fully hermetic (no network in
-              # tests); git is present only for isolated local-runner fixtures.
-              # The whole suite runs as a packaging sanity gate. No
-              # -race: the detector requires cgo and this build is CGO_ENABLED=0;
+              # The package tests use no network. The cross-repository title
+              # fixture runs in CI's contract gates with the pinned tool.
+              # No -race: the detector requires cgo and this build is CGO_ENABLED=0;
               # CI's merge queue runs `make race-selective` over the module's
               # concurrency, and `make check RACE=1` is the full race pass.
               checkPhase = ''

@@ -48,11 +48,12 @@ func TestFreezeContractTitles(t *testing.T) {
 		accepts[c.Name] = c.Classification == testcase.MustPass
 	}
 	caseassert.RequireManifestNames(t, "freeze contract title", freezeContractTitlesManifest, names)
-	var tool struct {
-		Pin string `yaml:"tool_pin"`
+	tool := os.Getenv("SCHEMA_RELEASE_INTENT")
+	if tool == "" {
+		t.Skip("contract gates supply the pinned release-intent via SCHEMA_RELEASE_INTENT")
 	}
-	if err := yaml.Unmarshal(releaseAdoptionFixture, &tool); err != nil || len(tool.Pin) != 40 {
-		t.Fatalf("release tool pin is invalid: %q, %v", tool.Pin, err)
+	if !filepath.IsAbs(tool) {
+		t.Fatalf("SCHEMA_RELEASE_INTENT must be an absolute path, got %q", tool)
 	}
 	root, err := findModuleRoot()
 	if err != nil {
@@ -60,13 +61,6 @@ func TestFreezeContractTitles(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	binDir := t.TempDir()
-	install := exec.CommandContext(ctx, "go", "install", "github.com/peasant-labs/infra/tools/release/cmd/release-intent@"+tool.Pin)
-	install.Dir = root
-	install.Env = append(os.Environ(), "GOBIN="+binDir, "GOWORK=off", "GOFLAGS=")
-	if output, err := install.CombinedOutput(); err != nil {
-		t.Fatalf("build pinned release-intent: %v\n%s", err, output)
-	}
 	dir := t.TempDir()
 	env := append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
 		"GIT_AUTHOR_NAME=fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
@@ -120,7 +114,7 @@ func TestFreezeContractTitles(t *testing.T) {
 			if err := os.WriteFile(reportFile, data, 0o644); err != nil {
 				t.Fatal(err)
 			}
-			cmd := exec.CommandContext(ctx, filepath.Join(binDir, "release-intent"), "check-contract", "--report", reportFile)
+			cmd := exec.CommandContext(ctx, tool, "check-contract", "--report", reportFile)
 			cmd.Dir, cmd.Env, cmd.Stdin = dir, env, bytes.NewBufferString(c.Input.Title+"\n")
 			output, err := cmd.CombinedOutput()
 			exit := 0

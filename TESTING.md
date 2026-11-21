@@ -46,6 +46,14 @@ authoritative run: it includes the leaf audit, the vendor-hash guard, and the
 `oasdiff` / `go-apidiff` synthetic-break tests (which skip when their binary is
 absent).
 
+`nix build .#default -L --no-link` builds the package and runs its offline
+tests. CI also runs this build when package inputs change. The freeze title
+fixtures use the separate `release-intent` binary that the CI contract gates
+build from their infra pin. To run those fixtures locally, set
+`SCHEMA_RELEASE_INTENT` to the absolute path of the binary built from the
+same pin, then run `go test ./cmd/schema-gen -run '^TestFreezeContractTitles$'`.
+The offline package does not fetch that binary during its check phase.
+
 The default is no race detector, on every CI event and locally. The module's
 only production concurrency is the lazy schema compilation behind
 `ValidatePublishRequest`, `ValidateAnnotationPushRequest` (`sync.Once`) and
