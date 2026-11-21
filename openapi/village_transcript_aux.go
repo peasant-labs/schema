@@ -103,7 +103,7 @@ func addVillageTranscriptAuxOperations(r *openapi31.Reflector) error {
 			description: "Liveness probe. Answers 200 whenever the process runs; migrations is absent when the migration registry could not be read.",
 			servers:     []string{"/"},
 			responses: []villageResponse{{status: http.StatusOK, description: "Process is alive.",
-				headers: []villageHeader{{name: "Cache-Control", required: true, description: "The response is never stored by a cache (no-store), so every probe reaches the process."}},
+				headers: []villageHeader{{name: "Cache-Control", required: true, description: "no-store: a conforming cache does not store the response, so each probe is answered by the process."}},
 				media:   []villageMedia{{mediaType: villageMediaJSON, body: new(schema.VillageHealthResponse)}}}},
 		},
 	}
