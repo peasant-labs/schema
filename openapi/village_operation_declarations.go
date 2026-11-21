@@ -37,6 +37,7 @@ var villageLimiterHeaders = []villageHeader{
 const (
 	villageRateLimitedDescription      = "Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests."
 	villageRateLimitRetryAfter         = "Seconds to wait before the window allows another request."
+	villageRateLimitNoSniff            = "nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it."
 	villageSessionMissingDescription   = "Unauthorized. The request carries no valid session or API key."
 	villageSessionLookupDescription    = "Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay."
 	villageSessionMergedDescription    = "Service Unavailable. Either the account behind the session could not be read, in which case Retry-After is set, or the operation's own dependency is unavailable."
@@ -390,6 +391,9 @@ func declareVillageResponses(spec *openapi31.Spec, op villageOperationSpec) erro
 			return fmt.Errorf("%s: %w", where, err)
 		}
 		if err := setVillageHeader(limited, villageHeader{name: "Retry-After", required: true, description: villageRateLimitRetryAfter, valueType: jsonschema.Integer}); err != nil {
+			return fmt.Errorf("%s: %w", where, err)
+		}
+		if err := setVillageHeader(limited, villageHeader{name: "X-Content-Type-Options", required: true, description: villageRateLimitNoSniff}); err != nil {
 			return fmt.Errorf("%s: %w", where, err)
 		}
 		responses[statusText(http.StatusTooManyRequests)] = openapi31.ResponseOrReference{Response: limited}

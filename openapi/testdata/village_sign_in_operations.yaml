@@ -31,6 +31,7 @@ cases:
           X-RateLimit-Remaining: true
           X-RateLimit-Reset: true
           Retry-After: true
+          X-Content-Type-Options: true
     description_anchors:
     - Start GitHub sign-in
 - name: completeGitHubSignIn
@@ -127,6 +128,7 @@ cases:
           X-RateLimit-Remaining: true
           X-RateLimit-Reset: true
           Retry-After: true
+          X-Content-Type-Options: true
     description_anchors:
     - Start GitLab sign-in
 - name: completeGitLabSignIn
@@ -230,6 +232,7 @@ cases:
           X-RateLimit-Remaining: true
           X-RateLimit-Reset: true
           Retry-After: true
+          X-Content-Type-Options: true
     description_anchors:
     - Start Hugging Face sign-in
 - name: completeHuggingFaceSignIn
@@ -333,6 +336,7 @@ cases:
           X-RateLimit-Remaining: true
           X-RateLimit-Reset: true
           Retry-After: true
+          X-Content-Type-Options: true
     description_anchors:
     - Start Codeberg sign-in
 - name: completeCodebergSignIn
@@ -436,6 +440,7 @@ cases:
           X-RateLimit-Remaining: true
           X-RateLimit-Reset: true
           Retry-After: true
+          X-Content-Type-Options: true
     description_anchors:
     - Start SourceHut sign-in
 - name: completeSourceHutSignIn
@@ -673,6 +678,7 @@ cases:
           X-RateLimit-Remaining: true
           X-RateLimit-Reset: true
           Retry-After: true
+          X-Content-Type-Options: true
     description_anchors:
     - Initiate CLI login
 - name: cliExchangeCode
@@ -736,5 +742,6 @@ cases:
           X-RateLimit-Remaining: true
           X-RateLimit-Reset: true
           Retry-After: true
+          X-Content-Type-Options: true
     description_anchors:
     - Exchange an OAuth authorization code

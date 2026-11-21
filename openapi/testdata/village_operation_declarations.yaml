@@ -369,7 +369,7 @@ cases:
             description_anchors: ["Redirect to the provider."]
           "429":
             media: {text/plain: string}
-            headers: {Retry-After: true, X-RateLimit-Limit: true, X-RateLimit-Remaining: true, X-RateLimit-Reset: true}
+            headers: {Retry-After: true, X-Content-Type-Options: true, X-RateLimit-Limit: true, X-RateLimit-Remaining: true, X-RateLimit-Reset: true}
             description_anchors: ["Too Many Requests"]
         description_anchors: ["Start a probe sign-in."]
 
