@@ -13746,7 +13746,11 @@ components:
           - type: "null"
         message:
           anyOf:
-          - type:
+          - description: Null when the transcript's owner is anonymous to the caller,
+              because a message can name its authors in trailers, and when the commit
+              records no message. A caller who may see the owner receives the recorded
+              value.
+            type:
             - "null"
             - string
           - type: "null"

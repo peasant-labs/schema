@@ -10024,7 +10024,7 @@
         "tags": [
           "transcripts"
         ],
-        "description": "List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404. When the transcript's owner is anonymous to the caller, every commit's authorName and authorEmail are null.",
+        "description": "List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404. When the transcript's owner is anonymous to the caller, every commit's message, authorName and authorEmail are null.",
         "operationId": "listTranscriptCommits",
         "parameters": [
           {
@@ -24272,6 +24272,7 @@
           "message": {
             "anyOf": [
               {
+                "description": "Null when the transcript's owner is anonymous to the caller, because a message can name its authors in trailers, and when the commit records no message. A caller who may see the owner receives the recorded value.",
                 "type": [
                   "null",
                   "string"

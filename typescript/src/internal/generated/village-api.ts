@@ -1618,7 +1618,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404. When the transcript's owner is anonymous to the caller, every commit's authorName and authorEmail are null. */
+        /** @description List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404. When the transcript's owner is anonymous to the caller, every commit's message, authorName and authorEmail are null. */
         get: operations["listTranscriptCommits"];
         put?: never;
         post?: never;
