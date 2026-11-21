@@ -15,6 +15,11 @@ type villageAPIDocument struct {
 	Paths   map[string]interface{} `json:"paths" required:"true" nullable:"false"`
 }
 
+// Description implements jsonschema.Described.
+func (villageAPIDocument) Description() string {
+	return "An OpenAPI 3.1 document: the frozen Village API document the server pins. Only its envelope is described here; the document itself is the contract for its members."
+}
+
 func addVillageTranscriptAuxOperations(r *openapi31.Reflector) error {
 	transcriptPath := new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
@@ -81,8 +86,11 @@ func addVillageTranscriptAuxOperations(r *openapi31.Reflector) error {
 		{
 			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			method: http.MethodPost, path: "/api/v1/transcripts/publish/batch", id: "publishTranscriptBatch", tag: "transcripts",
-			description: "Batch publish is not implemented. No request body is declared; the body and success shapes arrive with the implementation in a later version.",
+			description: "A declared stub: batch publish has no behaviour, and every request with a valid session answers 501. This operation declares no request body and no success response.",
 			session:     villageSessionRequired, declaredStub: true, errorStatuses: []int{http.StatusNotImplemented},
+			errorSummaries: map[int]string{
+				http.StatusNotImplemented: "Not Implemented. Batch publish has no behaviour; the request is not read.",
+			},
 		},
 		{
 			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
@@ -92,10 +100,10 @@ func addVillageTranscriptAuxOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodGet, path: "/health", id: "getHealth", tag: "operations",
-			description: "Liveness probe. Answers 200 even if the migration registry cannot be read, when migrations is absent.",
+			description: "Liveness probe. Answers 200 whenever the process runs; migrations is absent when the migration registry could not be read.",
 			servers:     []string{"/"},
 			responses: []villageResponse{{status: http.StatusOK, description: "Process is alive.",
-				headers: []villageHeader{{name: "Cache-Control", required: true, description: "no-store"}},
+				headers: []villageHeader{{name: "Cache-Control", required: true, description: "The response is never stored by a cache (no-store), so every probe reaches the process."}},
 				media:   []villageMedia{{mediaType: villageMediaJSON, body: new(schema.VillageHealthResponse)}}}},
 		},
 	}

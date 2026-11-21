@@ -125,10 +125,10 @@ cases:
     expected:
       operation_id: publishTranscriptBatch
       tag: transcripts
-      description_anchors: ["No request body is declared", "body and success shapes arrive"]
+      description_anchors: ["A declared stub", "declares no request body and no success response"]
       responses:
         "401": {media: {application/json: SchemaVillageErrorResponse}}
-        "501": {media: {application/json: SchemaVillageErrorResponse}}
+        "501": {media: {application/json: SchemaVillageErrorResponse}, description_anchors: ["Batch publish has no behaviour"]}
         "503": {media: {application/json: SchemaVillageErrorResponse}, headers: {Retry-After: true}}
   - name: getVillageAPIDocument
     classification: must-pass
@@ -150,6 +150,6 @@ cases:
       operation_id: getHealth
       tag: operations
       servers: ["/"]
-      description_anchors: ["migration registry", "migrations is absent"]
+      description_anchors: ["Answers 200 whenever the process runs", "migrations is absent when the migration registry could not be read"]
       responses:
         "200": {media: {application/json: SchemaVillageHealthResponse}, headers: {Cache-Control: true}}

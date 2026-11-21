@@ -49,9 +49,10 @@ const (
 // villageBrowserPageHeaders are the headers Village sets only when it serves a
 // browser refusal as its HTML page. OpenAPI declares headers per response, not
 // per media type, so they are optional on the response and the description
-// says which variant carries them. The values restate Village's page renderer.
+// says which variant carries them. The policy is described by what it
+// guarantees, not by its exact value, which Village owns.
 var villageBrowserPageHeaders = []villageHeader{
-	{name: "Content-Security-Policy", description: "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant."},
+	{name: "Content-Security-Policy", description: "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant."},
 	{name: "X-Content-Type-Options", description: "Present only on the text/html variant, with the value nosniff. Absent on the application/json variant."},
 }
 
