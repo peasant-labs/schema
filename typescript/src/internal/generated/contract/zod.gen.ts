@@ -418,7 +418,7 @@ export const zBuiltinCommand = closedSet<ClosedSets.BuiltinCommand>()(z.enum([
 export type BuiltinCommand = z.infer<typeof zBuiltinCommand>;
 
 export const zCLILoginQuery = z.object({
-    port: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    port: z.int().gte(1024).lte(65535),
     state: z.string()
 });
 
@@ -6361,7 +6361,7 @@ export const zVillageContributedCollectivesResponse = z.object({
 export type VillageContributedCollectivesResponse = z.infer<typeof zVillageContributedCollectivesResponse>;
 
 export const zVillageCreatedAPIKey = z.object({
-    created_at: z.iso.datetime({ offset: true }).nullable(),
+    created_at: z.iso.datetime({ offset: true }),
     id: zVillageUUID,
     key: z.string(),
     label: z.string(),

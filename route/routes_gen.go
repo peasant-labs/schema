@@ -84,9 +84,9 @@ var VillageGetAuthenticatedVillageUser = Route{method: MethodGet, pattern: "/api
 // (operationId deleteMyAccount) in the Village API document.
 var VillageDeleteMyAccount = Route{method: MethodDelete, pattern: "/api/v1/auth/me", operationID: "deleteMyAccount"}
 
-// VillageUpdateMyDiscoverability is PATCH /api/v1/auth/me/settings
-// (operationId updateMyDiscoverability) in the Village API document.
-var VillageUpdateMyDiscoverability = Route{method: MethodPatch, pattern: "/api/v1/auth/me/settings", operationID: "updateMyDiscoverability"}
+// VillageSetMyDiscoverability is PATCH /api/v1/auth/me/settings
+// (operationId setMyDiscoverability) in the Village API document.
+var VillageSetMyDiscoverability = Route{method: MethodPatch, pattern: "/api/v1/auth/me/settings", operationID: "setMyDiscoverability"}
 
 // VillageSetMyUsername is PATCH /api/v1/auth/me/username
 // (operationId setMyUsername) in the Village API document.
@@ -1550,7 +1550,7 @@ var AllVillage = []Route{
 	VillageLogOut,
 	VillageGetAuthenticatedVillageUser,
 	VillageDeleteMyAccount,
-	VillageUpdateMyDiscoverability,
+	VillageSetMyDiscoverability,
 	VillageSetMyUsername,
 	VillageListAuthenticatedVillageOrganizations,
 	VillageSetMyOrganizationVisibility,

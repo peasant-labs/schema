@@ -2851,6 +2851,8 @@
         "properties": {
           "port": {
             "description": "Local callback server port",
+            "maximum": 65535,
+            "minimum": 1024,
             "type": "integer"
           },
           "state": {
@@ -18135,18 +18137,9 @@
       "VillageCreatedAPIKey": {
         "properties": {
           "created_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "description": "When the key was created. The database sets it as the key is stored, so it is always present here.",
+            "format": "date-time",
+            "type": "string"
           },
           "id": {
             "$ref": "#/components/schemas/VillageUUID"
@@ -21041,6 +21034,7 @@
           "authorEmail": {
             "anyOf": [
               {
+                "description": "Null when the transcript's owner is anonymous to the caller, and when the commit records no author email. A caller who may see the owner receives the recorded value.",
                 "type": [
                   "null",
                   "string"
@@ -21054,6 +21048,7 @@
           "authorName": {
             "anyOf": [
               {
+                "description": "Null when the transcript's owner is anonymous to the caller, and when the commit records no author name. A caller who may see the owner receives the recorded value.",
                 "type": [
                   "null",
                   "string"

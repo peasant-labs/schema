@@ -91,9 +91,9 @@ export const VillageRoute = Object.freeze({
    */
   DeleteMyAccount: routeMember(HttpMethod.Delete, "/api/v1/auth/me", "deleteMyAccount"),
   /**
-   * `PATCH /api/v1/auth/me/settings` (operationId `updateMyDiscoverability`).
+   * `PATCH /api/v1/auth/me/settings` (operationId `setMyDiscoverability`).
    */
-  UpdateMyDiscoverability: routeMember(HttpMethod.Patch, "/api/v1/auth/me/settings", "updateMyDiscoverability"),
+  SetMyDiscoverability: routeMember(HttpMethod.Patch, "/api/v1/auth/me/settings", "setMyDiscoverability"),
   /**
    * `PATCH /api/v1/auth/me/username` (operationId `setMyUsername`).
    */
@@ -613,7 +613,7 @@ export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.LogOut,
   VillageRoute.GetAuthenticatedVillageUser,
   VillageRoute.DeleteMyAccount,
-  VillageRoute.UpdateMyDiscoverability,
+  VillageRoute.SetMyDiscoverability,
   VillageRoute.SetMyUsername,
   VillageRoute.ListAuthenticatedVillageOrganizations,
   VillageRoute.SetMyOrganizationVisibility,

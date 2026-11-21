@@ -517,6 +517,8 @@
             "required": true,
             "schema": {
               "description": "Local callback server port",
+              "maximum": 65535,
+              "minimum": 1024,
               "type": "integer"
             }
           },
@@ -589,7 +591,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -688,7 +690,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -850,7 +852,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -974,7 +976,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1005,7 +1007,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1036,7 +1038,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1243,7 +1245,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1274,7 +1276,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1412,7 +1414,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1536,7 +1538,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1567,7 +1569,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1598,7 +1600,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1736,7 +1738,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1860,7 +1862,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1891,7 +1893,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -1922,7 +1924,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -2098,7 +2100,7 @@
           "auth"
         ],
         "description": "Update discoverability; is_discoverable must be present and non-null.",
-        "operationId": "updateMyDiscoverability",
+        "operationId": "setMyDiscoverability",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2512,7 +2514,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -2636,7 +2638,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -2667,7 +2669,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -2698,7 +2700,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -7179,7 +7181,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -7220,7 +7222,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -7251,7 +7253,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -7345,7 +7347,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -7396,7 +7398,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -7427,7 +7429,7 @@
             "headers": {
               "Content-Security-Policy": {
                 "style": "simple",
-                "description": "Present only on the text/html variant, with the value default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'. Absent on the application/json variant.",
+                "description": "Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant.",
                 "schema": {
                   "type": "string"
                 }
@@ -7578,7 +7580,7 @@
         "operationId": "getVillageAPIDocument",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "An OpenAPI 3.1 document: the frozen Village API document the server pins. Only its envelope is described here; the document itself is the contract for its members.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9021,7 +9023,7 @@
         "tags": [
           "transcripts"
         ],
-        "description": "Batch publish is not implemented. No request body is declared; the body and success shapes arrive with the implementation in a later version.",
+        "description": "A declared stub: batch publish has no behaviour, and every request with a valid session answers 501. This operation declares no request body and no success response.",
         "operationId": "publishTranscriptBatch",
         "responses": {
           "401": {
@@ -9035,7 +9037,7 @@
             }
           },
           "501": {
-            "description": "Not Implemented",
+            "description": "Not Implemented. Batch publish has no behaviour; the request is not read.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9836,7 +9838,7 @@
         "tags": [
           "transcripts"
         ],
-        "description": "List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404.",
+        "description": "List persisted commits on a visible transcript in payload order; inaccessible transcripts return 404. When the transcript's owner is anonymous to the caller, every commit's authorName and authorEmail are null.",
         "operationId": "listTranscriptCommits",
         "parameters": [
           {
@@ -12707,7 +12709,7 @@
         "tags": [
           "operations"
         ],
-        "description": "Liveness probe. Answers 200 even if the migration registry cannot be read, when migrations is absent.",
+        "description": "Liveness probe. Answers 200 whenever the process runs; migrations is absent when the migration registry could not be read.",
         "operationId": "getHealth",
         "responses": {
           "200": {
@@ -12715,7 +12717,7 @@
             "headers": {
               "Cache-Control": {
                 "style": "simple",
-                "description": "no-store",
+                "description": "The response is never stored by a cache (no-store), so every probe reaches the process.",
                 "required": true,
                 "schema": {
                   "type": "string"
@@ -12857,6 +12859,7 @@
         "type": "object"
       },
       "OpenapiVillageAPIDocument": {
+        "description": "An OpenAPI 3.1 document: the frozen Village API document the server pins. Only its envelope is described here; the document itself is the contract for its members.",
         "properties": {
           "info": {
             "additionalProperties": {},
@@ -21141,18 +21144,9 @@
       "SchemaVillageCreatedAPIKey": {
         "properties": {
           "created_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "description": "When the key was created. The database sets it as the key is stored, so it is always present here.",
+            "format": "date-time",
+            "type": "string"
           },
           "id": {
             "$ref": "#/components/schemas/SchemaVillageUUID"
@@ -24034,6 +24028,7 @@
           "authorEmail": {
             "anyOf": [
               {
+                "description": "Null when the transcript's owner is anonymous to the caller, and when the commit records no author email. A caller who may see the owner receives the recorded value.",
                 "type": [
                   "null",
                   "string"
@@ -24047,6 +24042,7 @@
           "authorName": {
             "anyOf": [
               {
+                "description": "Null when the transcript's owner is anonymous to the caller, and when the commit records no author name. A caller who may see the owner receives the recorded value.",
                 "type": [
                   "null",
                   "string"
