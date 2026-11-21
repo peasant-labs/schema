@@ -451,6 +451,29 @@ publication_needs:
   build: [guard, nix-vendor-hash, contract-gates, verify-tag]
   release: [guard, nix-vendor-hash, contract-gates, verify-tag, build]
   npm-publish: [guard, nix-vendor-hash, contract-gates, verify-tag]
+# Required jobs and the complete current dependency sets, including the
+# previously guarded publication edges. Permissions are job-level, not defaults.
+publication_wiring_cases:
+  - name: release-tag-guard-exists
+    job: guard
+    needs: []
+  - name: vendor-hash-follows-guard
+    job: nix-vendor-hash
+    needs: [guard]
+  - name: contract-gates-follow-guards
+    job: contract-gates
+    needs: [guard, nix-vendor-hash]
+  - name: build-follows-gates
+    job: build
+    needs: [guard, nix-vendor-hash, contract-gates, verify-tag]
+  - name: github-release-follows-gates
+    job: release
+    needs: [guard, nix-vendor-hash, contract-gates, verify-tag, build]
+  - name: npm-publish-follows-gates-with-oidc
+    job: npm-publish
+    needs: [guard, nix-vendor-hash, contract-gates, verify-tag]
+    permissions: {id-token: write}
+    environment: npm-publish
 provenance_candidate: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 provenance_config:
   automation_author: app/peasant-labs-releaser

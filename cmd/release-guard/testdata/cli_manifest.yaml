@@ -1,0 +1,6 @@
+requiredNames:
+  - final tag
+  - release candidate tag
+  - namespaced tag
+  - wrong argument count
+  - unknown subcommand

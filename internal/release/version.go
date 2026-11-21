@@ -38,13 +38,6 @@ func (v Version) String() string { return string(v) }
 // IsRC reports whether the version carries an -rcN prerelease suffix.
 func (v Version) IsRC() bool { return rcSuffixPattern.MatchString(string(v)) }
 
-// Base returns the version with any -rcN suffix stripped: the final version a
-// release candidate is a candidate FOR. For a final version Base is the identity
-// (v0.1.0 -> v0.1.0); for an rc it strips the suffix (v0.1.0-rc3 -> v0.1.0).
-func (v Version) Base() Version {
-	return Version(rcSuffixPattern.ReplaceAllString(string(v), ""))
-}
-
 // Kind returns KindRC for prerelease (-rcN) versions and KindFinal otherwise.
 // A Version is, by construction, never KindInvalid.
 func (v Version) Kind() ReleaseKind {
