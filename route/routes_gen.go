@@ -10,6 +10,28 @@ var VillagePushAnnotations = Route{method: MethodPost, pattern: "/api/v1/annotat
 // (operationId getAnnotationManifest) in the Village API document.
 var VillageGetAnnotationManifest = Route{method: MethodGet, pattern: "/api/v1/annotations/manifest", operationID: "getAnnotationManifest"}
 
+// VillageListMyAPIKeys is GET /api/v1/auth/api-keys
+// (operationId listMyAPIKeys) in the Village API document.
+var VillageListMyAPIKeys = Route{method: MethodGet, pattern: "/api/v1/auth/api-keys", operationID: "listMyAPIKeys"}
+
+// VillageCreateMyAPIKey is POST /api/v1/auth/api-keys
+// (operationId createMyAPIKey) in the Village API document.
+var VillageCreateMyAPIKey = Route{method: MethodPost, pattern: "/api/v1/auth/api-keys", operationID: "createMyAPIKey"}
+
+// VillageRevokeMyAPIKey is DELETE /api/v1/auth/api-keys/{id}
+// (operationId revokeMyAPIKey) in the Village API document.
+var VillageRevokeMyAPIKey = Route{method: MethodDelete, pattern: "/api/v1/auth/api-keys/{id}", operationID: "revokeMyAPIKey"}
+
+// VillageRevokeMyAPIKeyPath returns the path of VillageRevokeMyAPIKey.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageRevokeMyAPIKeyPath(id string) (string, error) {
+	if err := checkPathSegment(VillageRevokeMyAPIKey, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/auth/api-keys/" + pathSegment(id), nil
+}
+
 // VillageCliExchangeCode is POST /api/v1/auth/cli/exchange
 // (operationId cliExchangeCode) in the Village API document.
 var VillageCliExchangeCode = Route{method: MethodPost, pattern: "/api/v1/auth/cli/exchange", operationID: "cliExchangeCode"}
@@ -18,13 +40,83 @@ var VillageCliExchangeCode = Route{method: MethodPost, pattern: "/api/v1/auth/cl
 // (operationId cliLogin) in the Village API document.
 var VillageCliLogin = Route{method: MethodGet, pattern: "/api/v1/auth/cli/login", operationID: "cliLogin"}
 
+// VillageStartCodebergSignIn is GET /api/v1/auth/codeberg
+// (operationId startCodebergSignIn) in the Village API document.
+var VillageStartCodebergSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/codeberg", operationID: "startCodebergSignIn"}
+
+// VillageCompleteCodebergSignIn is GET /api/v1/auth/codeberg/callback
+// (operationId completeCodebergSignIn) in the Village API document.
+var VillageCompleteCodebergSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/codeberg/callback", operationID: "completeCodebergSignIn"}
+
+// VillageStartGitHubSignIn is GET /api/v1/auth/github
+// (operationId startGitHubSignIn) in the Village API document.
+var VillageStartGitHubSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/github", operationID: "startGitHubSignIn"}
+
+// VillageCompleteGitHubSignIn is GET /api/v1/auth/github/callback
+// (operationId completeGitHubSignIn) in the Village API document.
+var VillageCompleteGitHubSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/github/callback", operationID: "completeGitHubSignIn"}
+
+// VillageStartGitLabSignIn is GET /api/v1/auth/gitlab
+// (operationId startGitLabSignIn) in the Village API document.
+var VillageStartGitLabSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/gitlab", operationID: "startGitLabSignIn"}
+
+// VillageCompleteGitLabSignIn is GET /api/v1/auth/gitlab/callback
+// (operationId completeGitLabSignIn) in the Village API document.
+var VillageCompleteGitLabSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/gitlab/callback", operationID: "completeGitLabSignIn"}
+
+// VillageStartHuggingFaceSignIn is GET /api/v1/auth/huggingface
+// (operationId startHuggingFaceSignIn) in the Village API document.
+var VillageStartHuggingFaceSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/huggingface", operationID: "startHuggingFaceSignIn"}
+
+// VillageCompleteHuggingFaceSignIn is GET /api/v1/auth/huggingface/callback
+// (operationId completeHuggingFaceSignIn) in the Village API document.
+var VillageCompleteHuggingFaceSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/huggingface/callback", operationID: "completeHuggingFaceSignIn"}
+
+// VillageLogOut is POST /api/v1/auth/logout
+// (operationId logOut) in the Village API document.
+var VillageLogOut = Route{method: MethodPost, pattern: "/api/v1/auth/logout", operationID: "logOut"}
+
 // VillageGetAuthenticatedVillageUser is GET /api/v1/auth/me
 // (operationId getAuthenticatedVillageUser) in the Village API document.
 var VillageGetAuthenticatedVillageUser = Route{method: MethodGet, pattern: "/api/v1/auth/me", operationID: "getAuthenticatedVillageUser"}
 
+// VillageDeleteMyAccount is DELETE /api/v1/auth/me
+// (operationId deleteMyAccount) in the Village API document.
+var VillageDeleteMyAccount = Route{method: MethodDelete, pattern: "/api/v1/auth/me", operationID: "deleteMyAccount"}
+
+// VillageSetMyDiscoverability is PATCH /api/v1/auth/me/settings
+// (operationId setMyDiscoverability) in the Village API document.
+var VillageSetMyDiscoverability = Route{method: MethodPatch, pattern: "/api/v1/auth/me/settings", operationID: "setMyDiscoverability"}
+
+// VillageSetMyUsername is PATCH /api/v1/auth/me/username
+// (operationId setMyUsername) in the Village API document.
+var VillageSetMyUsername = Route{method: MethodPatch, pattern: "/api/v1/auth/me/username", operationID: "setMyUsername"}
+
 // VillageListAuthenticatedVillageOrganizations is GET /api/v1/auth/orgs
 // (operationId listAuthenticatedVillageOrganizations) in the Village API document.
 var VillageListAuthenticatedVillageOrganizations = Route{method: MethodGet, pattern: "/api/v1/auth/orgs", operationID: "listAuthenticatedVillageOrganizations"}
+
+// VillageSetMyOrganizationVisibility is PATCH /api/v1/auth/orgs/{orgLogin}/visibility
+// (operationId setMyOrganizationVisibility) in the Village API document.
+var VillageSetMyOrganizationVisibility = Route{method: MethodPatch, pattern: "/api/v1/auth/orgs/{orgLogin}/visibility", operationID: "setMyOrganizationVisibility"}
+
+// VillageSetMyOrganizationVisibilityPath returns the path of VillageSetMyOrganizationVisibility.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageSetMyOrganizationVisibilityPath(orgLogin string) (string, error) {
+	if err := checkPathSegment(VillageSetMyOrganizationVisibility, "orgLogin", orgLogin); err != nil {
+		return "", err
+	}
+	return "/api/v1/auth/orgs/" + pathSegment(orgLogin) + "/visibility", nil
+}
+
+// VillageStartSourceHutSignIn is GET /api/v1/auth/sourcehut
+// (operationId startSourceHutSignIn) in the Village API document.
+var VillageStartSourceHutSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/sourcehut", operationID: "startSourceHutSignIn"}
+
+// VillageCompleteSourceHutSignIn is GET /api/v1/auth/sourcehut/callback
+// (operationId completeSourceHutSignIn) in the Village API document.
+var VillageCompleteSourceHutSignIn = Route{method: MethodGet, pattern: "/api/v1/auth/sourcehut/callback", operationID: "completeSourceHutSignIn"}
 
 // VillageListGroups is GET /api/v1/collectives
 // (operationId listGroups) in the Village API document.
@@ -806,9 +898,25 @@ func VillageRemoveGroupTranscriptDeprecatedPath(id, transcriptID string) (string
 	return "/api/v1/groups/" + pathSegment(id) + "/transcripts/" + pathSegment(transcriptID), nil
 }
 
+// VillageCompleteGitHubAppInstall is GET /api/v1/integrations/github/callback
+// (operationId completeGitHubAppInstall) in the Village API document.
+var VillageCompleteGitHubAppInstall = Route{method: MethodGet, pattern: "/api/v1/integrations/github/callback", operationID: "completeGitHubAppInstall"}
+
+// VillageStartGitHubAppInstall is GET /api/v1/integrations/github/install
+// (operationId startGitHubAppInstall) in the Village API document.
+var VillageStartGitHubAppInstall = Route{method: MethodGet, pattern: "/api/v1/integrations/github/install", operationID: "startGitHubAppInstall"}
+
 // VillageReceiveGitHubWebhook is POST /api/v1/integrations/github/webhook
 // (operationId receiveGitHubWebhook) in the Village API document.
 var VillageReceiveGitHubWebhook = Route{method: MethodPost, pattern: "/api/v1/integrations/github/webhook", operationID: "receiveGitHubWebhook"}
+
+// VillageGetVillageAPIDocument is GET /api/v1/openapi.json
+// (operationId getVillageAPIDocument) in the Village API document.
+var VillageGetVillageAPIDocument = Route{method: MethodGet, pattern: "/api/v1/openapi.json", operationID: "getVillageAPIDocument"}
+
+// VillageSearchOrganizations is GET /api/v1/orgs/search
+// (operationId searchOrganizations) in the Village API document.
+var VillageSearchOrganizations = Route{method: MethodGet, pattern: "/api/v1/orgs/search", operationID: "searchOrganizations"}
 
 // VillageGetVillageOrganizationCollectives is GET /api/v1/orgs/{login}
 // (operationId getVillageOrganizationCollectives) in the Village API document.
@@ -943,6 +1051,14 @@ func VillageConfirmPullRequestAttachmentPath(owner, name string, number int) (st
 // (operationId getSchemaVersion) in the Village API document.
 var VillageGetSchemaVersion = Route{method: MethodGet, pattern: "/api/v1/schema/version", operationID: "getSchemaVersion"}
 
+// VillageListTags is GET /api/v1/tags
+// (operationId listTags) in the Village API document.
+var VillageListTags = Route{method: MethodGet, pattern: "/api/v1/tags", operationID: "listTags"}
+
+// VillageListPopularTags is GET /api/v1/tags/popular
+// (operationId listPopularTags) in the Village API document.
+var VillageListPopularTags = Route{method: MethodGet, pattern: "/api/v1/tags/popular", operationID: "listPopularTags"}
+
 // VillageListTranscriptGroupMembers is GET /api/v1/transcript-groups/{groupId}/members
 // (operationId listTranscriptGroupMembers) in the Village API document.
 var VillageListTranscriptGroupMembers = Route{method: MethodGet, pattern: "/api/v1/transcript-groups/{groupId}/members", operationID: "listTranscriptGroupMembers"}
@@ -964,6 +1080,10 @@ var VillageListTranscripts = Route{method: MethodGet, pattern: "/api/v1/transcri
 // VillagePublishTranscript is POST /api/v1/transcripts/publish
 // (operationId publishTranscript) in the Village API document.
 var VillagePublishTranscript = Route{method: MethodPost, pattern: "/api/v1/transcripts/publish", operationID: "publishTranscript"}
+
+// VillagePublishTranscriptBatch is POST /api/v1/transcripts/publish/batch
+// (operationId publishTranscriptBatch) in the Village API document.
+var VillagePublishTranscriptBatch = Route{method: MethodPost, pattern: "/api/v1/transcripts/publish/batch", operationID: "publishTranscriptBatch"}
 
 // VillageGetTranscriptMetadata is GET /api/v1/transcripts/{id}
 // (operationId getTranscriptMetadata) in the Village API document.
@@ -993,6 +1113,93 @@ func VillageUpdateTranscriptPath(id string) (string, error) {
 	return "/api/v1/transcripts/" + pathSegment(id), nil
 }
 
+// VillageDeleteTranscript is DELETE /api/v1/transcripts/{id}
+// (operationId deleteTranscript) in the Village API document.
+var VillageDeleteTranscript = Route{method: MethodDelete, pattern: "/api/v1/transcripts/{id}", operationID: "deleteTranscript"}
+
+// VillageDeleteTranscriptPath returns the path of VillageDeleteTranscript.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageDeleteTranscriptPath(id string) (string, error) {
+	if err := checkPathSegment(VillageDeleteTranscript, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id), nil
+}
+
+// VillageListTranscriptAnnotations is GET /api/v1/transcripts/{id}/annotations
+// (operationId listTranscriptAnnotations) in the Village API document.
+var VillageListTranscriptAnnotations = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/annotations", operationID: "listTranscriptAnnotations"}
+
+// VillageListTranscriptAnnotationsPath returns the path of VillageListTranscriptAnnotations.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListTranscriptAnnotationsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListTranscriptAnnotations, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/annotations", nil
+}
+
+// VillageCreateTranscriptAnnotation is POST /api/v1/transcripts/{id}/annotations
+// (operationId createTranscriptAnnotation) in the Village API document.
+var VillageCreateTranscriptAnnotation = Route{method: MethodPost, pattern: "/api/v1/transcripts/{id}/annotations", operationID: "createTranscriptAnnotation"}
+
+// VillageCreateTranscriptAnnotationPath returns the path of VillageCreateTranscriptAnnotation.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageCreateTranscriptAnnotationPath(id string) (string, error) {
+	if err := checkPathSegment(VillageCreateTranscriptAnnotation, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/annotations", nil
+}
+
+// VillageListTranscriptAttestations is GET /api/v1/transcripts/{id}/attestations
+// (operationId listTranscriptAttestations) in the Village API document.
+var VillageListTranscriptAttestations = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/attestations", operationID: "listTranscriptAttestations"}
+
+// VillageListTranscriptAttestationsPath returns the path of VillageListTranscriptAttestations.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListTranscriptAttestationsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListTranscriptAttestations, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/attestations", nil
+}
+
+// VillageCreateTranscriptAttestation is POST /api/v1/transcripts/{id}/attestations
+// (operationId createTranscriptAttestation) in the Village API document.
+var VillageCreateTranscriptAttestation = Route{method: MethodPost, pattern: "/api/v1/transcripts/{id}/attestations", operationID: "createTranscriptAttestation"}
+
+// VillageCreateTranscriptAttestationPath returns the path of VillageCreateTranscriptAttestation.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageCreateTranscriptAttestationPath(id string) (string, error) {
+	if err := checkPathSegment(VillageCreateTranscriptAttestation, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/attestations", nil
+}
+
+// VillageDeleteTranscriptAttestation is DELETE /api/v1/transcripts/{id}/attestations/{attestationID}
+// (operationId deleteTranscriptAttestation) in the Village API document.
+var VillageDeleteTranscriptAttestation = Route{method: MethodDelete, pattern: "/api/v1/transcripts/{id}/attestations/{attestationID}", operationID: "deleteTranscriptAttestation"}
+
+// VillageDeleteTranscriptAttestationPath returns the path of VillageDeleteTranscriptAttestation.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageDeleteTranscriptAttestationPath(id, attestationID string) (string, error) {
+	if err := checkPathSegment(VillageDeleteTranscriptAttestation, "id", id); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageDeleteTranscriptAttestation, "attestationID", attestationID); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/attestations/" + pathSegment(attestationID), nil
+}
+
 // VillageListTranscriptCollectives is GET /api/v1/transcripts/{id}/collectives
 // (operationId listTranscriptCollectives) in the Village API document.
 var VillageListTranscriptCollectives = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/collectives", operationID: "listTranscriptCollectives"}
@@ -1005,6 +1212,20 @@ func VillageListTranscriptCollectivesPath(id string) (string, error) {
 		return "", err
 	}
 	return "/api/v1/transcripts/" + pathSegment(id) + "/collectives", nil
+}
+
+// VillageListTranscriptCommits is GET /api/v1/transcripts/{id}/commits
+// (operationId listTranscriptCommits) in the Village API document.
+var VillageListTranscriptCommits = Route{method: MethodGet, pattern: "/api/v1/transcripts/{id}/commits", operationID: "listTranscriptCommits"}
+
+// VillageListTranscriptCommitsPath returns the path of VillageListTranscriptCommits.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListTranscriptCommitsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListTranscriptCommits, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/transcripts/" + pathSegment(id) + "/commits", nil
 }
 
 // VillageGetTranscriptContent is GET /api/v1/transcripts/{id}/content
@@ -1215,6 +1436,34 @@ func VillageDeclineMyInvitationPath(invitationID string) (string, error) {
 	return "/api/v1/users/me/invitations/" + pathSegment(invitationID) + "/decline", nil
 }
 
+// VillageSetMyProjectDisplayName is PATCH /api/v1/users/me/projects/{projectHash}
+// (operationId setMyProjectDisplayName) in the Village API document.
+var VillageSetMyProjectDisplayName = Route{method: MethodPatch, pattern: "/api/v1/users/me/projects/{projectHash}", operationID: "setMyProjectDisplayName"}
+
+// VillageSetMyProjectDisplayNamePath returns the path of VillageSetMyProjectDisplayName.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageSetMyProjectDisplayNamePath(projectHash string) (string, error) {
+	if err := checkPathSegment(VillageSetMyProjectDisplayName, "projectHash", projectHash); err != nil {
+		return "", err
+	}
+	return "/api/v1/users/me/projects/" + pathSegment(projectHash), nil
+}
+
+// VillageClearMyProjectDisplayName is DELETE /api/v1/users/me/projects/{projectHash}/display-name
+// (operationId clearMyProjectDisplayName) in the Village API document.
+var VillageClearMyProjectDisplayName = Route{method: MethodDelete, pattern: "/api/v1/users/me/projects/{projectHash}/display-name", operationID: "clearMyProjectDisplayName"}
+
+// VillageClearMyProjectDisplayNamePath returns the path of VillageClearMyProjectDisplayName.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageClearMyProjectDisplayNamePath(projectHash string) (string, error) {
+	if err := checkPathSegment(VillageClearMyProjectDisplayName, "projectHash", projectHash); err != nil {
+		return "", err
+	}
+	return "/api/v1/users/me/projects/" + pathSegment(projectHash) + "/display-name", nil
+}
+
 // VillageListMyPromptRequests is GET /api/v1/users/me/prompt-requests
 // (operationId listMyPromptRequests) in the Village API document.
 var VillageListMyPromptRequests = Route{method: MethodGet, pattern: "/api/v1/users/me/prompt-requests", operationID: "listMyPromptRequests"}
@@ -1231,15 +1480,82 @@ var VillageUpdateMySettings = Route{method: MethodPatch, pattern: "/api/v1/users
 // (operationId getMyStats) in the Village API document.
 var VillageGetMyStats = Route{method: MethodGet, pattern: "/api/v1/users/me/stats", operationID: "getMyStats"}
 
+// VillageGetUserProfile is GET /api/v1/users/{username}
+// (operationId getUserProfile) in the Village API document.
+var VillageGetUserProfile = Route{method: MethodGet, pattern: "/api/v1/users/{username}", operationID: "getUserProfile"}
+
+// VillageGetUserProfilePath returns the path of VillageGetUserProfile.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetUserProfilePath(username string) (string, error) {
+	if err := checkPathSegment(VillageGetUserProfile, "username", username); err != nil {
+		return "", err
+	}
+	return "/api/v1/users/" + pathSegment(username), nil
+}
+
+// VillageListUserOrganizations is GET /api/v1/users/{username}/orgs
+// (operationId listUserOrganizations) in the Village API document.
+var VillageListUserOrganizations = Route{method: MethodGet, pattern: "/api/v1/users/{username}/orgs", operationID: "listUserOrganizations"}
+
+// VillageListUserOrganizationsPath returns the path of VillageListUserOrganizations.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListUserOrganizationsPath(username string) (string, error) {
+	if err := checkPathSegment(VillageListUserOrganizations, "username", username); err != nil {
+		return "", err
+	}
+	return "/api/v1/users/" + pathSegment(username) + "/orgs", nil
+}
+
+// VillageGetUserProject is GET /api/v1/users/{username}/projects/{projectHash}
+// (operationId getUserProject) in the Village API document.
+var VillageGetUserProject = Route{method: MethodGet, pattern: "/api/v1/users/{username}/projects/{projectHash}", operationID: "getUserProject"}
+
+// VillageGetUserProjectPath returns the path of VillageGetUserProject.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageGetUserProjectPath(username, projectHash string) (string, error) {
+	if err := checkPathSegment(VillageGetUserProject, "username", username); err != nil {
+		return "", err
+	}
+	if err := checkPathSegment(VillageGetUserProject, "projectHash", projectHash); err != nil {
+		return "", err
+	}
+	return "/api/v1/users/" + pathSegment(username) + "/projects/" + pathSegment(projectHash), nil
+}
+
+// VillageGetHealth is GET /health
+// (operationId getHealth) in the Village API document.
+var VillageGetHealth = Route{method: MethodGet, pattern: "/health", operationID: "getHealth"}
+
 // AllVillage is every operation of the Village API document, ordered by pattern and then
 // by AllMethods.
 var AllVillage = []Route{
 	VillagePushAnnotations,
 	VillageGetAnnotationManifest,
+	VillageListMyAPIKeys,
+	VillageCreateMyAPIKey,
+	VillageRevokeMyAPIKey,
 	VillageCliExchangeCode,
 	VillageCliLogin,
+	VillageStartCodebergSignIn,
+	VillageCompleteCodebergSignIn,
+	VillageStartGitHubSignIn,
+	VillageCompleteGitHubSignIn,
+	VillageStartGitLabSignIn,
+	VillageCompleteGitLabSignIn,
+	VillageStartHuggingFaceSignIn,
+	VillageCompleteHuggingFaceSignIn,
+	VillageLogOut,
 	VillageGetAuthenticatedVillageUser,
+	VillageDeleteMyAccount,
+	VillageSetMyDiscoverability,
+	VillageSetMyUsername,
 	VillageListAuthenticatedVillageOrganizations,
+	VillageSetMyOrganizationVisibility,
+	VillageStartSourceHutSignIn,
+	VillageCompleteSourceHutSignIn,
 	VillageListGroups,
 	VillageCreateGroup,
 	VillageListPublicGroups,
@@ -1293,7 +1609,11 @@ var AllVillage = []Route{
 	VillageBatchReviewSharesDeprecated,
 	VillageReviewShareDeprecated,
 	VillageRemoveGroupTranscriptDeprecated,
+	VillageCompleteGitHubAppInstall,
+	VillageStartGitHubAppInstall,
 	VillageReceiveGitHubWebhook,
+	VillageGetVillageAPIDocument,
+	VillageSearchOrganizations,
 	VillageGetVillageOrganizationCollectives,
 	VillageListPullableTranscripts,
 	VillagePullSkipGate,
@@ -1305,12 +1625,22 @@ var AllVillage = []Route{
 	VillageDetachPullRequestAttachment,
 	VillageConfirmPullRequestAttachment,
 	VillageGetSchemaVersion,
+	VillageListTags,
+	VillageListPopularTags,
 	VillageListTranscriptGroupMembers,
 	VillageListTranscripts,
 	VillagePublishTranscript,
+	VillagePublishTranscriptBatch,
 	VillageGetTranscriptMetadata,
 	VillageUpdateTranscript,
+	VillageDeleteTranscript,
+	VillageListTranscriptAnnotations,
+	VillageCreateTranscriptAnnotation,
+	VillageListTranscriptAttestations,
+	VillageCreateTranscriptAttestation,
+	VillageDeleteTranscriptAttestation,
 	VillageListTranscriptCollectives,
+	VillageListTranscriptCommits,
 	VillageGetTranscriptContent,
 	VillageGetTranscriptHeader,
 	VillageListTranscriptPullRequests,
@@ -1329,10 +1659,16 @@ var AllVillage = []Route{
 	VillageListMyInvitations,
 	VillageAcceptMyInvitation,
 	VillageDeclineMyInvitation,
+	VillageSetMyProjectDisplayName,
+	VillageClearMyProjectDisplayName,
 	VillageListMyPromptRequests,
 	VillageGetMySettings,
 	VillageUpdateMySettings,
 	VillageGetMyStats,
+	VillageGetUserProfile,
+	VillageListUserOrganizations,
+	VillageGetUserProject,
+	VillageGetHealth,
 }
 
 // LocalListAnnotationTypes is GET /api/v1/annotation-types

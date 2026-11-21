@@ -1,4 +1,5 @@
 enums:
+  - {name: VillageAttestationType, all_name: AllVillageAttestationTypes, members: [{name: UsedInTraining, value: used_in_training}, {name: Referenced, value: referenced}, {name: Evaluated, value: evaluated}, {name: Deployed, value: deployed}], all_values: [used_in_training, referenced, evaluated, deployed]}
   - {name: TranscriptEntryReferenceKind, all_name: AllTranscriptEntryReferenceKinds, members: [{name: Source, value: source}, {name: ToolCall, value: tool_call}, {name: ToolResult, value: tool_result}], all_values: [source, tool_call, tool_result]}
   - {name: TranscriptReadTransportKind, all_name: AllTranscriptReadTransportKinds, members: [{name: LocalSession, value: local_session}, {name: VillageTranscript, value: village_transcript}], all_values: [local_session, village_transcript]}
   - {name: TranscriptRecordedIndexState, all_name: AllTranscriptRecordedIndexStates, members: [{name: Present, value: present}, {name: Absent, value: absent}, {name: Invalid, value: invalid}], all_values: [present, absent, invalid]}

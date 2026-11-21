@@ -165,10 +165,12 @@ func addVillageInvitationOperations(r *openapi31.Reflector) error {
 			},
 		},
 		{
-			method:      http.MethodPost,
-			path:        "/api/v1/email/unsubscribe",
-			id:          "unsubscribeInvitationEmails",
-			tag:         "users",
+			method: http.MethodPost,
+			path:   "/api/v1/email/unsubscribe",
+			id:     "unsubscribeInvitationEmails",
+			tag:    "users",
+			// The route sits behind its own per-client limiter.
+			rateLimited: true,
 			description: "Turn off invitation emails for the account a signed unsubscribe token names, without signing in. This is the one-click unsubscribe target (RFC 8058) that every invitation email links to; a request body, such as List-Unsubscribe=One-Click, is ignored. The token can only turn this one setting off. 400 means the token is malformed, forged, or expired.",
 			requests:    []interface{}{unsubscribeQuery},
 			response:    new(schema.VillageStatusResponse),

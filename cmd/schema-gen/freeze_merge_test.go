@@ -81,6 +81,7 @@ func TestFreezeMergeFreshness(t *testing.T) {
 			if fullFreshness {
 				run("pnpm", "--dir", "typescript", "install", "--offline", "--frozen-lockfile", "--ignore-scripts")
 			}
+			releaseFreezeBaseline(t, dir)
 			edit := func(change freezeWriterEdit) {
 				t.Helper()
 				filename := filepath.Join(dir, change.Path)
@@ -127,22 +128,8 @@ func TestFreezeMergeFreshness(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			plan := freezePlan{Plan: 1}
-			for _, row := range state.Surfaces {
-				ahead := slices.Contains(c.Input.Ahead, row.Name)
-				if (row.State == surfaceAhead) != ahead {
-					t.Fatalf("surface %s state = %s, expected ahead=%v", row.Name, row.State, ahead)
-				}
-				level := freezeNone
-				if ahead {
-					level = freezeMinor
-				}
-				to, err := nextFreezeVersion(row.Frozen, level)
-				if err != nil {
-					t.Fatal(err)
-				}
-				plan.Surfaces = append(plan.Surfaces, freezeSurface{row.Name, row.Label, row.Frozen, to, level, false, ahead})
-			}
+			requireAheadSurfaces(t, state, c.Input.Ahead)
+			plan := minorFreezePlan(t, state)
 			planFile, stateFile := filepath.Join(t.TempDir(), "plan.yaml"), filepath.Join(t.TempDir(), "state.yaml")
 			for name, value := range map[string]any{planFile: plan, stateFile: state} {
 				data, err := yaml.Marshal(value)
