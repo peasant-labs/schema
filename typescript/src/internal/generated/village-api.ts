@@ -3323,6 +3323,8 @@ export interface operations {
                 headers: {
                     /** @description Seconds to wait before the window allows another request. */
                     "Retry-After": number;
+                    /** @description nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it. */
+                    "X-Content-Type-Options": string;
                     /** @description Requests one client may make in the current window. */
                     "X-RateLimit-Limit": number;
                     /** @description Requests the client has left in the current window. */
@@ -3410,6 +3412,8 @@ export interface operations {
                 headers: {
                     /** @description Seconds to wait before the window allows another request. */
                     "Retry-After": number;
+                    /** @description nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it. */
+                    "X-Content-Type-Options": string;
                     /** @description Requests one client may make in the current window. */
                     "X-RateLimit-Limit": number;
                     /** @description Requests the client has left in the current window. */
@@ -3477,6 +3481,8 @@ export interface operations {
                 headers: {
                     /** @description Seconds to wait before the window allows another request. */
                     "Retry-After": number;
+                    /** @description nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it. */
+                    "X-Content-Type-Options": string;
                     /** @description Requests one client may make in the current window. */
                     "X-RateLimit-Limit": number;
                     /** @description Requests the client has left in the current window. */
@@ -3618,6 +3624,8 @@ export interface operations {
                 headers: {
                     /** @description Seconds to wait before the window allows another request. */
                     "Retry-After": number;
+                    /** @description nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it. */
+                    "X-Content-Type-Options": string;
                     /** @description Requests one client may make in the current window. */
                     "X-RateLimit-Limit": number;
                     /** @description Requests the client has left in the current window. */
@@ -3725,6 +3733,8 @@ export interface operations {
                 headers: {
                     /** @description Seconds to wait before the window allows another request. */
                     "Retry-After": number;
+                    /** @description nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it. */
+                    "X-Content-Type-Options": string;
                     /** @description Requests one client may make in the current window. */
                     "X-RateLimit-Limit": number;
                     /** @description Requests the client has left in the current window. */
@@ -3866,6 +3876,8 @@ export interface operations {
                 headers: {
                     /** @description Seconds to wait before the window allows another request. */
                     "Retry-After": number;
+                    /** @description nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it. */
+                    "X-Content-Type-Options": string;
                     /** @description Requests one client may make in the current window. */
                     "X-RateLimit-Limit": number;
                     /** @description Requests the client has left in the current window. */
@@ -4353,6 +4365,8 @@ export interface operations {
                 headers: {
                     /** @description Seconds to wait before the window allows another request. */
                     "Retry-After": number;
+                    /** @description nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it. */
+                    "X-Content-Type-Options": string;
                     /** @description Requests one client may make in the current window. */
                     "X-RateLimit-Limit": number;
                     /** @description Requests the client has left in the current window. */
@@ -6093,6 +6107,12 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6102,15 +6122,46 @@ export interface operations {
             /** @description Bad Request */
             400: {
                 headers: {
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
+            /** @description Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before the window allows another request. */
+                    "Retry-After": number;
+                    /** @description nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it. */
+                    "X-Content-Type-Options": string;
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
             /** @description Internal Server Error */
             500: {
                 headers: {
+                    /** @description Requests one client may make in the current window. */
+                    "X-RateLimit-Limit": number;
+                    /** @description Requests the client has left in the current window. */
+                    "X-RateLimit-Remaining": number;
+                    /** @description Unix time, in seconds, at which the current window ends. */
+                    "X-RateLimit-Reset": number;
                     [name: string]: unknown;
                 };
                 content: {

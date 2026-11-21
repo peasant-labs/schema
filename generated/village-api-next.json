@@ -430,6 +430,14 @@
                   "type": "integer"
                 }
               },
+              "X-Content-Type-Options": {
+                "style": "simple",
+                "description": "nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it.",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
               "X-RateLimit-Limit": {
                 "style": "simple",
                 "description": "Requests one client may make in the current window.",
@@ -652,6 +660,14 @@
                   "type": "integer"
                 }
               },
+              "X-Content-Type-Options": {
+                "style": "simple",
+                "description": "nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it.",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
               "X-RateLimit-Limit": {
                 "style": "simple",
                 "description": "Requests one client may make in the current window.",
@@ -812,6 +828,14 @@
                 "required": true,
                 "schema": {
                   "type": "integer"
+                }
+              },
+              "X-Content-Type-Options": {
+                "style": "simple",
+                "description": "nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it.",
+                "required": true,
+                "schema": {
+                  "type": "string"
                 }
               },
               "X-RateLimit-Limit": {
@@ -1138,6 +1162,14 @@
                   "type": "integer"
                 }
               },
+              "X-Content-Type-Options": {
+                "style": "simple",
+                "description": "nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it.",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
               "X-RateLimit-Limit": {
                 "style": "simple",
                 "description": "Requests one client may make in the current window.",
@@ -1374,6 +1406,14 @@
                 "required": true,
                 "schema": {
                   "type": "integer"
+                }
+              },
+              "X-Content-Type-Options": {
+                "style": "simple",
+                "description": "nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it.",
+                "required": true,
+                "schema": {
+                  "type": "string"
                 }
               },
               "X-RateLimit-Limit": {
@@ -1698,6 +1738,14 @@
                 "required": true,
                 "schema": {
                   "type": "integer"
+                }
+              },
+              "X-Content-Type-Options": {
+                "style": "simple",
+                "description": "nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it.",
+                "required": true,
+                "schema": {
+                  "type": "string"
                 }
               },
               "X-RateLimit-Limit": {
@@ -2474,6 +2522,14 @@
                 "required": true,
                 "schema": {
                   "type": "integer"
+                }
+              },
+              "X-Content-Type-Options": {
+                "style": "simple",
+                "description": "nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it.",
+                "required": true,
+                "schema": {
+                  "type": "string"
                 }
               },
               "X-RateLimit-Limit": {
@@ -4910,6 +4966,32 @@
         "responses": {
           "200": {
             "description": "OK",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "style": "simple",
+                "description": "Requests one client may make in the current window.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "style": "simple",
+                "description": "Requests the client has left in the current window.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Reset": {
+                "style": "simple",
+                "description": "Unix time, in seconds, at which the current window ends.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -4920,6 +5002,32 @@
           },
           "400": {
             "description": "Bad Request",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "style": "simple",
+                "description": "Requests one client may make in the current window.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "style": "simple",
+                "description": "Requests the client has left in the current window.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Reset": {
+                "style": "simple",
+                "description": "Unix time, in seconds, at which the current window ends.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -4928,8 +5036,86 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests. The client made more requests in the current window than the limiter allows. The body is the plain text Too Many Requests.",
+            "headers": {
+              "Retry-After": {
+                "style": "simple",
+                "description": "Seconds to wait before the window allows another request.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Content-Type-Options": {
+                "style": "simple",
+                "description": "nosniff: the plain-text refusal must not be read as another media type. The limiter writes its refusal with Go's http.Error, which always sets it.",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "style": "simple",
+                "description": "Requests one client may make in the current window.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "style": "simple",
+                "description": "Requests the client has left in the current window.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Reset": {
+                "style": "simple",
+                "description": "Unix time, in seconds, at which the current window ends.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "style": "simple",
+                "description": "Requests one client may make in the current window.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "style": "simple",
+                "description": "Requests the client has left in the current window.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Reset": {
+                "style": "simple",
+                "description": "Unix time, in seconds, at which the current window ends.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
