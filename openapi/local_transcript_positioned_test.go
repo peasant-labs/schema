@@ -16,7 +16,8 @@ import (
 
 // Both APIs project the same response alternatives and selector parameters.
 func TestLocalTranscriptPositionedReads(t *testing.T) {
-	data, err := os.ReadFile("testdata/village_transcript_reads.yaml")
+	const fixturePath = "testdata/village_transcript_reads.yaml"
+	data, err := os.ReadFile(fixturePath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,13 +31,18 @@ func TestLocalTranscriptPositionedReads(t *testing.T) {
 	testassert.RequireValid(t, fixture.Routes)
 	names := make([]string, 0, len(fixture.Routes.Cases))
 	local := builtSpecDocument(t, specpkg.BuildPeasantLocalAPISpec)
+	// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
 	paths := local["paths"].(map[string]any)
+	// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
 	components := local["components"].(map[string]any)["schemas"].(map[string]any)
 	for _, c := range fixture.Routes.Cases {
 		names = append(names, c.Name)
 		t.Run(c.Name, func(t *testing.T) {
+			// unstring-allow: go-endpoint-literal — fixture paths map between APIs
 			path := strings.Replace(c.Input.Path, "/api/v1/transcripts/{id}", "/api/v1/sessions/{id}/transcript", 1)
+			// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
 			op := paths[path].(map[string]any)["get"].(map[string]any)
+			// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
 			parameters := op["parameters"].([]any)
 			for _, expected := range c.Expected.Parameters {
 				found := false
@@ -50,6 +56,7 @@ func TestLocalTranscriptPositionedReads(t *testing.T) {
 						t.Fatalf("%s required differs from the shared declaration", expected.Name)
 					}
 					if expected.Name == "v" {
+						// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
 						values := param["schema"].(map[string]any)["enum"].([]any)
 						expectedGenerations := schema.SegmentedReadGenerations()
 						if len(values) != len(expectedGenerations) {
@@ -66,12 +73,15 @@ func TestLocalTranscriptPositionedReads(t *testing.T) {
 					t.Fatalf("missing %s parameter %s", expected.In, expected.Name)
 				}
 			}
+			// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
 			responses := op["responses"].(map[string]any)
+			// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
 			success := responses["200"].(map[string]any)["content"].(map[string]any)["application/json"].(map[string]any)["schema"].(map[string]any)["oneOf"].([]any)
 			if len(success) != 2 || success[0].(map[string]any)["$ref"] != c.Expected.ResponseRef || success[1].(map[string]any)["$ref"] != c.Expected.PositionedResponseRef {
 				t.Fatalf("unexpected response alternatives: %v", success)
 			}
 			for _, ref := range success {
+				// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
 				name := strings.TrimPrefix(ref.(map[string]any)["$ref"].(string), "#/components/schemas/")
 				if components[name] == nil {
 					t.Fatalf("response component %s is missing", name)
@@ -86,6 +96,7 @@ func TestLocalTranscriptPositionedReads(t *testing.T) {
 					t.Fatalf("missing status %s", status)
 				}
 			}
+			// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
 			headers := responses["503"].(map[string]any)["headers"].(map[string]any)
 			if headers["Retry-After"] == nil {
 				t.Fatal("503 omits Retry-After")

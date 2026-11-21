@@ -12,6 +12,12 @@ import (
 	"github.com/swaggest/openapi-go/openapi31"
 )
 
+const (
+	localTranscriptSegmentsPath = "/api/v1/sessions/{id}/transcript/segments"
+	localTranscriptSegmentPath  = "/api/v1/sessions/{id}/transcript/segments/{index}"
+	localTranscriptWindowPath   = "/api/v1/sessions/{id}/transcript/window"
+)
+
 // BuildPeasantLocalAPISpec builds an OpenAPI 3.1 specification for the local web dashboard API v1.0.
 // It includes REST routes (/health, /sessions, /config/mock, /shutdown),
 // WebSocket channel message schemas (DashboardPayload, SessionsPayload,
@@ -74,7 +80,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// GET /api/v1/sessions/{id}/transcript/segments is the transcript's only
 	// global index: one ref per segment, never a row per turn.
 	if err := addLocalOperations(r, []localOperationSpec{{
-		method: http.MethodGet, path: "/api/v1/sessions/{id}/transcript/segments",
+		method: http.MethodGet, path: localTranscriptSegmentsPath,
 		id: "getSessionTranscriptSegments", tag: "sessions",
 		description: "Read the transcript segment directory by session ID: the " +
 			"transcript's only global index, one ref per segment with the cut's " +
@@ -109,7 +115,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// whole turns. The directory declares the range; this read returns exactly
 	// that range or refuses, because a short segment moves every later boundary.
 	if err := addLocalOperations(r, []localOperationSpec{{
-		method: http.MethodGet, path: "/api/v1/sessions/{id}/transcript/segments/{index}",
+		method: http.MethodGet, path: localTranscriptSegmentPath,
 		id: "getSessionTranscriptSegment", tag: "sessions",
 		description: "Read one transcript segment by its directory ordinal. The " +
 			"segment is cut on complete entries and whole turns, so every turn it " +
@@ -144,7 +150,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// contiguous window and answers a descriptor only. Turn content stays in the
 	// segment read, so a window response cannot grow with the transcript.
 	if err := addLocalOperations(r, []localOperationSpec{{
-		method: http.MethodGet, path: "/api/v1/sessions/{id}/transcript/window",
+		method: http.MethodGet, path: localTranscriptWindowPath,
 		id: "getSessionTranscriptWindow", tag: "sessions",
 		description: "Resolve a turn identity to a contiguous transcript window " +
 			"and answer a descriptor that names where the window is, never what is " +
@@ -590,10 +596,11 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("harmonize Peasant Local API shared components: %w", err)
 	}
 	for _, variant := range []struct{ path, legacy, positioned string }{
-		{"/api/v1/sessions/{id}/transcript/segments", "SchemaTranscriptSegmentDirectory", "SchemaPositionedDirectory"},
-		{"/api/v1/sessions/{id}/transcript/segments/{index}", "SchemaTranscriptSegment", "SchemaPositionedSegment"},
-		{"/api/v1/sessions/{id}/transcript/window", "SchemaTranscriptWindow", "SchemaPositionedWindow"},
+		{localTranscriptSegmentsPath, "SchemaTranscriptSegmentDirectory", "SchemaPositionedDirectory"},
+		{localTranscriptSegmentPath, "SchemaTranscriptSegment", "SchemaPositionedSegment"},
+		{localTranscriptWindowPath, "SchemaTranscriptWindow", "SchemaPositionedWindow"},
 	} {
+		// unstring-allow: go-json-body-map — OpenAPI schema references are dynamic
 		if err := setVillageAlternativeResponse(r.Spec, variant.path, map[string]interface{}{"$ref": "#/components/schemas/" + variant.legacy}, variant.positioned); err != nil {
 			return nil, err
 		}
@@ -602,6 +609,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		}
 		response := r.Spec.Paths.MapOfPathItemValues[variant.path].Get.Responses.MapOfResponseOrReferenceValues["503"].Response
 		description := "When to retry a temporary load or admission refusal."
+		// unstring-allow: go-json-body-map — OpenAPI header schema is dynamic
 		response.Headers = map[string]openapi31.HeaderOrReference{"Retry-After": {Header: &openapi31.Header{Description: &description, Schema: map[string]interface{}{"type": "string"}}}}
 	}
 	// The list and search routes retain their established flat response when
