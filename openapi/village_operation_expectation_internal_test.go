@@ -219,6 +219,8 @@ type villageSchemaShape struct {
 	Ref         string             `json:"$ref"`
 	Type        villageSchemaTypes `json:"type"`
 	Items       json.RawMessage    `json:"items"`
+	Minimum     *json.Number       `json:"minimum"`
+	Maximum     *json.Number       `json:"maximum"`
 	Description string             `json:"description"`
 }
 
@@ -242,8 +244,9 @@ func (types *villageSchemaTypes) UnmarshalJSON(raw []byte) error {
 
 // villageSchemaDescriptor names a schema compactly: the component name of a
 // $ref, []Name for an array of a component ([]Name|null when the array admits
-// null), the type of a schema that carries only a type, and its JSON
-// otherwise. A description is prose, not shape, and is ignored.
+// null), the type of a schema that carries only a type, that type followed by
+// MIN..MAX when it carries both bounds, and its JSON otherwise. A description
+// is prose, not shape, and is ignored.
 func villageSchemaDescriptor(schema map[string]interface{}) string {
 	if schema == nil {
 		return ""
@@ -270,8 +273,10 @@ func villageRawSchemaDescriptor(raw []byte) string {
 		return "[]" + villageRawSchemaDescriptor(shape.Items)
 	case shape.Ref == "" && shape.Items != nil && types == "array,null":
 		return "[]" + villageRawSchemaDescriptor(shape.Items) + "|null"
-	case shape.Ref == "" && shape.Items == nil && len(shape.Type) == 1:
+	case shape.Ref == "" && shape.Items == nil && len(shape.Type) == 1 && shape.Minimum == nil && shape.Maximum == nil:
 		return shape.Type[0]
+	case shape.Ref == "" && shape.Items == nil && len(shape.Type) == 1 && shape.Minimum != nil && shape.Maximum != nil:
+		return shape.Type[0] + " " + shape.Minimum.String() + ".." + shape.Maximum.String()
 	}
 	return string(raw)
 }

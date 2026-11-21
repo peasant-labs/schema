@@ -630,7 +630,7 @@ cases:
     - name: port
       in: query
       required: true
-      schema: integer
+      schema: integer 1024..65535
     - name: state
       in: query
       required: true
