@@ -3390,7 +3390,7 @@ export interface operations {
             /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             400: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3429,7 +3429,7 @@ export interface operations {
             /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             500: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3498,7 +3498,7 @@ export interface operations {
             /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             503: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3550,7 +3550,7 @@ export interface operations {
             /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             400: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3564,7 +3564,7 @@ export interface operations {
             /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             500: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3578,7 +3578,7 @@ export interface operations {
             /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             503: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3673,7 +3673,7 @@ export interface operations {
             /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             400: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3687,7 +3687,7 @@ export interface operations {
             /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             500: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3750,7 +3750,7 @@ export interface operations {
             /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             503: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3802,7 +3802,7 @@ export interface operations {
             /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             400: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3816,7 +3816,7 @@ export interface operations {
             /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             500: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3830,7 +3830,7 @@ export interface operations {
             /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             503: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3893,7 +3893,7 @@ export interface operations {
             /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             503: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3945,7 +3945,7 @@ export interface operations {
             /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             400: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3959,7 +3959,7 @@ export interface operations {
             /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             500: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -3973,7 +3973,7 @@ export interface operations {
             /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             503: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -4382,7 +4382,7 @@ export interface operations {
             /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             503: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -4434,7 +4434,7 @@ export interface operations {
             /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             400: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -4448,7 +4448,7 @@ export interface operations {
             /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             500: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -4462,7 +4462,7 @@ export interface operations {
             /** @description Service Unavailable. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             503: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -7815,7 +7815,7 @@ export interface operations {
             /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             400: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -7838,7 +7838,7 @@ export interface operations {
             /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             500: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -7852,7 +7852,7 @@ export interface operations {
             /** @description Not Implemented. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             501: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -7902,7 +7902,7 @@ export interface operations {
             /** @description Bad Request. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             400: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -7934,7 +7934,7 @@ export interface operations {
             /** @description Internal Server Error. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             500: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -7948,7 +7948,7 @@ export interface operations {
             /** @description Not Implemented. Sent as an HTML page (text/html) when the first recognised media type in Accept is text/html or application/xhtml+xml; otherwise, including with no Accept or *\/*, as a VillageErrorResponse (application/json). The status is the same both ways. */
             501: {
                 headers: {
-                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's own styles and fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
+                    /** @description Present only on the text/html variant: a restrictive policy that denies everything by default and allows only the page's styles and web fonts, so the page runs no script, cannot be framed and submits no form. Absent on the application/json variant. */
                     "Content-Security-Policy"?: string;
                     /** @description Present only on the text/html variant, with the value nosniff. Absent on the application/json variant. */
                     "X-Content-Type-Options"?: string;
@@ -11290,7 +11290,7 @@ export interface operations {
             /** @description Process is alive. */
             200: {
                 headers: {
-                    /** @description The response is never stored by a cache (no-store), so every probe reaches the process. */
+                    /** @description no-store: a conforming cache does not store the response, so each probe is answered by the process. */
                     "Cache-Control": string;
                     [name: string]: unknown;
                 };
