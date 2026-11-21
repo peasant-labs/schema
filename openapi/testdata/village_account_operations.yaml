@@ -58,7 +58,7 @@ cases:
           Retry-After: true
     description_anchors:
     - Permanently delete
-- name: updateMyDiscoverability
+- name: setMyDiscoverability
   classification: must-pass
   provenance:
     source: requirement
@@ -69,7 +69,7 @@ cases:
     method: PATCH
     path: /api/v1/auth/me/settings
   expected:
-    operation_id: updateMyDiscoverability
+    operation_id: setMyDiscoverability
     tag: auth
     servers: []
     parameters: []

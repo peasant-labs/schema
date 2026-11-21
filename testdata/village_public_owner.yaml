@@ -302,7 +302,7 @@ surfaces:
     - SchemaVillageUserProjectResponse.owner
   self_operations:
     - getAuthenticatedVillageUser
-    - updateMyDiscoverability
+    - setMyDiscoverability
     - setMyUsername
     - cliExchangeCode
   # forbidden_property_exceptions lets the frozen 0.2.0 pull envelope keep its

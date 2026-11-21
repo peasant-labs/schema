@@ -59,7 +59,7 @@ var requiredMountedOperationIDs = []string{
 	// Session, account and API keys.
 	"logOut",
 	"deleteMyAccount",
-	"updateMyDiscoverability",
+	"setMyDiscoverability",
 	"setMyUsername",
 	"createMyAPIKey",
 	"listMyAPIKeys",
