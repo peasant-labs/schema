@@ -157,11 +157,14 @@ func transcriptMemberArray[M transcriptMemberLookup](members M, name string) []j
 }
 
 // transcriptDecodeString decodes a member value the constructor's typed decode
-// already checked. A string without escapes is its own bytes; anything else
-// takes encoding/json's decode, whose error leaves the empty string.
+// already checked. A string literal decodes as encoding/json decodes it;
+// anything else takes encoding/json's decode, whose error leaves the empty
+// string.
 func transcriptDecodeString(raw []byte) string {
-	if len(raw) >= 2 && raw[0] == '"' && raw[len(raw)-1] == '"' && bytes.IndexByte(raw, '\\') < 0 {
-		return string(raw[1 : len(raw)-1])
+	if len(raw) >= 2 && raw[0] == '"' {
+		if text, ok := transcriptUnquote(raw); ok {
+			return text
+		}
 	}
 	var value string
 	_ = json.Unmarshal(raw, &value)

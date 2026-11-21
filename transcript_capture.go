@@ -94,12 +94,18 @@ func (m transcriptTurnMembers) member(name string) (json.RawMessage, bool) {
 		return value, ok
 	}
 	for _, e := range m.table {
+		// An escape always spells its decoded text in more bytes, so a name of
+		// the looked-up length matches only byte for byte, and only a longer
+		// name can be an escaped spelling.
 		n := m.raw[e.nameStart:e.nameEnd]
-		if bytes.IndexByte(n, '\\') >= 0 {
-			if transcriptDecodeName(m.raw[e.nameStart-1:e.nameEnd+1]) != name {
+		switch {
+		case len(n) < len(name):
+			continue
+		case len(n) == len(name):
+			if string(n) != name {
 				continue
 			}
-		} else if string(n) != name {
+		case bytes.IndexByte(n, '\\') < 0 || transcriptDecodeName(m.raw[e.nameStart-1:e.nameEnd+1]) != name:
 			continue
 		}
 		return json.RawMessage(m.raw[e.valueStart:e.valueEnd:e.valueEnd]), true
