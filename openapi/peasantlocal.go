@@ -69,6 +69,8 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		}), new(schema.SessionDetailReadPayload)); err != nil {
 		return nil, err
 	}
+	// Positioned reads are an additive Local API change. The v1 response shapes
+	// remain available when the selector is omitted or requests generation 1.
 	// GET /api/v1/sessions/{id}/transcript/segments is the transcript's only
 	// global index: one ref per segment, never a row per turn.
 	if err := addLocalOperations(r, []localOperationSpec{{
