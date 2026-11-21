@@ -1,4 +1,4 @@
-tool_pin: 7d2a604afe5b50a3dcc20df06f02e85c2a0d4027
+tool_pin: db8f1938e9a67a40914c2ab0a232ebc2243adaac
 version_guard_required:
   - matching-version
   - mismatched-version-is-refused
@@ -13,149 +13,6 @@ version_guard_cases:
     package_version: 1.2.4
     expected_exit: 1
     expected_output: "tag v1.2.3 does not match typescript/package.json version 1.2.4; tags are immutable, so fix forward"
-existing_release_required:
-  - complete-published-release
-  - draft-with-assets
-  - draft-without-assets
-  - draft-with-invalid-assets
-  - published-without-assets
-  - missing-draft-state
-  - invalid-assets
-  - non-json-response
-  - api-failure
-existing_release_cases:
-  - name: complete-published-release
-    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
-    expected_exit: 0
-    expected_output: "existing release is published and has assets"
-  - name: draft-with-assets
-    response: '{"isDraft":true,"assets":[{"name":"spec.json"}]}'
-    expected_exit: 1
-    expected_output: 'release is an unpublished draft; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; do not create a new tag'
-  - name: draft-without-assets
-    response: '{"isDraft":true,"assets":[]}'
-    expected_exit: 1
-    expected_output: 'release is an unpublished draft; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; do not create a new tag'
-  - name: draft-with-invalid-assets
-    response: '{"isDraft":true,"assets":null}'
-    expected_exit: 1
-    expected_output: 'release is an unpublished draft; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; do not create a new tag'
-  - name: published-without-assets
-    response: '{"isDraft":false,"assets":[]}'
-    expected_exit: 1
-    expected_output: "published release has no assets; tags are immutable, so fix forward with a new tag"
-  - name: missing-draft-state
-    response: '{"assets":[{"name":"spec.json"}]}'
-    expected_exit: 1
-    expected_output: "release draft status is invalid; inspect the release before retrying"
-  - name: invalid-assets
-    response: '{"isDraft":false,"assets":null}'
-    expected_exit: 1
-    expected_output: "published release assets are invalid; inspect the release before retrying"
-  - name: non-json-response
-    response: "not-json"
-    expected_exit: 1
-    expected_output: "parse error"
-  - name: api-failure
-    api_exit: 1
-    expected_exit: 1
-    expected_output: "mock API unavailable"
-draft_release_required:
-  - draft-with-assets
-  - draft-without-assets
-  - draft-with-invalid-assets
-  - published-instead-of-draft
-  - missing-draft-state
-  - api-failure
-draft_release_cases:
-  - name: draft-with-assets
-    response: '{"isDraft":true,"assets":[{"name":"spec.json"},{"name":"spec.yaml"}]}'
-    expected_exit: 0
-    expected_output: "draft holds 2 assets"
-  - name: draft-without-assets
-    response: '{"isDraft":true,"assets":[]}'
-    expected_exit: 1
-    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
-  - name: draft-with-invalid-assets
-    response: '{"isDraft":true,"assets":null}'
-    expected_exit: 1
-    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
-  - name: published-instead-of-draft
-    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
-    expected_exit: 1
-    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
-  - name: missing-draft-state
-    response: '{"assets":[{"name":"spec.json"}]}'
-    expected_exit: 1
-    expected_output: 'the draft is missing or has no assets and was not published; list the drafts for this tag with gh api repos/$GITHUB_REPOSITORY/releases, delete each by id with gh api -X DELETE repos/$GITHUB_REPOSITORY/releases/<id> (never gh release delete $TAG), then rerun; no new tag is needed'
-  - name: api-failure
-    api_exit: 1
-    expected_exit: 1
-    expected_output: "mock API unavailable"
-published_release_required:
-  - published-immutable-with-assets
-  - still-a-draft
-  - not-immutable
-  - published-without-assets
-  - missing-immutable-state
-  - api-failure
-published_release_cases:
-  - name: published-immutable-with-assets
-    response: '{"isDraft":false,"isImmutable":true,"assets":[{"name":"spec.json"}]}'
-    expected_exit: 0
-    expected_output: "release is published, immutable and holds 1 assets"
-  - name: still-a-draft
-    response: '{"isDraft":true,"isImmutable":false,"assets":[{"name":"spec.json"}]}'
-    expected_exit: 1
-    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
-  - name: not-immutable
-    response: '{"isDraft":false,"isImmutable":false,"assets":[{"name":"spec.json"}]}'
-    expected_exit: 1
-    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
-  - name: published-without-assets
-    response: '{"isDraft":false,"isImmutable":true,"assets":[]}'
-    expected_exit: 1
-    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
-  - name: missing-immutable-state
-    response: '{"isDraft":false,"assets":[{"name":"spec.json"}]}'
-    expected_exit: 1
-    expected_output: "the release is published, and a published release is immutable, but it is not a complete immutable release; do not edit or delete it, fix forward with a new tag"
-  - name: api-failure
-    api_exit: 1
-    expected_exit: 1
-    expected_output: "mock API unavailable"
-release_list_required:
-  - no-release-for-the-tag
-  - draft-exists
-  - published-release-exists
-  - another-tag-only
-  - api-failure
-  - malformed-output
-release_list_cases:
-  - name: no-release-for-the-tag
-    response: '[]'
-    expected_exit: 0
-    expected_output: "no release or draft exists for this tag"
-  - name: draft-exists
-    response: '[{"tagName":"v1.2.3","isDraft":true}]'
-    expected_exit: 1
-    expected_output: "a release or draft already exists for this tag, so nothing was created"
-  - name: published-release-exists
-    response: '[{"tagName":"v1.2.3","isDraft":false}]'
-    expected_exit: 1
-    expected_output: "a release or draft already exists for this tag, so nothing was created"
-  - name: another-tag-only
-    response: '[{"tagName":"v1.2.2","isDraft":false},{"tagName":"v1.2.4","isDraft":true}]'
-    expected_exit: 0
-    expected_output: "no release or draft exists for this tag"
-  - name: api-failure
-    api_exit: 1
-    expected_exit: 1
-    expected_output: "mock API unavailable"
-  - name: malformed-output
-    response: "not-json"
-    expected_exit: 1
-    expected_output: "parse error"
 prepared_tag_required:
   - release-commit-snapshot
   - branch-advances-after-plan
@@ -600,13 +457,11 @@ required:
   - tag-judges-contract
   - npm-tag-matches-version
   - npm-published-version-has-no-shell-banner
-  - release-checks-for-existing
-  - existing-release-must-be-complete
-  - release-refuses-an-existing-release-for-the-tag
-  - release-creates-a-draft-with-its-assets
-  - release-verifies-the-draft
-  - release-publishes-after-verifying-the-draft
-  - release-verifies-the-published-release
+  - release-checks-out-release-intent
+  - release-sets-up-go-without-cache
+  - release-builds-release-intent
+  - release-downloads-dist-after-build
+  - release-publishes-with-release-intent
   - release-assets-are-files-beside-the-notes
   - vendor-hash-mints-only-for-work
   - precheck-identifies-repository
@@ -731,89 +586,67 @@ cases:
     step: Publish @peasant-labs/schema to npm (OIDC trusted publishing)
     run_contains: ['published_version="$(jq -r ''.version'' typescript/package.json)"']
     run_excludes: ['published_version="$(nix develop']
-  - name: release-checks-for-existing
+  - name: release-checks-out-release-intent
     workflow: release.yml
     job: release
-    step: Look for an existing release
-    id: view
-    continue_contains: ["true"]
-    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"']
-    run_excludes: ['--json']
-    job_run_excludes: ['gh release upload', 'gh release delete "']
+    step: Check out release-intent
+    uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+    no_continue: true
+    no_job_continue: true
+    with_values:
+      repository: peasant-labs/infra
+      ref: db8f1938e9a67a40914c2ab0a232ebc2243adaac
+      path: infra-tool
+      sparse-checkout: tools/release
+      persist-credentials: "false"
+    job_run_excludes: ['gh release', 'gh api', 'jq ']
     job_uses_excludes: [softprops/, action-gh-release, upload-release-asset, release-action]
     job_run_only:
-      gh release create: Create the draft release with its assets
-      gh release edit: Publish the release
-      isImmutable: Verify the published release
-      gh release list: Refuse an existing release for the tag
-  - name: existing-release-must-be-complete
+      publish-release: Publish the release
+      go build: Build release-intent
+  - name: release-sets-up-go-without-cache
     workflow: release.yml
     job: release
-    step: Verify the existing release is complete
-    after: Look for an existing release
-    if_value: "steps.view.outcome == 'success'"
+    step: Set up Go
+    after: Check out release-intent
+    uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
     no_continue: true
-    no_job_continue: true
-    env_values:
-      GH_TOKEN: "${{ github.token }}"
-    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY"', '--json isDraft,assets', '--jq', 'unpublished draft', 'gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id>', 'never gh release delete', 'do not create a new tag', 'published release has no assets', 'fix forward with a new tag']
-  - name: release-refuses-an-existing-release-for-the-tag
+    with_values:
+      go-version-file: infra-tool/tools/release/go.mod
+      cache: "false"
+  - name: release-builds-release-intent
     workflow: release.yml
     job: release
-    step: Refuse an existing release for the tag
-    id: list
-    after: Look for an existing release
-    if_value: "steps.view.outcome == 'failure'"
+    step: Build release-intent
+    after: Set up Go
     no_continue: true
-    no_job_continue: true
     env_values:
-      GH_TOKEN: "${{ github.token }}"
-    run_contains: ['gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft --jq', 'select(.tagName == env.TAG)', 'error(', 'delete stale drafts by id', 'no new tag is needed']
-    run_excludes: ['--exclude-drafts']
-  - name: release-creates-a-draft-with-its-assets
+      GOWORK: "off"
+    run_contains: ['go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent']
+  - name: release-downloads-dist-after-build
     workflow: release.yml
     job: release
-    step: Create the draft release with its assets
-    id: create
-    after: Refuse an existing release for the tag
-    if_value: "steps.view.outcome == 'failure' && steps.list.outcome == 'success'"
+    step: Download the release assets
+    after: Build release-intent
+    uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
     no_continue: true
-    env_values:
-      GH_TOKEN: "${{ github.token }}"
-      PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"
-    run_contains: ['gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "$TAG" --notes-file dist/release-notes.md --prerelease="$PRERELEASE" ''dist/assets/*''']
-    run_excludes: ['--latest', '$(', "\n"]
-  - name: release-verifies-the-draft
-    workflow: release.yml
-    job: release
-    step: Verify the draft before publishing
-    after: Create the draft release with its assets
-    if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
-    no_continue: true
-    env_values:
-      GH_TOKEN: "${{ github.token }}"
-    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq', '.isDraft != true', '(.assets | length) == 0', 'was not published', 'gh api -X DELETE repos/\u0024GITHUB_REPOSITORY/releases/<id>', 'never gh release delete', 'no new tag is needed']
-  - name: release-publishes-after-verifying-the-draft
+    with_values:
+      name: release-dist
+      path: dist
+  - name: release-publishes-with-release-intent
     workflow: release.yml
     job: release
     step: Publish the release
-    after: Verify the draft before publishing
-    if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
+    after: Download the release assets
     no_continue: true
-    env_values:
-      PRERELEASE: "${{ needs.guard.outputs.kind == 'rc' }}"
-      LATEST: "${{ needs.guard.outputs.kind == 'final' }}"
-    run_contains: ['gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease="$PRERELEASE" --latest="$LATEST"']
-  - name: release-verifies-the-published-release
-    workflow: release.yml
-    job: release
-    step: Verify the published release
-    after: Publish the release
-    if_value: "steps.view.outcome == 'failure' && steps.create.outcome == 'success'"
-    no_continue: true
+    no_job_continue: true
     env_values:
       GH_TOKEN: "${{ github.token }}"
-    run_contains: ['gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,assets --jq', '.isDraft != false', '.isImmutable != true', '(.assets | length) == 0', 'fix forward with a new tag']
+      TAG: "${{ github.ref_name }}"
+      PRERELEASE: "${{ needs.guard.outputs.prerelease }}"
+      LATEST: "${{ needs.guard.outputs.latest }}"
+    run_contains: ['"${RUNNER_TEMP}/release-intent" publish-release --tag "$TAG" --repo "$GITHUB_REPOSITORY" --assets dist/assets --notes dist/release-notes.md --prerelease "$PRERELEASE" --latest "$LATEST" --require-immutable']
+    run_excludes: ['--rehearse', '$(', "\n"]
   - name: release-assets-are-files-beside-the-notes
     workflow: release.yml
     job: build
