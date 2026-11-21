@@ -18,10 +18,23 @@ type observation struct {
 	Turns   []turnObservation  `json:"turns,omitempty" yaml:"turns,omitempty"`
 	Cook    *cookObservation   `json:"cook,omitempty" yaml:"cook,omitempty"`
 	Cuts    *cutObservation    `json:"cuts,omitempty" yaml:"cuts,omitempty"`
+	Kept    *keptObservation   `json:"kept,omitempty" yaml:"kept,omitempty"`
 	Digest  *digestObservation `json:"digest,omitempty" yaml:"-"`
 }
 
+// facts are the per-turn values a partition index keeps.
+type facts struct {
+	Index        int
+	Role         string
+	EntryType    string
+	Depth        int
+	Usage        bool
+	Conversation bool
+	ByteLength   int
+}
+
 type turnObservation struct {
+	Index         int    `json:"index" yaml:"index"`
 	Raw           string `json:"raw" yaml:"raw"`
 	RecordedIndex string `json:"recordedIndex" yaml:"recordedIndex"`
 	ByteLength    int    `json:"byteLength" yaml:"byteLength"`
@@ -43,6 +56,12 @@ type cutObservation struct {
 	One      []string `json:"one" yaml:"one,flow"`
 	Fit      []string `json:"fit,omitempty" yaml:"fit,omitempty,flow"`
 	FitBelow []string `json:"fitBelow,omitempty" yaml:"fitBelow,omitempty,flow"`
+}
+
+// keptObservation is the cut of the claude-code kept turns.
+type keptObservation struct {
+	Budget []string `json:"budget" yaml:"budget,flow"`
+	One    []string `json:"one" yaml:"one,flow"`
 }
 
 // digestObservation replaces the per-turn parts of a large input's line.
@@ -95,14 +114,11 @@ func observe(doc []byte) (observation, error) {
 		if index != nil {
 			ri = fmt.Sprintf("%s:%d", state, *index)
 		}
-		usage := d.Usage != nil
-		for _, tool := range d.ToolCalls {
-			usage = usage || tool.Usage != nil
-		}
+		f := turnFacts(t)
 		o.Turns = append(o.Turns, turnObservation{
-			Raw: sha(raw), RecordedIndex: ri, ByteLength: schema.TranscriptTurnByteLength(d),
-			Detail: sha(mustJSON(d)), Role: string(d.Role), EntryType: string(d.EntryType), Depth: d.Depth,
-			Usage: usage, Conversation: schema.IsConversationTurn(d.Role, d.EntryType, d.Depth),
+			Index: f.Index, Raw: sha(raw), RecordedIndex: ri, ByteLength: f.ByteLength,
+			Detail: sha(mustJSON(d)), Role: f.Role, EntryType: f.EntryType, Depth: f.Depth,
+			Usage: f.Usage, Conversation: f.Conversation,
 		})
 	}
 	o.Cook = &cookObservation{ClaudeCode: cook(turns, schema.HarnessClaudeCode), Pi: cook(turns, schema.HarnessPi)}
@@ -115,9 +131,20 @@ func observe(doc []byte) (observation, error) {
 		o.Cuts.Fit = cuts(details, fit)
 		o.Cuts.FitBelow = cuts(details, fit-1)
 	}
+	if verdicts, err := schema.CookTranscriptRows(turns, schema.HarnessClaudeCode); err == nil {
+		budget, err := cutKept(turns, verdicts, schema.TranscriptSegmentBudgetBytes)
+		if err != nil {
+			return observation{}, err
+		}
+		one, err := cutKept(turns, verdicts, 1)
+		if err != nil {
+			return observation{}, err
+		}
+		o.Kept = &keptObservation{Budget: refStrings(budget), One: refStrings(one)}
+	}
 	if len(turns) > digestAbove {
-		o.Digest = &digestObservation{TurnCount: len(turns), Turns: sha(mustJSON(o.Turns)), Cook: sha(mustJSON(o.Cook)), Cuts: sha(mustJSON(o.Cuts))}
-		o.Turns, o.Cook, o.Cuts = nil, nil, nil
+		o.Digest = &digestObservation{TurnCount: len(turns), Turns: sha(mustJSON(o.Turns)), Cook: sha(mustJSON(o.Cook)), Cuts: sha(mustJSON([]any{o.Cuts, o.Kept}))}
+		o.Turns, o.Cook, o.Cuts, o.Kept = nil, nil, nil, nil
 	}
 	return o, nil
 }
@@ -139,7 +166,10 @@ func cook(turns []schema.TranscriptCookTurn, harness schema.Harness) []string {
 }
 
 func cuts(details []schema.TurnDetail, budget int) []string {
-	refs := schema.CutTranscriptSegments(details, budget)
+	return refStrings(schema.CutTranscriptSegments(details, budget))
+}
+
+func refStrings(refs []schema.TranscriptSegmentRef) []string {
 	out := make([]string, len(refs))
 	for i, r := range refs {
 		span := "none"

@@ -719,6 +719,20 @@ func NewTranscriptCookTurns(sessionDetail json.RawMessage) ([]TranscriptCookTurn
 	}
 
 	turns := make([]TranscriptCookTurn, len(s.turns))
+	table := make([]transcriptMember, len(s.members))
+	for i, t := range s.turns {
+		if uint64(t.end-t.start) > math.MaxUint32 {
+			continue
+		}
+		for j := t.memberStart; j < t.memberEnd; j++ {
+			m := s.members[j]
+			table[j] = transcriptMember{
+				nameStart: uint32(m.nameStart - t.start), nameEnd: uint32(m.nameEnd - t.start),
+				valueStart: uint32(m.valueStart - t.start), valueEnd: uint32(m.valueEnd - t.start),
+			}
+		}
+		turns[i].members = table[t.memberStart:t.memberEnd:t.memberEnd]
+	}
 	for i, t := range s.turns {
 		switch t.fault {
 		case captureFaultEscape:
@@ -731,7 +745,7 @@ func NewTranscriptCookTurns(sessionDetail json.RawMessage) ([]TranscriptCookTurn
 		if !t.object {
 			return refuse(TranscriptCaptureTurnNotObject, i, fmt.Errorf("%sturn %d is not one JSON object: %w; repair the stored turn before retrying", where, i, fmt.Errorf("a JSON object is required")))
 		}
-		if err := json.Unmarshal(sessionDetail[t.start:t.end], &turns[i].detail); err != nil {
+		if err := decodeCapturedTurn(sessionDetail[t.start:t.end], turns[i].members, &turns[i].detail); err != nil {
 			return refuse(TranscriptCaptureTurnTypeMismatch, i, fmt.Errorf("%sturn %d cannot be decoded as a turn: %w; repair the stored member value before retrying", where, i, err))
 		}
 	}
@@ -741,21 +755,9 @@ func NewTranscriptCookTurns(sessionDetail json.RawMessage) ([]TranscriptCookTurn
 
 	base := s.turnsStart
 	held := bytes.Clone(sessionDetail[base:s.turnsEnd])
-	table := make([]transcriptMember, len(s.members))
 	for i, t := range s.turns {
 		start, end := t.start-base, t.end-base
 		turns[i].raw = TranscriptServedTurn{raw: held[start:end:end]}
-		if uint64(t.end-t.start) > math.MaxUint32 {
-			continue
-		}
-		for j := t.memberStart; j < t.memberEnd; j++ {
-			m := s.members[j]
-			table[j] = transcriptMember{
-				nameStart: uint32(m.nameStart - t.start), nameEnd: uint32(m.nameEnd - t.start),
-				valueStart: uint32(m.valueStart - t.start), valueEnd: uint32(m.valueEnd - t.start),
-			}
-		}
-		turns[i].members = table[t.memberStart:t.memberEnd:t.memberEnd]
 	}
 	return turns, nil
 }

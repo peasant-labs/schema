@@ -24,3 +24,7 @@ requiredNames:
   - empty-and-null-turns
   - call-provenance
   - three-turns-for-cut
+  - fold-variant-names
+  - null-scalars
+  - full-turn-shape
+  - typed-values

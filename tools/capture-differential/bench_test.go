@@ -13,35 +13,8 @@ import (
 // benchTurns is the turn count of both benchmark subjects.
 const benchTurns = 100000
 
-// partitionPass is the schema work of Village's partition build, in its order:
-// capture, cook, the per-kept-turn facts, then the cut.
-func partitionPass(doc []byte) (int, error) {
-	turns, err := schema.NewTranscriptCookTurns(doc)
-	if err != nil {
-		return 0, err
-	}
-	verdicts, err := schema.CookTranscriptRows(turns, schema.HarnessClaudeCode)
-	if err != nil {
-		return 0, err
-	}
-	details := make([]schema.TurnDetail, 0, len(turns))
-	sink := 0
-	for i, turn := range turns {
-		if !verdicts[i].Keep {
-			continue
-		}
-		detail := turn.Detail()
-		details = append(details, detail)
-		if _, index := recordedIndex(turn); index != nil {
-			sink += *index
-		}
-		sink += schema.TranscriptTurnByteLength(detail)
-		if schema.IsConversationTurn(detail.Role, detail.EntryType, detail.Depth) {
-			sink++
-		}
-	}
-	return sink + len(schema.CutTranscriptSegments(details, schema.TranscriptSegmentBudgetBytes)), nil
-}
+// partitionPass, in each adapter, is the schema work of Village's partition
+// build in its order: capture, cook, the per-kept-turn facts, then the cut.
 
 // retainedBytes is the live heap the captured turns keep, with the input held.
 func retainedBytes(doc []byte) (uint64, error) {

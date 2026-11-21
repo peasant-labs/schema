@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 )
 
 // This file holds the producer rules of the segmented transcript reads: how
@@ -42,19 +43,45 @@ const (
 )
 
 // TranscriptJSONStringByteLength is the number of bytes the JSON encoder writes
-// for s, quotes included. It is measured with the encoder itself, so escaping,
-// HTML-escaping and invalid-UTF-8 replacement are counted exactly as the wire
-// carries them. It is the string term of TranscriptTurnByteLength; a server
+// for s, quotes included. It counts the encoder's escaping, HTML-escaping and
+// invalid-UTF-8 replacement exactly as the wire carries them, without
+// encoding; FuzzTranscriptJSONStringByteLength holds it equal to json.Marshal. It is the string term of TranscriptTurnByteLength; a server
 // that bounds served text against the same measure calls it instead of keeping
 // a copy.
 func TranscriptJSONStringByteLength(s string) int {
-	encoded, err := json.Marshal(s)
-	if err != nil {
-		// json.Marshal of a string does not fail; a future change that made it
-		// fail must not silently under-count the document.
-		return len(s) + 2
+	return transcriptEncodedStringLength(s)
+}
+
+// transcriptEncodedStringLength counts, without encoding, the bytes
+// encoding/json writes for s with HTML escaping: quotes, two-byte escapes for
+// quote, backslash, \b, \f, \n, \r and \t, a six-byte \u escape for other
+// control bytes, for <, > and &, for U+2028 and U+2029, and for each invalid
+// UTF-8 byte (written as \ufffd). Every other byte is written as is.
+func transcriptEncodedStringLength(s string) int {
+	n := 2
+	for i := 0; i < len(s); {
+		c := s[i]
+		if c < utf8.RuneSelf {
+			switch {
+			case c == '"' || c == '\\' || c == '\b' || c == '\f' || c == '\n' || c == '\r' || c == '\t':
+				n += 2
+			case c < 0x20 || c == '<' || c == '>' || c == '&':
+				n += 6
+			default:
+				n++
+			}
+			i++
+			continue
+		}
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if (r == utf8.RuneError && size == 1) || r == '\u2028' || r == '\u2029' {
+			n += 6
+		} else {
+			n += size
+		}
+		i += size
 	}
-	return len(encoded)
+	return n
 }
 
 // TranscriptTurnByteLength returns the pre-bound JSON byte length of a turn:
@@ -64,6 +91,10 @@ func TranscriptJSONStringByteLength(s string) int {
 // byteLength. It is the size before any served-text bound, so an oversized turn
 // stays detectable in the cut after its text has been shortened.
 func TranscriptTurnByteLength(turn TurnDetail) int {
+	return transcriptTurnByteLength(&turn)
+}
+
+func transcriptTurnByteLength(turn *TurnDetail) int {
 	total := TranscriptJSONStringByteLength(turn.Content)
 	for _, part := range turn.ContentParts {
 		if part.Type == TurnPartTypeText {
@@ -101,29 +132,47 @@ func transcriptImagePartByteLength(image *ImagePart) int {
 // an empty, non-nil slice.
 // Preview segments are capture-local and need not match the later stored cut.
 func CutTranscriptSegments(turns []TurnDetail, budget int) []TranscriptSegmentRef {
-	if len(turns) == 0 {
+	return cutTranscript(len(turns), func(i int) transcriptCutItem {
+		return transcriptCutItem{
+			index:        turns[i].Index,
+			size:         TranscriptTurnByteLength(turns[i]),
+			conversation: IsConversationTurn(turns[i].Role, turns[i].EntryType, turns[i].Depth),
+		}
+	}, budget)
+}
+
+// transcriptCutItem is what the cut reads of one turn.
+type transcriptCutItem struct {
+	index, size  int
+	conversation bool
+}
+
+// cutTranscript is the one cut rule, shared by CutTranscriptSegments and
+// CutTranscriptCookTurns.
+func cutTranscript(n int, item func(int) transcriptCutItem, budget int) []TranscriptSegmentRef {
+	if n == 0 {
 		return []TranscriptSegmentRef{}
 	}
-	refs := make([]TranscriptSegmentRef, 0, len(turns))
+	refs := make([]TranscriptSegmentRef, 0, n)
 	var current *TranscriptSegmentRef
 	conversationTurns := 0
-	for i := range turns {
-		size := TranscriptTurnByteLength(turns[i])
-		if current != nil && current.ByteLength+size > budget {
+	for i := 0; i < n; i++ {
+		turn := item(i)
+		if current != nil && current.ByteLength+turn.size > budget {
 			refs = append(refs, *current)
 			current = nil
 		}
 		if current == nil {
 			current = &TranscriptSegmentRef{
 				Index:             len(refs),
-				FirstTurn:         turns[i].Index,
-				LastTurn:          turns[i].Index,
+				FirstTurn:         turn.index,
+				LastTurn:          turn.index,
 				ConversationTurns: &ConversationTurnSpan{Before: conversationTurns},
 			}
 		}
-		current.LastTurn = turns[i].Index
-		current.ByteLength += size
-		if IsConversationTurn(turns[i].Role, turns[i].EntryType, turns[i].Depth) {
+		current.LastTurn = turn.index
+		current.ByteLength += turn.size
+		if turn.conversation {
 			current.ConversationTurns.Count++
 			conversationTurns++
 		}

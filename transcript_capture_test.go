@@ -99,9 +99,14 @@ type captureExpected struct {
 		Fit      []string `yaml:"fit,omitempty,flow"`
 		FitBelow []string `yaml:"fitBelow,omitempty,flow"`
 	} `yaml:"cuts,omitempty"`
+	Kept *struct {
+		Budget []string `yaml:"budget,flow"`
+		One    []string `yaml:"one,flow"`
+	} `yaml:"kept,omitempty"`
 }
 
 type captureTurnExpected struct {
+	Index         int    `yaml:"index"`
 	Raw           string `yaml:"raw"`
 	RecordedIndex string `yaml:"recordedIndex"`
 	ByteLength    int    `yaml:"byteLength"`
@@ -176,18 +181,16 @@ func observeCapture(t *testing.T, doc []byte) captureExpected {
 		if index != nil {
 			ri = fmt.Sprintf("%s:%d", state, *index)
 		}
-		usage := d.Usage != nil
-		for _, tool := range d.ToolCalls {
-			usage = usage || tool.Usage != nil
-		}
+		f := turn.Facts()
+		requireFactsMatchDetail(t, i, f, d)
 		detail, err := json.Marshal(d)
 		if err != nil {
 			t.Fatal(err)
 		}
 		o.Turns = append(o.Turns, captureTurnExpected{
-			Raw: captureSHA(raw), RecordedIndex: ri, ByteLength: schema.TranscriptTurnByteLength(d),
-			Detail: captureSHA(detail), Role: string(d.Role), EntryType: string(d.EntryType), Depth: d.Depth,
-			Usage: usage, Conversation: schema.IsConversationTurn(d.Role, d.EntryType, d.Depth),
+			Index: f.Index, Raw: captureSHA(raw), RecordedIndex: ri, ByteLength: f.ByteLength,
+			Detail: captureSHA(detail), Role: string(f.Role), EntryType: string(f.EntryType), Depth: f.Depth,
+			Usage: f.UsagePresent, Conversation: f.ConversationTurn,
 		})
 	}
 	o.Cook = &struct {
@@ -204,7 +207,49 @@ func observeCapture(t *testing.T, doc []byte) captureExpected {
 		fit := schema.TranscriptTurnByteLength(details[0]) + schema.TranscriptTurnByteLength(details[1])
 		o.Cuts.Fit, o.Cuts.FitBelow = captureCuts(details, fit), captureCuts(details, fit-1)
 	}
+	if verdicts, err := schema.CookTranscriptRows(turns, schema.HarnessClaudeCode); err == nil {
+		kept := make([]schema.TurnDetail, 0, len(turns))
+		for i, v := range verdicts {
+			if v.Keep {
+				kept = append(kept, details[i])
+			}
+		}
+		o.Kept = &struct {
+			Budget []string `yaml:"budget,flow"`
+			One    []string `yaml:"one,flow"`
+		}{captureCookCut(t, turns, verdicts, kept, schema.TranscriptSegmentBudgetBytes), captureCookCut(t, turns, verdicts, kept, 1)}
+	}
 	return o
+}
+
+// captureCookCut cuts the kept turns and holds the result equal to
+// CutTranscriptSegments over their details.
+func captureCookCut(t *testing.T, turns []schema.TranscriptCookTurn, verdicts []schema.CookedTurn, kept []schema.TurnDetail, budget int) []string {
+	t.Helper()
+	refs, err := schema.CutTranscriptCookTurns(turns, verdicts, budget)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := schema.CutTranscriptSegments(kept, budget); !reflect.DeepEqual(refs, want) {
+		t.Fatalf("CutTranscriptCookTurns at budget %d = %+v, CutTranscriptSegments over the kept details = %+v", budget, refs, want)
+	}
+	return captureRefStrings(refs)
+}
+
+// requireFactsMatchDetail holds Facts() equal to the values Detail() gives.
+func requireFactsMatchDetail(t testing.TB, i int, f schema.TranscriptCookTurnFacts, d schema.TurnDetail) {
+	t.Helper()
+	usage := d.Usage != nil
+	for _, tool := range d.ToolCalls {
+		usage = usage || tool.Usage != nil
+	}
+	want := schema.TranscriptCookTurnFacts{
+		Index: d.Index, Role: d.Role, EntryType: d.EntryType, Depth: d.Depth, UsagePresent: usage,
+		ConversationTurn: schema.IsConversationTurn(d.Role, d.EntryType, d.Depth), ByteLength: schema.TranscriptTurnByteLength(d),
+	}
+	if f != want {
+		t.Fatalf("turn %d Facts() = %+v, Detail() gives %+v", i, f, want)
+	}
 }
 
 func captureCook(turns []schema.TranscriptCookTurn, harness schema.Harness) []string {
@@ -224,7 +269,10 @@ func captureCook(turns []schema.TranscriptCookTurn, harness schema.Harness) []st
 }
 
 func captureCuts(details []schema.TurnDetail, budget int) []string {
-	refs := schema.CutTranscriptSegments(details, budget)
+	return captureRefStrings(schema.CutTranscriptSegments(details, budget))
+}
+
+func captureRefStrings(refs []schema.TranscriptSegmentRef) []string {
 	out := make([]string, len(refs))
 	for i, r := range refs {
 		span := "none"
@@ -405,6 +453,11 @@ func FuzzTranscriptCapture(f *testing.F) {
 			if state != wantState || !reflect.DeepEqual(index, wantIndex) {
 				t.Fatalf("turn %d RecordedIndex() = %s %v, DecodeTranscriptRecordedIndex(Raw()) = %s %v", i, state, index, wantState, wantIndex)
 			}
+			requireFactsMatchDetail(t, i, turn.Facts(), turn.Detail())
+			var decoded schema.TurnDetail
+			if err := json.Unmarshal(turn.Raw().Raw(), &decoded); err != nil || !reflect.DeepEqual(decoded, turn.Detail()) {
+				t.Fatalf("turn %d Detail() = %+v, json.Unmarshal(Raw()) = %+v, %v", i, turn.Detail(), decoded, err)
+			}
 			if i > 0 {
 				again.WriteByte(',')
 			}
@@ -422,6 +475,38 @@ func FuzzTranscriptCapture(f *testing.F) {
 			if !bytes.Equal(recaptured[i].Raw().Raw(), turns[i].Raw().Raw()) || !reflect.DeepEqual(recaptured[i].Detail(), turns[i].Detail()) {
 				t.Fatalf("re-captured turn %d differs", i)
 			}
+		}
+	})
+}
+
+func TestCutTranscriptCookTurnsRefusesMismatchedVerdicts(t *testing.T) {
+	turns, err := schema.NewTranscriptCookTurns([]byte(`{"turns":[{"index":0,"role":"user","content":"a"}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, verdicts := range [][]schema.CookedTurn{nil, {{Position: 1, Keep: true}}} {
+		if _, err := schema.CutTranscriptCookTurns(turns, verdicts, 1); err == nil {
+			t.Fatalf("verdicts %+v were accepted", verdicts)
+		}
+	}
+	if _, err := schema.CutTranscriptCookTurns(make([]schema.TranscriptCookTurn, 1), []schema.CookedTurn{{Keep: true}}, 1); err == nil {
+		t.Fatal("a zero-value turn was cut")
+	}
+}
+
+// FuzzTranscriptJSONStringByteLength holds the counted measure equal to the
+// bytes encoding/json writes.
+func FuzzTranscriptJSONStringByteLength(f *testing.F) {
+	for _, s := range []string{"", "a", "<>&", "\u2028\u2029", "\"\\/", "\b\f\n\r\t\x00\x1f\x7f", "\xff\xc3(", "é中😀", "\ufffd"} {
+		f.Add(s)
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		encoded, err := json.Marshal(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := schema.TranscriptJSONStringByteLength(s); got != len(encoded) {
+			t.Fatalf("TranscriptJSONStringByteLength(%q) = %d, encoder writes %d bytes", s, got, len(encoded))
 		}
 	})
 }

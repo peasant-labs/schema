@@ -53,3 +53,11 @@ seeds:
     detail: '{"turns":[{"index":0,"role":"assistant","content":"","toolCalls":[{"id":"t","name":"n","arguments":"a","result":"r","callEntryRef":"c-1","callProvenance":{"origin":"agent","actor":"assistant","delivery":"tool"}}]}]}'
   - name: three-turns-for-cut
     detail: '{"turns":[{"index":0,"role":"user","content":"abc"},{"index":1,"role":"assistant","content":"de"},{"index":2,"role":"user","content":"f"}]}'
+  - name: fold-variant-names
+    detail: '{"turns":[{"ROLE":"user","Content":"a","DEPTH":0,"ſourceEntryRef":"x","Index":2}]}'
+  - name: null-scalars
+    detail: '{"turns":[{"index":null,"depth":null,"hasThinking":null,"role":null,"content":null,"timestamp":null,"tokensIn":null}]}'
+  - name: full-turn-shape
+    detail: '{"turns":[{"index":3,"role":"assistant","content":"c","contentParts":[{"type":"text","text":"c"}],"toolCalls":[{"id":"t","name":"n","arguments":"a","result":"r","durationMs":2,"isError":true}],"timestamp":"2026-01-01T00:00:00Z","depth":1,"parentIndex":2,"agentName":"a","hasThinking":true,"tokensIn":5,"tokensOut":6,"controlKind":"mode","entryType":"assistant"}]}'
+  - name: typed-values
+    detail: '{"turns":[{"index":12,"depth":0,"hasThinking":false,"role":"user","content":"\u0041b","timestamp":"2026-01-01T00:00:00.5+01:00"}]}'

@@ -138,9 +138,7 @@ func transcriptMemberString[M transcriptMemberLookup](members M, name string) tr
 	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
 		return transcriptStringMember{state: transcriptMemberNull}
 	}
-	var value string
-	_ = json.Unmarshal(raw, &value) // The constructor's typed decode checked its type.
-	return transcriptStringMember{state: transcriptMemberValue, value: value}
+	return transcriptStringMember{state: transcriptMemberValue, value: transcriptDecodeString(raw)}
 }
 
 func transcriptMemberSet[M transcriptMemberLookup](members M, name string) bool {
@@ -149,16 +147,53 @@ func transcriptMemberSet[M transcriptMemberLookup](members M, name string) bool 
 }
 
 func transcriptMemberArray[M transcriptMemberLookup](members M, name string) []json.RawMessage {
+	raw, ok := members.member(name)
+	if !ok {
+		return nil
+	}
 	var value []json.RawMessage
-	raw, _ := members.member(name)
 	_ = json.Unmarshal(raw, &value) // The constructor checked known member types.
+	return value
+}
+
+// transcriptDecodeString decodes a member value the constructor's typed decode
+// already checked. A string without escapes is its own bytes; anything else
+// takes encoding/json's decode, whose error leaves the empty string.
+func transcriptDecodeString(raw []byte) string {
+	if len(raw) >= 2 && raw[0] == '"' && raw[len(raw)-1] == '"' && bytes.IndexByte(raw, '\\') < 0 {
+		return string(raw[1 : len(raw)-1])
+	}
+	var value string
+	_ = json.Unmarshal(raw, &value)
+	return value
+}
+
+// transcriptDecodeInt decodes a member value into an int as encoding/json does.
+// Plain decimal digits take strconv; anything else takes encoding/json, whose
+// error leaves zero.
+func transcriptDecodeInt(raw []byte) int {
+	plain := len(raw) > 0
+	for i, c := range raw {
+		if (c < '0' || c > '9') && !(i == 0 && c == '-' && len(raw) > 1) {
+			plain = false
+			break
+		}
+	}
+	if plain {
+		if n, err := strconv.Atoi(string(raw)); err == nil {
+			return n
+		}
+	}
+	var value int
+	_ = json.Unmarshal(raw, &value)
 	return value
 }
 
 func transcriptFacts[M transcriptMemberLookup](members M, validateEvidence bool) (transcriptCookFacts, error) {
 	facts := transcriptCookFacts{role: transcriptMemberString(members, transcriptWireRole), content: transcriptMemberString(members, transcriptWireContent)}
-	depth, _ := members.member(transcriptWireDepth)
-	_ = json.Unmarshal(depth, &facts.depth)
+	if depth, ok := members.member(transcriptWireDepth); ok {
+		facts.depth = transcriptDecodeInt(depth)
+	}
 	facts.control = transcriptMemberString(members, transcriptWireControlKind).value != ""
 	facts.protected = transcriptMemberString(members, transcriptWireSourceEntryRef).value != "" || transcriptMemberSet(members, transcriptWireUsage)
 	if _, present := members.member(transcriptWireProvenance); present {

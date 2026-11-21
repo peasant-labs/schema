@@ -52,6 +52,19 @@ requiredNames:
   - capture-refuse-turn-index-fraction
   - capture-refuse-first-bad-turn-wins
   - capture-accept-escaped-multibyte-turn
+  - capture-refuse-turn-string-index
+  - capture-refuse-turn-exponent-depth
+  - capture-refuse-turn-index-overflow
+  - capture-refuse-turn-bool-from-string
+  - capture-refuse-turn-invalid-timestamp
+  - capture-refuse-turn-nested-type-mismatch
+  - capture-accept-turn-null-scalars
+  - capture-accept-turn-fold-variant-name
+  - capture-refuse-turn-fold-variant-wrong-type
+  - capture-accept-turn-unicode-fold-name
+  - capture-accept-turn-unknown-members
+  - capture-accept-turn-escaped-field-values
+  - capture-accept-turn-full-shape
   - mutant-duplicate-turn-member
   - mutant-duplicate-root-member
   - mutant-duplicate-escaped-name

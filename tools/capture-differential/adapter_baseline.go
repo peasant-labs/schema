@@ -64,3 +64,63 @@ func classify(err error) (string, int, error) {
 func recordedIndex(t schema.TranscriptCookTurn) (schema.TranscriptRecordedIndexState, *int) {
 	return schema.DecodeTranscriptRecordedIndex(t.Raw())
 }
+
+// turnFacts derives a partition index's per-turn values from Detail(), as
+// Village's partition build does on the released API.
+func turnFacts(t schema.TranscriptCookTurn) facts {
+	d := t.Detail()
+	usage := d.Usage != nil
+	for _, tool := range d.ToolCalls {
+		usage = usage || tool.Usage != nil
+	}
+	return facts{Index: d.Index, Role: string(d.Role), EntryType: string(d.EntryType), Depth: d.Depth, Usage: usage,
+		Conversation: schema.IsConversationTurn(d.Role, d.EntryType, d.Depth), ByteLength: schema.TranscriptTurnByteLength(d)}
+}
+
+// cutKept cuts the kept turns' details.
+func cutKept(turns []schema.TranscriptCookTurn, verdicts []schema.CookedTurn, budget int) ([]schema.TranscriptSegmentRef, error) {
+	details := make([]schema.TurnDetail, 0, len(turns))
+	for i, v := range verdicts {
+		if v.Keep {
+			details = append(details, turns[i].Detail())
+		}
+	}
+	return schema.CutTranscriptSegments(details, budget), nil
+}
+
+// partitionPass is Village's partition build on the released API.
+func partitionPass(doc []byte) (int, error) {
+	turns, err := schema.NewTranscriptCookTurns(doc)
+	if err != nil {
+		return 0, err
+	}
+	verdicts, err := schema.CookTranscriptRows(turns, schema.HarnessClaudeCode)
+	if err != nil {
+		return 0, err
+	}
+	details := make([]schema.TurnDetail, 0, len(turns))
+	sink := 0
+	for i, turn := range turns {
+		if !verdicts[i].Keep {
+			continue
+		}
+		detail := turn.Detail()
+		details = append(details, detail)
+		if detail.Usage != nil {
+			sink++
+		}
+		for _, tool := range detail.ToolCalls {
+			if tool.Usage != nil {
+				sink++
+			}
+		}
+		if _, index := schema.DecodeTranscriptRecordedIndex(turn.Raw()); index != nil {
+			sink += *index
+		}
+		if schema.IsConversationTurn(detail.Role, detail.EntryType, detail.Depth) {
+			sink++
+		}
+		sink += schema.TranscriptTurnByteLength(detail)
+	}
+	return sink + len(schema.CutTranscriptSegments(details, schema.TranscriptSegmentBudgetBytes)), nil
+}
