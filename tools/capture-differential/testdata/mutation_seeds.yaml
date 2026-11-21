@@ -1,0 +1,55 @@
+# Seeds for the differential's seeded mutations. Each seed is mutated by every
+# mutator of the closed list; inputs bounds the total mutated inputs.
+inputs: 19600
+mutators: [byte-flip, byte-delete, truncate, duplicate-member, unicode-escape, insert-multibyte, nest-in-array]
+seeds:
+  - name: plain-turns
+    detail: '{"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-01-01T00:00:00Z","depth":0},{"index":1,"role":"assistant","content":"hi there","depth":0}]}'
+  - name: escaped-multibyte-turn
+    detail: '{"turns":[{"index":0,"role":"user","content":" \" \\ \u00e9 \ud83d\ude00 中文","depth":0}]}'
+  - name: tool-call-evidence
+    detail: '{"turns":[{"index":0,"role":"assistant","content":"","toolCalls":[{"id":"t1","name":"Read","arguments":"{\"path\":\"é\\中文\"}","result":"ok","resultEntryRef":"ref-1"}]}]}'
+  - name: image-part
+    detail: '{"turns":[{"index":0,"role":"user","content":"","contentParts":[{"type":"image","image":{"omittedReason":"not_published"}}]}]}'
+  - name: text-parts
+    detail: '{"turns":[{"index":0,"role":"user","content":"ab","contentParts":[{"type":"text","text":"a"},{"type":"text","text":"b"}]}]}'
+  - name: usage-turn
+    detail: '{"turns":[{"index":0,"role":"assistant","content":"x","usage":{"ownerId":"o","sourceEntryRef":"r","scope":"turn","completeness":"partial","tokens":{"input":5}}}]}'
+  - name: provenance-turn
+    detail: '{"turns":[{"index":0,"role":"user","content":"typed","sourceEntryRef":"e-1","provenance":{"origin":"human","actor":"user","delivery":"typed"}}]}'
+  - name: control-turn
+    detail: '{"turns":[{"index":0,"role":"system","content":"mode","controlKind":"mode"},{"index":1,"role":"user","content":"go"}]}'
+  - name: duplicate-content-turns
+    detail: '{"turns":[{"index":0,"role":"user","content":"same"},{"index":1,"role":"user","content":"same"}]}'
+  - name: subagent-depth
+    detail: '{"turns":[{"index":0,"role":"user","content":"task","depth":0},{"index":1,"role":"assistant","content":"sub","depth":1,"parentIndex":0,"agentName":"a"}]}'
+  - name: session-detail-root
+    detail: '{"id":"s","harness":"claude-code","startTime":"2026-01-01T00:00:00Z","turnCount":1,"turns":[{"index":0,"role":"user","content":"a"}],"earlierHistory":[]}'
+  - name: escaped-names
+    detail: '{"t\u0075rns":[{"\u0069ndex":3,"r\u006fle":"user","content":"a"}]}'
+  - name: recorded-index-states
+    detail: '{"turns":[{"index":-1,"role":"user","content":"a"},{"index":null,"role":"user","content":"b"},{"Index":4,"role":"user","content":"c"}]}'
+  - name: surrogate-pair
+    detail: '{"turns":[{"role":"user","content":"\ud83d\ude00\ud83d\ude01"}]}'
+  - name: whitespace
+    detail: "{ \"turns\" : [ { \"index\" : 0 , \"role\" : \"user\" , \"content\" : \"a\" } , { \"index\" : 1 } ] }"
+  - name: numbers
+    detail: '{"turns":[{"index":0,"role":"assistant","content":"n","tokensIn":12,"tokensOut":0,"toolCalls":[{"id":"x","name":"y","arguments":"","result":"","durationMs":15,"exitCode":-1}]}]}'
+  - name: nested-arrays
+    detail: '{"turns":[{"index":0,"role":"user","content":"a","x":[[[{"y":[1,2,{"z":null}]}]]]}]}'
+  - name: thinking
+    detail: '{"turns":[{"index":0,"role":"assistant","content":"t","hasThinking":true,"thinkingLevel":"high","stopReason":"end_turn","entryType":"assistant"}]}'
+  - name: html-and-separators
+    detail: "{\"turns\":[{\"index\":0,\"role\":\"user\",\"content\":\"<a href=\\\"x\\\">&amp;\u2028\u2029</a>\"}]}"
+  - name: control-escapes
+    detail: '{"turns":[{"index":0,"role":"user","content":"\n\t\r\b\f\u0000\u001f\/"}]}'
+  - name: meta-outside-turns
+    detail: '{"meta":{"a":1,"a":2,"s":"\ud800"},"turns":[{"index":0,"role":"user","content":"a"}]}'
+  - name: many-members
+    detail: '{"turns":[{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6,"g":7,"h":8,"i":9,"j":10,"k":11,"l":12,"m":13,"n":14,"o":15,"p":16,"q":17,"r":18,"s":19,"index":0,"role":"user","content":"x"}]}'
+  - name: empty-and-null-turns
+    detail: '{"turns":[{},{"role":null,"content":null}]}'
+  - name: call-provenance
+    detail: '{"turns":[{"index":0,"role":"assistant","content":"","toolCalls":[{"id":"t","name":"n","arguments":"a","result":"r","callEntryRef":"c-1","callProvenance":{"origin":"agent","actor":"assistant","delivery":"tool"}}]}]}'
+  - name: three-turns-for-cut
+    detail: '{"turns":[{"index":0,"role":"user","content":"abc"},{"index":1,"role":"assistant","content":"de"},{"index":2,"role":"user","content":"f"}]}'
