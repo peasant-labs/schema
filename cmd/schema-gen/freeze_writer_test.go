@@ -68,6 +68,10 @@ func TestFreezeWriterCoverage(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			dir := filepath.Join(t.TempDir(), "repository")
 			copyFreezeSource(t, root, dir)
+			baseline, err := calculateSurfaceStates(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
 			for _, edit := range c.Input.Edits {
 				filename := filepath.Join(dir, edit.Path)
 				data, err := os.ReadFile(filename)
@@ -94,6 +98,11 @@ func TestFreezeWriterCoverage(t *testing.T) {
 			plan := freezePlan{Plan: 1, FreezeFloor: strings.Repeat("a", 40)}
 			for _, row := range state.Surfaces {
 				ahead := slices.Contains(c.Input.Ahead, row.Name)
+				for _, initial := range baseline.Surfaces {
+					if initial.Name == row.Name && initial.State == surfaceAhead {
+						ahead = true
+					}
+				}
 				if (row.State == surfaceAhead) != ahead {
 					t.Fatalf("surface %s state = %s, expected ahead=%v", row.Name, row.State, ahead)
 				}

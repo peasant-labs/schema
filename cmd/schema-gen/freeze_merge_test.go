@@ -54,6 +54,10 @@ func TestFreezeMergeFreshness(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			dir := filepath.Join(t.TempDir(), "repository")
 			copyFreezeSource(t, root, dir)
+			baseline, err := calculateSurfaceStates(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
 			deps := filepath.Join(root, "typescript", "node_modules")
 			_, depsErr := os.Stat(filepath.Join(deps, ".bin", "openapi-ts"))
 			_, pnpmErr := exec.LookPath("pnpm")
@@ -103,7 +107,13 @@ func TestFreezeMergeFreshness(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, row := range docsState.Surfaces {
-				if slices.Contains(c.Input.Ahead, row.Name) && row.State != surfaceDocsAhead {
+				initiallyAhead := false
+				for _, initial := range baseline.Surfaces {
+					if initial.Name == row.Name && initial.State == surfaceAhead {
+						initiallyAhead = true
+					}
+				}
+				if slices.Contains(c.Input.Ahead, row.Name) && !initiallyAhead && row.State != surfaceDocsAhead {
 					t.Fatalf("description-only %s state = %s, want docs-ahead", row.Name, row.State)
 				}
 			}
@@ -130,6 +140,11 @@ func TestFreezeMergeFreshness(t *testing.T) {
 			plan := freezePlan{Plan: 1}
 			for _, row := range state.Surfaces {
 				ahead := slices.Contains(c.Input.Ahead, row.Name)
+				for _, initial := range baseline.Surfaces {
+					if initial.Name == row.Name && initial.State == surfaceAhead {
+						ahead = true
+					}
+				}
 				if (row.State == surfaceAhead) != ahead {
 					t.Fatalf("surface %s state = %s, expected ahead=%v", row.Name, row.State, ahead)
 				}
