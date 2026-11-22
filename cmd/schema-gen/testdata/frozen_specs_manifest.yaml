@@ -10,3 +10,8 @@ requiredNames:
   - village-api-0.43.0
   - publish-request-0.43.0.schema
   - annotation-push-request-0.43.0.schema
+  - types-0.54.0
+  - village-api-0.44.0
+  - publish-request-0.44.0.schema
+  - annotation-push-request-0.44.0.schema
+  - peasantlocal-api-0.40.0

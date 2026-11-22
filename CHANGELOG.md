@@ -3,6 +3,12 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.62.0
+
+- capture served turns in one pass with the recorded index (#288)
+- declare positioned segmented reads and export the numbering corpus (#286) (BREAKING)
+- declare paged, snapshot, picker and selection operations for contribution (#295) (BREAKING)
+
 ## 0.61.0
 
 - declare every route Village mounts (#285) (BREAKING)

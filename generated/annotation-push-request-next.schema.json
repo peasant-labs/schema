@@ -541,7 +541,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:peasant:annotation-push-request:0.43.0",
+  "$id": "urn:peasant:annotation-push-request:0.44.0",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "JSON Schema for the Village annotation push request wire format, extracted from the village-api OpenAPI spec (peasant is the source of truth; the village vendors + enforces this schema).",
   "properties": {

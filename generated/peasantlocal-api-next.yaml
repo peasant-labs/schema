@@ -3,7 +3,7 @@ info:
   description: Local web dashboard API for viewing AI agent session analytics. Includes
     REST endpoints and WebSocket channel message schemas.
   title: Peasant Local Dashboard API
-  version: 0.39.0
+  version: 0.40.0
 paths:
   /api/v1/annotation-types:
     get:
