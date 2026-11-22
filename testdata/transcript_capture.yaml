@@ -1,0 +1,1509 @@
+# Capture verdicts of schema.NewTranscriptCookTurns. Expected values are
+# written only by the baseline build of tools/capture-differential
+# (make capture-differential RECORD=1), never from the code under test.
+# Inputs: detail is the document text; bytes is a Go double-quoted literal for
+# bytes YAML cannot carry; nest generates a document of the given total depth.
+recordedIndex:
+  cases:
+    - name: recorded-index-present-zero
+      classification: must-pass
+      provenance: &index {source: requirement, ref: "The captured turn reads its recorded index with the rule DecodeTranscriptRecordedIndex applies"}
+      mutation: {description: "Zero is a present index"}
+      input: {detail: '{"turns":[{"index":0,"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: ee4bb6d74f99f8b9cec3512d9cf135036fa64ac173c16b299948526f61c8565c
+            recordedIndex: present:0
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+    - name: recorded-index-present-safe-maximum
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "The JavaScript-safe maximum is present on a 64-bit int"}
+      input: {detail: '{"turns":[{"index":9007199254740991,"role":"user","content":"a"}]}', arch64Only: true}
+      expected:
+        turns:
+          - index: 9007199254740991
+            raw: 663b600112bd608d918014e92d3e13294348aa1ae9e8b35264e2de8afcc3aa84
+            recordedIndex: present:9007199254740991
+            byteLength: 3
+            detail: 344ff319539f1eb6a25e3d89deaa1f2aa5035586f075867b8acdd3ccafd0358b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 9007199254740991-9007199254740991 3B 0+0]
+          one: [0 9007199254740991-9007199254740991 3B 0+0]
+        kept:
+          budget: [0 9007199254740991-9007199254740991 3B 0+0]
+          one: [0 9007199254740991-9007199254740991 3B 0+0]
+    - name: recorded-index-above-safe-maximum-invalid
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "One above the safe maximum is invalid"}
+      input: {detail: '{"turns":[{"index":9007199254740992,"role":"user","content":"a"}]}', arch64Only: true}
+      expected:
+        turns:
+          - index: 9007199254740992
+            raw: edffc88e88357233be79a2b0feb04330ee470f8647e15ce0182cdedcf6616f9c
+            recordedIndex: invalid
+            byteLength: 3
+            detail: c7d1a71c06e915aa34c9c846e88c1baf760e8fa4de126d4f0532097f1b851570
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 9007199254740992-9007199254740992 3B 0+0]
+          one: [0 9007199254740992-9007199254740992 3B 0+0]
+        kept:
+          budget: [0 9007199254740992-9007199254740992 3B 0+0]
+          one: [0 9007199254740992-9007199254740992 3B 0+0]
+    - name: recorded-index-negative-invalid
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "A negative index is invalid"}
+      input: {detail: '{"turns":[{"index":-1,"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: -1
+            raw: 3abb1757f6fa5625e0a50e8eee09b6d92727b594e179934d82383a5ee73270a3
+            recordedIndex: invalid
+            byteLength: 3
+            detail: 22b3e15fd1965ce0ed923fb2df0d245335c50390ccc9ec534b6e63d24781e7f7
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 -1--1 3B 0+0]
+          one: [0 -1--1 3B 0+0]
+        kept:
+          budget: [0 -1--1 3B 0+0]
+          one: [0 -1--1 3B 0+0]
+    - name: recorded-index-negative-zero-present
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "Negative zero parses as zero"}
+      input: {detail: '{"turns":[{"index":-0,"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: 3fcfb2c94eb9b165a589840e9ebf4441bbe56af4413b9ea92b32131a285ab833
+            recordedIndex: present:0
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+    - name: recorded-index-null-invalid
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "A null index is invalid, not absent"}
+      input: {detail: '{"turns":[{"index":null,"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: f8da0d8fb6755ab1724efc6b6e69fa1dcd6f41946504f531af203108f6eea776
+            recordedIndex: invalid
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+    - name: recorded-index-absent
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "No index member is absent"}
+      input: {detail: '{"turns":[{"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: 55576ddac5287160de3479f9d94833b0679fd25be1d85968405a7b73e24e0a06
+            recordedIndex: absent
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+    - name: recorded-index-case-variant-absent
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "Index is not the exact name, so the recorded index is absent while the typed decode reads 5"}
+      input: {detail: '{"turns":[{"Index":5,"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 5
+            raw: ac2fd9d729cfe9887cdc869ebebcf36ae87c7e368fc8a8305dcf9134efd2b11b
+            recordedIndex: absent
+            byteLength: 3
+            detail: aca1e895217dee31a67cce7e7f7eedab5dc10058b607b264e6ac5b9e5fe19181
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 5-5 3B 0+0]
+          one: [0 5-5 3B 0+0]
+        kept:
+          budget: [0 5-5 3B 0+0]
+          one: [0 5-5 3B 0+0]
+    - name: recorded-index-escaped-name-present
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "An escaped spelling of index decodes to the exact name"}
+      input: {detail: '{"turns":[{"\u0069ndex":7,"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 7
+            raw: c63d41041dc01f4afadcc2a906775faee4a4c4e7d86fb2acefec6d17dbe933b3
+            recordedIndex: present:7
+            byteLength: 3
+            detail: 08222cba773260b0f08270b3f38cba31dac18c3bc4e642d7b385040c4a5ea5d2
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 7-7 3B 0+0]
+          one: [0 7-7 3B 0+0]
+        kept:
+          budget: [0 7-7 3B 0+0]
+          one: [0 7-7 3B 0+0]
+    - name: recorded-index-whitespace-around-value
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "Whitespace around the value is not part of it"}
+      input: {detail: "{ \"turns\" : [ { \"index\" :\t 5 \n, \"role\":\"user\" } ] }"}
+      expected:
+        turns:
+          - index: 5
+            raw: 17e244e575f03824c4b18980f7cbfb8c6a3b366dfa063904c738066ece9d047e
+            recordedIndex: present:5
+            byteLength: 2
+            detail: 5dd91606865ba24994b27df292c5f84c36d365989096e51393c0663ac0f9b6ef
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [drop -1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 5-5 2B 0+0]
+          one: [0 5-5 2B 0+0]
+        kept:
+          budget: []
+          one: []
+    - name: recorded-index-after-multibyte-member
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "Multi-byte runes before the index do not move its offsets"}
+      input: {detail: "{\"turns\":[{\"content\":\"é中\U0001F600\",\"index\":3,\"role\":\"user\"}]}"}
+      expected:
+        turns:
+          - index: 3
+            raw: f25b341f2a10fd9683cc73f5c2f381bcae9e34e06a2cebed8db822dabb56c46a
+            recordedIndex: present:3
+            byteLength: 11
+            detail: 467f4354c674a5544439fd52a3f2a72e623eb55866b7ca035ea13e8aaf3671f0
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 3-3 11B 0+0]
+          one: [0 3-3 11B 0+0]
+        kept:
+          budget: [0 3-3 11B 0+0]
+          one: [0 3-3 11B 0+0]
+    - name: recorded-index-after-escaped-quote-member
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "An escaped quote before the index does not end the string early"}
+      input: {detail: '{"turns":[{"content":"a\"index\":9","index":3,"role":"user"}]}'}
+      expected:
+        turns:
+          - index: 3
+            raw: 3e736d6a61af4e7777631626f3cb6bb72f17709b0f974fc909fdf65ebe9744d9
+            recordedIndex: present:3
+            byteLength: 14
+            detail: 6a7a7f4361fa21d0369c7f0ce1d60a7f12c8ff698778c2859144de907ce04804
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 3-3 14B 0+0]
+          one: [0 3-3 14B 0+0]
+        kept:
+          budget: [0 3-3 14B 0+0]
+          one: [0 3-3 14B 0+0]
+    - name: recorded-index-mixed-states-pair-by-position
+      classification: must-pass
+      provenance: *index
+      mutation: {description: "Each turn pairs with its own index state in stored order"}
+      input: {detail: '{"turns":[{"index":0,"role":"user","content":"a"},{"role":"assistant","content":"b"},{"index":-1,"role":"user","content":"c"},{"index":2,"role":"assistant","content":"d"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: ee4bb6d74f99f8b9cec3512d9cf135036fa64ac173c16b299948526f61c8565c
+            recordedIndex: present:0
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+          - index: 0
+            raw: 8fa6230b30d30a4bb3194567321438f616eded202308c5f8c0e7dd6beda16db8
+            recordedIndex: absent
+            byteLength: 3
+            detail: 6132f99b195c663463fa4685c166fab4130431e7de2fcd06cdd85b4344ea8533
+            role: assistant
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+          - index: -1
+            raw: 6d310ed37ef7100d41cd288e9b908b0dd7c8246907685e43d960696eae9d3b99
+            recordedIndex: invalid
+            byteLength: 3
+            detail: d83007f77d4ccc8caa852d198550cf7577363defba461d231139f126512b4a33
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+          - index: 2
+            raw: 216bb19f81de008bc5748478ac612ea1d72cea3578334c31ef3ce1d0e104051a
+            recordedIndex: present:2
+            byteLength: 3
+            detail: e17d29ca294e080733c8cc6460a9eb80f85e3cb7f862fac103ba093c7618c9fd
+            role: assistant
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1, keep 1 1a, keep 2 2, keep 3 2a]
+          pi: [keep 0 1, keep 1 1a, keep 2 2, keep 3 2a]
+        cuts:
+          budget: [0 0-2 12B 0+0]
+          one: [0 0-0 3B 0+0, 1 0-0 3B 0+0, 2 -1--1 3B 0+0, 3 2-2 3B 0+0]
+          fit: [0 0-0 6B 0+0, 1 -1-2 6B 0+0]
+          fitBelow: [0 0-0 3B 0+0, 1 0-0 3B 0+0, 2 -1--1 3B 0+0, 3 2-2 3B 0+0]
+        kept:
+          budget: [0 0-2 12B 0+0]
+          one: [0 0-0 3B 0+0, 1 0-0 3B 0+0, 2 -1--1 3B 0+0, 3 2-2 3B 0+0]
+verdicts:
+  cases:
+    - name: capture-accept-turns-absent
+      classification: must-pass
+      provenance: &doc {source: requirement, ref: "Capture refusal precedence: document checks before turns"}
+      mutation: {description: "No turns member gives zero turns"}
+      input: {detail: '{}'}
+      expected:
+        cook:
+          claudeCode: []
+          pi: []
+        cuts:
+          budget: []
+          one: []
+        kept:
+          budget: []
+          one: []
+    - name: capture-accept-turns-null
+      classification: must-pass
+      provenance: *doc
+      mutation: {description: "A null turns member gives zero turns"}
+      input: {detail: '{"turns":null}'}
+      expected:
+        cook:
+          claudeCode: []
+          pi: []
+        cuts:
+          budget: []
+          one: []
+        kept:
+          budget: []
+          one: []
+    - name: capture-accept-turns-empty
+      classification: must-pass
+      provenance: *doc
+      mutation: {description: "An empty array gives zero turns"}
+      input: {detail: '{"turns":[]}'}
+      expected:
+        cook:
+          claudeCode: []
+          pi: []
+        cuts:
+          budget: []
+          one: []
+        kept:
+          budget: []
+          one: []
+    - name: capture-refuse-invalid-utf8-outside-turns
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "Invalid UTF-8 outside the turns refuses the document"}
+      input: {bytes: '"{\"x\":\"\xff\",\"turns\":[]}"'}
+      expected:
+        refusal: document-invalid
+        turn: -1
+    - name: capture-refuse-invalid-utf8-inside-turn
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "Invalid UTF-8 inside a turn refuses the document, not the turn"}
+      input: {bytes: '"{\"turns\":[{\"content\":\"\xc3\x28\"}]}"'}
+      expected:
+        refusal: document-invalid
+        turn: -1
+    - name: capture-refuse-trailing-value
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "A second JSON value refuses the document"}
+      input: {detail: '{"turns":[]} {}'}
+      expected:
+        refusal: document-invalid
+        turn: -1
+    - name: capture-refuse-byte-order-mark
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "A byte order mark is not JSON whitespace"}
+      input: {bytes: '"\xef\xbb\xbf{\"turns\":[]}"'}
+      expected:
+        refusal: document-invalid
+        turn: -1
+    - name: capture-accept-depth-10000-in-turn
+      classification: must-pass
+      provenance: *doc
+      mutation: {description: "Total nesting of 10,000 is within the decoder limit"}
+      input: {nest: {depth: 10000, where: turn}}
+      expected:
+        turns:
+          - index: 0
+            raw: d83271ab2ecef5f0f8482af03657dcd97d7855017c9b390a985ed18257c0bf3d
+            recordedIndex: absent
+            byteLength: 2
+            detail: 7103b9e9ffef063a6ad4d47dda7fa6734f25c6053845a908190037b7cdbc32eb
+            role: ""
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [drop -1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 2B 0+0]
+          one: [0 0-0 2B 0+0]
+        kept:
+          budget: []
+          one: []
+    - name: capture-refuse-depth-10001-in-turn
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "Total nesting of 10,001 inside a turn refuses the document"}
+      input: {nest: {depth: 10001, where: turn}}
+      expected:
+        refusal: document-invalid
+        turn: -1
+    - name: capture-refuse-depth-10001-outside-turns
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "Total nesting of 10,001 outside the turns refuses the document"}
+      input: {nest: {depth: 10001, where: outside}}
+      expected:
+        refusal: document-invalid
+        turn: -1
+    - name: capture-refuse-root-array
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "A root array is not a session detail object"}
+      input: {detail: '[]'}
+      expected:
+        refusal: document-not-object
+        turn: -1
+    - name: capture-refuse-root-duplicate-member
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "Two root members share a name"}
+      input: {detail: '{"a":1,"a":2,"turns":[]}'}
+      expected:
+        refusal: document-duplicate-member
+        turn: -1
+    - name: capture-refuse-root-duplicate-turns-member
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "Two root turns members"}
+      input: {detail: '{"turns":[],"turns":[]}'}
+      expected:
+        refusal: document-duplicate-member
+        turn: -1
+    - name: capture-refuse-root-duplicate-after-bad-turn
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "A root duplicate after a refused turn is still a document refusal"}
+      input: {detail: '{"turns":[null],"x":1,"x":2}'}
+      expected:
+        refusal: document-duplicate-member
+        turn: -1
+    - name: capture-refuse-root-names-collide-after-surrogate-replacement
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "Two unpaired surrogate names both decode to U+FFFD"}
+      input: {detail: '{"\ud800":1,"\udfff":2,"turns":[]}'}
+      expected:
+        refusal: document-duplicate-member
+        turn: -1
+    - name: capture-refuse-envelope
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "An envelope is refused"}
+      input: {detail: '{"sessionDetail":{"turns":[]}}'}
+      expected:
+        refusal: document-envelope
+        turn: -1
+    - name: capture-refuse-envelope-escaped-name
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "An escaped sessionDetail name is still an envelope"}
+      input: {detail: '{"session\u0044etail":{}}'}
+      expected:
+        refusal: document-envelope
+        turn: -1
+    - name: capture-refuse-envelope-before-bad-turn
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "The envelope outranks a refused turn"}
+      input: {detail: '{"turns":[null],"sessionDetail":{}}'}
+      expected:
+        refusal: document-envelope
+        turn: -1
+    - name: capture-accept-escaped-turns-name
+      classification: must-pass
+      provenance: *doc
+      mutation: {description: "An escaped turns name decodes to turns"}
+      input: {detail: '{"t\u0075rns":[{"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: 55576ddac5287160de3479f9d94833b0679fd25be1d85968405a7b73e24e0a06
+            recordedIndex: absent
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+    - name: capture-refuse-turns-object
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "turns is an object"}
+      input: {detail: '{"turns":{}}'}
+      expected:
+        refusal: turns-not-array
+        turn: -1
+    - name: capture-refuse-turns-string
+      classification: must-fail
+      provenance: *doc
+      mutation: {description: "turns is a string"}
+      input: {detail: '{"turns":"x"}'}
+      expected:
+        refusal: turns-not-array
+        turn: -1
+    - name: capture-accept-nested-duplicate-outside-turns
+      classification: must-pass
+      provenance: *doc
+      mutation: {description: "Nested duplicates outside the turns are not checked"}
+      input: {detail: '{"meta":{"a":1,"a":2},"turns":[]}'}
+      expected:
+        cook:
+          claudeCode: []
+          pi: []
+        cuts:
+          budget: []
+          one: []
+        kept:
+          budget: []
+          one: []
+    - name: capture-accept-unpaired-surrogate-outside-turns
+      classification: must-pass
+      provenance: *doc
+      mutation: {description: "Unpaired surrogates outside the turns are not checked"}
+      input: {detail: '{"meta":"\ud800","turns":[{"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: 55576ddac5287160de3479f9d94833b0679fd25be1d85968405a7b73e24e0a06
+            recordedIndex: absent
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+    - name: capture-refuse-turn-unpaired-high-surrogate
+      classification: must-fail
+      provenance: &turn {source: requirement, ref: "Capture refusal precedence within a turn: escapes, duplicates, object, typed decode"}
+      mutation: {description: "An unpaired high surrogate"}
+      input: {detail: '{"turns":[{"content":"\ud800"}]}'}
+      expected:
+        refusal: turn-unicode-escape
+        turn: 0
+    - name: capture-refuse-turn-unpaired-low-surrogate
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A lone low surrogate"}
+      input: {detail: '{"turns":[{"content":"\udc00"}]}'}
+      expected:
+        refusal: turn-unicode-escape
+        turn: 0
+    - name: capture-refuse-turn-high-surrogate-then-non-low
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A high surrogate followed by a non-surrogate escape"}
+      input: {detail: '{"turns":[{"content":"\ud800\u0041"}]}'}
+      expected:
+        refusal: turn-unicode-escape
+        turn: 0
+    - name: capture-accept-turn-valid-surrogate-pair
+      classification: must-pass
+      provenance: *turn
+      mutation: {description: "A valid pair is accepted"}
+      input: {detail: '{"turns":[{"role":"user","content":"\ud83d\ude00"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: fcb9167a17199e29b4497a0fd546ca2935c3ea7df604f7a2bacb0f6b7931285c
+            recordedIndex: absent
+            byteLength: 6
+            detail: efc401d31e12e6373a9691ca96ea7e4736f39026bc693b6480dce76415c30132
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 6B 0+0]
+          one: [0 0-0 6B 0+0]
+        kept:
+          budget: [0 0-0 6B 0+0]
+          one: [0 0-0 6B 0+0]
+    - name: capture-refuse-turn-surrogate-in-name
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A member name holds an unpaired surrogate"}
+      input: {detail: '{"turns":[{"\ud800":1}]}'}
+      expected:
+        refusal: turn-unicode-escape
+        turn: 0
+    - name: capture-refuse-turn-surrogate-beats-earlier-duplicate
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "The escape check covers the whole turn before duplicates"}
+      input: {detail: '{"turns":[{"a":1,"a":2,"b":"\ud800"}]}'}
+      expected:
+        refusal: turn-unicode-escape
+        turn: 0
+    - name: capture-refuse-turn-duplicate-member
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A repeated top-level member"}
+      input: {detail: '{"turns":[{"role":"user","role":"user"}]}'}
+      expected:
+        refusal: turn-duplicate-member
+        turn: 0
+    - name: capture-refuse-turn-duplicate-escaped-name
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "An escaped spelling repeats a member"}
+      input: {detail: '{"turns":[{"role":"user","r\u006fle":"user"}]}'}
+      expected:
+        refusal: turn-duplicate-member
+        turn: 0
+    - name: capture-refuse-turn-nested-duplicate
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A duplicate member in a nested object"}
+      input: {detail: '{"turns":[{"toolCalls":[{"id":"a","id":"b"}]}]}'}
+      expected:
+        refusal: turn-duplicate-member
+        turn: 0
+    - name: capture-accept-turn-case-variant-names
+      classification: must-pass
+      provenance: *turn
+      mutation: {description: "Case variants are distinct exact names"}
+      input: {detail: '{"turns":[{"role":"user","Role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: f257e51f6da12907e3e1448a7c1392013aa3ce43a4dd80804991b4564eb10a15
+            recordedIndex: absent
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+    - name: capture-refuse-turn-null
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A null turn"}
+      input: {detail: '{"turns":[null]}'}
+      expected:
+        refusal: turn-not-object
+        turn: 0
+    - name: capture-refuse-turn-array-with-nested-duplicate
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A non-object turn with a nested duplicate is a duplicate refusal"}
+      input: {detail: '{"turns":[[{"a":1,"a":2}]]}'}
+      expected:
+        refusal: turn-duplicate-member
+        turn: 0
+    - name: capture-refuse-turn-string-with-surrogate
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A string turn with a surrogate is an escape refusal"}
+      input: {detail: '{"turns":["\ud800"]}'}
+      expected:
+        refusal: turn-unicode-escape
+        turn: 0
+    - name: capture-refuse-turn-type-mismatch
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A member value of the wrong type"}
+      input: {detail: '{"turns":[{"role":"assistant","content":true}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 0
+    - name: capture-refuse-turn-index-fraction
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A fractional index cannot decode into an int"}
+      input: {detail: '{"turns":[{"index":1.5}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 0
+    - name: capture-refuse-first-bad-turn-wins
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "The first refusing turn in stored order is reported"}
+      input: {detail: '{"turns":[{"role":"user","content":"a"},{"content":1},null,{"a":1,"a":2}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 1
+    - name: capture-accept-escaped-multibyte-turn
+      classification: must-pass
+      provenance: *turn
+      mutation: {description: "Escapes and multi-byte text are accepted and measured"}
+      input: {detail: '{"turns":[{"role":"user","content":" \" \\ \u00e9 \ud83d\ude00 中文"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: ee803a5a4123ddca801274faf76c6645bdc672191ae5ec6d61c75353a4fde0da
+            recordedIndex: absent
+            byteLength: 23
+            detail: c1c74ae888092c058a9621ceeb7ce230e57e0451947fdbe5d2699b797b297488
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 23B 0+0]
+          one: [0 0-0 23B 0+0]
+        kept:
+          budget: [0 0-0 23B 0+0]
+          one: [0 0-0 23B 0+0]
+    - name: capture-refuse-turn-string-index
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A string index cannot decode into an int"}
+      input: {detail: '{"turns":[{"index":"1"}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 0
+    - name: capture-refuse-turn-exponent-depth
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "An exponent depth cannot decode into an int"}
+      input: {detail: '{"turns":[{"depth":1e2}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 0
+    - name: capture-refuse-turn-index-overflow
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "An index beyond 64 bits cannot decode into an int"}
+      input: {detail: '{"turns":[{"index":99999999999999999999}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 0
+    - name: capture-refuse-turn-bool-from-string
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A string cannot decode into a bool field"}
+      input: {detail: '{"turns":[{"hasThinking":"yes"}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 0
+    - name: capture-refuse-turn-invalid-timestamp
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A timestamp that is not RFC 3339 is refused"}
+      input: {detail: '{"turns":[{"timestamp":"yesterday"}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 0
+    - name: capture-refuse-turn-nested-type-mismatch
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A tool call member of the wrong type is refused"}
+      input: {detail: '{"turns":[{"toolCalls":[{"id":5}]}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 0
+    - name: capture-accept-turn-null-scalars
+      classification: must-pass
+      provenance: *turn
+      mutation: {description: "Null leaves scalar fields at their zero values"}
+      input: {detail: '{"turns":[{"index":null,"depth":null,"hasThinking":null,"role":null,"content":null,"timestamp":null}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: 9335d69f2e685020c69689fa5d67adcfc13276fd7a99a73325f7c3c3d6f1e540
+            recordedIndex: invalid
+            byteLength: 2
+            detail: 7103b9e9ffef063a6ad4d47dda7fa6734f25c6053845a908190037b7cdbc32eb
+            role: ""
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [drop -1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 2B 0+0]
+          one: [0 0-0 2B 0+0]
+        kept:
+          budget: []
+          one: []
+    - name: capture-accept-turn-fold-variant-name
+      classification: must-pass
+      provenance: *turn
+      mutation: {description: "A case-folded member name decodes into its field"}
+      input: {detail: '{"turns":[{"ROLE":"user","Content":"a","DEPTH":0}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: 938bada70ce6201d0d90e5356fab7112838e5610160343b69cc8e6c07654b7e9
+            recordedIndex: absent
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [drop -1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: []
+          one: []
+    - name: capture-refuse-turn-fold-variant-wrong-type
+      classification: must-fail
+      provenance: *turn
+      mutation: {description: "A case-folded repeat of a field with the wrong type is refused"}
+      input: {detail: '{"turns":[{"role":"user","ROLE":5}]}'}
+      expected:
+        refusal: turn-type-mismatch
+        turn: 0
+    - name: capture-accept-turn-unicode-fold-name
+      classification: must-pass
+      provenance: *turn
+      mutation: {description: "A long s folds to s in a member name"}
+      input: {detail: '{"turns":[{"ſourceEntryRef":"x","role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: b9c9ca6302d35009ac48a8dc7ef8242da5ba231c84fe72ac2c86260f9dda6aed
+            recordedIndex: absent
+            byteLength: 3
+            detail: 5d8e64a6a6708989e693b487237ec34b9f4d769ef6eceb266b44582337e8a57d
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+    - name: capture-accept-turn-unknown-members
+      classification: must-pass
+      provenance: *turn
+      mutation: {description: "Members that match no field are ignored"}
+      input: {detail: '{"turns":[{"zzz":{"a":[1,{"b":null}]},"role":"user","content":"a"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: b7e375b1f22484ba9e4454cb56f89dad0abe41d9694d84d3e8e733165ea80423
+            recordedIndex: absent
+            byteLength: 3
+            detail: 7192ecf1f8c5d18aeb194ec73fe7859fb8adf3bd04b7b3830fe39f50f702623b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+        kept:
+          budget: [0 0-0 3B 0+0]
+          one: [0 0-0 3B 0+0]
+    - name: capture-accept-turn-escaped-field-values
+      classification: must-pass
+      provenance: *turn
+      mutation: {description: "Escaped field values decode as encoding/json decodes them"}
+      input: {detail: '{"turns":[{"role":"\u0075ser","content":"a\nb","agentName":"\u00e9"}]}'}
+      expected:
+        turns:
+          - index: 0
+            raw: 7edc462db62b15883e1d078f35c1a701ae71a10d30592eecd72f7b71464532f4
+            recordedIndex: absent
+            byteLength: 6
+            detail: 6a5e5e33e01b396aa8be7cc80fafa49d9cda3b4cb2d58b25931bb64bed1e2bd4
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 6B 0+0]
+          one: [0 0-0 6B 0+0]
+        kept:
+          budget: [0 0-0 6B 0+0]
+          one: [0 0-0 6B 0+0]
+    - name: capture-accept-turn-full-shape
+      classification: must-pass
+      provenance: *turn
+      mutation: {description: "Every kind of turn field decodes"}
+      input: {detail: '{"turns":[{"index":3,"role":"assistant","content":"c","contentParts":[{"type":"text","text":"c"}],"toolCalls":[{"id":"t","name":"n","arguments":"a","result":"r","durationMs":2,"isError":true}],"timestamp":"2026-01-01T00:00:00Z","depth":1,"parentIndex":2,"agentName":"a","hasThinking":true,"tokensIn":5,"tokensOut":6,"controlKind":"mode","entryType":"assistant"}]}'}
+      expected:
+        turns:
+          - index: 3
+            raw: 0da74ab6191367f7392b8ab05afa6b352014f78faa9ce44fa2d58785c5b5c634
+            recordedIndex: present:3
+            byteLength: 12
+            detail: 4b22945813ab75422b1c0ca09bd93aa53c0b05c0862811a0983154eba777f67a
+            role: assistant
+            entryType: assistant
+            depth: 1
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 3-3 12B 0+0]
+          one: [0 3-3 12B 0+0]
+        kept:
+          budget: [0 3-3 12B 0+0]
+          one: [0 3-3 12B 0+0]
+mutants:
+  cases:
+    - name: mutant-duplicate-turn-member
+      classification: must-fail
+      provenance: &mutant {source: requirement, ref: "Mutations the capture differential must catch"}
+      mutation: {description: "A repeated content member, which a last-wins capture would accept"}
+      input: {detail: '{"turns":[{"role":"user","content":"a","content":"b"}]}', kills: last-duplicate-wins}
+      expected:
+        refusal: turn-duplicate-member
+        turn: 0
+    - name: mutant-duplicate-root-member
+      classification: must-fail
+      provenance: *mutant
+      mutation: {description: "A repeated root turns member, which a last-wins capture would read as empty"}
+      input: {detail: '{"turns":[{"role":"user","content":"a"}],"turns":[]}', kills: last-duplicate-wins}
+      expected:
+        refusal: document-duplicate-member
+        turn: -1
+    - name: mutant-duplicate-escaped-name
+      classification: must-fail
+      provenance: *mutant
+      mutation: {description: "An escaped repeat of index, which a last-wins capture would read as 2"}
+      input: {detail: '{"turns":[{"index":1,"\u0069ndex":2,"role":"user"}]}', kills: last-duplicate-wins}
+      expected:
+        refusal: turn-duplicate-member
+        turn: 0
+    - name: mutant-escaped-quote-then-member-lookalike
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "Escaped quotes spell a lookalike index member inside a string"}
+      input: {detail: '{"turns":[{"content":"x\",\"index\":9,\"y\":\"","index":3,"role":"user"}]}', kills: offset-after-escaped-quote}
+      expected:
+        turns:
+          - index: 3
+            raw: 88b3f60228759a073ca89bbedf9d0bcc34862caa6b52ba04054fcb2f8eae2280
+            recordedIndex: present:3
+            byteLength: 26
+            detail: 15657a0cfd6f6805eaf8bd544dcefb21b39e3900d9fc4cd6e5ff158311dc1353
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 3-3 26B 0+0]
+          one: [0 3-3 26B 0+0]
+        kept:
+          budget: [0 3-3 26B 0+0]
+          one: [0 3-3 26B 0+0]
+    - name: mutant-escaped-backslash-before-closing-quote
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "An escaped backslash ends right before the closing quote"}
+      input: {detail: '{"turns":[{"content":"a\\","index":4,"role":"user"}]}', kills: offset-after-escaped-quote}
+      expected:
+        turns:
+          - index: 4
+            raw: 2d914125e1c07053b0c42a16886e31cf7d9b69f2c9b73f4615fa04c80223734c
+            recordedIndex: present:4
+            byteLength: 5
+            detail: 89187ba26ee87e757b3a064befe77a85bc20fee2042166d1a0b34924668a34be
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 4-4 5B 0+0]
+          one: [0 4-4 5B 0+0]
+        kept:
+          budget: [0 4-4 5B 0+0]
+          one: [0 4-4 5B 0+0]
+    - name: mutant-two-byte-rune-before-index
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "A two-byte rune before the index"}
+      input: {detail: '{"turns":[{"content":"é","index":5,"role":"user"}]}', kills: offset-after-multibyte-rune}
+      expected:
+        turns:
+          - index: 5
+            raw: 3c6ba6e324e242617431f6c4c4804e46a9622bacde60a7800d4c550a95e59f00
+            recordedIndex: present:5
+            byteLength: 4
+            detail: 470341be006c131729d83025ad853bf51a5a13680cfa808e992568d54c193260
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 5-5 4B 0+0]
+          one: [0 5-5 4B 0+0]
+        kept:
+          budget: [0 5-5 4B 0+0]
+          one: [0 5-5 4B 0+0]
+    - name: mutant-three-byte-rune-before-index
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "A three-byte rune before the index"}
+      input: {detail: '{"turns":[{"content":"中","index":6,"role":"user"}]}', kills: offset-after-multibyte-rune}
+      expected:
+        turns:
+          - index: 6
+            raw: 4fc7641bee1712350e37f6c689810750ed7a44a7743a45f4c4785f00fb056b23
+            recordedIndex: present:6
+            byteLength: 5
+            detail: f08f5f5ff792f9102fa16a9edd1df70db7f0c55a1d0d66c7fa3b56f82b28b3ae
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 6-6 5B 0+0]
+          one: [0 6-6 5B 0+0]
+        kept:
+          budget: [0 6-6 5B 0+0]
+          one: [0 6-6 5B 0+0]
+    - name: mutant-four-byte-rune-before-index
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "A four-byte rune before the index"}
+      input: {detail: "{\"turns\":[{\"content\":\"\U0001F600\",\"index\":7,\"role\":\"user\"}]}", kills: offset-after-multibyte-rune}
+      expected:
+        turns:
+          - index: 7
+            raw: 7ea5ee11c364182f56079c76d5ce25405f042346b708378fe7be4eb88b586081
+            recordedIndex: present:7
+            byteLength: 6
+            detail: a8af5ef780a2297fb9cdef1c6275f52b5b475e3aae919439f27fc4f81c9985a0
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 7-7 6B 0+0]
+          one: [0 7-7 6B 0+0]
+        kept:
+          budget: [0 7-7 6B 0+0]
+          one: [0 7-7 6B 0+0]
+    - name: mutant-multibyte-member-name
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "A multi-byte member name before the index"}
+      input: {detail: '{"turns":[{"中文":1,"index":8,"role":"user"}]}', kills: offset-after-multibyte-rune}
+      expected:
+        turns:
+          - index: 8
+            raw: b810e784f889dff8082a3b39f99f43e8db18d4efd655fb63eabc208ae668ef33
+            recordedIndex: present:8
+            byteLength: 2
+            detail: 04a55082feba9540206072abee9115d32020c5a2ff658cb6df46701742d2e03b
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [drop -1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 8-8 2B 0+0]
+          one: [0 8-8 2B 0+0]
+        kept:
+          budget: []
+          one: []
+    - name: measure-escaped-latin-small-e-acute
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "An escaped e-acute is two bytes on the wire, not its six stored bytes"}
+      input: {detail: '{"turns":[{"role":"user","content":"\u00e9"}]}', kills: stored-length-measure}
+      expected:
+        turns:
+          - index: 0
+            raw: 25124c960efa109d35c9cef352e23cfd5e1222336f3049c77d43427861f67432
+            recordedIndex: absent
+            byteLength: 4
+            detail: 7870a18978d5452d1d34b7649008b0edae904f12f6b9dbc57cb6cfed94b60109
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 4B 0+0]
+          one: [0 0-0 4B 0+0]
+        kept:
+          budget: [0 0-0 4B 0+0]
+          one: [0 0-0 4B 0+0]
+    - name: measure-raw-html-characters
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "Raw HTML characters are escaped by the encoder"}
+      input: {detail: '{"turns":[{"role":"user","content":"<a>&"}]}', kills: stored-length-measure}
+      expected:
+        turns:
+          - index: 0
+            raw: f5a27deefd2196777c8f8ef2047686a97c28ae897e09351c384c788e4579da50
+            recordedIndex: absent
+            byteLength: 21
+            detail: 5b11f79dc2bc402ce1dbacf73a92d401fde5bcd041f976adaaf19866d93c1c01
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 21B 0+0]
+          one: [0 0-0 21B 0+0]
+        kept:
+          budget: [0 0-0 21B 0+0]
+          one: [0 0-0 21B 0+0]
+    - name: measure-escaped-solidus
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "An escaped solidus is one byte on the wire"}
+      input: {detail: '{"turns":[{"role":"user","content":"a\/b"}]}', kills: stored-length-measure}
+      expected:
+        turns:
+          - index: 0
+            raw: 4a28ce76b35e3c279008bdae50fada4217019913f5d812c8fc07b674e14bfcab
+            recordedIndex: absent
+            byteLength: 5
+            detail: 896893094655edc6d96b1aef01a0c4f39fa9427ce314a8999e382f8d9f53d4a9
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 5B 0+0]
+          one: [0 0-0 5B 0+0]
+        kept:
+          budget: [0 0-0 5B 0+0]
+          one: [0 0-0 5B 0+0]
+    - name: measure-raw-line-separator
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "A raw U+2028 is escaped by the encoder"}
+      input: {detail: "{\"turns\":[{\"role\":\"user\",\"content\":\"a\Lb\"}]}", kills: stored-length-measure}
+      expected:
+        turns:
+          - index: 0
+            raw: 7ed8bf43c74e2ab9d57fd9efc12e2d9b3f5db272d3949ae72212dd1b410464c7
+            recordedIndex: absent
+            byteLength: 10
+            detail: 4c5dfef6a99f809793550d0262b5532a0c16cbf5d36a4fe5ecc5f7bc2ffe48f2
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 10B 0+0]
+          one: [0 0-0 10B 0+0]
+        kept:
+          budget: [0 0-0 10B 0+0]
+          one: [0 0-0 10B 0+0]
+    - name: measure-escaped-surrogate-pair
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "An escaped pair is four bytes on the wire"}
+      input: {detail: '{"turns":[{"role":"user","content":"\ud83d\ude00"}]}', kills: stored-length-measure}
+      expected:
+        turns:
+          - index: 0
+            raw: fcb9167a17199e29b4497a0fd546ca2935c3ea7df604f7a2bacb0f6b7931285c
+            recordedIndex: absent
+            byteLength: 6
+            detail: efc401d31e12e6373a9691ca96ea7e4736f39026bc693b6480dce76415c30132
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 6B 0+0]
+          one: [0 0-0 6B 0+0]
+        kept:
+          budget: [0 0-0 6B 0+0]
+          one: [0 0-0 6B 0+0]
+    - name: measure-control-escapes
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "Control escapes keep their encoder spelling"}
+      input: {detail: '{"turns":[{"role":"user","content":"\n\t\u0001\u001f"}]}', kills: stored-length-measure}
+      expected:
+        turns:
+          - index: 0
+            raw: daf5bc2ffebd3bcacdf1880fbe4874967594e2e7c6fcc4088af481f76a470b56
+            recordedIndex: absent
+            byteLength: 18
+            detail: d0331924355b0205129f83e0d6b9344f9ef824862e797af6dc587aa355b1716c
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1]
+          pi: [keep 0 1]
+        cuts:
+          budget: [0 0-0 18B 0+0]
+          one: [0 0-0 18B 0+0]
+        kept:
+          budget: [0 0-0 18B 0+0]
+          one: [0 0-0 18B 0+0]
+    - name: mutant-cut-exact-fit
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "Two turns whose measures fill a budget exactly share a segment"}
+      input: {detail: '{"turns":[{"index":0,"role":"user","content":"abc"},{"index":1,"role":"assistant","content":"de"}]}', kills: cut-off-by-one}
+      expected:
+        turns:
+          - index: 0
+            raw: 3a08d41911cca77b42b22a53116dfa012d0b1b9c8c553408cd4bfa3e8cada39b
+            recordedIndex: present:0
+            byteLength: 5
+            detail: a3b9a8651caf1ae16139f18ff690a8a9b9ad0b322b362a5b603bbbe81a7dbaea
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+          - index: 1
+            raw: b0a9cbb89aefccee3f95c6bce1cd84bc69305280b7ce12cae3daa5e4075de283
+            recordedIndex: present:1
+            byteLength: 4
+            detail: 519a6630feb775d5d64ad175ca3fcc6340bb4b7e242611a1d5d73e4bbcf61d7b
+            role: assistant
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1, keep 1 1a]
+          pi: [keep 0 1, keep 1 1a]
+        cuts:
+          budget: [0 0-1 9B 0+0]
+          one: [0 0-0 5B 0+0, 1 1-1 4B 0+0]
+          fit: [0 0-1 9B 0+0]
+          fitBelow: [0 0-0 5B 0+0, 1 1-1 4B 0+0]
+        kept:
+          budget: [0 0-1 9B 0+0]
+          one: [0 0-0 5B 0+0, 1 1-1 4B 0+0]
+    - name: mutant-cut-one-byte-over
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "A third turn one byte over the budget starts a segment"}
+      input: {detail: '{"turns":[{"index":0,"role":"user","content":"abc"},{"index":1,"role":"assistant","content":"de"},{"index":2,"role":"user","content":""}]}', kills: cut-off-by-one}
+      expected:
+        turns:
+          - index: 0
+            raw: 3a08d41911cca77b42b22a53116dfa012d0b1b9c8c553408cd4bfa3e8cada39b
+            recordedIndex: present:0
+            byteLength: 5
+            detail: a3b9a8651caf1ae16139f18ff690a8a9b9ad0b322b362a5b603bbbe81a7dbaea
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+          - index: 1
+            raw: b0a9cbb89aefccee3f95c6bce1cd84bc69305280b7ce12cae3daa5e4075de283
+            recordedIndex: present:1
+            byteLength: 4
+            detail: 519a6630feb775d5d64ad175ca3fcc6340bb4b7e242611a1d5d73e4bbcf61d7b
+            role: assistant
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+          - index: 2
+            raw: 7bd084c3b2c04b989519dfe07c62f63fc628ccdd5e5e1bd6c6fe5da2fcca8b96
+            recordedIndex: present:2
+            byteLength: 2
+            detail: ab2d590c1c216b48d962b5579a4c4cc541150ad42b7fbd1c0f8f5047250d7d07
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1, keep 1 1a, drop -1]
+          pi: [keep 0 1, keep 1 1a, keep 2 1b]
+        cuts:
+          budget: [0 0-2 11B 0+0]
+          one: [0 0-0 5B 0+0, 1 1-1 4B 0+0, 2 2-2 2B 0+0]
+          fit: [0 0-1 9B 0+0, 1 2-2 2B 0+0]
+          fitBelow: [0 0-0 5B 0+0, 1 1-2 6B 0+0]
+        kept:
+          budget: [0 0-1 9B 0+0]
+          one: [0 0-0 5B 0+0, 1 1-1 4B 0+0]
+    - name: mutant-cut-single-oversized-turn
+      classification: must-pass
+      provenance: *mutant
+      mutation: {description: "A turn larger than the budget is alone in its segment"}
+      input: {detail: '{"turns":[{"index":0,"role":"user","content":"abcdefgh"},{"index":1,"role":"assistant","content":"x"}]}', kills: cut-off-by-one}
+      expected:
+        turns:
+          - index: 0
+            raw: 4c4a60b258b416a81649b821bf9bf7117f1ae73e55cd2882467cf3ca383817d4
+            recordedIndex: present:0
+            byteLength: 10
+            detail: ec50c0ac63af6b5c188dc98d2c61d0c7c53d7c44cbb4421faec8343ead2ff241
+            role: user
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+          - index: 1
+            raw: a1e451c655051fc3c4107a5d54071beb8232923503feed34c285b86bbc1f5538
+            recordedIndex: present:1
+            byteLength: 3
+            detail: 19c96530bd6f5a52a8c5f55d16f21657814573c03f658b795340ed737b9a7e52
+            role: assistant
+            entryType: ""
+            depth: 0
+            usage: false
+            conversation: false
+        cook:
+          claudeCode: [keep 0 1, keep 1 1a]
+          pi: [keep 0 1, keep 1 1a]
+        cuts:
+          budget: [0 0-1 13B 0+0]
+          one: [0 0-0 10B 0+0, 1 1-1 3B 0+0]
+          fit: [0 0-1 13B 0+0]
+          fitBelow: [0 0-0 10B 0+0, 1 1-1 3B 0+0]
+        kept:
+          budget: [0 0-1 13B 0+0]
+          one: [0 0-0 10B 0+0, 1 1-1 3B 0+0]

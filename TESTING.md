@@ -72,6 +72,28 @@ exercises it from many goroutines and extend `RACE_SELECTIVE_TESTS`. The
 `DATA RACE`); `sync.Map` is race-safe by construction, so for it the test
 only guards against such a replacement.
 
+### Transcript capture differential (local evidence, not a gate)
+
+`make capture-differential` compares `schema.NewTranscriptCookTurns` between
+the schema release pinned in `tools/capture-differential/go.mod` and this
+working tree. It builds the one program twice (the baseline with
+`GOWORK=off -tags capture_baseline`, the candidate through a temporary
+`go.work`, never a committed `replace`), prints one verdict line per input
+over `testdata/transcript_capture.yaml`, the seeded mutations in
+`tools/capture-differential/testdata/mutation_seeds.yaml`, the benchmark
+subjects and the local `FuzzTranscriptCapture` cache (`FUZZ_DIR`), and fails
+on the first differing line. The baseline classifies refusals from a closed
+table of its message clauses and fails closed on any other message; the
+candidate classifies through `errors.As` on `*schema.TranscriptCaptureError`.
+`make capture-differential RECORD=1` writes the root fixture's expectations
+from the baseline build only; `TestTranscriptCaptureFixture` then runs that
+fixture under `go test ./...`, so every mutant-killing case fails there too.
+`make capture-bench` runs `BenchmarkPartitionPass` for both builds; its
+numbers are evidence for a pull request body, never a check. Neither target
+runs in `make check` or CI: the baseline is a moving release and the run
+needs the network. When a release ships a capture change, the next capture
+change bumps the pinned baseline to it and re-records with zero diff.
+
 Run one test or one package:
 
 ```bash

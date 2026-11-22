@@ -103,7 +103,13 @@ func DecodeTranscriptRecordedIndex(turn TranscriptServedTurn) (TranscriptRecorde
 		return TranscriptRecordedIndexInvalid, nil
 	}
 	raw, ok := fields[transcriptWireIndex]
-	if !ok {
+	return transcriptRecordedIndex(raw, ok)
+}
+
+// transcriptRecordedIndex is the one recorded-index rule, applied to the exact
+// "index" member value of a turn whose members are already validated.
+func transcriptRecordedIndex(raw []byte, present bool) (TranscriptRecordedIndexState, *int) {
+	if !present {
 		return TranscriptRecordedIndexAbsent, nil
 	}
 	n, err := strconv.ParseInt(string(raw), 10, 64)

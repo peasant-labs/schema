@@ -50,11 +50,11 @@ type transcriptCookFacts struct {
 func CookTranscriptRows(turns []TranscriptCookTurn, harness Harness) ([]CookedTurn, error) {
 	facts := make([]transcriptCookFacts, len(turns))
 	for i := range turns {
-		if turns[i].members == nil {
+		if !turns[i].constructed() {
 			return nil, fmt.Errorf("transcript cooking failed at schema.CookTranscriptRows: turn %d was not constructed from served bytes; no verdict was produced; call schema.NewTranscriptCookTurns", i)
 		}
 		var err error
-		facts[i], err = transcriptFacts(turns[i].members, harness != HarnessPi)
+		facts[i], err = transcriptFacts(turns[i].memberView(), harness != HarnessPi)
 		if err != nil {
 			return nil, fmt.Errorf("%w: evidence validation failed at turn %d; no verdict was produced; repair the recorded evidence before retrying: %v", ErrTranscriptUncookable, i, err)
 		}
@@ -130,36 +130,76 @@ func duplicateTranscriptTurns(prev, curr transcriptCookFacts) (bool, error) {
 	return trimTranscriptText(prev.content.value) != "", nil
 }
 
-func transcriptMemberString(members map[string]json.RawMessage, name string) transcriptStringMember {
-	raw, ok := members[name]
+func transcriptMemberString[M transcriptMemberLookup](members M, name string) transcriptStringMember {
+	raw, ok := members.member(name)
 	if !ok {
 		return transcriptStringMember{state: transcriptMemberAbsent}
 	}
 	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
 		return transcriptStringMember{state: transcriptMemberNull}
 	}
-	var value string
-	_ = json.Unmarshal(raw, &value) // The constructor's typed decode checked its type.
-	return transcriptStringMember{state: transcriptMemberValue, value: value}
+	return transcriptStringMember{state: transcriptMemberValue, value: transcriptDecodeString(raw)}
 }
 
-func transcriptMemberSet(members map[string]json.RawMessage, name string) bool {
-	raw, ok := members[name]
+func transcriptMemberSet[M transcriptMemberLookup](members M, name string) bool {
+	raw, ok := members.member(name)
 	return ok && !bytes.Equal(bytes.TrimSpace(raw), []byte("null"))
 }
 
-func transcriptMemberArray(members map[string]json.RawMessage, name string) []json.RawMessage {
+func transcriptMemberArray[M transcriptMemberLookup](members M, name string) []json.RawMessage {
+	raw, ok := members.member(name)
+	if !ok {
+		return nil
+	}
 	var value []json.RawMessage
-	_ = json.Unmarshal(members[name], &value) // The constructor checked known member types.
+	_ = json.Unmarshal(raw, &value) // The constructor checked known member types.
 	return value
 }
 
-func transcriptFacts(members map[string]json.RawMessage, validateEvidence bool) (transcriptCookFacts, error) {
+// transcriptDecodeString decodes a member value the constructor's typed decode
+// already checked. A string literal decodes as encoding/json decodes it;
+// anything else takes encoding/json's decode, whose error leaves the empty
+// string.
+func transcriptDecodeString(raw []byte) string {
+	if len(raw) >= 2 && raw[0] == '"' {
+		if text, ok := transcriptUnquote(raw); ok {
+			return text
+		}
+	}
+	var value string
+	_ = json.Unmarshal(raw, &value)
+	return value
+}
+
+// transcriptDecodeInt decodes a member value into an int as encoding/json does.
+// Plain decimal digits take strconv; anything else takes encoding/json, whose
+// error leaves zero.
+func transcriptDecodeInt(raw []byte) int {
+	plain := len(raw) > 0
+	for i, c := range raw {
+		if (c < '0' || c > '9') && !(i == 0 && c == '-' && len(raw) > 1) {
+			plain = false
+			break
+		}
+	}
+	if plain {
+		if n, err := strconv.Atoi(string(raw)); err == nil {
+			return n
+		}
+	}
+	var value int
+	_ = json.Unmarshal(raw, &value)
+	return value
+}
+
+func transcriptFacts[M transcriptMemberLookup](members M, validateEvidence bool) (transcriptCookFacts, error) {
 	facts := transcriptCookFacts{role: transcriptMemberString(members, transcriptWireRole), content: transcriptMemberString(members, transcriptWireContent)}
-	_ = json.Unmarshal(members[transcriptWireDepth], &facts.depth)
+	if depth, ok := members.member(transcriptWireDepth); ok {
+		facts.depth = transcriptDecodeInt(depth)
+	}
 	facts.control = transcriptMemberString(members, transcriptWireControlKind).value != ""
 	facts.protected = transcriptMemberString(members, transcriptWireSourceEntryRef).value != "" || transcriptMemberSet(members, transcriptWireUsage)
-	if _, present := members[transcriptWireProvenance]; present {
+	if _, present := members.member(transcriptWireProvenance); present {
 		facts.protected = true
 	}
 	if validateEvidence {
@@ -168,10 +208,11 @@ func transcriptFacts(members map[string]json.RawMessage, validateEvidence bool) 
 		}
 	}
 	for _, raw := range transcriptMemberArray(members, transcriptWireContentParts) {
-		part, err := transcriptRawMembers(raw)
+		partMembers, err := transcriptRawMembers(raw)
 		if err != nil { // A null part is not an image.
 			continue
 		}
+		part := transcriptMemberMap(partMembers)
 		if TurnPartType(transcriptMemberString(part, transcriptWireType).value) == TurnPartTypeImage && transcriptMemberSet(part, transcriptWireImage) {
 			facts.image = true
 		}
@@ -179,13 +220,14 @@ func transcriptFacts(members map[string]json.RawMessage, validateEvidence bool) 
 	tools := transcriptMemberArray(members, transcriptWireToolCalls)
 	facts.tools = len(tools)
 	for _, raw := range tools {
-		tool, err := transcriptRawMembers(raw)
+		toolMembers, err := transcriptRawMembers(raw)
 		if err != nil {
 			if validateEvidence {
 				return facts, fmt.Errorf("a tool is not an object")
 			}
 			continue
 		}
+		tool := transcriptMemberMap(toolMembers)
 		if validateEvidence {
 			if err := transcriptValidateEvidence(tool, transcriptWireCallEntryRef, transcriptWireCallProvenance); err != nil {
 				return facts, err
@@ -194,8 +236,8 @@ func transcriptFacts(members map[string]json.RawMessage, validateEvidence bool) 
 				return facts, err
 			}
 		}
-		_, callProvenance := tool[transcriptWireCallProvenance]
-		_, resultProvenance := tool[transcriptWireResultProvenance]
+		_, callProvenance := tool.member(transcriptWireCallProvenance)
+		_, resultProvenance := tool.member(transcriptWireResultProvenance)
 		if transcriptMemberString(tool, transcriptWireCallEntryRef).value != "" || transcriptMemberString(tool, transcriptWireResultEntryRef).value != "" ||
 			transcriptMemberSet(tool, transcriptWireUsage) || callProvenance || resultProvenance {
 			facts.protected = true
@@ -204,7 +246,7 @@ func transcriptFacts(members map[string]json.RawMessage, validateEvidence bool) 
 	return facts, nil
 }
 
-func transcriptValidateEvidence(members map[string]json.RawMessage, refName, provenanceName string) error {
+func transcriptValidateEvidence[M transcriptMemberLookup](members M, refName, provenanceName string) error {
 	ref := transcriptMemberString(members, refName)
 	if ref.state == transcriptMemberNull {
 		return fmt.Errorf("%s is null", refName)
@@ -214,7 +256,7 @@ func transcriptValidateEvidence(members map[string]json.RawMessage, refName, pro
 			return fmt.Errorf("%s is invalid", refName)
 		}
 	}
-	raw, present := members[provenanceName]
+	raw, present := members.member(provenanceName)
 	if !present {
 		return nil
 	}
