@@ -5,3 +5,5 @@ requiredNames:
   - recorded-index-would-wrap-on-32
   - recorded-index-safe-maximum-by-architecture
   - recorded-index-above-safe-range-on-both
+  - capture-index-int32-maximum
+  - capture-index-above-int32

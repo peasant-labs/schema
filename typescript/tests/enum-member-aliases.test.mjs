@@ -5,10 +5,11 @@ import test from "node:test";
 
 import ts from "typescript";
 import { parse } from "yaml";
-import { TypesVersion } from "../dist/index.js";
 
 const fixture = parse(await readFile(new URL("../../testdata/typescript/enums.yaml", import.meta.url), "utf8"));
-const spec = JSON.parse(await readFile(new URL(`../../generated/types-${TypesVersion}.json`, import.meta.url), "utf8"));
+// The generated Zod schemas come from the working Types document, so the
+// catalog is read from it too; the frozen document lags it on a content branch.
+const spec = JSON.parse(await readFile(new URL("../../generated/types-next.json", import.meta.url), "utf8"));
 // The Zod wrappers Hey API applies to a named closed-set schema for an optional,
 // nullable or nullish field; each must keep the set's name on the field.
 const wrappers = ["optional", "nullable", "nullish"];

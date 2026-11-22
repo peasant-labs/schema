@@ -1,0 +1,31 @@
+cases:
+  - name: final tag
+    args: [parse-tag, v1.2.3]
+    stdout: "version=v1.2.3\nkind=final\n"
+    stderr: ""
+    exit: 0
+    github_output: "preexisting=1\nversion=v1.2.3\nkind=final\n"
+  - name: release candidate tag
+    args: [parse-tag, v1.2.3-rc4]
+    stdout: "version=v1.2.3-rc4\nkind=rc\n"
+    stderr: ""
+    exit: 0
+    github_output: "preexisting=1\nversion=v1.2.3-rc4\nkind=rc\n"
+  - name: namespaced tag
+    args: [parse-tag, pkg/schema/v1.2.3]
+    stdout: ""
+    stderr: "release-guard: tag \"pkg/schema/v1.2.3\" is not a release tag (release tags look like v0.1.0 or v0.1.0-rc1): invalid release version \"pkg/schema/v1.2.3\": must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-rcN (e.g. v0.1.0 or v0.1.0-rc1)\n"
+    exit: 1
+    github_output: "preexisting=1\n"
+  - name: wrong argument count
+    args: [parse-tag]
+    stdout: ""
+    stderr: "release-guard: usage: release-guard parse-tag \"<git tag>\"\n"
+    exit: 1
+    github_output: "preexisting=1\n"
+  - name: unknown subcommand
+    args: [unknown]
+    stdout: ""
+    stderr: "release-guard: unknown subcommand \"unknown\": expected parse-tag\n"
+    exit: 1
+    github_output: "preexisting=1\n"

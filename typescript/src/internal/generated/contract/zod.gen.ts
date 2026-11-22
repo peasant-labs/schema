@@ -418,7 +418,7 @@ export const zBuiltinCommand = closedSet<ClosedSets.BuiltinCommand>()(z.enum([
 export type BuiltinCommand = z.infer<typeof zBuiltinCommand>;
 
 export const zCLILoginQuery = z.object({
-    port: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    port: z.int().gte(1024).lte(65535),
     state: z.string()
 });
 
@@ -5015,6 +5015,20 @@ export const zVillageAssignableCollectiveRole = closedSet<ClosedSets.VillageAssi
 
 export type VillageAssignableCollectiveRole = z.infer<typeof zVillageAssignableCollectiveRole>;
 
+/**
+ * Village Attestation Type
+ *
+ * Usage attestation type
+ */
+export const zVillageAttestationType = closedSet<ClosedSets.VillageAttestationType>()(z.enum([
+    'used_in_training',
+    'referenced',
+    'evaluated',
+    'deployed'
+]));
+
+export type VillageAttestationType = z.infer<typeof zVillageAttestationType>;
+
 export const zVillageAvailableRepository = z.object({
     is_private: z.boolean(),
     name: z.string(),
@@ -5223,6 +5237,20 @@ export const zVillageBatchShareResponse = z.object({
 
 export type VillageBatchShareResponse = z.infer<typeof zVillageBatchShareResponse>;
 
+export const zVillageCreateAPIKeyRequest = z.object({
+    label: z.string().optional()
+});
+
+export type VillageCreateAPIKeyRequest = z.infer<typeof zVillageCreateAPIKeyRequest>;
+
+export const zVillageCreateAttestationRequest = z.object({
+    attestation_type: zVillageAttestationType,
+    note: z.string().optional(),
+    org_login: z.string().min(1)
+});
+
+export type VillageCreateAttestationRequest = z.infer<typeof zVillageCreateAttestationRequest>;
+
 export const zVillageCreateCollectiveRequest = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode.optional(),
     data_access: zVillageCollectiveDataAccess.optional(),
@@ -5232,6 +5260,12 @@ export const zVillageCreateCollectiveRequest = z.object({
 });
 
 export type VillageCreateCollectiveRequest = z.infer<typeof zVillageCreateCollectiveRequest>;
+
+export const zVillageDiscoverabilityRequest = z.object({
+    is_discoverable: z.boolean()
+});
+
+export type VillageDiscoverabilityRequest = z.infer<typeof zVillageDiscoverabilityRequest>;
 
 export const zVillageErrorResponse = z.object({
     code: zVillageContributionErrorCode.optional(),
@@ -5249,6 +5283,15 @@ export type VillageErrorResponse = z.infer<typeof zVillageErrorResponse>;
 export const zVillageGitHubWebhookPayload = z.record(z.string(), z.unknown());
 
 export type VillageGitHubWebhookPayload = z.infer<typeof zVillageGitHubWebhookPayload>;
+
+export const zVillageHealthResponse = z.object({
+    buildRevision: z.string().regex(/^[0-9a-f]{7,12}$/).optional(),
+    migrations: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    serves: z.array(z.string()),
+    status: z.string()
+});
+
+export type VillageHealthResponse = z.infer<typeof zVillageHealthResponse>;
 
 export const zVillageLinkRepositoryRequest = z.object({
     installation_id: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
@@ -5274,6 +5317,17 @@ export const zVillageListUserOrganization = z.object({
 
 export type VillageListUserOrganization = z.infer<typeof zVillageListUserOrganization>;
 
+export const zVillageManualAnnotationRequest = z.object({
+    endIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    entryIndex: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    isPrimary: z.boolean().optional(),
+    reason: z.string().nullish(),
+    typeId: z.string().min(1),
+    value: z.string().min(1)
+});
+
+export type VillageManualAnnotationRequest = z.infer<typeof zVillageManualAnnotationRequest>;
+
 export const zVillageMetadataUserOrganization = z.object({
     avatar_url: z.string().nullable(),
     fetched_at: z.iso.datetime({ offset: true }),
@@ -5290,6 +5344,40 @@ export const zVillageNotificationEmail = z.object({
 });
 
 export type VillageNotificationEmail = z.infer<typeof zVillageNotificationEmail>;
+
+export const zVillageOrganizationSearchResult = z.object({
+    avatar_url: z.string().nullable(),
+    member_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    org_login: z.string(),
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillageOrganizationSearchResult = z.infer<typeof zVillageOrganizationSearchResult>;
+
+export const zVillageOrganizationSearchResponse = z.object({
+    organizations: z.array(zVillageOrganizationSearchResult)
+});
+
+export type VillageOrganizationSearchResponse = z.infer<typeof zVillageOrganizationSearchResponse>;
+
+export const zVillageOrganizationVisibilityRequest = z.object({
+    visible: z.boolean().optional()
+});
+
+export type VillageOrganizationVisibilityRequest = z.infer<typeof zVillageOrganizationVisibilityRequest>;
+
+export const zVillageOrganizationVisibilityResponse = z.object({
+    status: z.string(),
+    visible: z.boolean()
+});
+
+export type VillageOrganizationVisibilityResponse = z.infer<typeof zVillageOrganizationVisibilityResponse>;
+
+export const zVillageProjectDisplayNameRequest = z.object({
+    display_name: z.string()
+});
+
+export type VillageProjectDisplayNameRequest = z.infer<typeof zVillageProjectDisplayNameRequest>;
 
 /**
  * Village Project Name Source
@@ -5516,6 +5604,15 @@ export const zVillageRepositoryCommitsResponse = z.object({
 
 export type VillageRepositoryCommitsResponse = z.infer<typeof zVillageRepositoryCommitsResponse>;
 
+export const zVillageResolvedProject = z.object({
+    project_display_name: z.string(),
+    project_hash: zProjectHash,
+    project_name_source: zVillageProjectNameSource,
+    project_remote_label: z.string()
+});
+
+export type VillageResolvedProject = z.infer<typeof zVillageResolvedProject>;
+
 /**
  * Village Review Decision
  *
@@ -5604,6 +5701,30 @@ export const zVillageStatusResponse = z.object({
 });
 
 export type VillageStatusResponse = z.infer<typeof zVillageStatusResponse>;
+
+export const zVillageTranscriptAnnotationsResponse = z.object({
+    annotations: z.array(zAnnotationSummary)
+});
+
+export type VillageTranscriptAnnotationsResponse = z.infer<typeof zVillageTranscriptAnnotationsResponse>;
+
+export const zVillageTranscriptCommit = z.object({
+    authorEmail: z.string().nullable(),
+    authorName: z.string().nullable(),
+    authoredAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).nullable(),
+    committedAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).nullable(),
+    message: z.string().nullable(),
+    order: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    sha: z.string()
+});
+
+export type VillageTranscriptCommit = z.infer<typeof zVillageTranscriptCommit>;
+
+export const zVillageTranscriptCommitsResponse = z.object({
+    commits: z.array(zVillageTranscriptCommit)
+});
+
+export type VillageTranscriptCommitsResponse = z.infer<typeof zVillageTranscriptCommitsResponse>;
 
 /**
  * Village Transcript Deletion Policy
@@ -6217,6 +6338,17 @@ export const zTranscriptEntryMatch = z.object({
 
 export type TranscriptEntryMatch = z.infer<typeof zTranscriptEntryMatch>;
 
+export const zVillageAPIKey = z.object({
+    created_at: z.iso.datetime({ offset: true }).nullable(),
+    id: zVillageUUID,
+    key_prefix: z.string(),
+    label: z.string().nullable(),
+    last_used: z.iso.datetime({ offset: true }).nullable(),
+    revoked_at: z.iso.datetime({ offset: true }).nullable()
+});
+
+export type VillageAPIKey = z.infer<typeof zVillageAPIKey>;
+
 export const zVillageCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     created_at: z.iso.datetime({ offset: true }),
@@ -6358,6 +6490,16 @@ export const zVillageContributionSnapshotResponse = z.object({
 
 export type VillageContributionSnapshotResponse = z.infer<typeof zVillageContributionSnapshotResponse>;
 
+export const zVillageCreatedAPIKey = z.object({
+    created_at: z.iso.datetime({ offset: true }),
+    id: zVillageUUID,
+    key: z.string(),
+    label: z.string(),
+    prefix: z.string()
+});
+
+export type VillageCreatedAPIKey = z.infer<typeof zVillageCreatedAPIKey>;
+
 export const zVillageEnrichedTranscriptShare = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     group_id: zVillageUUID,
@@ -6430,6 +6572,16 @@ export const zVillageOrganizationCollectivesResponse = z.object({
 
 export type VillageOrganizationCollectivesResponse = z.infer<typeof zVillageOrganizationCollectivesResponse>;
 
+export const zVillageProjectCollective = z.object({
+    description: z.string().nullable(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    name: z.string(),
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillageProjectCollective = z.infer<typeof zVillageProjectCollective>;
+
 export const zVillagePublicCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     created_at: z.iso.datetime({ offset: true }),
@@ -6487,6 +6639,14 @@ export const zVillageTag = z.object({
 });
 
 export type VillageTag = z.infer<typeof zVillageTag>;
+
+export const zVillageTagUsage = z.object({
+    id: zVillageUUID,
+    name: z.string(),
+    usage_count: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+});
+
+export type VillageTagUsage = z.infer<typeof zVillageTagUsage>;
 
 export const zVillageTranscriptAttestation = z.object({
     attestation_type: z.string(),
@@ -6596,6 +6756,7 @@ export const zVillageUpdateUserSettingsRequest = z.object({
 export type VillageUpdateUserSettingsRequest = z.infer<typeof zVillageUpdateUserSettingsRequest>;
 
 export const zVillageUser = z.object({
+    auto_attach_pull_requests: z.boolean(),
     avatar_url: z.string().nullable(),
     created_at: z.iso.datetime({ offset: true }),
     display_name: z.string().nullable(),
@@ -6603,6 +6764,7 @@ export const zVillageUser = z.object({
     github_username: z.string(),
     id: zVillageUUID,
     is_discoverable: z.boolean(),
+    preview_before_attach: z.boolean(),
     provider: z.string(),
     provider_user_id: z.string(),
     provider_username: z.string().nullable(),
@@ -6799,6 +6961,15 @@ export const zVillageGroupedContributableResponse = z.object({
 
 export type VillageGroupedContributableResponse = z.infer<typeof zVillageGroupedContributableResponse>;
 
+export const zVillageUserProjectResponse = z.object({
+    collectives: z.array(zVillageProjectCollective),
+    owner: zVillagePublicOwner,
+    project: zVillageResolvedProject,
+    transcripts: z.array(zVillageTranscript)
+});
+
+export type VillageUserProjectResponse = z.infer<typeof zVillageUserProjectResponse>;
+
 export const zVillageUserSettings = z.object({
     auto_attach_pull_requests: z.boolean(),
     email_invitations: z.boolean(),
@@ -6817,6 +6988,12 @@ export const zVillageUserStats = z.object({
 });
 
 export type VillageUserStats = z.infer<typeof zVillageUserStats>;
+
+export const zVillageUsernameRequest = z.object({
+    username: z.string()
+});
+
+export type VillageUsernameRequest = z.infer<typeof zVillageUsernameRequest>;
 
 export const zVillageVerifyNotificationEmailRequest = z.object({
     token: z.string().min(1)

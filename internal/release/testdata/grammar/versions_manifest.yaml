@@ -1,0 +1,16 @@
+requiredNames:
+  - final
+  - final multi-digit
+  - rc1
+  - rc multi-digit
+  - missing leading v
+  - rc without number
+  - pkg/schema namespaced
+  - two-component
+  - trailing junk
+  - prerelease not rc
+  - build metadata
+  - empty
+  - garbage
+  - leading space
+  - uppercase V

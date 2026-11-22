@@ -68,6 +68,7 @@ func TestFreezeWriterCoverage(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			dir := filepath.Join(t.TempDir(), "repository")
 			copyFreezeSource(t, root, dir)
+			releaseFreezeBaseline(t, dir)
 			for _, edit := range c.Input.Edits {
 				filename := filepath.Join(dir, edit.Path)
 				data, err := os.ReadFile(filename)
@@ -91,22 +92,9 @@ func TestFreezeWriterCoverage(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			plan := freezePlan{Plan: 1, FreezeFloor: strings.Repeat("a", 40)}
-			for _, row := range state.Surfaces {
-				ahead := slices.Contains(c.Input.Ahead, row.Name)
-				if (row.State == surfaceAhead) != ahead {
-					t.Fatalf("surface %s state = %s, expected ahead=%v", row.Name, row.State, ahead)
-				}
-				level := freezeNone
-				if ahead {
-					level = freezeMinor
-				}
-				to, err := nextFreezeVersion(row.Frozen, level)
-				if err != nil {
-					t.Fatal(err)
-				}
-				plan.Surfaces = append(plan.Surfaces, freezeSurface{row.Name, row.Label, row.Frozen, to, level, false, ahead})
-			}
+			requireAheadSurfaces(t, state, c.Input.Ahead)
+			plan := minorFreezePlan(t, state)
+			plan.FreezeFloor = strings.Repeat("a", 40)
 			if err := validateFreezeHandoff(surfaces, state, plan); err != nil {
 				t.Fatal(err)
 			}
@@ -249,6 +237,76 @@ func TestFreezeWriterCoverage(t *testing.T) {
 				runFreezeFixtureCommand(t, dir, "go", "test", "./openapi", "-run", "^(TestSegmentedReadSpec|TestSegmentedReadSpec_GenerationTableMatches|TestSegmentedReadHostGenerationParametersMatch)$", "-count=1")
 			}
 		})
+	}
+}
+
+// releaseFreezeBaseline makes a copied source tree look like the default
+// branch right after a release. A content branch carries surfaces that are
+// already ahead of their frozen documents; a fixture that then asserts which
+// surfaces its own edit makes ahead would see those too. The copy is first
+// regenerated, and every surface still ahead is frozen through the release
+// command, schema-gen freeze, with the same plan and state handoff the release
+// job writes. A copy with nothing ahead is left as it is.
+func releaseFreezeBaseline(t *testing.T, dir string) {
+	t.Helper()
+	runFreezeFixtureCommand(t, dir, "go", "run", "./cmd/schema-gen")
+	state, err := calculateSurfaceStates(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan := minorFreezePlan(t, state)
+	pending := false
+	for _, surface := range plan.Surfaces {
+		pending = pending || surface.Freeze
+	}
+	if !pending {
+		return
+	}
+	planFile, stateFile := filepath.Join(t.TempDir(), "baseline-plan.yaml"), filepath.Join(t.TempDir(), "baseline-state.yaml")
+	for filename, value := range map[string]any{planFile: plan, stateFile: state} {
+		data, err := yaml.Marshal(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filename, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	runFreezeFixtureCommand(t, dir, "go", "run", "./cmd/schema-gen", "freeze", "--plan", planFile, "--state", stateFile)
+	released, err := calculateSurfaceStates(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requireAheadSurfaces(t, released, nil)
+}
+
+// minorFreezePlan is the release plan for state: every ahead surface is
+// frozen at the next minor version and every other surface is kept.
+func minorFreezePlan(t *testing.T, state surfaceStates) freezePlan {
+	t.Helper()
+	plan := freezePlan{Plan: 1}
+	for _, row := range state.Surfaces {
+		ahead := row.State == surfaceAhead
+		level := freezeNone
+		if ahead {
+			level = freezeMinor
+		}
+		to, err := nextFreezeVersion(row.Frozen, level)
+		if err != nil {
+			t.Fatal(err)
+		}
+		plan.Surfaces = append(plan.Surfaces, freezeSurface{row.Name, row.Label, row.Frozen, to, level, false, ahead})
+	}
+	return plan
+}
+
+// requireAheadSurfaces requires exactly the named surfaces to be ahead.
+func requireAheadSurfaces(t *testing.T, state surfaceStates, ahead []string) {
+	t.Helper()
+	for _, row := range state.Surfaces {
+		if want := slices.Contains(ahead, row.Name); (row.State == surfaceAhead) != want {
+			t.Fatalf("surface %s state = %s, expected ahead=%v", row.Name, row.State, want)
+		}
 	}
 }
 

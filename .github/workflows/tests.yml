@@ -43,7 +43,7 @@ jobs:
         if: github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.user.type == 'Bot')
         with:
           repository: peasant-labs/infra
-          ref: 7d2a604afe5b50a3dcc20df06f02e85c2a0d4027
+          ref: db8f1938e9a67a40914c2ab0a232ebc2243adaac
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -152,7 +152,7 @@ jobs:
           deps=false
           while IFS= read -r -d '' file; do
             case "$file" in
-              *.go|go.mod|go.sum|generated/*|openapi/*|Makefile|flake.nix|flake.lock|.unstring.yaml|.unstring-baseline.yaml|.vacuum.yaml|scripts/*|typescript/*|testdata/*|*/testdata/*|.github/workflows/*|.github/release-guard.policy.yml|.github/release-queue.policy.yml|.github/release-intent.yaml) code=true ;;
+              *.go|go.mod|go.sum|generated/*|openapi/*|Makefile|flake.nix|flake.lock|.unstring.yaml|.unstring-baseline.yaml|.vacuum.yaml|scripts/*|typescript/*|testdata/*|*/testdata/*|.github/workflows/*|.github/release-queue.policy.yml|.github/release-intent.yaml) code=true ;;
             esac
             case "$file" in
               go.mod|go.sum|flake.nix|flake.lock|Makefile|scripts/update-nix-vendor-hash.sh|.github/workflows/nix-vendor-hash.yml) deps=true ;;
@@ -217,6 +217,9 @@ jobs:
         run: |
           nix develop -c pnpm --dir typescript install --frozen-lockfile --ignore-scripts
           nix develop -c sh -c 'go env GOMAXPROCS GOFLAGS GOCACHE GOMODCACHE || true; exec make check'
+      - name: Check Nix package on build input changes
+        if: needs.changes.outputs.deps == 'true'
+        run: time nix build .#default -L --no-link
       # Only pushes to develop populate caches; all other events restore only.
       - name: Save Go build and module caches
         if: success() && steps.cache-go.outputs.cache-hit != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/develop'
@@ -287,7 +290,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 7d2a604afe5b50a3dcc20df06f02e85c2a0d4027
+          ref: db8f1938e9a67a40914c2ab0a232ebc2243adaac
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -299,6 +302,14 @@ jobs:
         env:
           GOWORK: "off"
         run: go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
+      - name: Check freeze title fixtures with the pinned tool
+        env:
+          SCHEMA_RELEASE_INTENT: ${{ runner.temp }}/release-intent
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/freeze-title-tests.log"
+          go test ./cmd/schema-gen -run '^TestFreezeContractTitles$' -count=1 -v | tee "$log"
+          grep -qF -- '--- PASS: TestFreezeContractTitles (' "$log"
       - uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
       - name: Resolve the entry PR and its live title
         id: pr

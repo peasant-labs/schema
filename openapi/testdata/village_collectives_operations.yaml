@@ -130,7 +130,7 @@ operations:
     operation_id: unsubscribeInvitationEmails
     request_components: []
     response_components: [VillageStatusResponse]
-    statuses: ["200", "400", "500"]
+    statuses: ["200", "400", "429", "500"]
     description_anchors: [without signing in, RFC 8058, can only turn this one setting off]
   - path: /api/v1/collectives/{id}/members/{userID}/role
     method: patch

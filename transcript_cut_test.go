@@ -650,9 +650,13 @@ func TestTranscriptWindowSpanConstantsMatchTheDeclaredRange(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		// A path item also carries members that are not operations, such
+		// as servers, so only the read's get operation is decoded.
 		var document struct {
-			Paths map[string]map[string]struct {
-				Parameters []queryParameter `json:"parameters"`
+			Paths map[string]struct {
+				Get struct {
+					Parameters []queryParameter `json:"parameters"`
+				} `json:"get"`
 			} `json:"paths"`
 		}
 		if err := json.Unmarshal(raw, &document); err != nil {
@@ -660,7 +664,7 @@ func TestTranscriptWindowSpanConstantsMatchTheDeclaredRange(t *testing.T) {
 		}
 		found := false
 		seen := map[string]bool{}
-		for _, parameter := range document.Paths[read.path]["get"].Parameters {
+		for _, parameter := range document.Paths[read.path].Get.Parameters {
 			if parameter.In == "query" && slices.Contains(commonNames, parameter.Name) {
 				if seen[parameter.Name] {
 					t.Fatalf("%s window repeats %s", read.name, parameter.Name)

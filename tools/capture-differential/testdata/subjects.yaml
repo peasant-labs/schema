@@ -1,0 +1,9 @@
+# Benchmark and differential subjects, mirroring Village's
+# backend/internal/handler/testdata/cook_number_budget.yaml turn shape inside
+# {"turns":[...]}. text is inserted verbatim as JSON string content. The
+# documents are generated, never committed.
+turnCounts: [1000, 100000]
+subjects:
+  - {name: ascii, text: ''}
+  - name: escaped-multibyte
+    text: ' \" \\ \u00e9 \ud83d\ude00 中文'

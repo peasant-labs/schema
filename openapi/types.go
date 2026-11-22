@@ -23,6 +23,28 @@ type TypeCatalogEntry struct {
 // this language-neutral contract surface.
 func TypeCatalogEntries() []TypeCatalogEntry {
 	return []TypeCatalogEntry{
+		{"VillageAttestationType", new(schema.VillageAttestationType)},
+		{"VillageDiscoverabilityRequest", new(schema.VillageDiscoverabilityRequest)},
+		{"VillageUsernameRequest", new(schema.VillageUsernameRequest)},
+		{"VillageCreateAPIKeyRequest", new(schema.VillageCreateAPIKeyRequest)},
+		{"VillageCreatedAPIKey", new(schema.VillageCreatedAPIKey)},
+		{"VillageAPIKey", new(schema.VillageAPIKey)},
+		{"VillageOrganizationVisibilityRequest", new(schema.VillageOrganizationVisibilityRequest)},
+		{"VillageOrganizationVisibilityResponse", new(schema.VillageOrganizationVisibilityResponse)},
+		{"VillageOrganizationSearchResult", new(schema.VillageOrganizationSearchResult)},
+		{"VillageOrganizationSearchResponse", new(schema.VillageOrganizationSearchResponse)},
+		{"VillageTagUsage", new(schema.VillageTagUsage)},
+		{"VillageResolvedProject", new(schema.VillageResolvedProject)},
+		{"VillageProjectCollective", new(schema.VillageProjectCollective)},
+		{"VillageUserProjectResponse", new(schema.VillageUserProjectResponse)},
+		{"VillageProjectDisplayNameRequest", new(schema.VillageProjectDisplayNameRequest)},
+		{"VillageCreateAttestationRequest", new(schema.VillageCreateAttestationRequest)},
+		{"VillageManualAnnotationRequest", new(schema.VillageManualAnnotationRequest)},
+		{"VillageTranscriptAnnotationsResponse", new(schema.VillageTranscriptAnnotationsResponse)},
+		{"VillageTranscriptCommit", new(schema.VillageTranscriptCommit)},
+		{"VillageTranscriptCommitsResponse", new(schema.VillageTranscriptCommitsResponse)},
+		{"VillageHealthResponse", new(schema.VillageHealthResponse)},
+
 		{"VillageOrganizationCollective", new(schema.VillageOrganizationCollective)}, {"VillageOrganizationCollectivesResponse", new(schema.VillageOrganizationCollectivesResponse)},
 		{"CollectiveObservationScope", new(schema.CollectiveObservationScope)}, {"CollectiveObservationReason", new(schema.CollectiveObservationReason)}, {"CollectiveObservationState", new(schema.CollectiveObservationState)}, {"CollectiveObservation", new(schema.CollectiveObservation)},
 		{"CollectiveOperation", new(schema.CollectiveOperation)}, {"OperationIssueCode", new(schema.OperationIssueCode)}, {"OperationIssue", new(schema.OperationIssue)},

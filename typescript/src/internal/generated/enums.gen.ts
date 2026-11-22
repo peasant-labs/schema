@@ -1,4 +1,5 @@
 // Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
+import { zVillageAttestationType } from "./contract/zod.gen.js";
 import { zTranscriptEntryReferenceKind } from "./contract/zod.gen.js";
 import { zTranscriptReadTransportKind } from "./contract/zod.gen.js";
 import { zTranscriptRecordedIndexState } from "./contract/zod.gen.js";
@@ -143,6 +144,18 @@ import { zAutoPublishHookStatus } from "./contract/zod.gen.js";
 import { zAutoPublishRuleKind } from "./contract/zod.gen.js";
 import { zThinkingLevel } from "./contract/zod.gen.js";
 import { zScryVerdict } from "./contract/zod.gen.js";
+
+export const VillageAttestationType = Object.freeze({
+  UsedInTraining: "used_in_training",
+  Referenced: "referenced",
+  Evaluated: "evaluated",
+  Deployed: "deployed",
+} as const);
+export type VillageAttestationType = (typeof VillageAttestationType)[keyof typeof VillageAttestationType];
+export const AllVillageAttestationTypes = Object.freeze([VillageAttestationType.UsedInTraining, VillageAttestationType.Referenced, VillageAttestationType.Evaluated, VillageAttestationType.Deployed]) as readonly VillageAttestationType[];
+export function isVillageAttestationType(value: unknown): value is VillageAttestationType {
+  return zVillageAttestationType.safeParse(value).success;
+}
 
 export const TranscriptEntryReferenceKind = Object.freeze({
   Source: "source",

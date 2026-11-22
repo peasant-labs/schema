@@ -1,7 +1,7 @@
 # Testing the peasant-labs/schema contract
 
 This module is a contract-only leaf: types, closed enums, generated OpenAPI specs,
-a publish-request validator, typed fixtures, and the codegen + release-guard
+a publish-request validator, typed fixtures, the code generator, and the release-tag parser
 tooling. It has no runtime server. So the test suite is not about request/response
 behaviour; it is about keeping the **contract honest**:
 
@@ -40,11 +40,19 @@ pnpm --dir typescript run package:audit
 pnpm --dir typescript run package:smoke
 ```
 
-`make check` is `fmt` + `vet` + `freshness` + the release-workflow guard
-(`release-guard check-workflow`) + `go test ./...`. That suite is the
+`make check` is `fmt` + `vet` + `freshness` + TypeScript checks + the
+unstring guard + `go test ./...`. That suite is the
 authoritative run: it includes the leaf audit, the vendor-hash guard, and the
 `oasdiff` / `go-apidiff` synthetic-break tests (which skip when their binary is
 absent).
+
+`nix build .#default -L --no-link` builds the package and runs its offline
+tests. CI also runs this build when package inputs change. The freeze title
+fixtures use the separate `release-intent` binary that the CI contract gates
+build from their infra pin. To run those fixtures locally, set
+`SCHEMA_RELEASE_INTENT` to the absolute path of the binary built from the
+same pin, then run `go test ./cmd/schema-gen -run '^TestFreezeContractTitles$'`.
+The offline package does not fetch that binary during its check phase.
 
 The default is no race detector, on every CI event and locally. The module's
 only production concurrency is the lazy schema compilation behind
@@ -63,6 +71,28 @@ exercises it from many goroutines and extend `RACE_SELECTIVE_TESTS`. The
 `sync.Map` cache races if replaced by a plain map (both verified to report
 `DATA RACE`); `sync.Map` is race-safe by construction, so for it the test
 only guards against such a replacement.
+
+### Transcript capture differential (local evidence, not a gate)
+
+`make capture-differential` compares `schema.NewTranscriptCookTurns` between
+the schema release pinned in `tools/capture-differential/go.mod` and this
+working tree. It builds the one program twice (the baseline with
+`GOWORK=off -tags capture_baseline`, the candidate through a temporary
+`go.work`, never a committed `replace`), prints one verdict line per input
+over `testdata/transcript_capture.yaml`, the seeded mutations in
+`tools/capture-differential/testdata/mutation_seeds.yaml`, the benchmark
+subjects and the local `FuzzTranscriptCapture` cache (`FUZZ_DIR`), and fails
+on the first differing line. The baseline classifies refusals from a closed
+table of its message clauses and fails closed on any other message; the
+candidate classifies through `errors.As` on `*schema.TranscriptCaptureError`.
+`make capture-differential RECORD=1` writes the root fixture's expectations
+from the baseline build only; `TestTranscriptCaptureFixture` then runs that
+fixture under `go test ./...`, so every mutant-killing case fails there too.
+`make capture-bench` runs `BenchmarkPartitionPass` for both builds; its
+numbers are evidence for a pull request body, never a check. Neither target
+runs in `make check` or CI: the baseline is a moving release and the run
+needs the network. When a release ships a capture change, the next capture
+change bumps the pinned baseline to it and re-records with zero diff.
 
 Run one test or one package:
 
@@ -134,7 +164,7 @@ script) behind it.
 | Exported-Go-API diff (`go-apidiff`) | `scripts/contract-gates.sh`; `internal/contractgates/synthetic_break_test.go` | Incompatible changes must be declared in the title; an unparseable diff fails closed. |
 | Leaf-purity audit | `leaf_audit_test.go` | **Hard.** A `go.mod` direct require outside the allowed set fails. |
 | Vendor-hash stability | `vendorhash_test.go` | **Hard.** A local-path `replace` in `go.mod` fails. |
-| Release grammar + guard | pinned `release-intent`, `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** Malformed intent titles or tags, and an un-gated publish workflow, are rejected. |
+| Release grammar + guard | pinned `release-intent`, `internal/release/*_test.go`, `cmd/release-guard/*_test.go`, `cmd/schema-gen/release_adoption_workflow_test.go` | **Hard.** Malformed intent titles or tags are rejected; CI checks workflow policy and the publication job wiring. |
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
 | Local API 0.5.0 closed-set exhaustive coverage + regen-freshness | `enumcorpus/enumcorpus_test.go` (`TestEnumCorpora_ExhaustiveCoverageAndFreshness`, one subtest pair per enum) | **Hard.** `enumcorpus.BuildCorpus`/`RenderCorpus` generalize `licensecorpus`'s pattern over any closed string enum; `cmd/gen-enum-corpora` regenerates all ten committed corpora (`AssociationConclusion`, `AssociationEvidenceKind`, `Confidence`, `RewriteResolution`, `RewriteMethod`, `InsightKind`, `InsightProvenance`, `ReadAttributionState`, `ReadStateGrade`, `TargetKind`) in one `go generate`. |
@@ -353,7 +383,7 @@ through 600 seconds and fails closed for isolated setup or cleanup errors.
 
 `TestLeafAudit_GoModRequiresAreAllowed` (`leaf_audit_test.go`) asserts the module's
 `go.mod` direct `require` set is a subset of an explicit allowed set (`bestiary`,
-`go-github/v88`, the two `jsonschema` libraries, `openapi-go`, `x/crypto`,
+the two `jsonschema` libraries, `openapi-go`, `x/crypto`,
 `yaml.v3`). Dev and CI tools live in the flake dev shell, never in `go.mod`, so
 this audit is the only mechanical enforcement of the leaf boundary. Its
 `parseDirectRequires` helper parses `go.mod` by hand on purpose: importing a
@@ -370,42 +400,15 @@ guard behind the flake's `vendorHash` comment.
 
 ### Release grammar and the publication guard
 
-`internal/release/*_test.go` cover the release title/tag grammar and the
-publication guard (`parse_test.go`, `permission_test.go`, `review_test.go`,
-`workflow_guard_test.go`, `workflow_run_test.go`), and `cmd/release-guard/*_test.go`
-cover the CLI that exposes them (`main_test.go`, plus the `go-github` and git seams
-in `githubclient_test.go` / `gitrunner_test.go`). Final releases do not require a
-prior rc; rc support remains covered by the tag grammar, workflow classification,
-prerelease publication, and npm dist-tag logic.
-`release-guard check-workflow` runs inside `make check` to keep publication behind
-the required gates: the per-repo policy (`.github/release-guard.policy.yml`)
-requires both the `release` (GitHub Release) and `npm-publish` jobs to sit behind
-`guard` + `nix-vendor-hash` + `contract-gates`, and additionally requires
-`npm-publish` to carry `permissions.id-token: write` and run under the
-`npm-publish` GitHub Actions environment (the two scopes its npm Trusted
-Publishing / OIDC authentication needs - see `docs/release-runbook.md`).
-`TestCheckReleaseWorkflow_Cases` (`workflow_guard_test.go`, fed by
-`testdata/workflow/cases.yaml`) includes synthetic-break fixtures proving each
-assertion fires for BOTH the "missing entirely" and the "present but wrong
-value" mutation of the `id-token` permission and the environment binding -
-`missing-npm-publish.yml` and `npm-publish-missing-needs.yml` cover the job and
-its needs-edges; `npm-publish-missing-permissions.yml` /
-`npm-publish-wrong-permissions.yml` cover the `id-token` permission absent vs.
-present-but-wrong (`read` instead of `write`); `npm-publish-missing-environment.yml`
-/ `npm-publish-wrong-environment.yml` cover the environment binding absent vs.
-present-but-wrong (`production` instead of `npm-publish`) - so the `npm-publish`
-job, one of its needs-edges, its `id-token` permission, and its environment
-binding are each proven caught whether missing OR wrong, not just one mutation
-shape per field.
-
-The permission/environment checks only parse the exact forms this repo's
-workflows use (the explicit `permissions:` map, a bare scalar `environment:`),
-not GitHub's `permissions: write-all`/`read-all` shorthand or the
-`environment: { name, url }` mapping form; both gaps fail CLOSED (a false
-rejection, never a false accept). `npm-publish-permissions-shorthand.yml` and
-`npm-publish-environment-mapping.yml` prove each unsupported-but-valid form is
-rejected with a message naming the specific form and the fix, distinct from
-the "missing entirely" message.
+`internal/release/*_test.go` cover tag grammar and classification, while
+`cmd/release-guard/*_test.go` cover the CLI and its output. Final releases do
+not require a prior rc. CI runs pinned `release-intent check-workflows` against
+the workflow directory and the release queue policy.
+`TestReleaseAdoptionPublicationWiring` separately checks that the release
+workflow contains its required jobs, pins their dependency sets, and gives the
+npm job its own `id-token: write` permission and scalar `npm-publish`
+environment. Its required-name manifest prevents a case from silently
+disappearing. These schema-specific checks run in `make check`.
 
 ## Layer 2: unit tests alongside the sources
 
@@ -463,8 +466,7 @@ Typed test corpora live in `testdata/` trees, one family per surface:
 
 - top level `testdata/`: `annotations`, `contract`, `local-api`, `publish`, `pull`,
   `quality`, `session-detail`, `sync`;
-- `internal/release/testdata/`: `grammar`, `workflow`;
-- `cmd/release-guard/testdata/`: `github`;
+- `internal/release/testdata/`: `grammar`;
 - `openapi/testdata/`.
 
 ### The idiom: typed struct + `//go:embed` + `yaml.Unmarshal`
@@ -495,9 +497,7 @@ func loadGrammarFixtures(t *testing.T) grammarFixtures {
 }
 ```
 
-Other real examples of the same idiom: `internal/release/workflow_fixtures_test.go`
-(`//go:embed testdata/workflow`), `cmd/release-guard/githubfixtures_test.go`
-(`//go:embed testdata/github`), and `openapi/publish_schema_parity_test.go`
+Another example is `openapi/publish_schema_parity_test.go`
 (`//go:embed testdata/legacy-publish-request.schema.json`).
 
 ### Row-count guards
@@ -561,17 +561,10 @@ case, backstopped by `assert.RequireMin` at `len(AllLicenses)` plus the two
 negatives), and `TestLicenseCorpus_Freshness` byte-compares the committed file
 against a fresh `RenderCorpus`, so a hand-edit or a stale artifact reddens.
 
-The two worked migrations are the reference examples.
-`internal/release/grammar_corpus_test.go` moves the `version_kind` and `parse_tag`
-grammar corpora onto the standard (`TestVersionKindBaseIsRC`, `TestParseTag`),
-loading through `testcase.LoadCorpus` and preserving every pre-migration
-assertion. Each guards coverage two ways: an exact case-count control (a min-floor
-would pass a silent drop that stays above the floor) plus a lean value-based
-coverage assertion (an exact count cannot see a count-preserving swap that drops a
-real case and adds a filler). The older `versions.yaml` corpus (`new_version` /
-`parse_title`)
-deliberately stays on its ad-hoc `loadGrammarFixtures` loader; `testcase` is the
-generalization new corpora adopt, not a forced rewrite of every existing family.
+The release tag and version-kind corpora in
+`internal/release/grammar_corpus_test.go` use `testcase.LoadCorpus` and guard
+required case names with manifests. The older version-validation corpus retains
+its ad-hoc loader.
 
 ### Segmented multi-axis fixtures
 

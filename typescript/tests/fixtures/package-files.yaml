@@ -13,6 +13,7 @@ files:
   - dist/fixtures/session-graph.js
   - dist/fixtures/timeline.d.ts
   - dist/fixtures/timeline.js
+  - dist/fixtures/transcript-numbering.yaml
   - dist/index.d.ts
   - dist/index.js
   - dist/contribution-attempt.d.ts

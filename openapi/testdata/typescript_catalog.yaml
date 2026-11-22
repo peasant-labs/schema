@@ -3,6 +3,27 @@ forbidden_components:
   - BestiaryHarness
   - VersionResponse
 types:
+  - {go_name: VillageAttestationType, disposition: catalog, component: VillageAttestationType, reason: Village account and auxiliary route contract}
+  - {go_name: VillageDiscoverabilityRequest, disposition: catalog, component: VillageDiscoverabilityRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageUsernameRequest, disposition: catalog, component: VillageUsernameRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageCreateAPIKeyRequest, disposition: catalog, component: VillageCreateAPIKeyRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageCreatedAPIKey, disposition: catalog, component: VillageCreatedAPIKey, reason: Village account and auxiliary route contract}
+  - {go_name: VillageAPIKey, disposition: catalog, component: VillageAPIKey, reason: Village account and auxiliary route contract}
+  - {go_name: VillageOrganizationVisibilityRequest, disposition: catalog, component: VillageOrganizationVisibilityRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageOrganizationVisibilityResponse, disposition: catalog, component: VillageOrganizationVisibilityResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageOrganizationSearchResult, disposition: catalog, component: VillageOrganizationSearchResult, reason: Village account and auxiliary route contract}
+  - {go_name: VillageOrganizationSearchResponse, disposition: catalog, component: VillageOrganizationSearchResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageTagUsage, disposition: catalog, component: VillageTagUsage, reason: Village account and auxiliary route contract}
+  - {go_name: VillageResolvedProject, disposition: catalog, component: VillageResolvedProject, reason: Village account and auxiliary route contract}
+  - {go_name: VillageProjectCollective, disposition: catalog, component: VillageProjectCollective, reason: Village account and auxiliary route contract}
+  - {go_name: VillageUserProjectResponse, disposition: catalog, component: VillageUserProjectResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageProjectDisplayNameRequest, disposition: catalog, component: VillageProjectDisplayNameRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageCreateAttestationRequest, disposition: catalog, component: VillageCreateAttestationRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageManualAnnotationRequest, disposition: catalog, component: VillageManualAnnotationRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageTranscriptAnnotationsResponse, disposition: catalog, component: VillageTranscriptAnnotationsResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageTranscriptCommit, disposition: catalog, component: VillageTranscriptCommit, reason: Village account and auxiliary route contract}
+  - {go_name: VillageTranscriptCommitsResponse, disposition: catalog, component: VillageTranscriptCommitsResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageHealthResponse, disposition: catalog, component: VillageHealthResponse, reason: Village account and auxiliary route contract}
   - {go_name: TranscriptReadTransportKind, disposition: catalog, component: TranscriptReadTransportKind, reason: segmented read transport kind}
   - {go_name: TranscriptReadTransport, disposition: catalog, component: TranscriptReadTransport, reason: segmented read route identity}
   - {go_name: TranscriptRecordedIndexState, disposition: catalog, component: TranscriptRecordedIndexState, reason: recorded index presence state}
@@ -37,6 +58,9 @@ types:
   - {go_name: TranscriptContentHashWord, disposition: runtime-only, reason: producer input for header validation identity}
   - {go_name: TranscriptRetainedOwnerVisibility, disposition: runtime-only, reason: producer input for header validation identity}
   - {go_name: TranscriptCookTurn, disposition: runtime-only, reason: paired raw and decoded producer input}
+  - {go_name: TranscriptCookTurnFacts, disposition: runtime-only, reason: producer partition index facts of a captured turn}
+  - {go_name: TranscriptCaptureRefusal, disposition: runtime-only, reason: Go-only capture refusal class}
+  - {go_name: TranscriptCaptureError, disposition: runtime-only, reason: Go-only capture refusal error}
   - {go_name: CookedTurn, disposition: runtime-only, reason: producer cooking verdict}
   - {go_name: PositionedWindowTurn, disposition: runtime-only, reason: producer window resolver input}
   - {go_name: PositionedWindowInput, disposition: runtime-only, reason: producer window resolver input}

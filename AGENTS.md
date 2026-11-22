@@ -16,7 +16,7 @@ their clients.
 
 It is a **contract-only leaf**: types, closed enums, generated OpenAPI specs, the
 publish-request JSON Schema validator, typed fixtures, and the codegen plus
-release-guard tooling. Its `typescript/` package generates the same contract
+the `release-guard parse-tag` release-tag parser. Its `typescript/` package generates the same contract
 definitions and runtime schemas for TypeScript consumers and ships inside the
 module's tagged releases (first in `v0.1.0-rc6`); npm publication is automated
 in the release ceremony (`release.yml`'s `npm-publish` job, behind the same
@@ -54,6 +54,8 @@ types: `TranscriptTurnByteLength` and `TranscriptJSONStringByteLength` (the byte
 measure), `CutTranscriptSegments` (the cut, with each segment's conversation
 turn span), `ResolveTranscriptWindow` (the anchor window) and the constants
 `TranscriptSegmentBudgetBytes` and `TranscriptWindowSpan{Default,Minimum,Maximum}`.
+`CutTranscriptCookTurns` and `TranscriptCookTurn.Facts`
+(`transcript_cook_facts.go`) apply the same cut and measure to captured turns.
 They are pure functions over wire types and live here because every server that
 serves the segmented transcript reads must cut the same turns into the same
 segments; a copy per backend would let boundaries drift, and a directory from
@@ -227,8 +229,7 @@ Install the locked TypeScript development toolchain with
 
 ## Gates
 
-`make check` is the authoritative full-repository gate: fmt, vet, the
-release-workflow guard, TypeScript typecheck/tests/package smoke, and
+`make check` is the authoritative full-repository gate: fmt, vet, TypeScript typecheck/tests/package smoke, and
 `go test ./...` (which carries the freshness, immutability,
 leaf-audit, vendor-hash, and synthetic-break checks). It runs without the race
 detector by default; `make check RACE=1` opts in. `make race-selective` runs
@@ -237,6 +238,10 @@ caches), and the merge-queue run requires it. `make gates
 BASE_REF=origin/develop` runs the breaking-change gates (`oasdiff`, `go-apidiff`,
 `vacuum`) and needs the flake tools. `TESTING.md` has the full gate table and the
 real test behind each one.
+
+`TestReleaseAdoptionPublicationWiring` in `cmd/schema-gen` checks the release
+publication jobs, their dependencies, and npm OIDC binding. CI also runs the
+pinned infra `check-workflows` policy; neither check replaces the other.
 
 ## Static guard
 

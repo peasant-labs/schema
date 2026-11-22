@@ -106,6 +106,8 @@ try {
     cwd: consumerDir,
     stdio: "inherit",
   });
+  const numberingPath = execFileSync("node", ["--input-type=module", "-e", `console.log(import.meta.resolve("@peasant-labs/schema/fixtures/transcript-numbering"))`], { cwd: consumerDir, encoding: "utf8" }).trim();
+  assert.deepEqual(await readFile(new URL(numberingPath)), await readFile(new URL("../../testdata/transcript_numbering.yaml", import.meta.url)), "packed numbering corpus differs from the Go module source");
 
   const routePaths = parse(await readFile(new URL("../../testdata/route_paths.yaml", import.meta.url), "utf8"));
   assert.ok(Array.isArray(routePaths.cases) && routePaths.cases.length > 0, "route_paths.yaml must provide route member paths for the packed-package probe");

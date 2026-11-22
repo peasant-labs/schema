@@ -21,3 +21,15 @@ specs:
   - name: peasantlocal-api-0.39.0
     json_sha256: 3db0dcb5db567bc16e3d798f0e01545394719b55efcf7eb9c062f347d24d8060
     yaml_sha256: 3a1476c1c6e72383633ed07be39a62f067a5b14d7b7486a1b2dd425f0cd85ba7
+  - name: types-0.53.0
+    json_sha256: 94bcfdd98b13bc0762639bdefaefcccd32ed4630cd4e19e3d817c3ec6970a293
+    yaml_sha256: 6d36491577b8ee95e9423fdc0b1b8ecd83ef32024b2177bdbde7767e35a8c94f
+  - name: village-api-0.43.0
+    json_sha256: e1d3e0f1571fb505aa9962d4e6c1b32d5075237a778fe36e0b0138653ac8ac3c
+    yaml_sha256: cc66d83a7f6df0fae1b153f84d26bc40254564ccf7377e8a2ce0c84a20afb5ad
+  - name: publish-request-0.43.0.schema
+    json_sha256: 005103b9e2fb7b4e3d92a648372de3625e456d9b1d7ec910dc1647cb188dbbef
+    json_only: true
+  - name: annotation-push-request-0.43.0.schema
+    json_sha256: b202dcc1437a4a1b9b437a65aad3fe1a7d893f160946f01e360d3a0f8020c7ef
+    json_only: true

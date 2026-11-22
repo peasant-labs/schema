@@ -1,0 +1,7 @@
+cases:
+  - name: final
+    tag: v1.2.3
+    want: "version=v1.2.3\nkind=final\n"
+  - name: rc
+    tag: v1.2.3-rc4
+    want: "version=v1.2.3-rc4\nkind=rc\n"

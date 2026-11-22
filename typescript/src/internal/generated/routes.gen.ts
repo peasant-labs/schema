@@ -27,6 +27,18 @@ export const VillageRoute = Object.freeze({
    */
   GetAnnotationManifest: routeMember(HttpMethod.Get, "/api/v1/annotations/manifest", "getAnnotationManifest"),
   /**
+   * `GET /api/v1/auth/api-keys` (operationId `listMyAPIKeys`).
+   */
+  ListMyAPIKeys: routeMember(HttpMethod.Get, "/api/v1/auth/api-keys", "listMyAPIKeys"),
+  /**
+   * `POST /api/v1/auth/api-keys` (operationId `createMyAPIKey`).
+   */
+  CreateMyAPIKey: routeMember(HttpMethod.Post, "/api/v1/auth/api-keys", "createMyAPIKey"),
+  /**
+   * `DELETE /api/v1/auth/api-keys/{id}` (operationId `revokeMyAPIKey`).
+   */
+  RevokeMyAPIKey: routeMember(HttpMethod.Delete, "/api/v1/auth/api-keys/{id}", "revokeMyAPIKey"),
+  /**
    * `POST /api/v1/auth/cli/exchange` (operationId `cliExchangeCode`).
    */
   CliExchangeCode: routeMember(HttpMethod.Post, "/api/v1/auth/cli/exchange", "cliExchangeCode"),
@@ -35,13 +47,73 @@ export const VillageRoute = Object.freeze({
    */
   CliLogin: routeMember(HttpMethod.Get, "/api/v1/auth/cli/login", "cliLogin"),
   /**
+   * `GET /api/v1/auth/codeberg` (operationId `startCodebergSignIn`).
+   */
+  StartCodebergSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/codeberg", "startCodebergSignIn"),
+  /**
+   * `GET /api/v1/auth/codeberg/callback` (operationId `completeCodebergSignIn`).
+   */
+  CompleteCodebergSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/codeberg/callback", "completeCodebergSignIn"),
+  /**
+   * `GET /api/v1/auth/github` (operationId `startGitHubSignIn`).
+   */
+  StartGitHubSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/github", "startGitHubSignIn"),
+  /**
+   * `GET /api/v1/auth/github/callback` (operationId `completeGitHubSignIn`).
+   */
+  CompleteGitHubSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/github/callback", "completeGitHubSignIn"),
+  /**
+   * `GET /api/v1/auth/gitlab` (operationId `startGitLabSignIn`).
+   */
+  StartGitLabSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/gitlab", "startGitLabSignIn"),
+  /**
+   * `GET /api/v1/auth/gitlab/callback` (operationId `completeGitLabSignIn`).
+   */
+  CompleteGitLabSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/gitlab/callback", "completeGitLabSignIn"),
+  /**
+   * `GET /api/v1/auth/huggingface` (operationId `startHuggingFaceSignIn`).
+   */
+  StartHuggingFaceSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/huggingface", "startHuggingFaceSignIn"),
+  /**
+   * `GET /api/v1/auth/huggingface/callback` (operationId `completeHuggingFaceSignIn`).
+   */
+  CompleteHuggingFaceSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/huggingface/callback", "completeHuggingFaceSignIn"),
+  /**
+   * `POST /api/v1/auth/logout` (operationId `logOut`).
+   */
+  LogOut: routeMember(HttpMethod.Post, "/api/v1/auth/logout", "logOut"),
+  /**
    * `GET /api/v1/auth/me` (operationId `getAuthenticatedVillageUser`).
    */
   GetAuthenticatedVillageUser: routeMember(HttpMethod.Get, "/api/v1/auth/me", "getAuthenticatedVillageUser"),
   /**
+   * `DELETE /api/v1/auth/me` (operationId `deleteMyAccount`).
+   */
+  DeleteMyAccount: routeMember(HttpMethod.Delete, "/api/v1/auth/me", "deleteMyAccount"),
+  /**
+   * `PATCH /api/v1/auth/me/settings` (operationId `setMyDiscoverability`).
+   */
+  SetMyDiscoverability: routeMember(HttpMethod.Patch, "/api/v1/auth/me/settings", "setMyDiscoverability"),
+  /**
+   * `PATCH /api/v1/auth/me/username` (operationId `setMyUsername`).
+   */
+  SetMyUsername: routeMember(HttpMethod.Patch, "/api/v1/auth/me/username", "setMyUsername"),
+  /**
    * `GET /api/v1/auth/orgs` (operationId `listAuthenticatedVillageOrganizations`).
    */
   ListAuthenticatedVillageOrganizations: routeMember(HttpMethod.Get, "/api/v1/auth/orgs", "listAuthenticatedVillageOrganizations"),
+  /**
+   * `PATCH /api/v1/auth/orgs/{orgLogin}/visibility` (operationId `setMyOrganizationVisibility`).
+   */
+  SetMyOrganizationVisibility: routeMember(HttpMethod.Patch, "/api/v1/auth/orgs/{orgLogin}/visibility", "setMyOrganizationVisibility"),
+  /**
+   * `GET /api/v1/auth/sourcehut` (operationId `startSourceHutSignIn`).
+   */
+  StartSourceHutSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/sourcehut", "startSourceHutSignIn"),
+  /**
+   * `GET /api/v1/auth/sourcehut/callback` (operationId `completeSourceHutSignIn`).
+   */
+  CompleteSourceHutSignIn: routeMember(HttpMethod.Get, "/api/v1/auth/sourcehut/callback", "completeSourceHutSignIn"),
   /**
    * `GET /api/v1/collectives` (operationId `listGroups`).
    */
@@ -299,9 +371,25 @@ export const VillageRoute = Object.freeze({
    */
   RemoveGroupTranscriptDeprecated: routeMember(HttpMethod.Delete, "/api/v1/groups/{id}/transcripts/{transcriptID}", "removeGroupTranscriptDeprecated"),
   /**
+   * `GET /api/v1/integrations/github/callback` (operationId `completeGitHubAppInstall`).
+   */
+  CompleteGitHubAppInstall: routeMember(HttpMethod.Get, "/api/v1/integrations/github/callback", "completeGitHubAppInstall"),
+  /**
+   * `GET /api/v1/integrations/github/install` (operationId `startGitHubAppInstall`).
+   */
+  StartGitHubAppInstall: routeMember(HttpMethod.Get, "/api/v1/integrations/github/install", "startGitHubAppInstall"),
+  /**
    * `POST /api/v1/integrations/github/webhook` (operationId `receiveGitHubWebhook`).
    */
   ReceiveGitHubWebhook: routeMember(HttpMethod.Post, "/api/v1/integrations/github/webhook", "receiveGitHubWebhook"),
+  /**
+   * `GET /api/v1/openapi.json` (operationId `getVillageAPIDocument`).
+   */
+  GetVillageAPIDocument: routeMember(HttpMethod.Get, "/api/v1/openapi.json", "getVillageAPIDocument"),
+  /**
+   * `GET /api/v1/orgs/search` (operationId `searchOrganizations`).
+   */
+  SearchOrganizations: routeMember(HttpMethod.Get, "/api/v1/orgs/search", "searchOrganizations"),
   /**
    * `GET /api/v1/orgs/{login}` (operationId `getVillageOrganizationCollectives`).
    */
@@ -347,6 +435,14 @@ export const VillageRoute = Object.freeze({
    */
   GetSchemaVersion: routeMember(HttpMethod.Get, "/api/v1/schema/version", "getSchemaVersion"),
   /**
+   * `GET /api/v1/tags` (operationId `listTags`).
+   */
+  ListTags: routeMember(HttpMethod.Get, "/api/v1/tags", "listTags"),
+  /**
+   * `GET /api/v1/tags/popular` (operationId `listPopularTags`).
+   */
+  ListPopularTags: routeMember(HttpMethod.Get, "/api/v1/tags/popular", "listPopularTags"),
+  /**
    * `GET /api/v1/transcript-groups/{groupId}/members` (operationId `listTranscriptGroupMembers`).
    */
   ListTranscriptGroupMembers: routeMember(HttpMethod.Get, "/api/v1/transcript-groups/{groupId}/members", "listTranscriptGroupMembers"),
@@ -359,6 +455,10 @@ export const VillageRoute = Object.freeze({
    */
   PublishTranscript: routeMember(HttpMethod.Post, "/api/v1/transcripts/publish", "publishTranscript"),
   /**
+   * `POST /api/v1/transcripts/publish/batch` (operationId `publishTranscriptBatch`).
+   */
+  PublishTranscriptBatch: routeMember(HttpMethod.Post, "/api/v1/transcripts/publish/batch", "publishTranscriptBatch"),
+  /**
    * `GET /api/v1/transcripts/{id}` (operationId `getTranscriptMetadata`).
    */
   GetTranscriptMetadata: routeMember(HttpMethod.Get, "/api/v1/transcripts/{id}", "getTranscriptMetadata"),
@@ -367,9 +467,37 @@ export const VillageRoute = Object.freeze({
    */
   UpdateTranscript: routeMember(HttpMethod.Patch, "/api/v1/transcripts/{id}", "updateTranscript"),
   /**
+   * `DELETE /api/v1/transcripts/{id}` (operationId `deleteTranscript`).
+   */
+  DeleteTranscript: routeMember(HttpMethod.Delete, "/api/v1/transcripts/{id}", "deleteTranscript"),
+  /**
+   * `GET /api/v1/transcripts/{id}/annotations` (operationId `listTranscriptAnnotations`).
+   */
+  ListTranscriptAnnotations: routeMember(HttpMethod.Get, "/api/v1/transcripts/{id}/annotations", "listTranscriptAnnotations"),
+  /**
+   * `POST /api/v1/transcripts/{id}/annotations` (operationId `createTranscriptAnnotation`).
+   */
+  CreateTranscriptAnnotation: routeMember(HttpMethod.Post, "/api/v1/transcripts/{id}/annotations", "createTranscriptAnnotation"),
+  /**
+   * `GET /api/v1/transcripts/{id}/attestations` (operationId `listTranscriptAttestations`).
+   */
+  ListTranscriptAttestations: routeMember(HttpMethod.Get, "/api/v1/transcripts/{id}/attestations", "listTranscriptAttestations"),
+  /**
+   * `POST /api/v1/transcripts/{id}/attestations` (operationId `createTranscriptAttestation`).
+   */
+  CreateTranscriptAttestation: routeMember(HttpMethod.Post, "/api/v1/transcripts/{id}/attestations", "createTranscriptAttestation"),
+  /**
+   * `DELETE /api/v1/transcripts/{id}/attestations/{attestationID}` (operationId `deleteTranscriptAttestation`).
+   */
+  DeleteTranscriptAttestation: routeMember(HttpMethod.Delete, "/api/v1/transcripts/{id}/attestations/{attestationID}", "deleteTranscriptAttestation"),
+  /**
    * `GET /api/v1/transcripts/{id}/collectives` (operationId `listTranscriptCollectives`).
    */
   ListTranscriptCollectives: routeMember(HttpMethod.Get, "/api/v1/transcripts/{id}/collectives", "listTranscriptCollectives"),
+  /**
+   * `GET /api/v1/transcripts/{id}/commits` (operationId `listTranscriptCommits`).
+   */
+  ListTranscriptCommits: routeMember(HttpMethod.Get, "/api/v1/transcripts/{id}/commits", "listTranscriptCommits"),
   /**
    * `GET /api/v1/transcripts/{id}/content` (operationId `getTranscriptContent`).
    */
@@ -443,6 +571,14 @@ export const VillageRoute = Object.freeze({
    */
   DeclineMyInvitation: routeMember(HttpMethod.Post, "/api/v1/users/me/invitations/{invitationID}/decline", "declineMyInvitation"),
   /**
+   * `PATCH /api/v1/users/me/projects/{projectHash}` (operationId `setMyProjectDisplayName`).
+   */
+  SetMyProjectDisplayName: routeMember(HttpMethod.Patch, "/api/v1/users/me/projects/{projectHash}", "setMyProjectDisplayName"),
+  /**
+   * `DELETE /api/v1/users/me/projects/{projectHash}/display-name` (operationId `clearMyProjectDisplayName`).
+   */
+  ClearMyProjectDisplayName: routeMember(HttpMethod.Delete, "/api/v1/users/me/projects/{projectHash}/display-name", "clearMyProjectDisplayName"),
+  /**
    * `GET /api/v1/users/me/prompt-requests` (operationId `listMyPromptRequests`).
    */
   ListMyPromptRequests: routeMember(HttpMethod.Get, "/api/v1/users/me/prompt-requests", "listMyPromptRequests"),
@@ -458,15 +594,49 @@ export const VillageRoute = Object.freeze({
    * `GET /api/v1/users/me/stats` (operationId `getMyStats`).
    */
   GetMyStats: routeMember(HttpMethod.Get, "/api/v1/users/me/stats", "getMyStats"),
+  /**
+   * `GET /api/v1/users/{username}` (operationId `getUserProfile`).
+   */
+  GetUserProfile: routeMember(HttpMethod.Get, "/api/v1/users/{username}", "getUserProfile"),
+  /**
+   * `GET /api/v1/users/{username}/orgs` (operationId `listUserOrganizations`).
+   */
+  ListUserOrganizations: routeMember(HttpMethod.Get, "/api/v1/users/{username}/orgs", "listUserOrganizations"),
+  /**
+   * `GET /api/v1/users/{username}/projects/{projectHash}` (operationId `getUserProject`).
+   */
+  GetUserProject: routeMember(HttpMethod.Get, "/api/v1/users/{username}/projects/{projectHash}", "getUserProject"),
+  /**
+   * `GET /health` (operationId `getHealth`).
+   */
+  GetHealth: routeMember(HttpMethod.Get, "/health", "getHealth"),
 } as const);
 /** ALL_VILLAGE_ROUTES is every member of VillageRoute, ordered by pattern and then by ALL_HTTP_METHODS. */
 export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.PushAnnotations,
   VillageRoute.GetAnnotationManifest,
+  VillageRoute.ListMyAPIKeys,
+  VillageRoute.CreateMyAPIKey,
+  VillageRoute.RevokeMyAPIKey,
   VillageRoute.CliExchangeCode,
   VillageRoute.CliLogin,
+  VillageRoute.StartCodebergSignIn,
+  VillageRoute.CompleteCodebergSignIn,
+  VillageRoute.StartGitHubSignIn,
+  VillageRoute.CompleteGitHubSignIn,
+  VillageRoute.StartGitLabSignIn,
+  VillageRoute.CompleteGitLabSignIn,
+  VillageRoute.StartHuggingFaceSignIn,
+  VillageRoute.CompleteHuggingFaceSignIn,
+  VillageRoute.LogOut,
   VillageRoute.GetAuthenticatedVillageUser,
+  VillageRoute.DeleteMyAccount,
+  VillageRoute.SetMyDiscoverability,
+  VillageRoute.SetMyUsername,
   VillageRoute.ListAuthenticatedVillageOrganizations,
+  VillageRoute.SetMyOrganizationVisibility,
+  VillageRoute.StartSourceHutSignIn,
+  VillageRoute.CompleteSourceHutSignIn,
   VillageRoute.ListGroups,
   VillageRoute.CreateGroup,
   VillageRoute.ListPublicGroups,
@@ -524,7 +694,11 @@ export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.BatchShareSelectionDeprecated,
   VillageRoute.ReviewShareDeprecated,
   VillageRoute.RemoveGroupTranscriptDeprecated,
+  VillageRoute.CompleteGitHubAppInstall,
+  VillageRoute.StartGitHubAppInstall,
   VillageRoute.ReceiveGitHubWebhook,
+  VillageRoute.GetVillageAPIDocument,
+  VillageRoute.SearchOrganizations,
   VillageRoute.GetVillageOrganizationCollectives,
   VillageRoute.ListPullableTranscripts,
   VillageRoute.PullSkipGate,
@@ -536,12 +710,22 @@ export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.DetachPullRequestAttachment,
   VillageRoute.ConfirmPullRequestAttachment,
   VillageRoute.GetSchemaVersion,
+  VillageRoute.ListTags,
+  VillageRoute.ListPopularTags,
   VillageRoute.ListTranscriptGroupMembers,
   VillageRoute.ListTranscripts,
   VillageRoute.PublishTranscript,
+  VillageRoute.PublishTranscriptBatch,
   VillageRoute.GetTranscriptMetadata,
   VillageRoute.UpdateTranscript,
+  VillageRoute.DeleteTranscript,
+  VillageRoute.ListTranscriptAnnotations,
+  VillageRoute.CreateTranscriptAnnotation,
+  VillageRoute.ListTranscriptAttestations,
+  VillageRoute.CreateTranscriptAttestation,
+  VillageRoute.DeleteTranscriptAttestation,
   VillageRoute.ListTranscriptCollectives,
+  VillageRoute.ListTranscriptCommits,
   VillageRoute.GetTranscriptContent,
   VillageRoute.GetTranscriptHeader,
   VillageRoute.ListTranscriptPullRequests,
@@ -560,10 +744,16 @@ export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.ListMyInvitations,
   VillageRoute.AcceptMyInvitation,
   VillageRoute.DeclineMyInvitation,
+  VillageRoute.SetMyProjectDisplayName,
+  VillageRoute.ClearMyProjectDisplayName,
   VillageRoute.ListMyPromptRequests,
   VillageRoute.GetMySettings,
   VillageRoute.UpdateMySettings,
   VillageRoute.GetMyStats,
+  VillageRoute.GetUserProfile,
+  VillageRoute.ListUserOrganizations,
+  VillageRoute.GetUserProject,
+  VillageRoute.GetHealth,
 ] as const);
 
 /** LocalRoute holds one member per operation of the Local API document, named by operationId. */

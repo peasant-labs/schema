@@ -31,20 +31,20 @@ Consumers re-pin only after the schema tag exists.
    default-branch run can retry.
 4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
    and the contract check precede the independent GitHub Release and npm
-   publishers. When `gh release view` finds no release, `gh release list`
-   (drafts included) must show no release or draft for the tag; it fails on
-   any API error, so a rate limit, a 5xx or an authentication error stops the
-   run before anything is created. `scripts/collect-release-assets.sh` copies
-   only the numbered frozen JSON and YAML specs, including numbered request
-   schemas, into `dist/assets`; `*-next` files never ship as release assets.
-   Then one `gh release create --draft --verify-tag ... 'dist/assets/*'`
-   command creates the draft and uploads those specs to that same release.
-   The next step checks that the draft holds assets; only then is it
-   published, and a last check confirms the release is published, immutable
-   and holds assets. The release notes sit beside the assets at
-   `dist/release-notes.md` and are not uploaded. The npm job checks that the
-   committed package version matches the tag and removes `private` only in
-   its working copy.
+   publishers. `scripts/collect-release-assets.sh` copies only the numbered
+   frozen JSON and YAML specs, including numbered request schemas, into
+   `dist/assets`; `*-next` files never ship as release assets. The release notes
+   sit beside the assets at `dist/release-notes.md` and are not uploaded.
+   The `release` job checks out and builds the pinned `release-intent` tool
+   before downloading `release-dist`, then runs `release-intent publish-release
+   --require-immutable`. It builds the local manifest first, lists every
+   release (30 per page, drafts included, failing closed if truncated or if any
+   draft exists for the tag), confirms `refs/tags/<tag>` exists, creates a draft
+   release and uploads every asset by release id, verifies the draft's assets by
+   name, size, and SHA-256 digest against the manifest, publishes it by id, and
+   verifies the published release again (including `immutable`). The npm job
+   checks that the committed package version matches the tag and removes
+   `private` only in its working copy.
 
 On 2026-11-18, a read-only check of GitHub's commit-to-pulls API returned the
 merged bot release PR, its merge commit, `automation/release` head, and
@@ -53,16 +53,20 @@ The same check for ordinary merge commit `24323466e020c223cf9750bd0606774c104b4b
 returned a human-authored PR. This is live evidence, not a guarantee of future
 API behavior: the provenance test stubs Git, yq, and gh.
 
-A transient API error (rate limit, 5xx, authentication) fails the run before
-anything is created: rerun the workflow; no new tag is needed. If the list
-check reports a release or draft for the tag, nothing was created by this run;
-delete stale drafts by id as below, then rerun.
+A transient API error (rate limit, 5xx, authentication) before creation fails
+the run before anything is created: rerun the workflow; no new tag is needed.
+If `draft-exists` is reported, nothing was created by this run; delete stale
+drafts by id as below, then rerun.
 
-On a rerun, a published release with assets is left unchanged. A failed upload
-leaves an unpublished draft: the draft check fails before publishing, and a
-rerun fails on the existing draft without resuming the upload. Drafts are not
-immutable. Delete every draft for the tag **by its id**, then rerun the release
-workflow for the same tag. Set `TAG` to the existing tag and list the drafts:
+On a rerun, a published release matching the exact manifest, prerelease flag,
+and immutability requirement is left unchanged (`state=already-published`).
+Because GitHub's REST API cannot enforce draft-only deletion, real release runs
+never send automatic `DELETE` requests: on a pre-publish failure or ambiguous
+publish, `publish-release` reads the release back by id and leaves it
+untouched, printing either the by-id inspect/delete command (if still a draft)
+or fix-forward guidance (if published). Drafts are not immutable. Delete every
+draft for the tag **by its id**, then rerun the release workflow for the same
+tag. Set `TAG` to the existing tag and list the drafts:
 
 ```sh
 gh api repos/peasant-labs/schema/releases --paginate \
@@ -81,18 +85,15 @@ recover a draft. If an already-published release has no assets, fix forward
 with a new tag; do not attempt to repair a published immutable release or
 reuse its tag.
 
-Why one command: v0.55.0 through v0.57.1 were published with no assets. In run
-44295390680, `gh release create --draft` made one draft at 11:37:06; a
+Why `publish-release`: v0.55.0 through v0.57.1 were published with no assets.
+In run 44295390680, `gh release create --draft` made one draft at 11:37:06; a
 separate upload action, which finds a release only by listing releases, did not
 see it, made a second draft at 11:37:13 and uploaded 349 assets there; at
 11:37:16 `gh release edit --draft=false` published the first, empty draft,
 because GitHub's tag lookup returns the oldest draft. v0.54.0, the last good
-release, used one `gh release create` with its assets, as the workflow does
-again now.
-
-A failed `gh release view`, including a network or authentication failure, is
-treated as no release. If a release actually exists, the create step fails
-loudly, so this fallback cannot report a false success.
+release before adopting `publish-release`, used one `gh release create` with
+its assets; `publish-release` now creates, uploads, verifies by manifest and
+SHA-256 digest, and publishes strictly by release id.
 
 Tags are append-only. Never push, move, or delete a public tag by hand. Old
 `pkg/schema/v*` tags remain intact. The old tag parser still recognizes

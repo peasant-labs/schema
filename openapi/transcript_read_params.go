@@ -1,5 +1,14 @@
 package openapi
 
+import schema "github.com/peasant-labs/schema"
+
+type positionedQuery struct {
+	Version        int                                   `query:"v" description:"Segmented read protocol generation."`
+	Partition      schema.TranscriptSegmentPartitionKind `query:"partition" description:"Positioned partition: main or history; omitted selects main."`
+	Section        *int                                  `query:"section" minimum:"0" nullable:"false" description:"History section index. Required for history and omitted for main."`
+	Representation string                                `query:"representation" description:"Optional positioned representation to revalidate; a mismatch requires reload."`
+}
+
 // The parameters of the segmented transcript reads. The Local and Village API
 // builders both embed these beside their own id path field, so each bound,
 // default and description has one declaration and the two specs cannot differ.
