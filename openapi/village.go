@@ -656,14 +656,6 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		Representation string              `query:"representation" description:"Optional projection identity to revalidate; a mismatch requires reload."`
 		IfNoneMatch    string              `header:"If-None-Match" description:"Optional entity tag of the previously authorized header."`
 	})
-	// The Village operations retain the Local API's v1 parameters and shapes;
-	// The positioned protocol is an opt-in addition on these Village paths only.
-	type positionedQuery struct {
-		Version        int                                   `query:"v" description:"Segmented read protocol generation."`
-		Partition      schema.TranscriptSegmentPartitionKind `query:"partition" description:"Positioned partition: main or history; omitted selects main."`
-		Section        *int                                  `query:"section" minimum:"0" nullable:"false" description:"History section index. Required for history and omitted for main."`
-		Representation string                                `query:"representation" description:"Optional positioned representation to revalidate; a mismatch requires reload."`
-	}
 	transcriptSegmentsQuery := new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 		transcriptSegmentsParams

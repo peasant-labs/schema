@@ -40,6 +40,7 @@
       "types": "./dist/fixtures.d.ts",
       "default": "./dist/fixtures.js"
     },
+    "./fixtures/transcript-numbering": "./dist/fixtures/transcript-numbering.yaml",
     "./fixtures/quality": {
       "types": "./dist/fixtures/quality.d.ts",
       "default": "./dist/fixtures/quality.js"
