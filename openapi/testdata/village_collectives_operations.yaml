@@ -474,7 +474,7 @@ component_required:
   - component: VillageContributionErrorDetail
     contains: [code]
     excludes: [transcript_id, current_project_hash]
-  - component: VillageErrorResponse
+  - component: VillageContributionErrorResponse
     contains: [error]
     excludes: [code, details]
   - component: VillageBatchShareSelectionRequest
@@ -657,11 +657,11 @@ component_properties:
     required: true
     nullable: false
     items_ref: "#/components/schemas/SchemaVillageContributionProviderFacet"
-  - component: VillageErrorResponse
+  - component: VillageContributionErrorResponse
     property: code
     required: false
     nullable: false
-  - component: VillageErrorResponse
+  - component: VillageContributionErrorResponse
     property: details
     required: false
     nullable: false

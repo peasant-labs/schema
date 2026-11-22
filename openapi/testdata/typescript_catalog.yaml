@@ -757,6 +757,10 @@ types:
     disposition: catalog
     component: VillageContributionErrorDetail
     reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionErrorResponse
+    disposition: catalog
+    component: VillageContributionErrorResponse
+    reason: schema-owned Village collectives wire contract
   - go_name: VillageContributionFamilyMember
     disposition: catalog
     component: VillageContributionFamilyMember

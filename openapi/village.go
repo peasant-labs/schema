@@ -973,7 +973,8 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			},
 		},
 		{
-			method:      http.MethodGet,
+			method: http.MethodGet,
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			path:        "/api/v1/groups/{id}/contributable/projects",
 			id:          "listContributionProjects",
 			tag:         "contributions",
@@ -1006,21 +1007,24 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			},
 		},
 		{
-			method:      http.MethodPost,
+			method: http.MethodPost,
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 			path:        "/api/v1/groups/{id}/shares/selection",
 			id:          "batchShareSelection",
 			tag:         "contributions",
-			description: "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal carries a closed code (VillageContributionErrorCode) and per-transcript details in the common error body, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.",
+			description: "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal with a closed reason is a VillageContributionErrorResponse: the common error text plus a code (VillageContributionErrorCode) and per-transcript details, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.",
 			requests:    []interface{}{groupPath, new(schema.VillageBatchShareSelectionRequest)},
 			response:    new(schema.VillageBatchShareResponse),
 			errorStatuses: []int{
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
-				http.StatusForbidden,
 				http.StatusNotFound,
-				http.StatusConflict,
 				http.StatusRequestEntityTooLarge,
 				http.StatusInternalServerError,
+			},
+			responses: []villageResponse{
+				villageContributionRefusal(http.StatusForbidden, "The caller may not contribute to the collective (code membership), or the collective's policy refuses the request as a whole (code policy)."),
+				villageContributionRefusal(http.StatusConflict, "The whole request is refused and nothing is written (code moved, missing, private_unapproved, conflict or stale_selection); details lists every offending transcript with its code."),
 			},
 		},
 		{
@@ -1320,6 +1324,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		{http.MethodPatch, "/api/v1/groups/{id}"},
 		{http.MethodPatch, "/api/v1/groups/{id}/members/{userID}/role"},
 		{http.MethodPost, "/api/v1/groups/{id}/shares"},
+		// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 		{http.MethodPost, "/api/v1/groups/{id}/shares/selection"},
 		{http.MethodPatch, "/api/v1/groups/{id}/shares"},
 		{http.MethodPatch, "/api/v1/groups/{id}/shares/{transcriptID}"},
@@ -1339,6 +1344,12 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 // grouped arm, that the contributable 200 response may also be. They are shared
 // by the canonical and the deprecated route so the two unions cannot drift.
 var villageContributableExtraResponses = []string{"SchemaVillageContributionPageResponse", "SchemaVillageContributionSnapshotResponse"}
+
+// villageContributionRefusal is a contribution-write refusal that carries a
+// closed reason: the common error text plus code and details.
+func villageContributionRefusal(status int, description string) villageResponse {
+	return villageResponse{status: status, description: description, media: []villageMedia{{mediaType: villageMediaJSON, body: new(schema.VillageContributionErrorResponse)}}}
+}
 
 func setSegmentedReadGeneration(spec *openapi31.Spec, path string) error {
 	item, ok := spec.Paths.MapOfPathItemValues[path]
@@ -1454,9 +1465,9 @@ func setVillageAlternativeResponse(spec *openapi31.Spec, path string, legacy map
 	if !ok {
 		return fmt.Errorf("configure response alternatives for GET %s: JSON media type is missing; clients cannot decode the selected shape; register an application/json response", path)
 	}
-	arms := []interface{}{legacy, map[string]interface{}{"$ref": "#/components/schemas/" + alternate}}
+	arms := []interface{}{legacy, schemaRef(alternate)}
 	for _, name := range extra {
-		arms = append(arms, map[string]interface{}{"$ref": "#/components/schemas/" + name})
+		arms = append(arms, schemaRef(name))
 	}
 	media.Schema = map[string]interface{}{"oneOf": arms}
 	response.Response.Content["application/json"] = media

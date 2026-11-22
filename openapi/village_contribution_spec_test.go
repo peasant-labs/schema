@@ -46,16 +46,16 @@ func walkVillageNames(node any, found map[string]map[string]bool) {
 	switch v := node.(type) {
 	case map[string]any:
 		if _, in := v["in"]; in {
-			if name, ok := v["name"].(string); ok {
+			if name, ok := v["name"].(string); ok { // unstring-allow: go-json-key-assert — this walk visits every node of the whole document by design
 				found["parameter"][name] = true
 			}
 		}
-		if properties, ok := v["properties"].(map[string]any); ok {
+		if properties, ok := v["properties"].(map[string]any); ok { // unstring-allow: go-json-key-assert — this walk visits every node of the whole document by design
 			for name := range properties {
 				found["property"][name] = true
 			}
 		}
-		if values, ok := v["enum"].([]any); ok {
+		if values, ok := v["enum"].([]any); ok { // unstring-allow: go-json-key-assert — this walk visits every node of the whole document by design
 			for _, value := range values {
 				if name, ok := value.(string); ok {
 					found["enum_value"][name] = true
@@ -97,17 +97,11 @@ func TestBuildVillageAPISpec_ResponseArmsAreExclusive(t *testing.T) {
 		t.Fatalf("response_arm_samples has %d samples and response_arm_sample_names names %d; the manifest is the exact case set", len(sampleNames), len(fixtures.ResponseArmSampleNames))
 	}
 	for _, fixture := range fixtures.ResponseArmSamples {
-		operation := villageOperation(t, document, fixture.Path, fixture.Method)
-		responses, _ := operation["responses"].(map[string]any)
-		response, _ := responses[fixture.Status].(map[string]any)
-		content, _ := response["content"].(map[string]any)
-		media, _ := content["application/json"].(map[string]any)
-		union, _ := media["schema"].(map[string]any)
-		arms, _ := union["oneOf"].([]any)
+		operation := decodeVillageSpecOperation(t, raw, fixture.Path, fixture.Method)
+		arms := operation.Responses[fixture.Status].Content[villageMediaTypeJSON].Schema.OneOf
 		declared := make([]string, 0, len(arms))
 		for _, arm := range arms {
-			ref, _ := arm.(map[string]any)["$ref"].(string)
-			declared = append(declared, strings.TrimPrefix(ref, "#/components/schemas/"))
+			declared = append(declared, strings.TrimPrefix(arm.Ref, "#/components/schemas/"))
 		}
 		if len(declared) != len(fixture.Arms) {
 			t.Fatalf("%s %s %s declares arms %v, want %v", fixture.Method, fixture.Path, fixture.Status, declared, fixture.Arms)
@@ -165,38 +159,106 @@ func pointerEscape(path string) string {
 }
 
 // TestBuildVillageAPISpec_DeprecatedAliasDescriptionsKeepAnchors holds the
-// deprecated /api/v1/groups twin of each canonical operation to the same
-// description anchors, so the alias cannot drift from the prose it copies.
+// deprecated twin of each canonical operation, the one whose operationId adds
+// Deprecated, to the same description anchors, so the alias cannot drift from
+// the prose it copies.
 func TestBuildVillageAPISpec_DeprecatedAliasDescriptionsKeepAnchors(t *testing.T) {
 	fixtures := loadVillageCollectivesFixtures(t)
-	document := currentVillageSpecDocument(t)
-	paths, _ := document["paths"].(map[string]any)
+	raw := currentVillageSpecJSON(t)
+	byID := villageSpecOperationsByID(t, raw)
 	checked := 0
 	for _, fixture := range fixtures.Operations {
-		if fixture.Path != "/api/v1/collectives" && !strings.HasPrefix(fixture.Path, "/api/v1/collectives/") {
-			continue
-		}
-		aliasPath := strings.Replace(fixture.Path, "/api/v1/collectives", "/api/v1/groups", 1)
-		item, ok := paths[aliasPath].(map[string]any)
-		if !ok {
-			continue
-		}
-		operation, ok := item[fixture.Method].(map[string]any)
+		alias, ok := byID[fixture.OperationID+"Deprecated"]
 		if !ok {
 			continue
 		}
 		checked++
-		if got := operation["operationId"]; got != fixture.OperationID+"Deprecated" {
-			t.Errorf("%s %s operationId = %v, want %sDeprecated", fixture.Method, aliasPath, got, fixture.OperationID)
-		}
-		description, _ := operation["description"].(string)
 		for _, anchor := range fixture.DescriptionAnchors {
-			if !strings.Contains(description, anchor) {
-				t.Errorf("%s %s description is missing anchor %q: %q", fixture.Method, aliasPath, anchor, description)
+			if !strings.Contains(alias.Description, anchor) {
+				t.Errorf("%s description is missing anchor %q: %q", alias.OperationID, anchor, alias.Description)
 			}
 		}
 	}
 	if checked == 0 {
 		t.Fatal("no deprecated alias was checked; the test would be vacuous")
 	}
+}
+
+// villageMediaTypeJSON is the media type of every Village JSON body.
+const villageMediaTypeJSON = "application/json"
+
+// villageSpecOperation is the part of one operation these tests read.
+type villageSpecOperation struct {
+	OperationID string `json:"operationId"`
+	Description string `json:"description"`
+	Responses   map[string]struct {
+		Content map[string]struct {
+			Schema struct {
+				OneOf []struct {
+					Ref string `json:"$ref"`
+				} `json:"oneOf"`
+			} `json:"schema"`
+		} `json:"content"`
+	} `json:"responses"`
+}
+
+// villageSpecPaths keeps each path item's members raw, because a path item
+// also carries members that are not operations, such as parameters.
+type villageSpecPaths struct {
+	Paths map[string]map[string]json.RawMessage `json:"paths"`
+}
+
+func currentVillageSpecJSON(t *testing.T) []byte {
+	t.Helper()
+	raw, err := json.Marshal(currentVillageSpecDocument(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+func decodeVillageSpecPaths(t *testing.T, raw []byte) villageSpecPaths {
+	t.Helper()
+	var document villageSpecPaths
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatalf("decode Village API spec paths: %v", err)
+	}
+	if len(document.Paths) == 0 {
+		t.Fatal("Village API spec has no paths")
+	}
+	return document
+}
+
+func decodeVillageSpecOperation(t *testing.T, raw []byte, path, method string) villageSpecOperation {
+	t.Helper()
+	member, ok := decodeVillageSpecPaths(t, raw).Paths[path][method]
+	if !ok {
+		t.Fatalf("Village API spec is missing %s %s", method, path)
+	}
+	var operation villageSpecOperation
+	if err := json.Unmarshal(member, &operation); err != nil {
+		t.Fatalf("decode %s %s: %v", method, path, err)
+	}
+	return operation
+}
+
+// villageSpecOperationsByID returns every operation of the document by its
+// operationId. A path item member that is not an operation has none and is
+// skipped.
+func villageSpecOperationsByID(t *testing.T, raw []byte) map[string]villageSpecOperation {
+	t.Helper()
+	byID := map[string]villageSpecOperation{}
+	for path, item := range decodeVillageSpecPaths(t, raw).Paths {
+		for method, member := range item {
+			var operation villageSpecOperation
+			if json.Unmarshal(member, &operation) != nil || operation.OperationID == "" {
+				continue
+			}
+			if _, dup := byID[operation.OperationID]; dup {
+				t.Fatalf("operationId %s is declared twice, again at %s %s", operation.OperationID, method, path)
+			}
+			byID[operation.OperationID] = operation
+		}
+	}
+	return byID
 }

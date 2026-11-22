@@ -28,16 +28,9 @@ func (VillageUUID) JSONSchema() (jsonschema.Schema, error) {
 }
 
 // VillageErrorResponse is the common JSON refusal envelope emitted by Village
-// handlers through writeError. Error is always present and is the only field
-// older clients read. Code and Details are additive: they appear on contribution
-// refusals and carry the machine-readable reason.
+// handlers through writeError.
 type VillageErrorResponse struct {
 	Error string `json:"error"`
-	// Code is the primary reason for the refusal.
-	Code *VillageContributionErrorCode `json:"code,omitempty" nullable:"false" description:"The primary machine-readable reason for the refusal. Accompanies contribution refusals; the error text is always present."`
-	// Details carries the per-transcript reasons. A request-level reason such
-	// as policy has a detail without transcript_id.
-	Details []VillageContributionErrorDetail `json:"details,omitempty" nullable:"false" description:"The per-transcript reasons for the refusal. Accompanies contribution refusals; the error text is always present."`
 }
 
 // VillageGroupAcceptanceMode is the closed acceptance policy menu for a

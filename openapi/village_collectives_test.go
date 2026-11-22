@@ -259,22 +259,22 @@ func TestBuildVillageAPISpec_CollectivesPropertyContracts(t *testing.T) {
 				t.Errorf("component %s property %s nullable = %v, want %v", fixture.Component, fixture.Property, got, *fixture.Nullable)
 			}
 		}
-		if fixture.Minimum != nil {
-			if got, ok := property["minimum"].(float64); !ok || int64(got) != *fixture.Minimum {
-				t.Errorf("component %s property %s minimum = %v, want %d", fixture.Component, fixture.Property, property["minimum"], *fixture.Minimum)
-			}
-		}
-		if fixture.Maximum != nil {
-			if got, ok := property["maximum"].(float64); !ok || int64(got) != *fixture.Maximum {
-				t.Errorf("component %s property %s maximum = %v, want %d", fixture.Component, fixture.Property, property["maximum"], *fixture.Maximum)
-			}
-		}
-		for bound, want := range map[string]*int64{"minItems": fixture.MinItems, "maxItems": fixture.MaxItems} {
-			if want == nil {
+		bounds := decodeVillagePropertyBounds(t, property, fixture.Component, fixture.Property)
+		for _, bound := range []struct {
+			name string
+			got  *float64
+			want *int64
+		}{
+			{"minimum", bounds.Minimum, fixture.Minimum},
+			{"maximum", bounds.Maximum, fixture.Maximum},
+			{"minItems", bounds.MinItems, fixture.MinItems},
+			{"maxItems", bounds.MaxItems, fixture.MaxItems},
+		} {
+			if bound.want == nil {
 				continue
 			}
-			if got, ok := property[bound].(float64); !ok || int64(got) != *want {
-				t.Errorf("component %s property %s %s = %v, want %d", fixture.Component, fixture.Property, bound, property[bound], *want)
+			if bound.got == nil || int64(*bound.got) != *bound.want {
+				t.Errorf("component %s property %s %s = %v, want %d", fixture.Component, fixture.Property, bound.name, bound.got, *bound.want)
 			}
 		}
 		if fixture.ItemsRef != "" {
@@ -296,6 +296,24 @@ func TestBuildVillageAPISpec_CollectivesPropertyContracts(t *testing.T) {
 			}
 		}
 	}
+}
+
+// villagePropertyBounds are the numeric bounds a component property may
+// declare.
+type villagePropertyBounds struct {
+	Minimum  *float64 `json:"minimum"`
+	Maximum  *float64 `json:"maximum"`
+	MinItems *float64 `json:"minItems"`
+	MaxItems *float64 `json:"maxItems"`
+}
+
+func decodeVillagePropertyBounds(t *testing.T, property map[string]any, component, name string) villagePropertyBounds {
+	t.Helper()
+	var bounds villagePropertyBounds
+	if err := json.Unmarshal(mustJSONBytes(t, property), &bounds); err != nil {
+		t.Fatalf("component %s property %s bounds do not decode: %v", component, name, err)
+	}
+	return bounds
 }
 
 func loadVillageCollectivesFixtures(t *testing.T) villageCollectivesOperationFixtures {

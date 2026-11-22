@@ -175,7 +175,7 @@ shapes:
   cases:
     - name: page-response-family
       input:
-        target: page
+        target: VillageContributionPageResponse
         json:
           group_id: 11111111-1111-4111-8111-111111111111
           items:
@@ -190,7 +190,7 @@ shapes:
       mutation: {description: a family is one root with its helpers and each member says whether it matched}
     - name: page-response-empty-helpers
       input:
-        target: page
+        target: VillageContributionPageResponse
         json:
           group_id: 11111111-1111-4111-8111-111111111111
           items:
@@ -202,7 +202,7 @@ shapes:
       mutation: {description: a root with no helpers still carries an empty helpers array, never null}
     - name: page-response-matched-absent
       input:
-        target: page
+        target: VillageContributionPageResponse
         json:
           group_id: 11111111-1111-4111-8111-111111111111
           items:
@@ -214,7 +214,7 @@ shapes:
       mutation: {description: a request without q carries no matched flag}
     - name: page-response-session-end
       input:
-        target: page
+        target: VillageContributionPageResponse
         json:
           group_id: 11111111-1111-4111-8111-111111111111
           items:
@@ -228,7 +228,7 @@ shapes:
       mutation: {description: a row carries the time of its last turn as session_end when known and omits both times when unknown, never null}
     - name: page-response-retired-snapshot-limit
       input:
-        target: page
+        target: VillageContributionPageResponse
         json:
           group_id: 11111111-1111-4111-8111-111111111111
           items: []
@@ -240,7 +240,7 @@ shapes:
       mutation: {description: the snapshot limit is a contract constant, so no response declares a limit field}
     - name: snapshot-response-compact
       input:
-        target: snapshot
+        target: VillageContributionSnapshotResponse
         json:
           group_id: 11111111-1111-4111-8111-111111111111
           project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -254,7 +254,7 @@ shapes:
       mutation: {description: a helper keeps its own project and parent link while a root omits the parent link}
     - name: snapshot-record-no-parent
       input:
-        target: snapshot-record
+        target: VillageContributionSnapshotRecord
         json: {id: root-a, title: fix the importer, visibility: public, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
       expected: {valid: true, present: [id, title, visibility, project_hash], absent: [latest_status, parent_transcript_id]}
       classification: must-pass
@@ -262,7 +262,7 @@ shapes:
       mutation: {description: a root without a contribution attempt omits both optional fields}
     - name: snapshot-record-untitled
       input:
-        target: snapshot-record
+        target: VillageContributionSnapshotRecord
         json: {id: root-a, title: null, visibility: private, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
       expected: {valid: true, present: [id, title, visibility, project_hash]}
       classification: must-pass
@@ -270,7 +270,7 @@ shapes:
       mutation: {description: a session without a title carries a null title, as its contributable row does}
     - name: snapshot-record-always-states-title
       input:
-        target: snapshot-record
+        target: VillageContributionSnapshotRecord
         json: {id: root-a, visibility: private, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
       expected: {valid: true, present: [title]}
       classification: must-pass
@@ -278,7 +278,7 @@ shapes:
       mutation: {description: a producer always writes the title, null when unset, so a client can name each session a person consents to without loading its row}
     - name: snapshot-record-retired-display-name
       input:
-        target: snapshot-record
+        target: VillageContributionSnapshotRecord
         json: {id: root-a, title: fix the importer, visibility: private, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, project_display_name: heavy}
       expected: {valid: false}
       classification: must-fail
@@ -286,7 +286,7 @@ shapes:
       mutation: {description: the title is the record's only display field; project names come from the project picker}
     - name: snapshot-response-retired-truncated
       input:
-        target: snapshot
+        target: VillageContributionSnapshotResponse
         json:
           group_id: 11111111-1111-4111-8111-111111111111
           project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -299,7 +299,7 @@ shapes:
       mutation: {description: a snapshot over the limit is refused whole and never truncated, so it has no truncation flag}
     - name: project-page-counts
       input:
-        target: project-page
+        target: VillageContributionProjectPage
         json:
           projects:
             - {project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, project_display_name: peasant, project_name_source: remote, matching_count: 9, selectable_count: 7}
@@ -313,7 +313,7 @@ shapes:
       mutation: {description: picker counts are sessions and the page size is projects}
     - name: project-page-retired-project-q
       input:
-        target: project-page
+        target: VillageContributionProjectPage
         json: {projects: [], has_more: false, matching_total: 0, selectable_total: 0, providers: [], project_q: peasant}
       expected: {valid: false}
       classification: must-fail
@@ -321,7 +321,7 @@ shapes:
       mutation: {description: one q replaces the project search text}
     - name: error-response-moved
       input:
-        target: error
+        target: VillageContributionErrorResponse
         json:
           error: a root moved
           code: moved
@@ -332,7 +332,7 @@ shapes:
       mutation: {description: a moved root names the project it now belongs to}
     - name: error-response-policy-without-transcript
       input:
-        target: error
+        target: VillageContributionErrorResponse
         json: {error: policy refuses, code: policy, details: [{code: policy}]}
       expected: {valid: true, nested_absent: [details.0.transcript_id, details.0.current_project_hash]}
       classification: must-pass
@@ -340,7 +340,7 @@ shapes:
       mutation: {description: a request-level reason omits transcript_id}
     - name: error-response-legacy-text-only
       input:
-        target: error
+        target: VillageContributionErrorResponse
         json: {error: not found}
       expected: {valid: true, present: [error], absent: [code, details]}
       classification: must-pass
@@ -348,7 +348,7 @@ shapes:
       mutation: {description: a refusal with no machine reason keeps the legacy body}
     - name: error-response-snapshot-too-large
       input:
-        target: error
+        target: VillageContributionErrorResponse
         json: {error: "the snapshot is over the size limit; narrow the search and read it again", code: snapshot_too_large}
       expected: {valid: true, present: [error, code], absent: [details]}
       classification: must-pass
@@ -356,7 +356,7 @@ shapes:
       mutation: {description: an oversized snapshot is refused whole with a request-level code and no per-transcript details}
     - name: selection-request
       input:
-        target: selection
+        target: VillageBatchShareSelectionRequest
         json:
           project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           transcript_ids: [root-a, helper-a]
@@ -367,7 +367,7 @@ shapes:
       mutation: {description: the selection lists every session, roots and helpers alike}
     - name: selection-request-retired-expand-helpers
       input:
-        target: selection
+        target: VillageBatchShareSelectionRequest
         json:
           project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           transcript_ids: [root-a]

@@ -235,6 +235,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageContributedCollective", new(schema.VillageContributedCollective)}, {"VillageContributedCollectivesResponse", new(schema.VillageContributedCollectivesResponse)},
 		{"VillageContributableView", new(schema.VillageContributableView)},
 		{"VillageContributionErrorCode", new(schema.VillageContributionErrorCode)}, {"VillageContributionErrorDetail", new(schema.VillageContributionErrorDetail)},
+		{"VillageContributionErrorResponse", new(schema.VillageContributionErrorResponse)},
 		{"VillageContributionFamilyMember", new(schema.VillageContributionFamilyMember)}, {"VillageContributionPageItem", new(schema.VillageContributionPageItem)},
 		{"VillageContributionPageResponse", new(schema.VillageContributionPageResponse)}, {"VillageContributionProjectPage", new(schema.VillageContributionProjectPage)},
 		{"VillageContributionProjectSummary", new(schema.VillageContributionProjectSummary)}, {"VillageContributionProviderFacet", new(schema.VillageContributionProviderFacet)},

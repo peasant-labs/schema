@@ -11993,6 +11993,24 @@ components:
       required:
       - code
       type: object
+    VillageContributionErrorResponse:
+      properties:
+        code:
+          $ref: '#/components/schemas/VillageContributionErrorCode'
+          description: The primary machine-readable reason for the refusal. Absent
+            on a refusal that has no closed reason, such as a malformed request.
+        details:
+          description: The per-transcript reasons for the refusal. A request-level
+            reason such as policy has a detail without transcript_id.
+          items:
+            $ref: '#/components/schemas/VillageContributionErrorDetail'
+          type: array
+        error:
+          description: The human-readable refusal. Always present.
+          type: string
+      required:
+      - error
+      type: object
     VillageContributionFamilyMember:
       properties:
         matched:
@@ -12306,16 +12324,6 @@ components:
       type: object
     VillageErrorResponse:
       properties:
-        code:
-          $ref: '#/components/schemas/VillageContributionErrorCode'
-          description: The primary machine-readable reason for the refusal. Accompanies
-            contribution refusals; the error text is always present.
-        details:
-          description: The per-transcript reasons for the refusal. Accompanies contribution
-            refusals; the error text is always present.
-          items:
-            $ref: '#/components/schemas/VillageContributionErrorDetail'
-          type: array
         error:
           type: string
       required:

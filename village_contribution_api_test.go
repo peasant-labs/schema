@@ -10,6 +10,7 @@ import (
 
 	schema "github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/openapi"
+	"github.com/peasant-labs/schema/route"
 	"github.com/peasant-labs/schema/testcase"
 	assertcase "github.com/peasant-labs/schema/testcase/assert"
 	"gopkg.in/yaml.v3"
@@ -166,47 +167,70 @@ func TestVillageContributionPageLimitMatchesDeclaredRange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var doc map[string]any
+	// A path item also carries members that are not operations, such as
+	// parameters, so only each read's get operation is decoded.
+	var doc struct {
+		Paths map[string]struct {
+			Get struct {
+				Parameters []struct {
+					Name   string `json:"name"`
+					Schema struct {
+						Minimum *float64 `json:"minimum"`
+						Maximum *float64 `json:"maximum"`
+						Default *float64 `json:"default"`
+					} `json:"schema"`
+				} `json:"parameters"`
+			} `json:"get"`
+		} `json:"paths"`
+	}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		t.Fatal(err)
 	}
-	paths := doc["paths"].(map[string]any)
-	for _, route := range []string{
-		"/api/v1/collectives/{id}/contributable",
-		"/api/v1/groups/{id}/contributable",
-		"/api/v1/collectives/{id}/contributable/projects",
-		"/api/v1/groups/{id}/contributable/projects",
+	for _, read := range []route.Route{
+		route.VillageListContributableTranscripts,
+		route.VillageListContributableTranscriptsDeprecated,
+		route.VillageListContributionProjects,
+		route.VillageListContributionProjectsDeprecated,
 	} {
-		op := paths[route].(map[string]any)["get"].(map[string]any)
-		limit := parameterMap(t, op)["limit"]
-		if limit == nil {
-			t.Fatalf("%s declares no limit parameter", route)
-		}
-		schemaObject := limit["schema"].(map[string]any)
-		for key, want := range map[string]int{"minimum": constants["minimum"], "maximum": constants["maximum"], "default": constants["default"]} {
-			if got, _ := schemaObject[key].(float64); int(got) != want {
-				t.Errorf("%s limit %s = %v, want %d", route, key, schemaObject[key], want)
+		found := false
+		for _, parameter := range doc.Paths[read.Pattern()].Get.Parameters {
+			if parameter.Name != contributionLimitParameter {
+				continue
 			}
+			found = true
+			for _, bound := range []struct {
+				name string
+				got  *float64
+				want int
+			}{
+				{"minimum", parameter.Schema.Minimum, constants["minimum"]},
+				{"maximum", parameter.Schema.Maximum, constants["maximum"]},
+				{"default", parameter.Schema.Default, constants["default"]},
+			} {
+				if bound.got == nil || int(*bound.got) != bound.want {
+					t.Errorf("%s limit %s = %v, want %d", read.OperationID(), bound.name, bound.got, bound.want)
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("%s declares no limit parameter", read.OperationID())
 		}
 	}
 }
 
-func contributionTarget(name string) any {
-	switch name {
-	case "page":
-		return &schema.VillageContributionPageResponse{}
-	case "snapshot":
-		return &schema.VillageContributionSnapshotResponse{}
-	case "snapshot-record":
-		return &schema.VillageContributionSnapshotRecord{}
-	case "project-page":
-		return &schema.VillageContributionProjectPage{}
-	case "error":
-		return &schema.VillageErrorResponse{}
-	case "selection":
-		return &schema.VillageBatchShareSelectionRequest{}
-	}
-	return nil
+// contributionLimitParameter is the page-size query parameter of the paged
+// contribution reads.
+const contributionLimitParameter = "limit"
+
+// contributionTargets maps the Go type name a shape case names to a new value
+// of that type.
+var contributionTargets = map[string]func() any{
+	"VillageContributionPageResponse":     func() any { return &schema.VillageContributionPageResponse{} },
+	"VillageContributionSnapshotResponse": func() any { return &schema.VillageContributionSnapshotResponse{} },
+	"VillageContributionSnapshotRecord":   func() any { return &schema.VillageContributionSnapshotRecord{} },
+	"VillageContributionProjectPage":      func() any { return &schema.VillageContributionProjectPage{} },
+	"VillageContributionErrorResponse":    func() any { return &schema.VillageContributionErrorResponse{} },
+	"VillageBatchShareSelectionRequest":   func() any { return &schema.VillageBatchShareSelectionRequest{} },
 }
 
 func contributionHas(node any, path string) bool {
@@ -235,10 +259,11 @@ func TestVillageContributionWireShapes(t *testing.T) {
 	f := loadContributionFixtures(t)
 	for _, c := range f.Shapes.Cases {
 		t.Run(c.Name, func(t *testing.T) {
-			target := contributionTarget(c.Input.Target)
-			if target == nil {
+			newTarget, ok := contributionTargets[c.Input.Target]
+			if !ok {
 				t.Fatalf("unknown target %q", c.Input.Target)
 			}
+			target := newTarget()
 			raw, err := json.Marshal(c.Input.JSON)
 			if err != nil {
 				t.Fatal(err)
@@ -287,27 +312,40 @@ func TestVillageContributionSelectionBoundMatchesDeclaredRange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var doc map[string]any
+	type described struct {
+		MaxItems    *float64 `json:"maxItems"`
+		Description string   `json:"description"`
+	}
+	var doc struct {
+		Components struct {
+			Schemas struct {
+				SelectionRequest struct {
+					Properties map[string]described `json:"properties"`
+				} `json:"SchemaVillageBatchShareSelectionRequest"`
+				Snapshot described `json:"SchemaVillageContributionSnapshotResponse"`
+			} `json:"schemas"`
+		} `json:"components"`
+	}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		t.Fatal(err)
 	}
-	schemas := doc["components"].(map[string]any)["schemas"].(map[string]any)
-	request := schemas["SchemaVillageBatchShareSelectionRequest"].(map[string]any)["properties"].(map[string]any)
 	for _, name := range []string{"transcript_ids", "private_approvals"} {
-		property := request[name].(map[string]any)
-		if got, _ := property["maxItems"].(float64); int(got) != schema.VillageContributionSelectionMaxTranscripts {
-			t.Errorf("%s maxItems = %v, want %d", name, property["maxItems"], schema.VillageContributionSelectionMaxTranscripts)
+		property, ok := doc.Components.Schemas.SelectionRequest.Properties[name]
+		if !ok {
+			t.Fatalf("selection request declares no %s", name)
 		}
-		if description, _ := property["description"].(string); !strings.Contains(description, strconv.Itoa(schema.VillageContributionSelectionMaxTranscripts)) {
-			t.Errorf("%s description does not state the bound: %q", name, description)
+		if property.MaxItems == nil || int(*property.MaxItems) != schema.VillageContributionSelectionMaxTranscripts {
+			t.Errorf("%s maxItems = %v, want %d", name, property.MaxItems, schema.VillageContributionSelectionMaxTranscripts)
+		}
+		if !strings.Contains(property.Description, strconv.Itoa(schema.VillageContributionSelectionMaxTranscripts)) {
+			t.Errorf("%s description does not state the bound: %q", name, property.Description)
 		}
 	}
 	if schema.VillageContributionSnapshotMaxBytes != 8*1024*1024 {
 		t.Errorf("snapshot limit = %d bytes, want 8 MiB", schema.VillageContributionSnapshotMaxBytes)
 	}
 	statement := "limited to 8 MiB (" + strconv.Itoa(schema.VillageContributionSnapshotMaxBytes) + " bytes) of response body"
-	snapshot := schemas["SchemaVillageContributionSnapshotResponse"].(map[string]any)
-	if description, _ := snapshot["description"].(string); !strings.Contains(description, statement) || !strings.Contains(description, "snapshot_too_large") {
+	if description := doc.Components.Schemas.Snapshot.Description; !strings.Contains(description, statement) || !strings.Contains(description, string(schema.VillageContributionErrorSnapshotTooLarge)) {
 		t.Errorf("snapshot response description does not state the limit and its code: %q", description)
 	}
 }

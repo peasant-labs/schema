@@ -4948,7 +4948,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal carries a closed code (VillageContributionErrorCode) and per-transcript details in the common error body, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.",
+        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal with a closed reason is a VillageContributionErrorResponse: the common error text plus a code (VillageContributionErrorCode) and per-transcript details, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.",
         "operationId": "batchShareSelection",
         "parameters": [
           {
@@ -5004,11 +5004,11 @@
             }
           },
           "403": {
-            "description": "Forbidden",
+            "description": "The caller may not contribute to the collective (code membership), or the collective's policy refuses the request as a whole (code policy).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                  "$ref": "#/components/schemas/SchemaVillageContributionErrorResponse"
                 }
               }
             }
@@ -5024,11 +5024,11 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "The whole request is refused and nothing is written (code moved, missing, private_unapproved, conflict or stale_selection); details lists every offending transcript with its code.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                  "$ref": "#/components/schemas/SchemaVillageContributionErrorResponse"
                 }
               }
             }
@@ -7604,7 +7604,7 @@
         "tags": [
           "contributions"
         ],
-        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal carries a closed code (VillageContributionErrorCode) and per-transcript details in the common error body, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.",
+        "description": "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal with a closed reason is a VillageContributionErrorResponse: the common error text plus a code (VillageContributionErrorCode) and per-transcript details, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.",
         "operationId": "batchShareSelectionDeprecated",
         "parameters": [
           {
@@ -7660,11 +7660,11 @@
             }
           },
           "403": {
-            "description": "Forbidden",
+            "description": "The caller may not contribute to the collective (code membership), or the collective's policy refuses the request as a whole (code policy).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                  "$ref": "#/components/schemas/SchemaVillageContributionErrorResponse"
                 }
               }
             }
@@ -7680,11 +7680,11 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "The whole request is refused and nothing is written (code moved, missing, private_unapproved, conflict or stale_selection); details lists every offending transcript with its code.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                  "$ref": "#/components/schemas/SchemaVillageContributionErrorResponse"
                 }
               }
             }
@@ -21946,6 +21946,29 @@
         ],
         "type": "object"
       },
+      "SchemaVillageContributionErrorResponse": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/SchemaVillageContributionErrorCode",
+            "description": "The primary machine-readable reason for the refusal. Absent on a refusal that has no closed reason, such as a malformed request."
+          },
+          "details": {
+            "description": "The per-transcript reasons for the refusal. A request-level reason such as policy has a detail without transcript_id.",
+            "items": {
+              "$ref": "#/components/schemas/SchemaVillageContributionErrorDetail"
+            },
+            "type": "array"
+          },
+          "error": {
+            "description": "The human-readable refusal. Always present.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "SchemaVillageContributionFamilyMember": {
         "properties": {
           "matched": {
@@ -22346,17 +22369,6 @@
       },
       "SchemaVillageErrorResponse": {
         "properties": {
-          "code": {
-            "$ref": "#/components/schemas/SchemaVillageContributionErrorCode",
-            "description": "The primary machine-readable reason for the refusal. Accompanies contribution refusals; the error text is always present."
-          },
-          "details": {
-            "description": "The per-transcript reasons for the refusal. Accompanies contribution refusals; the error text is always present.",
-            "items": {
-              "$ref": "#/components/schemas/SchemaVillageContributionErrorDetail"
-            },
-            "type": "array"
-          },
           "error": {
             "type": "string"
           }

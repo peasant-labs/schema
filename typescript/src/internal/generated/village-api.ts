@@ -715,7 +715,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal carries a closed code (VillageContributionErrorCode) and per-transcript details in the common error body, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared. */
+        /** @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal with a closed reason is a VillageContributionErrorResponse: the common error text plus a code (VillageContributionErrorCode) and per-transcript details, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared. */
         post: operations["batchShareSelection"];
         delete?: never;
         options?: never;
@@ -1189,7 +1189,7 @@ export interface paths {
         put?: never;
         /**
          * @deprecated
-         * @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal carries a closed code (VillageContributionErrorCode) and per-transcript details in the common error body, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.
+         * @description Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal with a closed reason is a VillageContributionErrorResponse: the common error text plus a code (VillageContributionErrorCode) and per-transcript details, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.
          */
         post: operations["batchShareSelectionDeprecated"];
         delete?: never;
@@ -2938,6 +2938,7 @@ export interface components {
          */
         SchemaVillageContributionErrorCode: Schema.VillageContributionErrorCode;
         SchemaVillageContributionErrorDetail: Schema.VillageContributionErrorDetail;
+        SchemaVillageContributionErrorResponse: Schema.VillageContributionErrorResponse;
         SchemaVillageContributionFamilyMember: Schema.VillageContributionFamilyMember;
         SchemaVillageContributionPageItem: Schema.VillageContributionPageItem;
         SchemaVillageContributionPageResponse: Schema.VillageContributionPageResponse;
@@ -6206,13 +6207,13 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description The caller may not contribute to the collective (code membership), or the collective's policy refuses the request as a whole (code policy). */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "application/json": components["schemas"]["SchemaVillageContributionErrorResponse"];
                 };
             };
             /** @description Not Found */
@@ -6224,13 +6225,13 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
-            /** @description Conflict */
+            /** @description The whole request is refused and nothing is written (code moved, missing, private_unapproved, conflict or stale_selection); details lists every offending transcript with its code. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "application/json": components["schemas"]["SchemaVillageContributionErrorResponse"];
                 };
             };
             /** @description Request Entity Too Large */
@@ -8078,13 +8079,13 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description The caller may not contribute to the collective (code membership), or the collective's policy refuses the request as a whole (code policy). */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "application/json": components["schemas"]["SchemaVillageContributionErrorResponse"];
                 };
             };
             /** @description Not Found */
@@ -8096,13 +8097,13 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
-            /** @description Conflict */
+            /** @description The whole request is refused and nothing is written (code moved, missing, private_unapproved, conflict or stale_selection); details lists every offending transcript with its code. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                    "application/json": components["schemas"]["SchemaVillageContributionErrorResponse"];
                 };
             };
             /** @description Request Entity Too Large */

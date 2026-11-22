@@ -147,6 +147,19 @@ func (VillageContributionErrorCode) JSONSchema() (jsonschema.Schema, error) {
 	return closedStringEnumSchema("Village Contribution Error Code", "Machine-readable reason a contribution request was refused", AllVillageContributionErrorCodes), nil
 }
 
+// VillageContributionErrorResponse is the refusal body of a contribution
+// write. It is the common envelope plus the machine-readable reason: Error is
+// always present and is the only field a client of the common envelope reads,
+// and Code and Details are additive.
+type VillageContributionErrorResponse struct {
+	Error string `json:"error" description:"The human-readable refusal. Always present."`
+	// Code is the primary reason for the refusal.
+	Code *VillageContributionErrorCode `json:"code,omitempty" nullable:"false" description:"The primary machine-readable reason for the refusal. Absent on a refusal that has no closed reason, such as a malformed request."`
+	// Details carries the per-transcript reasons. A request-level reason such
+	// as policy has a detail without transcript_id.
+	Details []VillageContributionErrorDetail `json:"details,omitempty" nullable:"false" description:"The per-transcript reasons for the refusal. A request-level reason such as policy has a detail without transcript_id."`
+}
+
 // VillageContributionErrorDetail is one per-transcript reason inside a refusal.
 // A request-level reason such as policy omits transcript_id.
 type VillageContributionErrorDetail struct {

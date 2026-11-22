@@ -5206,6 +5206,14 @@ export const zVillageContributionErrorDetail = z.object({
 
 export type VillageContributionErrorDetail = z.infer<typeof zVillageContributionErrorDetail>;
 
+export const zVillageContributionErrorResponse = z.object({
+    code: zVillageContributionErrorCode.optional(),
+    details: z.array(zVillageContributionErrorDetail).optional(),
+    error: z.string()
+});
+
+export type VillageContributionErrorResponse = z.infer<typeof zVillageContributionErrorResponse>;
+
 export const zVillageContributionProviderFacet = z.object({
     count: z.int().gte(0).lte(9007199254740991),
     provider: z.string()
@@ -5268,8 +5276,6 @@ export const zVillageDiscoverabilityRequest = z.object({
 export type VillageDiscoverabilityRequest = z.infer<typeof zVillageDiscoverabilityRequest>;
 
 export const zVillageErrorResponse = z.object({
-    code: zVillageContributionErrorCode.optional(),
-    details: z.array(zVillageContributionErrorDetail).optional(),
     error: z.string()
 });
 
