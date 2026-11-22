@@ -1,0 +1,302 @@
+package schema
+
+import (
+	jsonschema "github.com/swaggest/jsonschema-go"
+)
+
+// The paged contribution view bounds one page by the number of root sessions,
+// never by the number of transcripts. A root is a session with no
+// parent_session_id, or whose parent is not among the owner's published
+// transcripts. A session whose chain of parents loops back on itself (for
+// example a session that names itself as its parent) is listed as a root with
+// no helpers taken from the loop, so every session of the library is listed
+// exactly once. A page carries each of its roots together with the whole family
+// of helpers that descend from them, so a page can hold far more transcripts
+// than its limit.
+//
+// Families are listed most recently active first. A family is ordered by the
+// last activity of its ROOT session, newest first, where last activity is the
+// root's session_end, or its session_start when session_end is unknown, or its
+// published_at when both are unknown. Families with the same last activity are
+// ordered by the root's transcript id ascending. Helpers never affect the
+// position of their family.
+const (
+	// VillageContributionPageLimitDefault is the number of roots a page holds
+	// when the caller names no limit.
+	VillageContributionPageLimitDefault = 500
+	// VillageContributionPageLimitMinimum is the smallest page a caller may ask for.
+	VillageContributionPageLimitMinimum = 1
+	// VillageContributionPageLimitMaximum is the largest page a caller may ask
+	// for, counted in roots.
+	VillageContributionPageLimitMaximum = 500
+)
+
+// The snapshot view and the selection write are bounded by the size of one
+// document and by the number of sessions in one request.
+const (
+	// VillageContributionSnapshotMaxBytes bounds the encoded response body of
+	// one snapshot, 8 MiB (8388608 bytes). A snapshot that would exceed it is
+	// refused whole with a 413 whose code is snapshot_too_large; nothing
+	// partial is returned, and the client narrows the search with q or
+	// provider and reads the snapshot again. The bound is a size: there is no
+	// record-count cap, so how many sessions fit depends on their records. It
+	// is a contract constant, not a field, and the snapshot declares no limit
+	// parameter.
+	VillageContributionSnapshotMaxBytes = 8 << 20
+	// VillageContributionSelectionMaxTranscripts is the most sessions one
+	// selection write may offer, and the most private approvals it may carry.
+	// A body over the bound is an ordinary contract violation, a 400 with no
+	// code; a client with a larger selection sends it as several requests.
+	VillageContributionSelectionMaxTranscripts = 1000
+)
+
+// VillageContributableView is the closed view menu of the contributable
+// operation. Omitting the parameter keeps the flat whole-library response, so
+// the flat response has no token. The menu is distinct from the grouped-view
+// menu that the pending, my-shares, transcript and detail reads share, which
+// accepts only grouped.
+type VillageContributableView string
+
+const (
+	// VillageContributableViewGrouped selects the grouped helper-list envelope.
+	VillageContributableViewGrouped VillageContributableView = "grouped"
+	// VillageContributableViewPaged selects one page of root sessions, each with
+	// its family of helpers.
+	VillageContributableViewPaged VillageContributableView = "paged"
+	// VillageContributableViewSnapshot selects the compact record of every
+	// session in the matching families of one project.
+	VillageContributableViewSnapshot VillageContributableView = "snapshot"
+)
+
+var AllVillageContributableViews = []VillageContributableView{
+	VillageContributableViewGrouped,
+	VillageContributableViewPaged,
+	VillageContributableViewSnapshot,
+}
+
+func (v VillageContributableView) IsValid() bool { return inSet(v, AllVillageContributableViews) }
+
+func NewVillageContributableView(raw string) (VillageContributableView, error) {
+	return newClosedValue(raw, "VillageContributableView", AllVillageContributableViews)
+}
+
+func (VillageContributableView) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema("Village Contributable View", "The view of the contributable operation. Omission keeps the flat response; grouped, paged and snapshot select the other envelopes. Any other value is refused with a 400 that names the accepted values.", AllVillageContributableViews), nil
+}
+
+// VillageContributionErrorCode is the closed machine-readable reason a
+// contribution request was refused. It rides beside the human-readable error
+// text; a client branches on the code and never parses the text.
+type VillageContributionErrorCode string
+
+const (
+	// VillageContributionErrorMoved: a root now belongs to another project; the
+	// detail names it in current_project_hash.
+	VillageContributionErrorMoved VillageContributionErrorCode = "moved"
+	// VillageContributionErrorMissing: the transcript is not among the caller's
+	// published transcripts.
+	VillageContributionErrorMissing VillageContributionErrorCode = "missing"
+	// VillageContributionErrorPrivateUnapproved: a private transcript was
+	// selected without a matching private approval.
+	VillageContributionErrorPrivateUnapproved VillageContributionErrorCode = "private_unapproved"
+	// VillageContributionErrorConflict: the transcript changed in a way that
+	// conflicts with the request.
+	VillageContributionErrorConflict VillageContributionErrorCode = "conflict"
+	// VillageContributionErrorPolicy: the collective's policy refuses the
+	// request as a whole. Its detail omits transcript_id.
+	VillageContributionErrorPolicy VillageContributionErrorCode = "policy"
+	// VillageContributionErrorMembership: the caller may not contribute to the
+	// collective.
+	VillageContributionErrorMembership VillageContributionErrorCode = "membership"
+	// VillageContributionErrorStaleSelection: the selection no longer matches
+	// the library; read it again.
+	VillageContributionErrorStaleSelection VillageContributionErrorCode = "stale_selection"
+	// VillageContributionErrorSnapshotTimeout: the snapshot did not finish in time.
+	VillageContributionErrorSnapshotTimeout VillageContributionErrorCode = "snapshot_timeout"
+	// VillageContributionErrorSnapshotBusy: the server is already building the
+	// maximum number of snapshots.
+	VillageContributionErrorSnapshotBusy VillageContributionErrorCode = "snapshot_busy"
+	// VillageContributionErrorSnapshotTooLarge: the snapshot of the project
+	// would exceed the size limit; narrow the search with q or provider and read
+	// it again. Nothing partial is returned.
+	VillageContributionErrorSnapshotTooLarge VillageContributionErrorCode = "snapshot_too_large"
+)
+
+var AllVillageContributionErrorCodes = []VillageContributionErrorCode{
+	VillageContributionErrorMoved,
+	VillageContributionErrorMissing,
+	VillageContributionErrorPrivateUnapproved,
+	VillageContributionErrorConflict,
+	VillageContributionErrorPolicy,
+	VillageContributionErrorMembership,
+	VillageContributionErrorStaleSelection,
+	VillageContributionErrorSnapshotTimeout,
+	VillageContributionErrorSnapshotBusy,
+	VillageContributionErrorSnapshotTooLarge,
+}
+
+func (c VillageContributionErrorCode) IsValid() bool {
+	return inSet(c, AllVillageContributionErrorCodes)
+}
+
+func NewVillageContributionErrorCode(raw string) (VillageContributionErrorCode, error) {
+	return newClosedValue(raw, "VillageContributionErrorCode", AllVillageContributionErrorCodes)
+}
+
+func (VillageContributionErrorCode) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema("Village Contribution Error Code", "Machine-readable reason a contribution request was refused", AllVillageContributionErrorCodes), nil
+}
+
+// VillageContributionErrorResponse is the refusal body of a contribution
+// write. It is the common envelope plus the machine-readable reason: Error is
+// always present and is the only field a client of the common envelope reads,
+// and Code and Details are additive.
+type VillageContributionErrorResponse struct {
+	Error string `json:"error" description:"The human-readable refusal. Always present."`
+	// Code is the primary reason for the refusal.
+	Code *VillageContributionErrorCode `json:"code,omitempty" nullable:"false" description:"The primary machine-readable reason for the refusal. Absent on a refusal that has no closed reason, such as a malformed request."`
+	// Details carries the per-transcript reasons. A request-level reason such
+	// as policy has a detail without transcript_id.
+	Details []VillageContributionErrorDetail `json:"details,omitempty" nullable:"false" description:"The per-transcript reasons for the refusal. A request-level reason such as policy has a detail without transcript_id."`
+}
+
+// VillageContributionErrorDetail is one per-transcript reason inside a refusal.
+// A request-level reason such as policy omits transcript_id.
+type VillageContributionErrorDetail struct {
+	TranscriptID *TranscriptID                `json:"transcript_id,omitempty" nullable:"false" description:"The transcript this reason is about. Absent for a request-level reason such as policy."`
+	Code         VillageContributionErrorCode `json:"code" description:"The machine-readable reason for this transcript."`
+	// CurrentProjectHash names the project a moved transcript now belongs to.
+	CurrentProjectHash *ProjectHash `json:"current_project_hash,omitempty" nullable:"false" description:"The project a moved transcript now belongs to."`
+}
+
+// VillageContributionFamilyMember is one session of a contribution family: the
+// contributable row, plus whether it matched the request's q search. A family
+// appears when its root or any helper matches, so a member can be present only
+// because another member matched.
+type VillageContributionFamilyMember struct {
+	// Transcript is the member's own row. Its project_hash and
+	// project_display_name are the member's own project, which may differ from
+	// the project of the family's root. already_shared on the row marks a
+	// member that is already live; a live member stays locked in a selection.
+	Transcript VillageContributableTranscript `json:"transcript"`
+	// Matched is true when this member itself matched q. It is absent when the
+	// request carried no q.
+	Matched *bool `json:"matched,omitempty" nullable:"false" description:"True when this member itself matched q. Absent when the request carried no q."`
+}
+
+// VillageContributionPageItem is one family: a root session and every helper
+// that descends from it. The family belongs to its root's project, whatever
+// project each helper is in. Selecting the root selects its helpers by default.
+// A session whose chain of parents loops back on itself is a root with no
+// helpers taken from the loop.
+type VillageContributionPageItem struct {
+	Root    VillageContributionFamilyMember   `json:"root" description:"The root session of the family. The family belongs to the project of the root. A session whose chain of parents loops back on itself is a root with no helpers taken from the loop."`
+	Helpers []VillageContributionFamilyMember `json:"helpers" nullable:"false" description:"Every helper session that descends from the root. Each helper keeps its own project, which may differ from the project of the root."`
+}
+
+// VillageContributionPageResponse is one page of families. Its size is counted
+// in root sessions. The page carries no global counts; the project picker is
+// the count authority. Items are ordered by the last activity of each family's
+// root session, newest first: the root's session_end, or its session_start
+// when that is unknown, or its published_at when both are unknown. Items with
+// the same last activity are ordered by the root's transcript id ascending.
+// Helpers never affect the position of their family.
+type VillageContributionPageResponse struct {
+	GroupID VillageUUID                   `json:"group_id"`
+	Items   []VillageContributionPageItem `json:"items" nullable:"false" description:"The families of this page, most recently active first. A family is ordered by the last activity of its root session, newest first, where last activity is the root's session_end, or its session_start when that is unknown, or its published_at when both are unknown. Families with the same last activity are ordered by the root's transcript id ascending. Helpers do not affect the position of their family."`
+	// NextCursor is the opaque cursor of the following page. It is absent on
+	// the last page.
+	NextCursor *string `json:"next_cursor,omitempty" nullable:"false" description:"The opaque cursor of the following page. Absent on the last page."`
+	HasMore    bool    `json:"has_more"`
+}
+
+// VillageContributionSnapshotRecord is the compact record of one session in a
+// snapshot: its identity, title, visibility, latest contribution status, own
+// project and parent link, and nothing else. The title is carried so a client
+// can name every session a person is asked to consent to, including sessions
+// it never loaded as a row.
+type VillageContributionSnapshotRecord struct {
+	ID TranscriptID `json:"id"`
+	// Title is the session's title, null when the session has none. It is the
+	// same value the session's contributable row carries.
+	Title      *string                     `json:"title" description:"The session's title, null when it has none. The same value the session's contributable row carries, so a client can name a session it never loaded as a row."`
+	Visibility VillageTranscriptVisibility `json:"visibility"`
+	// LatestStatus is the status of the latest contribution attempt; absence
+	// means no attempt.
+	LatestStatus *VillageShareStatus `json:"latest_status,omitempty" nullable:"false" description:"The status of the latest contribution attempt. Absent means no attempt."`
+	// ProjectHash is the session's own project, which may differ from the
+	// project of the root of its family.
+	ProjectHash        ProjectHash   `json:"project_hash" description:"The session's own project, which may differ from the project of the root of its family."`
+	ParentTranscriptID *TranscriptID `json:"parent_transcript_id,omitempty" nullable:"false" description:"The published transcript of the parent session. Absent for a root, and for a helper whose parent is not published."`
+}
+
+// VillageContributionSnapshotResponse is the exact selection set of one
+// project: every session in every matching family whose root is in that
+// project. It has no record-count cap, but the encoded response body is limited
+// to VillageContributionSnapshotMaxBytes (8 MiB). A snapshot that would exceed
+// the limit is refused whole with a 413 whose code is snapshot_too_large, and
+// nothing partial is returned; the client narrows the search with q or provider
+// and reads the snapshot again. The server may also refuse with the 503 codes
+// snapshot_timeout or snapshot_busy. Count equals len(Records) and counts
+// sessions, not roots.
+type VillageContributionSnapshotResponse struct {
+	GroupID     VillageUUID                         `json:"group_id"`
+	ProjectHash ProjectHash                         `json:"project_hash" description:"The project of the family roots. Helpers in the records may belong to other projects."`
+	Records     []VillageContributionSnapshotRecord `json:"records" nullable:"false"`
+	Count       int                                 `json:"count" minimum:"0" maximum:"9007199254740991" description:"The number of records, counted in sessions, not roots. Equals the length of records."`
+}
+
+// PrepareJSONSchema states the size limit on the response component, which
+// struct tags cannot describe.
+func (VillageContributionSnapshotResponse) PrepareJSONSchema(s *jsonschema.Schema) error {
+	s.WithDescription("The compact record of every session in the matching families of one project, in one document. The document is limited to 8 MiB (8388608 bytes) of response body and there is no record-count cap. A snapshot that would exceed the limit is refused whole with a 413 whose code is snapshot_too_large, and nothing partial is returned; narrow the search with q or provider and read the snapshot again. The limit is a contract constant, so no limit parameter or field exists.")
+	return nil
+}
+
+// VillageContributionProjectSummary is one project in the picker. Its counts
+// are in sessions: every transcript in the matching families whose root is in
+// the project.
+type VillageContributionProjectSummary struct {
+	ProjectHash        ProjectHash              `json:"project_hash"`
+	ProjectDisplayName string                   `json:"project_display_name"`
+	ProjectNameSource  VillageProjectNameSource `json:"project_name_source"`
+	RepositoryState    *string                  `json:"repository_state,omitempty" nullable:"false"`
+	// MatchingCount is the sessions in the project's matching families.
+	MatchingCount int `json:"matching_count" minimum:"0" maximum:"9007199254740991" description:"The number of sessions in the project's matching families, counted in sessions, not roots."`
+	// SelectableCount is the sessions among them that are not already live.
+	SelectableCount int `json:"selectable_count" minimum:"0" maximum:"9007199254740991" description:"The number of sessions among the matching ones that are not already live, counted in sessions, not roots."`
+}
+
+// VillageContributionProviderFacet counts the matching sessions of one model
+// provider.
+type VillageContributionProviderFacet struct {
+	Provider string `json:"provider"`
+	Count    int    `json:"count" minimum:"0" maximum:"9007199254740991" description:"The number of matching sessions of this provider, counted in sessions, not roots."`
+}
+
+// VillageContributionProjectPage is one page of the project picker. Its page
+// size is counted in projects; MatchingTotal, SelectableTotal and the provider
+// counts are in sessions across every page.
+type VillageContributionProjectPage struct {
+	Projects   []VillageContributionProjectSummary `json:"projects" nullable:"false"`
+	NextCursor *string                             `json:"next_cursor,omitempty" nullable:"false" description:"The opaque cursor of the following page. Absent on the last page."`
+	HasMore    bool                                `json:"has_more"`
+	// MatchingTotal is the sessions in all matching families.
+	MatchingTotal int `json:"matching_total" minimum:"0" maximum:"9007199254740991" description:"The number of sessions in all matching families across every page, counted in sessions, not roots."`
+	// SelectableTotal is the sessions among them that are not already live.
+	SelectableTotal int                                `json:"selectable_total" minimum:"0" maximum:"9007199254740991" description:"The number of sessions among the matching ones that are not already live, across every page, counted in sessions, not roots."`
+	Providers       []VillageContributionProviderFacet `json:"providers" nullable:"false"`
+}
+
+// VillageBatchShareSelectionRequest writes one exact selection. TranscriptIDs
+// lists every session to offer, roots and helpers alike; the server does not
+// expand a root into its helpers. PrivateApprovals lists the private
+// transcripts among them whose owner approved their visibility. One request
+// offers at most VillageContributionSelectionMaxTranscripts sessions; a client
+// with a larger selection sends it as several requests, and a body over the
+// bound is a 400.
+type VillageBatchShareSelectionRequest struct {
+	ProjectHash      ProjectHash    `json:"project_hash" description:"The project of the selected roots. Helpers may belong to other projects and are not checked against it."`
+	TranscriptIDs    []TranscriptID `json:"transcript_ids" nullable:"false" minItems:"1" maxItems:"1000" description:"Exactly the sessions to offer, roots and helpers alike, at most 1000 in one request; a client with a larger selection sends it as several requests. The server never expands a root into its helpers."`
+	PrivateApprovals []TranscriptID `json:"private_approvals" nullable:"false" maxItems:"1000" description:"The private transcripts among transcript_ids whose owner approved their visibility, at most 1000 in one request."`
+}

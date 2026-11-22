@@ -194,6 +194,20 @@ func VillageListContributableTranscriptsPath(id string) (string, error) {
 	return "/api/v1/collectives/" + pathSegment(id) + "/contributable", nil
 }
 
+// VillageListContributionProjects is GET /api/v1/collectives/{id}/contributable/projects
+// (operationId listContributionProjects) in the Village API document.
+var VillageListContributionProjects = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}/contributable/projects", operationID: "listContributionProjects"}
+
+// VillageListContributionProjectsPath returns the path of VillageListContributionProjects.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageListContributionProjectsPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListContributionProjects, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/contributable/projects", nil
+}
+
 // VillageListGroupInvitations is GET /api/v1/collectives/{id}/invitations
 // (operationId listGroupInvitations) in the Village API document.
 var VillageListGroupInvitations = Route{method: MethodGet, pattern: "/api/v1/collectives/{id}/invitations", operationID: "listGroupInvitations"}
@@ -425,6 +439,20 @@ func VillageBatchReviewSharesPath(id string) (string, error) {
 	return "/api/v1/collectives/" + pathSegment(id) + "/shares", nil
 }
 
+// VillageBatchShareSelection is POST /api/v1/collectives/{id}/shares/selection
+// (operationId batchShareSelection) in the Village API document.
+var VillageBatchShareSelection = Route{method: MethodPost, pattern: "/api/v1/collectives/{id}/shares/selection", operationID: "batchShareSelection"}
+
+// VillageBatchShareSelectionPath returns the path of VillageBatchShareSelection.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+func VillageBatchShareSelectionPath(id string) (string, error) {
+	if err := checkPathSegment(VillageBatchShareSelection, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/collectives/" + pathSegment(id) + "/shares/selection", nil
+}
+
 // VillageReviewShare is PATCH /api/v1/collectives/{id}/shares/{transcriptID}
 // (operationId reviewShare) in the Village API document.
 var VillageReviewShare = Route{method: MethodPatch, pattern: "/api/v1/collectives/{id}/shares/{transcriptID}", operationID: "reviewShare"}
@@ -563,6 +591,24 @@ func VillageListContributableTranscriptsDeprecatedPath(id string) (string, error
 		return "", err
 	}
 	return "/api/v1/groups/" + pathSegment(id) + "/contributable", nil
+}
+
+// VillageListContributionProjectsDeprecated is GET /api/v1/groups/{id}/contributable/projects
+// (operationId listContributionProjectsDeprecated) in the Village API document.
+//
+// Deprecated: the Village API document marks listContributionProjectsDeprecated deprecated.
+var VillageListContributionProjectsDeprecated = Route{method: MethodGet, pattern: "/api/v1/groups/{id}/contributable/projects", operationID: "listContributionProjectsDeprecated"}
+
+// VillageListContributionProjectsDeprecatedPath returns the path of VillageListContributionProjectsDeprecated.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+//
+// Deprecated: the Village API document marks listContributionProjectsDeprecated deprecated.
+func VillageListContributionProjectsDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageListContributionProjectsDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/contributable/projects", nil
 }
 
 // VillageListGroupInvitationsDeprecated is GET /api/v1/groups/{id}/invitations
@@ -854,6 +900,24 @@ func VillageBatchReviewSharesDeprecatedPath(id string) (string, error) {
 		return "", err
 	}
 	return "/api/v1/groups/" + pathSegment(id) + "/shares", nil
+}
+
+// VillageBatchShareSelectionDeprecated is POST /api/v1/groups/{id}/shares/selection
+// (operationId batchShareSelectionDeprecated) in the Village API document.
+//
+// Deprecated: the Village API document marks batchShareSelectionDeprecated deprecated.
+var VillageBatchShareSelectionDeprecated = Route{method: MethodPost, pattern: "/api/v1/groups/{id}/shares/selection", operationID: "batchShareSelectionDeprecated"}
+
+// VillageBatchShareSelectionDeprecatedPath returns the path of VillageBatchShareSelectionDeprecated.
+// Each string parameter is escaped as one path segment with url.PathEscape;
+// an empty, "." or ".." value is refused with a *PathSegmentError.
+//
+// Deprecated: the Village API document marks batchShareSelectionDeprecated deprecated.
+func VillageBatchShareSelectionDeprecatedPath(id string) (string, error) {
+	if err := checkPathSegment(VillageBatchShareSelectionDeprecated, "id", id); err != nil {
+		return "", err
+	}
+	return "/api/v1/groups/" + pathSegment(id) + "/shares/selection", nil
 }
 
 // VillageReviewShareDeprecated is PATCH /api/v1/groups/{id}/shares/{transcriptID}
@@ -1565,6 +1629,7 @@ var AllVillage = []Route{
 	VillageUpdateGroup,
 	VillageDeleteGroup,
 	VillageListContributableTranscripts,
+	VillageListContributionProjects,
 	VillageListGroupInvitations,
 	VillageCreateGroupInvitation,
 	VillageRevokeGroupInvitation,
@@ -1580,6 +1645,7 @@ var AllVillage = []Route{
 	VillageListGroupRepositoryCommits,
 	VillageBatchShareProject,
 	VillageBatchReviewShares,
+	VillageBatchShareSelection,
 	VillageReviewShare,
 	VillageRemoveGroupTranscript,
 	VillageUnsubscribeInvitationEmails,
@@ -1592,6 +1658,7 @@ var AllVillage = []Route{
 	VillageUpdateGroupDeprecated,
 	VillageDeleteGroupDeprecated,
 	VillageListContributableTranscriptsDeprecated,
+	VillageListContributionProjectsDeprecated,
 	VillageListGroupInvitationsDeprecated,
 	VillageCreateGroupInvitationDeprecated,
 	VillageRevokeGroupInvitationDeprecated,
@@ -1607,6 +1674,7 @@ var AllVillage = []Route{
 	VillageListGroupRepositoryCommitsDeprecated,
 	VillageBatchShareProjectDeprecated,
 	VillageBatchReviewSharesDeprecated,
+	VillageBatchShareSelectionDeprecated,
 	VillageReviewShareDeprecated,
 	VillageRemoveGroupTranscriptDeprecated,
 	VillageCompleteGitHubAppInstall,

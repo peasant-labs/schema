@@ -42,16 +42,29 @@ type LocalSyncSessionsQuery struct {
 	Publication     *LocalSyncPublicationFilter `query:"publication" nullable:"false" default:"all" description:"Root publication filter; auto uses the canonical live hook decision. This is an explicit publication filter, not selection scope"`
 }
 
+// localSyncSessionsView is the view menu of the Local sync sessions read. It
+// is distinct from the Village contributable view menu, which also has a
+// grouped member.
+type localSyncSessionsView string
+
+const (
+	localSyncSessionsViewGrouped        localSyncSessionsView = "grouped"
+	localSyncSessionsViewHome           localSyncSessionsView = "home"
+	localSyncSessionsViewProjectOptions localSyncSessionsView = "project-options"
+)
+
 // Home reports whether the query selects the offset Home read. The omitted view
 // is Home; grouped and project-options are not.
-func (q LocalSyncSessionsQuery) Home() bool { return q.View == "" || q.View == "home" }
+func (q LocalSyncSessionsQuery) Home() bool {
+	return q.View == "" || localSyncSessionsView(q.View) == localSyncSessionsViewHome
+}
 
 // HasPageToken reports whether a non-empty retired continuation was supplied.
 // An empty pageToken is absent, exactly as an omitted one is.
 func (q LocalSyncSessionsQuery) HasPageToken() bool { return q.PageToken != nil && *q.PageToken != "" }
 
 func (q LocalSyncSessionsQuery) Validate() error {
-	if q.View != "" && q.View != "grouped" && q.View != "home" && q.View != "project-options" {
+	if view := localSyncSessionsView(q.View); q.View != "" && view != localSyncSessionsViewGrouped && view != localSyncSessionsViewHome && view != localSyncSessionsViewProjectOptions {
 		return syncPageError("LocalSyncSessionsQuery", "view is unknown; omit it or use grouped, home, or project-options")
 	}
 	// The byte cap is checked before the retired-token refusal so an oversized

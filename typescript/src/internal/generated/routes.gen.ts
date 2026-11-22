@@ -151,6 +151,10 @@ export const VillageRoute = Object.freeze({
    */
   ListContributableTranscripts: routeMember(HttpMethod.Get, "/api/v1/collectives/{id}/contributable", "listContributableTranscripts"),
   /**
+   * `GET /api/v1/collectives/{id}/contributable/projects` (operationId `listContributionProjects`).
+   */
+  ListContributionProjects: routeMember(HttpMethod.Get, "/api/v1/collectives/{id}/contributable/projects", "listContributionProjects"),
+  /**
    * `GET /api/v1/collectives/{id}/invitations` (operationId `listGroupInvitations`).
    */
   ListGroupInvitations: routeMember(HttpMethod.Get, "/api/v1/collectives/{id}/invitations", "listGroupInvitations"),
@@ -211,6 +215,10 @@ export const VillageRoute = Object.freeze({
    */
   BatchReviewShares: routeMember(HttpMethod.Patch, "/api/v1/collectives/{id}/shares", "batchReviewShares"),
   /**
+   * `POST /api/v1/collectives/{id}/shares/selection` (operationId `batchShareSelection`).
+   */
+  BatchShareSelection: routeMember(HttpMethod.Post, "/api/v1/collectives/{id}/shares/selection", "batchShareSelection"),
+  /**
    * `PATCH /api/v1/collectives/{id}/shares/{transcriptID}` (operationId `reviewShare`).
    */
   ReviewShare: routeMember(HttpMethod.Patch, "/api/v1/collectives/{id}/shares/{transcriptID}", "reviewShare"),
@@ -267,6 +275,11 @@ export const VillageRoute = Object.freeze({
    * @deprecated The Village API document marks this operation deprecated.
    */
   ListContributableTranscriptsDeprecated: routeMember(HttpMethod.Get, "/api/v1/groups/{id}/contributable", "listContributableTranscriptsDeprecated"),
+  /**
+   * `GET /api/v1/groups/{id}/contributable/projects` (operationId `listContributionProjectsDeprecated`).
+   * @deprecated The Village API document marks this operation deprecated.
+   */
+  ListContributionProjectsDeprecated: routeMember(HttpMethod.Get, "/api/v1/groups/{id}/contributable/projects", "listContributionProjectsDeprecated"),
   /**
    * `GET /api/v1/groups/{id}/invitations` (operationId `listGroupInvitationsDeprecated`).
    * @deprecated The Village API document marks this operation deprecated.
@@ -342,6 +355,11 @@ export const VillageRoute = Object.freeze({
    * @deprecated The Village API document marks this operation deprecated.
    */
   BatchReviewSharesDeprecated: routeMember(HttpMethod.Patch, "/api/v1/groups/{id}/shares", "batchReviewSharesDeprecated"),
+  /**
+   * `POST /api/v1/groups/{id}/shares/selection` (operationId `batchShareSelectionDeprecated`).
+   * @deprecated The Village API document marks this operation deprecated.
+   */
+  BatchShareSelectionDeprecated: routeMember(HttpMethod.Post, "/api/v1/groups/{id}/shares/selection", "batchShareSelectionDeprecated"),
   /**
    * `PATCH /api/v1/groups/{id}/shares/{transcriptID}` (operationId `reviewShareDeprecated`).
    * @deprecated The Village API document marks this operation deprecated.
@@ -628,6 +646,7 @@ export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.UpdateGroup,
   VillageRoute.DeleteGroup,
   VillageRoute.ListContributableTranscripts,
+  VillageRoute.ListContributionProjects,
   VillageRoute.ListGroupInvitations,
   VillageRoute.CreateGroupInvitation,
   VillageRoute.RevokeGroupInvitation,
@@ -643,6 +662,7 @@ export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.ListGroupRepositoryCommits,
   VillageRoute.BatchShareProject,
   VillageRoute.BatchReviewShares,
+  VillageRoute.BatchShareSelection,
   VillageRoute.ReviewShare,
   VillageRoute.RemoveGroupTranscript,
   VillageRoute.UnsubscribeInvitationEmails,
@@ -655,6 +675,7 @@ export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.UpdateGroupDeprecated,
   VillageRoute.DeleteGroupDeprecated,
   VillageRoute.ListContributableTranscriptsDeprecated,
+  VillageRoute.ListContributionProjectsDeprecated,
   VillageRoute.ListGroupInvitationsDeprecated,
   VillageRoute.CreateGroupInvitationDeprecated,
   VillageRoute.RevokeGroupInvitationDeprecated,
@@ -670,6 +691,7 @@ export const ALL_VILLAGE_ROUTES = Object.freeze([
   VillageRoute.ListGroupRepositoryCommitsDeprecated,
   VillageRoute.BatchShareProjectDeprecated,
   VillageRoute.BatchReviewSharesDeprecated,
+  VillageRoute.BatchShareSelectionDeprecated,
   VillageRoute.ReviewShareDeprecated,
   VillageRoute.RemoveGroupTranscriptDeprecated,
   VillageRoute.CompleteGitHubAppInstall,

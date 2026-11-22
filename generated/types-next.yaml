@@ -10869,6 +10869,33 @@ components:
       - shared
       - already_shared
       type: object
+    VillageBatchShareSelectionRequest:
+      properties:
+        private_approvals:
+          description: The private transcripts among transcript_ids whose owner approved
+            their visibility, at most 1000 in one request.
+          items:
+            $ref: '#/components/schemas/TranscriptID'
+          maxItems: 1000
+          type: array
+        project_hash:
+          $ref: '#/components/schemas/ProjectHash'
+          description: The project of the selected roots. Helpers may belong to other
+            projects and are not checked against it.
+        transcript_ids:
+          description: Exactly the sessions to offer, roots and helpers alike, at
+            most 1000 in one request; a client with a larger selection sends it as
+            several requests. The server never expands a root into its helpers.
+          items:
+            $ref: '#/components/schemas/TranscriptID'
+          maxItems: 1000
+          minItems: 1
+          type: array
+      required:
+      - project_hash
+      - transcript_ids
+      - private_approvals
+      type: object
     VillageCollective:
       properties:
         acceptance_mode:
@@ -11789,6 +11816,11 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
+        latest_status:
+          $ref: '#/components/schemas/VillageShareStatus'
+          description: The status of the latest contribution attempt in this collective.
+            Absent means no attempt. already_shared stays and is true only for pending
+            and approved.
         local_id:
           $ref: '#/components/schemas/SessionID'
         model_provider:
@@ -11797,6 +11829,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SessionID'
           - type: "null"
+        parent_transcript_id:
+          $ref: '#/components/schemas/TranscriptID'
+          description: The published transcript of the parent session. Absent for
+            a root, and for a helper whose parent is not published.
         project_display_name:
           type: string
         project_hash:
@@ -11816,8 +11852,16 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SessionID'
           - type: "null"
+        session_end:
+          description: When the session's last turn happened. Absent when unknown.
+          format: date-time
+          type: string
         session_origin:
           $ref: '#/components/schemas/SessionOrigin'
+        session_start:
+          description: When the session began. Absent when unknown.
+          format: date-time
+          type: string
         title:
           anyOf:
           - type:
@@ -11841,6 +11885,20 @@ components:
       - published_at
       - already_shared
       type: object
+    VillageContributableView:
+      description: The view of the contributable operation. Omission keeps the flat
+        response; grouped, paged and snapshot select the other envelopes. Any other
+        value is refused with a 400 that names the accepted values.
+      enum:
+      - grouped
+      - paged
+      - snapshot
+      examples:
+      - grouped
+      - paged
+      - snapshot
+      title: Village Contributable View
+      type: string
     VillageContributedCollective:
       properties:
         approved_count:
@@ -11893,6 +11951,260 @@ components:
           type: array
       required:
       - collectives
+      type: object
+    VillageContributionErrorCode:
+      description: Machine-readable reason a contribution request was refused
+      enum:
+      - moved
+      - missing
+      - private_unapproved
+      - conflict
+      - policy
+      - membership
+      - stale_selection
+      - snapshot_timeout
+      - snapshot_busy
+      - snapshot_too_large
+      examples:
+      - moved
+      - missing
+      - private_unapproved
+      - conflict
+      - policy
+      - membership
+      - stale_selection
+      - snapshot_timeout
+      - snapshot_busy
+      - snapshot_too_large
+      title: Village Contribution Error Code
+      type: string
+    VillageContributionErrorDetail:
+      properties:
+        code:
+          $ref: '#/components/schemas/VillageContributionErrorCode'
+          description: The machine-readable reason for this transcript.
+        current_project_hash:
+          $ref: '#/components/schemas/ProjectHash'
+          description: The project a moved transcript now belongs to.
+        transcript_id:
+          $ref: '#/components/schemas/TranscriptID'
+          description: The transcript this reason is about. Absent for a request-level
+            reason such as policy.
+      required:
+      - code
+      type: object
+    VillageContributionErrorResponse:
+      properties:
+        code:
+          $ref: '#/components/schemas/VillageContributionErrorCode'
+          description: The primary machine-readable reason for the refusal. Absent
+            on a refusal that has no closed reason, such as a malformed request.
+        details:
+          description: The per-transcript reasons for the refusal. A request-level
+            reason such as policy has a detail without transcript_id.
+          items:
+            $ref: '#/components/schemas/VillageContributionErrorDetail'
+          type: array
+        error:
+          description: The human-readable refusal. Always present.
+          type: string
+      required:
+      - error
+      type: object
+    VillageContributionFamilyMember:
+      properties:
+        matched:
+          description: True when this member itself matched q. Absent when the request
+            carried no q.
+          type: boolean
+        transcript:
+          $ref: '#/components/schemas/VillageContributableTranscript'
+      required:
+      - transcript
+      type: object
+    VillageContributionPageItem:
+      properties:
+        helpers:
+          description: Every helper session that descends from the root. Each helper
+            keeps its own project, which may differ from the project of the root.
+          items:
+            $ref: '#/components/schemas/VillageContributionFamilyMember'
+          type: array
+        root:
+          $ref: '#/components/schemas/VillageContributionFamilyMember'
+          description: The root session of the family. The family belongs to the project
+            of the root. A session whose chain of parents loops back on itself is
+            a root with no helpers taken from the loop.
+      required:
+      - root
+      - helpers
+      type: object
+    VillageContributionPageResponse:
+      properties:
+        group_id:
+          $ref: '#/components/schemas/VillageUUID'
+        has_more:
+          type: boolean
+        items:
+          description: The families of this page, most recently active first. A family
+            is ordered by the last activity of its root session, newest first, where
+            last activity is the root's session_end, or its session_start when that
+            is unknown, or its published_at when both are unknown. Families with the
+            same last activity are ordered by the root's transcript id ascending.
+            Helpers do not affect the position of their family.
+          items:
+            $ref: '#/components/schemas/VillageContributionPageItem'
+          type: array
+        next_cursor:
+          description: The opaque cursor of the following page. Absent on the last
+            page.
+          type: string
+      required:
+      - group_id
+      - items
+      - has_more
+      type: object
+    VillageContributionProjectPage:
+      properties:
+        has_more:
+          type: boolean
+        matching_total:
+          description: The number of sessions in all matching families across every
+            page, counted in sessions, not roots.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        next_cursor:
+          description: The opaque cursor of the following page. Absent on the last
+            page.
+          type: string
+        projects:
+          items:
+            $ref: '#/components/schemas/VillageContributionProjectSummary'
+          type: array
+        providers:
+          items:
+            $ref: '#/components/schemas/VillageContributionProviderFacet'
+          type: array
+        selectable_total:
+          description: The number of sessions among the matching ones that are not
+            already live, across every page, counted in sessions, not roots.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - projects
+      - has_more
+      - matching_total
+      - selectable_total
+      - providers
+      type: object
+    VillageContributionProjectSummary:
+      properties:
+        matching_count:
+          description: The number of sessions in the project's matching families,
+            counted in sessions, not roots.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        project_display_name:
+          type: string
+        project_hash:
+          $ref: '#/components/schemas/ProjectHash'
+        project_name_source:
+          $ref: '#/components/schemas/VillageProjectNameSource'
+        repository_state:
+          type: string
+        selectable_count:
+          description: The number of sessions among the matching ones that are not
+            already live, counted in sessions, not roots.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - project_hash
+      - project_display_name
+      - project_name_source
+      - matching_count
+      - selectable_count
+      type: object
+    VillageContributionProviderFacet:
+      properties:
+        count:
+          description: The number of matching sessions of this provider, counted in
+            sessions, not roots.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        provider:
+          type: string
+      required:
+      - provider
+      - count
+      type: object
+    VillageContributionSnapshotRecord:
+      properties:
+        id:
+          $ref: '#/components/schemas/TranscriptID'
+        latest_status:
+          $ref: '#/components/schemas/VillageShareStatus'
+          description: The status of the latest contribution attempt. Absent means
+            no attempt.
+        parent_transcript_id:
+          $ref: '#/components/schemas/TranscriptID'
+          description: The published transcript of the parent session. Absent for
+            a root, and for a helper whose parent is not published.
+        project_hash:
+          $ref: '#/components/schemas/ProjectHash'
+          description: The session's own project, which may differ from the project
+            of the root of its family.
+        title:
+          anyOf:
+          - description: The session's title, null when it has none. The same value
+              the session's contributable row carries, so a client can name a session
+              it never loaded as a row.
+            type:
+            - "null"
+            - string
+          - type: "null"
+        visibility:
+          $ref: '#/components/schemas/VillageTranscriptVisibility'
+      required:
+      - id
+      - title
+      - visibility
+      - project_hash
+      type: object
+    VillageContributionSnapshotResponse:
+      description: The compact record of every session in the matching families of
+        one project, in one document. The document is limited to 8 MiB (8388608 bytes)
+        of response body and there is no record-count cap. A snapshot that would exceed
+        the limit is refused whole with a 413 whose code is snapshot_too_large, and
+        nothing partial is returned; narrow the search with q or provider and read
+        the snapshot again. The limit is a contract constant, so no limit parameter
+        or field exists.
+      properties:
+        count:
+          description: The number of records, counted in sessions, not roots. Equals
+            the length of records.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        group_id:
+          $ref: '#/components/schemas/VillageUUID'
+        project_hash:
+          $ref: '#/components/schemas/ProjectHash'
+          description: The project of the family roots. Helpers in the records may
+            belong to other projects.
+        records:
+          items:
+            $ref: '#/components/schemas/VillageContributionSnapshotRecord'
+          type: array
+      required:
+      - group_id
+      - project_hash
+      - records
+      - count
       type: object
     VillageContributionStatus:
       description: Status assigned when a new collective contribution is opened

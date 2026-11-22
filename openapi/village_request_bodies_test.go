@@ -3,6 +3,7 @@ package openapi_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -55,7 +56,21 @@ func TestBuildVillageAPISpec_RequestBodies(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			encoded, err := json.Marshal(fixture.Body)
+			sent := map[string]any{}
+			for key, value := range fixture.Body {
+				sent[key] = value
+			}
+			for _, fill := range fixture.Fill {
+				if fill.Property == "" || fill.Count < 1 {
+					t.Fatalf("fill %+v needs a property and a positive count", fill)
+				}
+				ids := make([]any, fill.Count)
+				for i := range ids {
+					ids[i] = fmt.Sprintf("00000000-0000-4000-8000-%012d", i+1)
+				}
+				sent[fill.Property] = ids
+			}
+			encoded, err := json.Marshal(sent)
 			if err != nil {
 				t.Fatal(err)
 			}

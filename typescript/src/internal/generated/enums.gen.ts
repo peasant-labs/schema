@@ -77,6 +77,8 @@ import { zVillageCollectiveAcceptanceMode } from "./contract/zod.gen.js";
 import { zVillageCollectiveDataAccess } from "./contract/zod.gen.js";
 import { zVillageCollectiveRole } from "./contract/zod.gen.js";
 import { zVillageCollectiveViewerRole } from "./contract/zod.gen.js";
+import { zVillageContributableView } from "./contract/zod.gen.js";
+import { zVillageContributionErrorCode } from "./contract/zod.gen.js";
 import { zVillageProjectNameSource } from "./contract/zod.gen.js";
 import { zVillageReviewDecision } from "./contract/zod.gen.js";
 import { zVillageShareEventActor } from "./contract/zod.gen.js";
@@ -1083,6 +1085,35 @@ export type VillageCollectiveViewerRole = (typeof VillageCollectiveViewerRole)[k
 export const AllVillageCollectiveViewerRoles = Object.freeze([VillageCollectiveViewerRole.None, VillageCollectiveViewerRole.Owner, VillageCollectiveViewerRole.Member, VillageCollectiveViewerRole.Contributor, VillageCollectiveViewerRole.Pending]) as readonly VillageCollectiveViewerRole[];
 export function isVillageCollectiveViewerRole(value: unknown): value is VillageCollectiveViewerRole {
   return zVillageCollectiveViewerRole.safeParse(value).success;
+}
+
+export const VillageContributableView = Object.freeze({
+  Grouped: "grouped",
+  Paged: "paged",
+  Snapshot: "snapshot",
+} as const);
+export type VillageContributableView = (typeof VillageContributableView)[keyof typeof VillageContributableView];
+export const AllVillageContributableViews = Object.freeze([VillageContributableView.Grouped, VillageContributableView.Paged, VillageContributableView.Snapshot]) as readonly VillageContributableView[];
+export function isVillageContributableView(value: unknown): value is VillageContributableView {
+  return zVillageContributableView.safeParse(value).success;
+}
+
+export const VillageContributionErrorCode = Object.freeze({
+  Moved: "moved",
+  Missing: "missing",
+  PrivateUnapproved: "private_unapproved",
+  Conflict: "conflict",
+  Policy: "policy",
+  Membership: "membership",
+  StaleSelection: "stale_selection",
+  SnapshotTimeout: "snapshot_timeout",
+  SnapshotBusy: "snapshot_busy",
+  SnapshotTooLarge: "snapshot_too_large",
+} as const);
+export type VillageContributionErrorCode = (typeof VillageContributionErrorCode)[keyof typeof VillageContributionErrorCode];
+export const AllVillageContributionErrorCodes = Object.freeze([VillageContributionErrorCode.Moved, VillageContributionErrorCode.Missing, VillageContributionErrorCode.PrivateUnapproved, VillageContributionErrorCode.Conflict, VillageContributionErrorCode.Policy, VillageContributionErrorCode.Membership, VillageContributionErrorCode.StaleSelection, VillageContributionErrorCode.SnapshotTimeout, VillageContributionErrorCode.SnapshotBusy, VillageContributionErrorCode.SnapshotTooLarge]) as readonly VillageContributionErrorCode[];
+export function isVillageContributionErrorCode(value: unknown): value is VillageContributionErrorCode {
+  return zVillageContributionErrorCode.safeParse(value).success;
 }
 
 export const VillageProjectNameSource = Object.freeze({

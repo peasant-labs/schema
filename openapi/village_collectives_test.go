@@ -21,6 +21,35 @@ type villageCollectivesOperationFixtures struct {
 	RemovedOperations []villageRemovedOperationFixture     `yaml:"removed_operations"`
 	RequestBodyNames  []string                             `yaml:"request_body_names"`
 	RequestBodies     []villageRequestBodyFixture          `yaml:"request_bodies"`
+
+	RetiredNames           []villageRetiredNameFixture `yaml:"retired_names"`
+	ResponseArmSampleNames []string                    `yaml:"response_arm_sample_names"`
+	ResponseArmSamples     []villageResponseArmFixture `yaml:"response_arm_samples"`
+}
+
+// villageRetiredNameFixture is a name the contract declared during
+// development and no longer declares, as a parameter, a property or an enum
+// value anywhere in the Village spec.
+type villageRetiredNameFixture struct {
+	Name   string `yaml:"name"`
+	Kind   string `yaml:"kind"`
+	Reason string `yaml:"reason"`
+}
+
+// villageResponseArmFixture is one operation whose success response is a
+// oneOf, with one sample body per arm.
+type villageResponseArmFixture struct {
+	Path    string                     `yaml:"path"`
+	Method  string                     `yaml:"method"`
+	Status  string                     `yaml:"status"`
+	Arms    []string                   `yaml:"arms"`
+	Samples []villageResponseArmSample `yaml:"samples"`
+}
+
+type villageResponseArmSample struct {
+	Name string         `yaml:"name"`
+	Arm  string         `yaml:"arm"`
+	Body map[string]any `yaml:"body"`
 }
 
 // villageRequestBodyFixture is one request body sent to an operation. Village
@@ -31,7 +60,16 @@ type villageRequestBodyFixture struct {
 	Path   string         `yaml:"path"`
 	Method string         `yaml:"method"`
 	Body   map[string]any `yaml:"body"`
-	Valid  bool           `yaml:"valid"`
+	// Fill sets each named body property to an array of distinct transcript
+	// ids, so a case at an array bound does not spell out every id.
+	Fill  []villageBodyFill `yaml:"fill"`
+	Valid bool              `yaml:"valid"`
+}
+
+// villageBodyFill is one body property filled with Count distinct ids.
+type villageBodyFill struct {
+	Property string `yaml:"property"`
+	Count    int    `yaml:"count"`
 }
 
 // villageRemovedOperationFixture is an operation the contract no longer
@@ -70,6 +108,10 @@ type villageComponentPropertyFixture struct {
 	Nullable  *bool  `yaml:"nullable"`
 	ItemsRef  string `yaml:"items_ref"`
 	ItemsType string `yaml:"items_type"`
+	Minimum   *int64 `yaml:"minimum"`
+	Maximum   *int64 `yaml:"maximum"`
+	MinItems  *int64 `yaml:"min_items"`
+	MaxItems  *int64 `yaml:"max_items"`
 }
 
 func TestBuildVillageAPISpec_CollectivesOperations(t *testing.T) {
@@ -217,6 +259,24 @@ func TestBuildVillageAPISpec_CollectivesPropertyContracts(t *testing.T) {
 				t.Errorf("component %s property %s nullable = %v, want %v", fixture.Component, fixture.Property, got, *fixture.Nullable)
 			}
 		}
+		bounds := decodeVillagePropertyBounds(t, property, fixture.Component, fixture.Property)
+		for _, bound := range []struct {
+			name string
+			got  *float64
+			want *int64
+		}{
+			{"minimum", bounds.Minimum, fixture.Minimum},
+			{"maximum", bounds.Maximum, fixture.Maximum},
+			{"minItems", bounds.MinItems, fixture.MinItems},
+			{"maxItems", bounds.MaxItems, fixture.MaxItems},
+		} {
+			if bound.want == nil {
+				continue
+			}
+			if bound.got == nil || int64(*bound.got) != *bound.want {
+				t.Errorf("component %s property %s %s = %v, want %d", fixture.Component, fixture.Property, bound.name, bound.got, *bound.want)
+			}
+		}
 		if fixture.ItemsRef != "" {
 			items, ok := property["items"].(map[string]any)
 			if !ok {
@@ -236,6 +296,24 @@ func TestBuildVillageAPISpec_CollectivesPropertyContracts(t *testing.T) {
 			}
 		}
 	}
+}
+
+// villagePropertyBounds are the numeric bounds a component property may
+// declare.
+type villagePropertyBounds struct {
+	Minimum  *float64 `json:"minimum"`
+	Maximum  *float64 `json:"maximum"`
+	MinItems *float64 `json:"minItems"`
+	MaxItems *float64 `json:"maxItems"`
+}
+
+func decodeVillagePropertyBounds(t *testing.T, property map[string]any, component, name string) villagePropertyBounds {
+	t.Helper()
+	var bounds villagePropertyBounds
+	if err := json.Unmarshal(mustJSONBytes(t, property), &bounds); err != nil {
+		t.Fatalf("component %s property %s bounds do not decode: %v", component, name, err)
+	}
+	return bounds
 }
 
 func loadVillageCollectivesFixtures(t *testing.T) villageCollectivesOperationFixtures {
