@@ -38,6 +38,12 @@ func documentOperations(t *testing.T, specs openapi.SpecArtifacts, artifact stri
 	var keys []string
 	for pattern, item := range doc.Paths {
 		for method, rawOp := range item {
+			// A path item also carries members that are not operations, such
+			// as a servers override. The generator refuses any other method,
+			// so the route method set names every operation.
+			if !route.Method(strings.ToUpper(method)).IsValid() {
+				continue
+			}
 			var op struct {
 				OperationID string `json:"operationId"`
 			}

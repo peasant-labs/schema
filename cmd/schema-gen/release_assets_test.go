@@ -82,7 +82,7 @@ func TestReleaseAssetSelection(t *testing.T) {
 			}
 			write(source, c.Input.Source)
 			write(dist, c.Input.Existing)
-			cmd := exec.Command(filepath.Join(root, "scripts", "collect-release-assets.sh"), source, dist)
+			cmd := exec.Command("bash", filepath.Join(root, "scripts", "collect-release-assets.sh"), source, dist)
 			output, err := cmd.CombinedOutput()
 			if c.Classification == testcase.MustFail {
 				if err == nil || !strings.Contains(string(output), c.Expected.ErrorContains) {

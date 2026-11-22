@@ -167,6 +167,7 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 			NoJobContinue    bool              `yaml:"no_job_continue"`
 			IfContains       []string          `yaml:"if_contains"`
 			IfValue          string            `yaml:"if_value"`
+			NoIf             bool              `yaml:"no_if"`
 			EnvValues        map[string]string `yaml:"env_values"`
 			WithValues       map[string]string `yaml:"with_values"`
 			WithExcludes     []string          `yaml:"with_excludes"`
@@ -263,6 +264,9 @@ func TestReleaseAdoptionWorkflowWiring(t *testing.T) {
 					t.Error("step must not set continue-on-error")
 				}
 				checkWorkflowFragments(t, step, "if", c.IfContains)
+				if c.NoIf && workflowMappingChild(step, "if") != nil {
+					t.Error("step must run without an if condition")
+				}
 				if c.WorkingDirectory != "" {
 					dir := workflowMappingChild(step, "working-directory")
 					if dir == nil || dir.Value != c.WorkingDirectory {

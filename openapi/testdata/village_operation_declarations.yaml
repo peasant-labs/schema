@@ -1,0 +1,510 @@
+# Village operation declarations: the contradictions the generator refuses and
+# the declarations it accepts. The generator's own declarations are valid, so
+# the refusals never fire in a build; each must-fail case is one contradictory
+# probe declaration and the error text it must produce, and each must-pass case
+# is one accepted probe and its exact document entry.
+#
+# input.call picks the step under test:
+#   add_operations   check, reflect, declare and describe (the build path)
+#   check            checkVillageOperation alone
+#   verify_statuses  reflect alone, then verifyVillageStatuses, which sees what
+#                    the reflector left behind
+# Sessions, bodies and requests are named by their Go identifiers. The request
+# villageProbeSignInRequest carries a query parameter state and a cookie
+# parameter oauth_state.
+# Every case name is listed in requiredVillageDeclarationCases in
+# village_operation_declarations_internal_test.go.
+cases:
+  - name: redirect-without-location
+    classification: must-fail
+    provenance: {source: requirement, ref: "A redirect must say where it sends the client"}
+    mutation: {description: "a 307 declares no Location header"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/redirect
+        id: probeRedirect
+        responses:
+          - {status: 307, description: "Redirect."}
+    expected:
+      error_contains: "redirect 307 has no required Location header"
+
+  - name: status-declared-twice
+    classification: must-fail
+    provenance: {source: requirement, ref: "One status is described in one place"}
+    mutation: {description: "500 is listed both as a JSON error and as a browser-negotiated error"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        response: VillageStatusResponse
+        error_statuses: [500]
+        browser_error_statuses: [500]
+    expected:
+      error_contains: "status 500 is declared by both errorStatuses and browserErrorStatuses"
+
+  - name: session-503-outside-error-statuses
+    classification: must-fail
+    provenance: {source: requirement, ref: "The session's JSON 503 merges only with a JSON 503 the handler sends"}
+    mutation: {description: "a required-session operation lists 503 as a browser-negotiated error"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        session: villageSessionRequired
+        response: VillageStatusResponse
+        browser_error_statuses: [503]
+    expected:
+      error_contains: "status 503 is declared by both the required session and browserErrorStatuses"
+
+  - name: json-media-without-body
+    classification: must-fail
+    provenance: {source: requirement, ref: "A JSON response carries the schema of what the handler encodes"}
+    mutation: {description: "an application/json medium names no Go body"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        responses:
+          - status: 200
+            description: "OK."
+            media: [{type: application/json}]
+    expected:
+      error_contains: "declares application/json without a Go body"
+
+  - name: text-media-with-body
+    classification: must-fail
+    provenance: {source: requirement, ref: "A text medium is a plain string"}
+    mutation: {description: "a text/plain medium names a Go body"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        responses:
+          - status: 200
+            description: "OK."
+            media: [{type: text/plain, body: VillageStatusResponse}]
+    expected:
+      error_contains: "declares text/plain with a Go body"
+
+  - name: unsupported-media-type
+    classification: must-fail
+    provenance: {source: requirement, ref: "The generator declares JSON, HTML and plain text only"}
+    mutation: {description: "a response names application/xml"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        responses:
+          - status: 200
+            description: "OK."
+            media: [{type: application/xml}]
+    expected:
+      error_contains: 'declares media type "application/xml"'
+
+  - name: media-declared-twice
+    classification: must-fail
+    provenance: {source: requirement, ref: "One status carries one schema per media type"}
+    mutation: {description: "a response lists text/html twice"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        responses:
+          - status: 200
+            description: "OK."
+            media: [{type: text/html}, {type: text/html}]
+    expected:
+      error_contains: "declares media type text/html twice"
+
+  - name: no-success-without-declared-stub
+    classification: must-fail
+    provenance: {source: bug, ref: "cliLogin was declared with a 204 the server never sends because it declared no response"}
+    mutation: {description: "an operation lists only refusals and is not marked as a declared stub"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        error_statuses: [400]
+    expected:
+      error_contains: "declares no success response"
+
+  - name: declared-stub-without-501
+    classification: must-fail
+    provenance: {source: requirement, ref: "A declared stub states the 501 it answers"}
+    mutation: {description: "a declared stub lists 400 but not 501"}
+    input:
+      call: check
+      operation:
+        method: POST
+        path: /api/v1/probe/stub
+        id: probeStub
+        declared_stub: true
+        error_statuses: [400]
+    expected:
+      error_contains: "declaredStub is set but status 501 is not declared"
+
+  - name: declared-stub-with-success
+    classification: must-fail
+    provenance: {source: requirement, ref: "A declared stub answers only refusals"}
+    mutation: {description: "a declared stub also declares a success body"}
+    input:
+      call: check
+      operation:
+        method: POST
+        path: /api/v1/probe/stub
+        id: probeStub
+        declared_stub: true
+        response: VillageStatusResponse
+        error_statuses: [501]
+    expected:
+      error_contains: "declaredStub is set but the operation declares a success response"
+
+  - name: success-status-without-response
+    classification: must-fail
+    provenance: {source: requirement, ref: "A success status without a body would be dropped silently"}
+    mutation: {description: "successStatus is 201 but no response is set"}
+    input:
+      call: check
+      operation:
+        method: POST
+        path: /api/v1/probe/create
+        id: probeCreate
+        success_status: 201
+        responses:
+          - {status: 302, description: "Found.", headers: [{name: Location, required: true}]}
+    expected:
+      error_contains: "successStatus 201 is set but no response is declared"
+
+  - name: rate-limited-lists-429
+    classification: must-fail
+    provenance: {source: requirement, ref: "The limiter's 429 is declared once, by rateLimited"}
+    mutation: {description: "a rate-limited operation also lists 429 by hand"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        rate_limited: true
+        response: VillageStatusResponse
+        error_statuses: [429]
+    expected:
+      error_contains: "status 429 is listed by hand on a rate-limited operation"
+
+  - name: session-required-lists-401
+    classification: must-fail
+    provenance: {source: requirement, ref: "The session middleware's 401 is declared once, by session"}
+    mutation: {description: "a required-session operation also lists 401 by hand"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        session: villageSessionRequired
+        response: VillageStatusResponse
+        error_statuses: [401, 500]
+    expected:
+      error_contains: "status 401 is listed by hand on an operation behind the required session"
+
+  - name: servers-on-api-path
+    classification: must-fail
+    provenance: {source: requirement, ref: "A servers override is for a route mounted at the root"}
+    mutation: {description: "an operation under /api/v1/ overrides servers"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        response: VillageStatusResponse
+        servers: ["/"]
+    expected:
+      error_contains: "servers overrides the document's servers on a path under /api/v1/"
+
+  - name: duplicate-header
+    classification: must-fail
+    provenance: {source: requirement, ref: "A header is declared once per response"}
+    mutation: {description: "a redirect declares Location twice, differing only in case"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/redirect
+        id: probeRedirect
+        responses:
+          - status: 307
+            description: "Redirect."
+            headers: [{name: Location, required: true}, {name: location, required: true}]
+    expected:
+      error_contains: "declares header location twice"
+
+  - name: header-repeats-limiter-header
+    classification: must-fail
+    provenance: {source: requirement, ref: "The limiter headers are declared once, by rateLimited"}
+    mutation: {description: "a rate-limited redirect also declares X-RateLimit-Remaining by hand"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/redirect
+        id: probeRedirect
+        rate_limited: true
+        responses:
+          - status: 307
+            description: "Redirect."
+            headers: [{name: Location, required: true}, {name: X-RateLimit-Remaining, required: true}]
+    expected:
+      error_contains: "declares header X-RateLimit-Remaining, which rateLimited already declares"
+
+  - name: response-without-description
+    classification: must-fail
+    provenance: {source: requirement, ref: "OpenAPI requires a response description"}
+    mutation: {description: "a redirect has an empty description"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/redirect
+        id: probeRedirect
+        responses:
+          - status: 307
+            description: "  "
+            headers: [{name: Location, required: true}]
+    expected:
+      error_contains: "response 307 has no description"
+
+  - name: status-out-of-range
+    classification: must-fail
+    provenance: {source: boundary, ref: "HTTP statuses run from 100 to 599"}
+    mutation: {description: "a response lists status 3070"}
+    input:
+      call: check
+      operation:
+        method: GET
+        path: /api/v1/probe/redirect
+        id: probeRedirect
+        responses:
+          - status: 3070
+            description: "Redirect."
+            headers: [{name: Location, required: true}]
+    expected:
+      error_contains: "responses lists status 3070, which is not an HTTP status"
+
+  - name: placeholder-204-remains
+    classification: must-fail
+    provenance: {source: bug, ref: "The reflector adds a 204 No Content to an operation it reflected no response for"}
+    mutation: {description: "a redirect-only operation is reflected and its placeholder is never removed"}
+    input:
+      call: verify_statuses
+      operation:
+        method: GET
+        path: /api/v1/probe/redirect
+        id: probeRedirect
+        responses:
+          - status: 307
+            description: "Redirect."
+            headers: [{name: Location, required: true}]
+    expected:
+      error_contains: "the document carries status 204, which the declaration does not state"
+
+  - name: declared-status-missing
+    classification: must-fail
+    provenance: {source: requirement, ref: "Every status a declaration states reaches the document"}
+    mutation: {description: "a rate-limited operation is reflected but its 429 is never declared"}
+    input:
+      call: verify_statuses
+      operation:
+        method: GET
+        path: /api/v1/probe/read
+        id: probeRead
+        rate_limited: true
+        response: VillageStatusResponse
+    expected:
+      error_contains: "the declaration states status 429, which the document does not carry"
+
+  - name: complete-redirect-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A sign-in entry or callback: rate-limited 307 with Location and a cookie, query and cookie parameters"}
+    mutation: {description: "a complete redirect-only operation, whose reflector placeholder 204 must be removed"}
+    input:
+      call: add_operations
+      operation:
+        method: GET
+        path: /api/v1/probe/sign-in
+        id: probeSignIn
+        description: "Start a probe sign-in."
+        rate_limited: true
+        request: villageProbeSignInRequest
+        responses:
+          - status: 307
+            description: "Redirect to the provider."
+            headers: [{name: Location, required: true}, {name: Set-Cookie, required: true}]
+    expected:
+      document:
+        operation_id: probeSignIn
+        tag: probe
+        parameters:
+          - {name: state, in: query, required: false, schema: string}
+          - {name: oauth_state, in: cookie, required: false, schema: string}
+        responses:
+          "307":
+            headers: {Location: true, Set-Cookie: true, X-RateLimit-Limit: true, X-RateLimit-Remaining: true, X-RateLimit-Reset: true}
+            description_anchors: ["Redirect to the provider."]
+          "429":
+            media: {text/plain: string}
+            headers: {Retry-After: true, X-Content-Type-Options: true, X-RateLimit-Limit: true, X-RateLimit-Remaining: true, X-RateLimit-Reset: true}
+            description_anchors: ["Too Many Requests"]
+        description_anchors: ["Start a probe sign-in."]
+
+  - name: session-required-declares-refusals
+    classification: must-pass
+    provenance: {source: requirement, ref: "The required session middleware answers 401, and 503 with Retry-After"}
+    mutation: {description: "a required-session operation lists only its own 500"}
+    input:
+      call: add_operations
+      operation:
+        method: GET
+        path: /api/v1/probe/me
+        id: probeMe
+        session: villageSessionRequired
+        response: VillageStatusResponse
+        error_statuses: [500]
+    expected:
+      document:
+        operation_id: probeMe
+        tag: probe
+        responses:
+          "200": {media: {application/json: SchemaVillageStatusResponse}}
+          "401":
+            media: {application/json: SchemaVillageErrorResponse}
+            description_anchors: ["no valid session"]
+          "500": {media: {application/json: SchemaVillageErrorResponse}}
+          "503":
+            media: {application/json: SchemaVillageErrorResponse}
+            headers: {Retry-After: true}
+            description_anchors: ["account behind the session could not be read"]
+
+  - name: session-503-merges-with-handler-503
+    classification: must-pass
+    provenance: {source: requirement, ref: "A handler 503 behind the required session shares one response; Retry-After is set only by the session"}
+    mutation: {description: "a required-session operation lists its own 503"}
+    input:
+      call: add_operations
+      operation:
+        method: DELETE
+        path: /api/v1/probe/item
+        id: probeDelete
+        session: villageSessionRequired
+        response: VillageStatusResponse
+        error_statuses: [503]
+    expected:
+      document:
+        operation_id: probeDelete
+        tag: probe
+        responses:
+          "200": {media: {application/json: SchemaVillageStatusResponse}}
+          "401": {media: {application/json: SchemaVillageErrorResponse}}
+          "503":
+            media: {application/json: SchemaVillageErrorResponse}
+            headers: {Retry-After: false}
+            description_anchors: ["Either the account behind the session could not be read"]
+
+  - name: declared-stub-accepted
+    classification: must-pass
+    provenance: {source: requirement, ref: "A mounted route not implemented yet declares only its refusals"}
+    mutation: {description: "a required-session declared stub with 501"}
+    input:
+      call: add_operations
+      operation:
+        method: POST
+        path: /api/v1/probe/batch
+        id: probeBatch
+        session: villageSessionRequired
+        declared_stub: true
+        error_statuses: [501]
+    expected:
+      document:
+        operation_id: probeBatch
+        tag: probe
+        responses:
+          "401": {media: {application/json: SchemaVillageErrorResponse}}
+          "501": {media: {application/json: SchemaVillageErrorResponse}}
+          "503":
+            media: {application/json: SchemaVillageErrorResponse}
+            headers: {Retry-After: true}
+
+  - name: json-success-with-headers-at-root
+    classification: must-pass
+    provenance: {source: requirement, ref: "A root route such as the health check: JSON success with Cache-Control and a servers override"}
+    mutation: {description: "a root path declares its JSON success through responses with a header"}
+    input:
+      call: add_operations
+      operation:
+        method: GET
+        path: /probe-health
+        id: probeHealth
+        servers: ["/"]
+        responses:
+          - status: 200
+            description: "Alive."
+            headers: [{name: Cache-Control, required: true}]
+            media: [{type: application/json, body: VillageStatusResponse}]
+    expected:
+      document:
+        operation_id: probeHealth
+        tag: probe
+        servers: ["/"]
+        responses:
+          "200":
+            media: {application/json: SchemaVillageStatusResponse}
+            headers: {Cache-Control: true}
+            description_anchors: ["Alive."]
+
+  - name: browser-error-summary-keeps-negotiation
+    classification: must-pass
+    provenance: {source: requirement, ref: "A browser refusal is HTML or VillageErrorResponse by Accept, with the same status"}
+    mutation: {description: "a redirect with a browser 400 that carries its own summary and a browser 500 that does not"}
+    input:
+      call: add_operations
+      operation:
+        method: GET
+        path: /api/v1/probe/callback
+        id: probeCallback
+        error_summaries: {400: "The state cookie is missing or does not match."}
+        browser_error_statuses: [400, 500]
+        responses:
+          - status: 302
+            description: "Found."
+            headers: [{name: Location, required: true}]
+    expected:
+      document:
+        operation_id: probeCallback
+        tag: probe
+        responses:
+          "302":
+            headers: {Location: true}
+          "400":
+            media: {application/json: SchemaVillageErrorResponse, text/html: string}
+            headers: {Content-Security-Policy: false, X-Content-Type-Options: false}
+            description_anchors: ["The state cookie is missing or does not match.", "first recognised media type in Accept is text/html"]
+          "500":
+            media: {application/json: SchemaVillageErrorResponse, text/html: string}
+            headers: {Content-Security-Policy: false, X-Content-Type-Options: false}
+            description_anchors: ["Internal Server Error.", "as a VillageErrorResponse"]
