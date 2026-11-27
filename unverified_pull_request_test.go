@@ -15,6 +15,14 @@ import (
 //go:embed testdata/unverified_pull_requests.yaml
 var unverifiedWireYAML []byte
 
+// Fixture kind selectors choose which response envelope a row loads. They are
+// not artifact identity members: the values only name the local session read or
+// the Village transcript read this corpus exercises.
+const (
+	unverifiedPullRequestKindLocal   = "local"
+	unverifiedPullRequestKindVillage = "village"
+)
+
 type wireProbe struct {
 	Kind string `yaml:"kind"`
 	JSON string `yaml:"json"`
@@ -46,9 +54,9 @@ func TestUnverifiedPullRequestWire(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			var v interface{ Validate() error }
 			switch c.Input.Kind {
-			case "local":
+			case unverifiedPullRequestKindLocal:
 				v = &schema.SessionPullRequestsResponse{}
-			case "village":
+			case unverifiedPullRequestKindVillage:
 				v = &schema.VillageTranscriptPullRequestsResponse{}
 			default:
 				t.Fatalf("unknown kind %s", c.Input.Kind)

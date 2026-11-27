@@ -48,7 +48,6 @@ rules:
     transcript_cut_test.go: 1
     transcript_download_test.go: 2
     transcript_segments_test.go: 2
-    unverified_pull_request_test.go: 1
     usage_metadata_test.go: 1
     village_grouped_contract_test.go: 6
   go-data-path-literal:
