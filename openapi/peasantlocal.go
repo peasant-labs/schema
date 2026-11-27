@@ -3,12 +3,19 @@ package openapi
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
 	schema "github.com/peasant-labs/schema"
 	jsonschema "github.com/swaggest/jsonschema-go"
 	openapicore "github.com/swaggest/openapi-go"
 	"github.com/swaggest/openapi-go/openapi31"
+)
+
+const (
+	localTranscriptSegmentsPath = "/api/v1/sessions/{id}/transcript/segments"
+	localTranscriptSegmentPath  = "/api/v1/sessions/{id}/transcript/segments/{index}"
+	localTranscriptWindowPath   = "/api/v1/sessions/{id}/transcript/window"
 )
 
 // BuildPeasantLocalAPISpec builds an OpenAPI 3.1 specification for the local web dashboard API v1.0.
@@ -68,10 +75,12 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		}), new(schema.SessionDetailReadPayload)); err != nil {
 		return nil, err
 	}
+	// Positioned reads are an additive Local API change. The v1 response shapes
+	// remain available when the selector is omitted or requests generation 1.
 	// GET /api/v1/sessions/{id}/transcript/segments is the transcript's only
 	// global index: one ref per segment, never a row per turn.
 	if err := addLocalOperations(r, []localOperationSpec{{
-		method: http.MethodGet, path: "/api/v1/sessions/{id}/transcript/segments",
+		method: http.MethodGet, path: localTranscriptSegmentsPath,
 		id: "getSessionTranscriptSegments", tag: "sessions",
 		description: "Read the transcript segment directory by session ID: the " +
 			"transcript's only global index, one ref per segment with the cut's " +
@@ -85,14 +94,19 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 			"page. The directory is cut under the store revision it reports; a " +
 			"segment cut under another revision must not be placed beside it. " +
 			"revision is optional and the current revision is served when it is " +
-			"omitted. The saved ingestion selection never narrows this stored read.",
+			"omitted. The saved ingestion selection never narrows this stored read. " +
+			"With v=2 the positioned directory selects main or a history section using partition and section; " +
+			"its response uses PositionedDirectory. Invalid selectors are 400, a missing partition or page is 404, " +
+			"a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.",
 		requests: []interface{}{new(struct {
 			ID string `path:"id"`
 			transcriptSegmentsParams
+			positionedQuery
 		})},
-		response:      new(schema.TranscriptSegmentDirectory),
-		errorStatuses: []int{http.StatusBadRequest, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
-		errorResponse: new(LocalErrorResponse),
+		response:           new(schema.TranscriptSegmentDirectory),
+		positionedResponse: new(schema.PositionedDirectory),
+		errorStatuses:      []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		errorResponse:      new(LocalErrorResponse),
 	}}); err != nil {
 		return nil, err
 	}
@@ -101,7 +115,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// whole turns. The directory declares the range; this read returns exactly
 	// that range or refuses, because a short segment moves every later boundary.
 	if err := addLocalOperations(r, []localOperationSpec{{
-		method: http.MethodGet, path: "/api/v1/sessions/{id}/transcript/segments/{index}",
+		method: http.MethodGet, path: localTranscriptSegmentPath,
 		id: "getSessionTranscriptSegment", tag: "sessions",
 		description: "Read one transcript segment by its directory ordinal. The " +
 			"segment is cut on complete entries and whole turns, so every turn it " +
@@ -116,14 +130,18 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 			"fewer turns than the directory declared, the read answers 409 with the " +
 			"declared and returned ranges and the re-index command rather than " +
 			"serving a short segment. The saved ingestion selection never narrows " +
-			"this stored read.",
+			"this stored read. With v=2 the positioned segment uses partition and section " +
+			"and carries server-numbered rows. Invalid selectors are 400, a missing segment is 404, " +
+			"a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.",
 		requests: []interface{}{new(struct {
 			ID string `path:"id"`
 			transcriptSegmentParams
+			positionedQuery
 		})},
-		response:      new(schema.TranscriptSegment),
-		errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
-		errorResponse: new(LocalErrorResponse),
+		response:           new(schema.TranscriptSegment),
+		positionedResponse: new(schema.PositionedSegment),
+		errorStatuses:      []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		errorResponse:      new(LocalErrorResponse),
 	}}); err != nil {
 		return nil, err
 	}
@@ -132,7 +150,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// contiguous window and answers a descriptor only. Turn content stays in the
 	// segment read, so a window response cannot grow with the transcript.
 	if err := addLocalOperations(r, []localOperationSpec{{
-		method: http.MethodGet, path: "/api/v1/sessions/{id}/transcript/window",
+		method: http.MethodGet, path: localTranscriptWindowPath,
 		id: "getSessionTranscriptWindow", tag: "sessions",
 		description: "Resolve a turn identity to a contiguous transcript window " +
 			"and answer a descriptor that names where the window is, never what is " +
@@ -152,14 +170,19 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 			"negative anchor and a span outside 1..10 are 400; a session with no " +
 			"user turn is a 404, because a window requires one; a stale revision is " +
 			"a 409 naming both revisions. The saved ingestion selection never " +
-			"narrows this stored read.",
+			"narrows this stored read. With v=2 the positioned window uses partition and section " +
+			"and accepts an omitted anchor for the default window. OpenAPI retains the required v1 anchor " +
+			"because parameter requiredness cannot depend on v. Invalid selectors are 400, a missing window is 404, " +
+			"a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.",
 		requests: []interface{}{new(struct {
 			ID string `path:"id"`
 			transcriptWindowParams
+			positionedQuery
 		})},
-		response:      new(schema.TranscriptWindow),
-		errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
-		errorResponse: new(LocalErrorResponse),
+		response:           new(schema.TranscriptWindow),
+		positionedResponse: new(schema.PositionedWindow),
+		errorStatuses:      []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		errorResponse:      new(LocalErrorResponse),
 	}}); err != nil {
 		return nil, err
 	}
@@ -319,6 +342,10 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"QualityPayload", new(schema.QualityPayload)},
 		{"ClientMessage", new(schema.ClientMessage)},
+		{"LocalKickstartPreviewRequest", new(schema.LocalKickstartPreviewRequest)},
+		{"LocalKickstartPreviewEvent", new(schema.LocalKickstartPreviewEvent)},
+		{"LocalKickstartPreviewDirectory", new(schema.LocalKickstartPreviewDirectory)},
+		{"LocalKickstartPreviewSegment", new(schema.LocalKickstartPreviewSegment)},
 		{"ServerMessage", new(schema.ServerMessage)},
 		{"LocalSessionPage", new(schema.LocalSessionPage)},
 		{"TranscriptSegmentDirectory", new(schema.TranscriptSegmentDirectory)},
@@ -345,6 +372,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		sm, err := s.ToSchemaOrBool().ToSimpleMap()
 		if err != nil {
 			return nil, fmt.Errorf("marshal WS schema %s: %w", p.name, err)
+		}
+		if p.name == "LocalKickstartPreviewSegment" {
+			applyGoRequiredFields(sm, reflect.TypeOf(p.val), p.name)
 		}
 		r.SpecEns().ComponentsEns().WithSchemasItem(p.name, sm)
 	}
@@ -570,6 +600,23 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := harmonizeSharedTypeComponents(r.Spec); err != nil {
 		return nil, fmt.Errorf("harmonize Peasant Local API shared components: %w", err)
 	}
+	for _, variant := range []struct{ path, legacy, positioned string }{
+		{localTranscriptSegmentsPath, "SchemaTranscriptSegmentDirectory", "SchemaPositionedDirectory"},
+		{localTranscriptSegmentPath, "SchemaTranscriptSegment", "SchemaPositionedSegment"},
+		{localTranscriptWindowPath, "SchemaTranscriptWindow", "SchemaPositionedWindow"},
+	} {
+		// unstring-allow: go-json-body-map — OpenAPI schema references are dynamic
+		if err := setVillageAlternativeResponse(r.Spec, variant.path, map[string]interface{}{"$ref": "#/components/schemas/" + variant.legacy}, variant.positioned); err != nil {
+			return nil, err
+		}
+		if err := setSegmentedReadGeneration(r.Spec, variant.path); err != nil {
+			return nil, err
+		}
+		response := r.Spec.Paths.MapOfPathItemValues[variant.path].Get.Responses.MapOfResponseOrReferenceValues["503"].Response
+		description := "When to retry a temporary load or admission refusal."
+		// unstring-allow: go-json-body-map — OpenAPI header schema is dynamic
+		response.Headers = map[string]openapi31.HeaderOrReference{"Retry-After": {Header: &openapi31.Header{Description: &description, Schema: map[string]interface{}{"type": "string"}}}}
+	}
 	// The list and search routes retain their established flat response when
 	// view is omitted and return the grouped response only for view=grouped.
 	// Express that wire-compatible conditional as a response union.
@@ -738,6 +785,7 @@ type localOperationSpec struct {
 	description        string
 	requests           []interface{}
 	response           interface{}
+	positionedResponse interface{}
 	successStatus      int
 	requiredBody       bool
 	errorStatuses      []int
@@ -775,6 +823,9 @@ func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec)
 			} else {
 				oc.AddRespStructure(op.response)
 			}
+		}
+		if op.positionedResponse != nil {
+			oc.AddRespStructure(op.positionedResponse)
 		}
 		for _, status := range op.errorStatuses {
 			oc.AddRespStructure(op.errorResponse, openapicore.WithHTTPStatus(status))

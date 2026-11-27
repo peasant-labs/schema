@@ -15,17 +15,17 @@ func addLocalOwnerOperations(r *openapi31.Reflector) error {
 	return addLocalOperations(r, []localOperationSpec{
 		{
 			method: http.MethodGet, path: "/api/v1/local-owner", id: "getLocalOwnerStatus", tag: "local-owner", // unstring-allow: go-endpoint-literal — declare this local owner route in the document
-			description: "Read this data directory's one permanent local owner, the most recent claim entries, the full claim total, the claim prompt state, and the ownership counts. Entries are newest first: claimedAt descending, then insertion order descending. nextBefore names the last returned entry and is present exactly when an older entry exists, found by reading one row past the page; a page shorter than 100 never carries it. Pass before=<nextBefore> to read the next older page. This is a local read: it needs no Village login and makes no network call. claims is [] when this directory has no claims.",
+			description: "Read this data directory's one permanent local owner, the most recent claim entries, the full claim total, the claim prompt state, and the ownership counts. Entries are newest first by insertion order (the store's rowid); claimedAt is display data only and never decides the order. nextBefore names the last returned entry and is present exactly when an older entry exists, found by reading one row past the page; a page shorter than 100 never carries it. Pass before=<nextBefore> to read the next older page. A before that names no entry for this local owner, including a foreign entry, answers 400. This is a local read: it needs no Village login and makes no network call. claims is [] when this directory has no claims.",
 			requests: []interface{}{new(struct {
-				Before string `query:"before" minLength:"1" maxLength:"64" description:"Older-page cursor: the nextBefore value from the previous status read. Omit for the most recent page."`
+				Before string `query:"before" minLength:"1" maxLength:"64" description:"Older-page cursor: the nextBefore value from the previous status read. Omit for the most recent page. A value that names no claim entry for this local owner answers 400."`
 			})},
 			response:      new(schema.LocalOwnerStatus),
-			errorStatuses: []int{http.StatusInternalServerError},
+			errorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError},
 			errorResponse: new(LocalErrorResponse),
 		},
 		{
 			method: http.MethodPost, path: "/api/v1/local-owner/claim", id: "claimLocalOwner", tag: "local-owner", // unstring-allow: go-endpoint-literal — declare the local owner claim route in the document
-			description:   "Claim local sessions and annotations for the signed-in Village account. all=false claims only unclaimed artifacts; all=true claims every local session and annotation. An explicit claim always appends one entry and never rewrites an earlier one, including when it moves nothing, and returns its claimId. An automatic claim reuses this account's automatic entry only while that entry is the newest in the whole log for this local owner; otherwise it appends one. Pulled transcripts and annotations are never claimed. The answer is the recomputed status plus what this action claimed.",
+			description:   "Claim local sessions and annotations for the signed-in Village account. all=false claims only unclaimed artifacts; all=true claims every local session and annotation. An explicit claim always appends one entry and never rewrites an earlier one, including when it moves nothing, and returns its claimId. A successful explicit claim (all true or false) also records the completed prompt state for this local owner plus account scope with the same state write as the prompt, replacing an earlier decline, so a later status read reports completed and a later sign-in does not prompt again. An automatic claim reuses this account's automatic entry only while that entry is the newest in the whole log for this local owner; otherwise it appends one. Pulled transcripts and annotations are never claimed. The answer is the recomputed status plus what this action claimed.",
 			requests:      []interface{}{new(schema.LocalOwnerClaimRequest)},
 			response:      new(schema.LocalOwnerClaimResult),
 			requiredBody:  true,

@@ -6,7 +6,7 @@ import { collectiveContractIssue } from "../../../collective-validation.js";
 import * as z from 'zod';
 import type * as ClosedSets from "../enums.gen.js";
 
-type ClosedSet<S extends z.ZodType, T> = Omit<S, "_zod"> & { _zod: Omit<S["_zod"], "input" | "output"> & { input: T; output: T } };
+type ClosedSet<S extends z.ZodType, T> = Omit<S, "_zod" | "optional" | "nullable" | "nullish"> & { _zod: Omit<S["_zod"], "input" | "output"> & { input: T; output: T }; optional(): z.ZodOptional<Extract<ClosedSet<S, T>, z.ZodType>>; nullable(): z.ZodNullable<Extract<ClosedSet<S, T>, z.ZodType>>; nullish(): z.ZodOptional<z.ZodNullable<Extract<ClosedSet<S, T>, z.ZodType>>> };
 const closedSet = <T>() => <S extends z.ZodType<T>>(schema: S & ([T] extends [z.output<S>] ? unknown : never)): ClosedSet<S, T> => schema as unknown as ClosedSet<S, T>;
 
 export const zActivityEdge = z.object({
@@ -418,7 +418,7 @@ export const zBuiltinCommand = closedSet<ClosedSets.BuiltinCommand>()(z.enum([
 export type BuiltinCommand = z.infer<typeof zBuiltinCommand>;
 
 export const zCLILoginQuery = z.object({
-    port: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    port: z.int().gte(1024).lte(65535),
     state: z.string()
 });
 
@@ -1276,6 +1276,11 @@ export const zLocalKickstartErrorCode = closedSet<ClosedSets.LocalKickstartError
     'kickstart_commit_refused',
     'kickstart_session_not_found',
     'kickstart_preview_row_not_found',
+    'kickstart_preview_capture_not_found',
+    'kickstart_preview_source_changed',
+    'kickstart_preview_late_result',
+    'kickstart_preview_capacity',
+    'kickstart_preview_out_of_order',
     'kickstart_failed',
     'kickstart_status_unreadable',
     'kickstart_config_unreadable',
@@ -1478,6 +1483,98 @@ export const zLocalKickstartPreview = z.object({
 export type LocalKickstartPreview = z.infer<typeof zLocalKickstartPreview>;
 
 /**
+ * Preview close reason
+ *
+ * Why the capture closed
+ */
+export const zLocalKickstartPreviewCloseReason = closedSet<ClosedSets.LocalKickstartPreviewCloseReason>()(z.enum([
+    'closed_by_client',
+    'replaced',
+    'session_closed',
+    'rescanned',
+    'idle',
+    'evicted',
+    'shutdown',
+    'source_changed',
+    'late_result',
+    'unreadable',
+    'out_of_order',
+    'slow_client',
+    'row_not_found',
+    'not_a_session_row',
+    'unavailable',
+    'no_turns',
+    'capacity'
+]));
+
+export type LocalKickstartPreviewCloseReason = z.infer<typeof zLocalKickstartPreviewCloseReason>;
+
+/**
+ * Preview continuation
+ *
+ * Whether the capture can continue
+ */
+export const zLocalKickstartPreviewContinuation = closedSet<ClosedSets.LocalKickstartPreviewContinuation>()(z.enum([
+    'more',
+    'end',
+    'cut'
+]));
+
+export type LocalKickstartPreviewContinuation = z.infer<typeof zLocalKickstartPreviewContinuation>;
+
+/**
+ * Preview cut reason
+ *
+ * Why the capture ended early
+ */
+export const zLocalKickstartPreviewCutReason = closedSet<ClosedSets.LocalKickstartPreviewCutReason>()(z.enum([
+    'source_budget',
+    'serialized_budget',
+    'turn_budget',
+    'oversized_record',
+    'origin_not_resumable'
+]));
+
+export type LocalKickstartPreviewCutReason = z.infer<typeof zLocalKickstartPreviewCutReason>;
+
+/**
+ * Preview event kind
+ *
+ * Kind of capture event
+ */
+export const zLocalKickstartPreviewEventKind = closedSet<ClosedSets.LocalKickstartPreviewEventKind>()(z.enum([
+    'opened',
+    'segment',
+    'closed'
+]));
+
+export type LocalKickstartPreviewEventKind = z.infer<typeof zLocalKickstartPreviewEventKind>;
+
+/**
+ * Preview operation
+ *
+ * Operation on a connection-owned capture
+ */
+export const zLocalKickstartPreviewOp = closedSet<ClosedSets.LocalKickstartPreviewOp>()(z.enum([
+    'open',
+    'more',
+    'close'
+]));
+
+export type LocalKickstartPreviewOp = z.infer<typeof zLocalKickstartPreviewOp>;
+
+export const zLocalKickstartPreviewRequest = z.object({
+    after: z.int().gte(0).lte(4294967295).optional(),
+    captureId: z.string().length(22).regex(/^[A-Za-z0-9_-]{21}[AQgw]$/).optional(),
+    nodeId: z.string().max(512).optional(),
+    op: zLocalKickstartPreviewOp,
+    requestId: z.string().min(1).max(32).regex(/^[A-Za-z0-9_-]+$/),
+    sessionId: z.string().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/)
+});
+
+export type LocalKickstartPreviewRequest = z.infer<typeof zLocalKickstartPreviewRequest>;
+
+/**
  * Kickstart Resolution
  *
  * Which side of one conflict row to keep: mine is the draft, theirs is the file
@@ -1594,7 +1691,8 @@ export const zLocalOwnerClaimRequest = z.object({
 export type LocalOwnerClaimRequest = z.infer<typeof zLocalOwnerClaimRequest>;
 
 export const zLocalOwnerOwnershipCounts = z.object({
-    claimed: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    mine: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    others: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     total: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     unclaimed: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808)
 });
@@ -1877,13 +1975,15 @@ export const zMessageType = closedSet<ClosedSets.MessageType>()(z.enum([
     'project_familiarity',
     'connected',
     'error',
-    'kickstart'
+    'kickstart',
+    'kickstart_preview'
 ]));
 
 export type MessageType = z.infer<typeof zMessageType>;
 
 export const zClientMessage = z.object({
     channels: z.array(zChannelSubscription).optional(),
+    preview: zLocalKickstartPreviewRequest.nullish(),
     type: zMessageType
 });
 
@@ -4125,6 +4225,21 @@ export const zTranscriptSegmentRef = z.object({
 
 export type TranscriptSegmentRef = z.infer<typeof zTranscriptSegmentRef>;
 
+export const zLocalKickstartPreviewDirectory = z.object({
+    complete: z.boolean(),
+    loadedConversationTurns: z.int().gte(0).lte(9007199254740991).optional(),
+    loadedSegments: z.int().gte(0).lte(9007199254740991),
+    loadedTurns: z.int().gte(0).lte(9007199254740991),
+    revision: z.string().min(1),
+    segments: z.array(zTranscriptSegmentRef),
+    sessionId: zSessionID,
+    totalConversationTurns: z.int().gte(0).lte(9007199254740991).optional(),
+    totalSegments: z.int().gte(0).lte(9007199254740991).optional(),
+    totalTurns: z.int().gte(0).lte(9007199254740991).optional()
+});
+
+export type LocalKickstartPreviewDirectory = z.infer<typeof zLocalKickstartPreviewDirectory>;
+
 export const zTranscriptSegmentDirectory = z.object({
     directoryPage: z.int().gte(1).lte(9007199254740991).optional(),
     directoryPerPage: z.int().gte(1).lte(9007199254740991).optional(),
@@ -4578,6 +4693,21 @@ export const zTranscriptTurn = z.object({
 
 export type TranscriptTurn = z.infer<typeof zTranscriptTurn>;
 
+export const zLocalKickstartPreviewSegment = z.object({
+    byteLength: z.int().gte(0).lte(9007199254740991),
+    firstTurn: z.int().gte(0).lte(9007199254740991),
+    hasNewer: z.boolean(),
+    hasOlder: z.boolean(),
+    index: z.int().gte(0).lte(9007199254740991),
+    lastTurn: z.int().gte(0).lte(9007199254740991),
+    nativeMetadata: z.array(zNativeMetadataRecord).optional(),
+    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
+    revision: z.string().min(1),
+    turns: z.array(zTranscriptTurn)
+});
+
+export type LocalKickstartPreviewSegment = z.infer<typeof zLocalKickstartPreviewSegment>;
+
 export const zTranscriptSegment = z.object({
     byteLength: z.int().gte(0).lte(9007199254740991),
     firstTurn: z.int().gte(0).lte(9007199254740991),
@@ -4667,6 +4797,25 @@ export const zSessionDetailPayload = z.object({
 
 export type SessionDetailPayload = z.infer<typeof zSessionDetailPayload>;
 
+export const zLocalKickstartPreviewEvent = z.object({
+    captureId: z.string().optional(),
+    code: zLocalKickstartErrorCode.optional(),
+    continuation: zLocalKickstartPreviewContinuation.optional(),
+    cutReason: zLocalKickstartPreviewCutReason.optional(),
+    directory: zLocalKickstartPreviewDirectory.optional(),
+    header: zSessionDetailPayload.optional(),
+    kind: zLocalKickstartPreviewEventKind,
+    lines: z.array(zLocalKickstartLine).optional(),
+    message: z.string().optional(),
+    reason: zLocalKickstartPreviewCloseReason.optional(),
+    requestId: z.string().optional(),
+    segment: zLocalKickstartPreviewSegment.optional(),
+    seq: z.int().gte(0).lte(4294967295),
+    sessionId: z.string()
+});
+
+export type LocalKickstartPreviewEvent = z.infer<typeof zLocalKickstartPreviewEvent>;
+
 export const zTranscriptContent = z.object({
     contractVersion: z.string(),
     kind: zContentKind,
@@ -4735,6 +4884,20 @@ export const zVillageAssignableCollectiveRole = closedSet<ClosedSets.VillageAssi
 
 export type VillageAssignableCollectiveRole = z.infer<typeof zVillageAssignableCollectiveRole>;
 
+/**
+ * Village Attestation Type
+ *
+ * Usage attestation type
+ */
+export const zVillageAttestationType = closedSet<ClosedSets.VillageAttestationType>()(z.enum([
+    'used_in_training',
+    'referenced',
+    'evaluated',
+    'deployed'
+]));
+
+export type VillageAttestationType = z.infer<typeof zVillageAttestationType>;
+
 export const zVillageAvailableRepository = z.object({
     is_private: z.boolean(),
     name: z.string(),
@@ -4764,6 +4927,14 @@ export const zVillageBatchShareRequest = z.object({
 });
 
 export type VillageBatchShareRequest = z.infer<typeof zVillageBatchShareRequest>;
+
+export const zVillageBatchShareSelectionRequest = z.object({
+    private_approvals: z.array(zTranscriptID).max(1000),
+    project_hash: zProjectHash,
+    transcript_ids: z.array(zTranscriptID).min(1).max(1000)
+});
+
+export type VillageBatchShareSelectionRequest = z.infer<typeof zVillageBatchShareSelectionRequest>;
 
 /**
  * Village Group Acceptance Mode
@@ -4864,6 +5035,62 @@ export const zVillageCollectiveViewerRole = closedSet<ClosedSets.VillageCollecti
 export type VillageCollectiveViewerRole = z.infer<typeof zVillageCollectiveViewerRole>;
 
 /**
+ * Village Contributable View
+ *
+ * The view of the contributable operation. Omission keeps the flat response; grouped, paged and snapshot select the other envelopes. Any other value is refused with a 400 that names the accepted values.
+ */
+export const zVillageContributableView = closedSet<ClosedSets.VillageContributableView>()(z.enum([
+    'grouped',
+    'paged',
+    'snapshot'
+]));
+
+export type VillageContributableView = z.infer<typeof zVillageContributableView>;
+
+/**
+ * Village Contribution Error Code
+ *
+ * Machine-readable reason a contribution request was refused
+ */
+export const zVillageContributionErrorCode = closedSet<ClosedSets.VillageContributionErrorCode>()(z.enum([
+    'moved',
+    'missing',
+    'private_unapproved',
+    'conflict',
+    'policy',
+    'membership',
+    'stale_selection',
+    'snapshot_timeout',
+    'snapshot_busy',
+    'snapshot_too_large'
+]));
+
+export type VillageContributionErrorCode = z.infer<typeof zVillageContributionErrorCode>;
+
+export const zVillageContributionErrorDetail = z.object({
+    code: zVillageContributionErrorCode,
+    current_project_hash: zProjectHash.optional(),
+    transcript_id: zTranscriptID.optional()
+});
+
+export type VillageContributionErrorDetail = z.infer<typeof zVillageContributionErrorDetail>;
+
+export const zVillageContributionErrorResponse = z.object({
+    code: zVillageContributionErrorCode.optional(),
+    details: z.array(zVillageContributionErrorDetail).optional(),
+    error: z.string()
+});
+
+export type VillageContributionErrorResponse = z.infer<typeof zVillageContributionErrorResponse>;
+
+export const zVillageContributionProviderFacet = z.object({
+    count: z.int().gte(0).lte(9007199254740991),
+    provider: z.string()
+});
+
+export type VillageContributionProviderFacet = z.infer<typeof zVillageContributionProviderFacet>;
+
+/**
  * Village Contribution Status
  *
  * Status assigned when a new collective contribution is opened
@@ -4887,6 +5114,20 @@ export const zVillageBatchShareResponse = z.object({
 
 export type VillageBatchShareResponse = z.infer<typeof zVillageBatchShareResponse>;
 
+export const zVillageCreateAPIKeyRequest = z.object({
+    label: z.string().optional()
+});
+
+export type VillageCreateAPIKeyRequest = z.infer<typeof zVillageCreateAPIKeyRequest>;
+
+export const zVillageCreateAttestationRequest = z.object({
+    attestation_type: zVillageAttestationType,
+    note: z.string().optional(),
+    org_login: z.string().min(1)
+});
+
+export type VillageCreateAttestationRequest = z.infer<typeof zVillageCreateAttestationRequest>;
+
 export const zVillageCreateCollectiveRequest = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode.optional(),
     data_access: zVillageCollectiveDataAccess.optional(),
@@ -4896,6 +5137,12 @@ export const zVillageCreateCollectiveRequest = z.object({
 });
 
 export type VillageCreateCollectiveRequest = z.infer<typeof zVillageCreateCollectiveRequest>;
+
+export const zVillageDiscoverabilityRequest = z.object({
+    is_discoverable: z.boolean()
+});
+
+export type VillageDiscoverabilityRequest = z.infer<typeof zVillageDiscoverabilityRequest>;
 
 export const zVillageErrorResponse = z.object({
     error: z.string()
@@ -4911,6 +5158,15 @@ export type VillageErrorResponse = z.infer<typeof zVillageErrorResponse>;
 export const zVillageGitHubWebhookPayload = z.record(z.string(), z.unknown());
 
 export type VillageGitHubWebhookPayload = z.infer<typeof zVillageGitHubWebhookPayload>;
+
+export const zVillageHealthResponse = z.object({
+    buildRevision: z.string().regex(/^[0-9a-f]{7,12}$/).optional(),
+    migrations: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    serves: z.array(z.string()),
+    status: z.string()
+});
+
+export type VillageHealthResponse = z.infer<typeof zVillageHealthResponse>;
 
 export const zVillageLinkRepositoryRequest = z.object({
     installation_id: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
@@ -4936,6 +5192,17 @@ export const zVillageListUserOrganization = z.object({
 
 export type VillageListUserOrganization = z.infer<typeof zVillageListUserOrganization>;
 
+export const zVillageManualAnnotationRequest = z.object({
+    endIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).optional(),
+    entryIndex: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
+    isPrimary: z.boolean().optional(),
+    reason: z.string().nullish(),
+    typeId: z.string().min(1),
+    value: z.string().min(1)
+});
+
+export type VillageManualAnnotationRequest = z.infer<typeof zVillageManualAnnotationRequest>;
+
 export const zVillageMetadataUserOrganization = z.object({
     avatar_url: z.string().nullable(),
     fetched_at: z.iso.datetime({ offset: true }),
@@ -4953,6 +5220,40 @@ export const zVillageNotificationEmail = z.object({
 
 export type VillageNotificationEmail = z.infer<typeof zVillageNotificationEmail>;
 
+export const zVillageOrganizationSearchResult = z.object({
+    avatar_url: z.string().nullable(),
+    member_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    org_login: z.string(),
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillageOrganizationSearchResult = z.infer<typeof zVillageOrganizationSearchResult>;
+
+export const zVillageOrganizationSearchResponse = z.object({
+    organizations: z.array(zVillageOrganizationSearchResult)
+});
+
+export type VillageOrganizationSearchResponse = z.infer<typeof zVillageOrganizationSearchResponse>;
+
+export const zVillageOrganizationVisibilityRequest = z.object({
+    visible: z.boolean().optional()
+});
+
+export type VillageOrganizationVisibilityRequest = z.infer<typeof zVillageOrganizationVisibilityRequest>;
+
+export const zVillageOrganizationVisibilityResponse = z.object({
+    status: z.string(),
+    visible: z.boolean()
+});
+
+export type VillageOrganizationVisibilityResponse = z.infer<typeof zVillageOrganizationVisibilityResponse>;
+
+export const zVillageProjectDisplayNameRequest = z.object({
+    display_name: z.string()
+});
+
+export type VillageProjectDisplayNameRequest = z.infer<typeof zVillageProjectDisplayNameRequest>;
+
 /**
  * Village Project Name Source
  *
@@ -4967,6 +5268,28 @@ export const zVillageProjectNameSource = closedSet<ClosedSets.VillageProjectName
 ]));
 
 export type VillageProjectNameSource = z.infer<typeof zVillageProjectNameSource>;
+
+export const zVillageContributionProjectSummary = z.object({
+    matching_count: z.int().gte(0).lte(9007199254740991),
+    project_display_name: z.string(),
+    project_hash: zProjectHash,
+    project_name_source: zVillageProjectNameSource,
+    repository_state: z.string().optional(),
+    selectable_count: z.int().gte(0).lte(9007199254740991)
+});
+
+export type VillageContributionProjectSummary = z.infer<typeof zVillageContributionProjectSummary>;
+
+export const zVillageContributionProjectPage = z.object({
+    has_more: z.boolean(),
+    matching_total: z.int().gte(0).lte(9007199254740991),
+    next_cursor: z.string().optional(),
+    projects: z.array(zVillageContributionProjectSummary),
+    providers: z.array(zVillageContributionProviderFacet),
+    selectable_total: z.int().gte(0).lte(9007199254740991)
+});
+
+export type VillageContributionProjectPage = z.infer<typeof zVillageContributionProjectPage>;
 
 /**
  * Village Prompts Check Mode
@@ -5156,6 +5479,15 @@ export const zVillageRepositoryCommitsResponse = z.object({
 
 export type VillageRepositoryCommitsResponse = z.infer<typeof zVillageRepositoryCommitsResponse>;
 
+export const zVillageResolvedProject = z.object({
+    project_display_name: z.string(),
+    project_hash: zProjectHash,
+    project_name_source: zVillageProjectNameSource,
+    project_remote_label: z.string()
+});
+
+export type VillageResolvedProject = z.infer<typeof zVillageResolvedProject>;
+
 /**
  * Village Review Decision
  *
@@ -5244,6 +5576,30 @@ export const zVillageStatusResponse = z.object({
 });
 
 export type VillageStatusResponse = z.infer<typeof zVillageStatusResponse>;
+
+export const zVillageTranscriptAnnotationsResponse = z.object({
+    annotations: z.array(zAnnotationSummary)
+});
+
+export type VillageTranscriptAnnotationsResponse = z.infer<typeof zVillageTranscriptAnnotationsResponse>;
+
+export const zVillageTranscriptCommit = z.object({
+    authorEmail: z.string().nullable(),
+    authorName: z.string().nullable(),
+    authoredAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).nullable(),
+    committedAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).nullable(),
+    message: z.string().nullable(),
+    order: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    sha: z.string()
+});
+
+export type VillageTranscriptCommit = z.infer<typeof zVillageTranscriptCommit>;
+
+export const zVillageTranscriptCommitsResponse = z.object({
+    commits: z.array(zVillageTranscriptCommit)
+});
+
+export type VillageTranscriptCommitsResponse = z.infer<typeof zVillageTranscriptCommitsResponse>;
 
 /**
  * Village Transcript Deletion Policy
@@ -5377,9 +5733,11 @@ export const zVillageContributableTranscript = z.object({
     git_branch: z.string().nullable(),
     id: zTranscriptID,
     input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
+    latest_status: zVillageShareStatus.optional(),
     local_id: zSessionID,
     model_provider: z.string(),
     parent_session_id: zSessionID.nullable(),
+    parent_transcript_id: zTranscriptID.optional(),
     project_display_name: z.string(),
     project_hash: zProjectHash,
     project_name_source: zVillageProjectNameSource,
@@ -5387,12 +5745,39 @@ export const zVillageContributableTranscript = z.object({
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
     root_session_id: zSessionID.nullish(),
+    session_end: z.iso.datetime({ offset: true }).optional(),
     session_origin: zSessionOrigin,
+    session_start: z.iso.datetime({ offset: true }).optional(),
     title: z.string().nullable(),
     visibility: zVillageTranscriptVisibility
 });
 
 export type VillageContributableTranscript = z.infer<typeof zVillageContributableTranscript>;
+
+export const zVillageContributionFamilyMember = z.object({
+    matched: z.boolean().optional(),
+    transcript: zVillageContributableTranscript
+});
+
+export type VillageContributionFamilyMember = z.infer<typeof zVillageContributionFamilyMember>;
+
+export const zVillageContributionPageItem = z.object({
+    helpers: z.array(zVillageContributionFamilyMember),
+    root: zVillageContributionFamilyMember
+});
+
+export type VillageContributionPageItem = z.infer<typeof zVillageContributionPageItem>;
+
+export const zVillageContributionSnapshotRecord = z.object({
+    id: zTranscriptID,
+    latest_status: zVillageShareStatus.optional(),
+    parent_transcript_id: zTranscriptID.optional(),
+    project_hash: zProjectHash,
+    title: z.string().nullable(),
+    visibility: zVillageTranscriptVisibility
+});
+
+export type VillageContributionSnapshotRecord = z.infer<typeof zVillageContributionSnapshotRecord>;
 
 export const zVillagePullRequestAttachedTranscript = z.object({
     position: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
@@ -5593,17 +5978,17 @@ export const zLocalAnnotationRow = z.object({
     id: z.string(),
     isPrimary: z.boolean(),
     owner: zLocalArtifactIdentity.optional(),
-    provenance: zProvenance.optional(),
+    provenance: zProvenance.nullish(),
     reason: z.string().nullish(),
     supersededBy: z.string().nullish(),
     targetAnnotationId: z.string().nullish(),
-    targetAssociationId: zAssociationID.optional(),
+    targetAssociationId: zAssociationID.nullish(),
     targetContentHash: z.string().nullish(),
     targetEntryEndIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     targetEntryIndex: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808).nullish(),
     targetFilePath: z.string().nullish(),
     targetKind: zTargetKind,
-    targetProjectHash: zProjectHash.optional(),
+    targetProjectHash: zProjectHash.nullish(),
     targetSessionId: z.string().nullish(),
     typeId: z.string(),
     typeName: z.string(),
@@ -5669,7 +6054,7 @@ export type LocalOwnerStatus = z.infer<typeof zLocalOwnerStatus>;
 
 export const zLocalOwnerClaimResult = z.object({
     alreadyClaimed: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
-    claimId: z.string().min(1).max(64).optional(),
+    claimId: z.string().min(1).max(64),
     claimed: z.number().refine(Number.isInteger).gte(0).lte(9223372036854775808),
     status: zLocalOwnerStatus
 });
@@ -6115,6 +6500,17 @@ export const zTranscriptEntryMatch = z.object({
 
 export type TranscriptEntryMatch = z.infer<typeof zTranscriptEntryMatch>;
 
+export const zVillageAPIKey = z.object({
+    created_at: z.iso.datetime({ offset: true }).nullable(),
+    id: zVillageUUID,
+    key_prefix: z.string(),
+    label: z.string().nullable(),
+    last_used: z.iso.datetime({ offset: true }).nullable(),
+    revoked_at: z.iso.datetime({ offset: true }).nullable()
+});
+
+export type VillageAPIKey = z.infer<typeof zVillageAPIKey>;
+
 export const zVillageCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     created_at: z.iso.datetime({ offset: true }),
@@ -6235,6 +6631,37 @@ export const zVillageContributedCollectivesResponse = z.object({
 
 export type VillageContributedCollectivesResponse = z.infer<typeof zVillageContributedCollectivesResponse>;
 
+export const zVillageContributionPageResponse = z.object({
+    group_id: zVillageUUID,
+    has_more: z.boolean(),
+    items: z.array(zVillageContributionPageItem),
+    next_cursor: z.string().optional()
+});
+
+export type VillageContributionPageResponse = z.infer<typeof zVillageContributionPageResponse>;
+
+/**
+ * The compact record of every session in the matching families of one project, in one document. The document is limited to 8 MiB (8388608 bytes) of response body and there is no record-count cap. A snapshot that would exceed the limit is refused whole with a 413 whose code is snapshot_too_large, and nothing partial is returned; narrow the search with q or provider and read the snapshot again. The limit is a contract constant, so no limit parameter or field exists.
+ */
+export const zVillageContributionSnapshotResponse = z.object({
+    count: z.int().gte(0).lte(9007199254740991),
+    group_id: zVillageUUID,
+    project_hash: zProjectHash,
+    records: z.array(zVillageContributionSnapshotRecord)
+});
+
+export type VillageContributionSnapshotResponse = z.infer<typeof zVillageContributionSnapshotResponse>;
+
+export const zVillageCreatedAPIKey = z.object({
+    created_at: z.iso.datetime({ offset: true }),
+    id: zVillageUUID,
+    key: z.string(),
+    label: z.string(),
+    prefix: z.string()
+});
+
+export type VillageCreatedAPIKey = z.infer<typeof zVillageCreatedAPIKey>;
+
 export const zVillageEnrichedTranscriptShare = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     group_id: zVillageUUID,
@@ -6307,6 +6734,16 @@ export const zVillageOrganizationCollectivesResponse = z.object({
 
 export type VillageOrganizationCollectivesResponse = z.infer<typeof zVillageOrganizationCollectivesResponse>;
 
+export const zVillageProjectCollective = z.object({
+    description: z.string().nullable(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    name: z.string(),
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillageProjectCollective = z.infer<typeof zVillageProjectCollective>;
+
 export const zVillagePublicCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     created_at: z.iso.datetime({ offset: true }),
@@ -6364,6 +6801,14 @@ export const zVillageTag = z.object({
 });
 
 export type VillageTag = z.infer<typeof zVillageTag>;
+
+export const zVillageTagUsage = z.object({
+    id: zVillageUUID,
+    name: z.string(),
+    usage_count: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+});
+
+export type VillageTagUsage = z.infer<typeof zVillageTagUsage>;
 
 export const zVillageTranscriptAttestation = z.object({
     attestation_type: z.string(),
@@ -6473,6 +6918,7 @@ export const zVillageUpdateUserSettingsRequest = z.object({
 export type VillageUpdateUserSettingsRequest = z.infer<typeof zVillageUpdateUserSettingsRequest>;
 
 export const zVillageUser = z.object({
+    auto_attach_pull_requests: z.boolean(),
     avatar_url: z.string().nullable(),
     created_at: z.iso.datetime({ offset: true }),
     display_name: z.string().nullable(),
@@ -6480,6 +6926,7 @@ export const zVillageUser = z.object({
     github_username: z.string(),
     id: zVillageUUID,
     is_discoverable: z.boolean(),
+    preview_before_attach: z.boolean(),
     provider: z.string(),
     provider_user_id: z.string(),
     provider_username: z.string().nullable(),
@@ -6676,6 +7123,15 @@ export const zVillageGroupedContributableResponse = z.object({
 
 export type VillageGroupedContributableResponse = z.infer<typeof zVillageGroupedContributableResponse>;
 
+export const zVillageUserProjectResponse = z.object({
+    collectives: z.array(zVillageProjectCollective),
+    owner: zVillagePublicOwner,
+    project: zVillageResolvedProject,
+    transcripts: z.array(zVillageTranscript)
+});
+
+export type VillageUserProjectResponse = z.infer<typeof zVillageUserProjectResponse>;
+
 export const zVillageUserSettings = z.object({
     auto_attach_pull_requests: z.boolean(),
     email_invitations: z.boolean(),
@@ -6694,6 +7150,12 @@ export const zVillageUserStats = z.object({
 });
 
 export type VillageUserStats = z.infer<typeof zVillageUserStats>;
+
+export const zVillageUsernameRequest = z.object({
+    username: z.string()
+});
+
+export type VillageUsernameRequest = z.infer<typeof zVillageUsernameRequest>;
 
 export const zVillageVerifyNotificationEmailRequest = z.object({
     token: z.string().min(1)

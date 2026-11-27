@@ -15,12 +15,13 @@ Consumers re-pin only after the schema tag exists.
    The merge group compares the entry PR's own diff, not the combined group.
 3. After landing, `release-batch.yml` plans from the last final tag. When tag
    mode is on, it checks the landed range and maintains the single
-   `automation/release` PR with a generated changelog section and the npm
-   version. The release PR is queued by the bot; do not edit or merge it by
-   hand. Before making a tag, the plan job uses its read-only token to require
-   exactly one merged PR for the candidate, with the candidate as its merge
-   commit, the configured release bot branch as its head, and the releaser App
-   as its author. A failed lookup or provenance check makes the shell exit
+   `automation/release` PR with a generated changelog section, the npm
+   version, and the freeze of every ahead supported surface. The tool's title
+   is passed unchanged to verification and the PR. The release PR is queued by
+   the bot; do not edit or merge it by hand. Before making a tag, the plan job
+   uses its read-only token to require exactly one merged PR for the
+   candidate, with the candidate as its merge commit, the configured release
+   bot branch as its head, and the releaser App as its author. A failed lookup or provenance check makes the shell exit
    nonzero; neither the step nor the plan job sets `continue-on-error`, and
    the release job requires a successful plan. The tag names that release
    PR's merge commit; later commits belong to the next release. The independent
@@ -30,10 +31,20 @@ Consumers re-pin only after the schema tag exists.
    default-branch run can retry.
 4. The tag starts `release.yml`: tag verification, Nix vendor-hash freshness,
    and the contract check precede the independent GitHub Release and npm
-   publishers. The GitHub Release is created as a draft, the generated JSON
-   and YAML specs are uploaded, and only then is it published and protected by
-   release immutability. The npm job checks that the committed package version
-   matches the tag and removes `private` only in its working copy.
+   publishers. `scripts/collect-release-assets.sh` copies only the numbered
+   frozen JSON and YAML specs, including numbered request schemas, into
+   `dist/assets`; `*-next` files never ship as release assets. The release notes
+   sit beside the assets at `dist/release-notes.md` and are not uploaded.
+   The `release` job checks out and builds the pinned `release-intent` tool
+   before downloading `release-dist`, then runs `release-intent publish-release
+   --require-immutable`. It builds the local manifest first, lists every
+   release (30 per page, drafts included, failing closed if truncated or if any
+   draft exists for the tag), confirms `refs/tags/<tag>` exists, creates a draft
+   release and uploads every asset by release id, verifies the draft's assets by
+   name, size, and SHA-256 digest against the manifest, publishes it by id, and
+   verifies the published release again (including `immutable`). The npm job
+   checks that the committed package version matches the tag and removes
+   `private` only in its working copy.
 
 On 2026-11-18, a read-only check of GitHub's commit-to-pulls API returned the
 merged bot release PR, its merge commit, `automation/release` head, and
@@ -42,37 +53,125 @@ The same check for ordinary merge commit `24323466e020c223cf9750bd0606774c104b4b
 returned a human-authored PR. This is live evidence, not a guarantee of future
 API behavior: the provenance test stubs Git, yq, and gh.
 
-On a rerun, a published release with assets is left unchanged. A failed upload
-or publish can leave an unpublished draft; the workflow fails on rerun and does
-not resume or upload missing assets. Drafts are not immutable. Confirm that
-the release is a draft, set `TAG` to its existing tag and
-`GITHUB_REPOSITORY` to `peasant-labs/schema`, then delete the draft:
+A transient API error (rate limit, 5xx, authentication) before creation fails
+the run before anything is created: rerun the workflow; no new tag is needed.
+If `draft-exists` is reported, nothing was created by this run; delete stale
+drafts by id as below, then rerun.
+
+On a rerun, a published release matching the exact manifest, prerelease flag,
+and immutability requirement is left unchanged (`state=already-published`).
+Because GitHub's REST API cannot enforce draft-only deletion, real release runs
+never send automatic `DELETE` requests: on a pre-publish failure or ambiguous
+publish, `publish-release` reads the release back by id and leaves it
+untouched, printing either the by-id inspect/delete command (if still a draft)
+or fix-forward guidance (if published). Drafts are not immutable. Delete every
+draft for the tag **by its id**, then rerun the release workflow for the same
+tag. Set `TAG` to the existing tag and list the drafts:
 
 ```sh
-gh release delete "$TAG" --repo "$GITHUB_REPOSITORY"
+gh api repos/peasant-labs/schema/releases --paginate \
+  --jq ".[] | select(.draft and .tag_name == \"$TAG\") | {id, assets: (.assets | length), created_at}"
+gh api -X DELETE repos/peasant-labs/schema/releases/<id>
 ```
 
-Do not pass `--cleanup-tag`: keep the existing tag and rerun the release
-workflow for that same tag. Do not create a new tag to recover a draft. If an
-already-published release has no assets, fix forward with a new tag instead;
-do not attempt to repair a published immutable release or reuse its tag.
+Deleting a draft that holds a few hundred assets can answer HTTP 502 and still
+finish a little later; read the release back by id and retry only while it
+still exists.
 
-A failed `gh release view`, including a network or authentication failure, is
-treated as no release. If a release actually exists, the create step fails
-loudly, so this fallback cannot report a false success.
+Never use `gh release delete "$TAG"`: when a tag has several drafts, the tag
+lookup returns one of them (the oldest), so the command can delete the wrong
+one, and `--cleanup-tag` would delete the tag. Do not create a new tag to
+recover a draft. If an already-published release has no assets, fix forward
+with a new tag; do not attempt to repair a published immutable release or
+reuse its tag.
+
+Why `publish-release`: v0.55.0 through v0.57.1 were published with no assets.
+In run 44295390680, `gh release create --draft` made one draft at 11:37:06; a
+separate upload action, which finds a release only by listing releases, did not
+see it, made a second draft at 11:37:13 and uploaded 349 assets there; at
+11:37:16 `gh release edit --draft=false` published the first, empty draft,
+because GitHub's tag lookup returns the oldest draft. v0.54.0, the last good
+release before adopting `publish-release`, used one `gh release create` with
+its assets; `publish-release` now creates, uploads, verifies by manifest and
+SHA-256 digest, and publishes strictly by release id.
 
 Tags are append-only. Never push, move, or delete a public tag by hand. Old
 `pkg/schema/v*` tags remain intact. The old tag parser still recognizes
 historical release candidates, but the automated planner creates final
 releases.
 
-Until the spec-freeze migration, content PRs continue to bump `versions.go`
-and generate numbered documents themselves. `protected_paths: []` deliberately
-does not block those edits. That migration must add protection for
-`versions.go` and `generated/*-[0-9]*` when the release bot takes ownership.
-The changelog and npm version field are already reserved to the release PR.
-The generator currently emits plain `## X.Y.Z` headings; changing that style
-is a separate follow-up.
+## Working and frozen specs
+
+Types, Village, Local, and segmented read use committed
+`generated/<stem>-next.*` working files. Their numbered files are frozen, and
+`versions.go` points the public accessors and exported validators to the
+latest frozen bytes. The Village publish-request and annotation-push-request
+JSON Schemas follow the Village version. The TypeScript generator, module
+tests and contract report read working documents. For segmented read,
+`SegmentedReadSpecVersion` names the frozen document, while
+`SegmentedReadAPIVersion` names the current wire protocol and
+`SegmentedReadMinVersion` the oldest served protocol. A document freeze moves
+only the spec version; it does not change the selector table, the minimum
+document, or a protocol echo. A breaking protocol change requiring a new `v=`
+generation is separate P1 work, not a document freeze.
+
+`schema-gen status --write state.yaml` computes `clean`, `docs-ahead`, or
+`ahead`. Description-only changes remain docs-ahead and are copied at the next
+functional freeze. `release-intent freeze-plan` chooses each ahead surface's
+level from landed titles after the spec-freeze migration boundary, while the
+ordinary release floor and the full module changelog range remain independent.
+`schema-gen freeze --plan plan.yaml --state state.yaml` checks the handoff,
+updates constants and mirrors, rebuilds the generator, and writes numbered
+copies and registry rows. The release PR's merge-group tree must pass
+`schema-gen freeze --check`. Before tagging, the candidate is also checked
+against a plan made from its parent state.
+
+A functional surface change requires a releasing title naming it; an
+unchanged or docs-only surface may be named only if it is already ahead on the
+base. `spec-change-needs-bump` and `surface-mismatch` identify these errors.
+A non-releasing `docs(local-api): clarify ...` is valid for docs-only work.
+
+At cutover, an open content PR that edited `versions.go` or numbered specs
+merges the updated base, removes those edits, regenerates working files, and
+lists every functionally changed surface in its title. If a wrong stale freeze
+bypasses the queue check, pre-tag verification rejects it; the next release
+freezes the next number and retains the wrong numbered file in the registry.
+That burns one spec number without moving a tag.
+
+The release job takes the migration boundary (the freeze floor) from the
+first first-parent `develop` commit whose `.github/release-intent.yaml`
+gained the literal line `spec_freeze: true`. Later edits to that line do not
+move it. If no commit ever wrote the line literally, the step fails instead
+of guessing; `TestFreezeFloorSearch` runs the step against fixture histories.
+
+The changelog and npm version field are reserved to the release PR. The
+generator currently emits plain `## X.Y.Z` headings; changing that style is a
+separate follow-up.
+
+## Release PR checks
+
+A release PR (or a merge group) whose whole `base..head` change is
+`CHANGELOG.md` plus the `typescript/package.json` version does not rerun
+`make check`. The path filter alone cannot skip it: a version-only edit under
+`typescript/*` classifies as `code=true`, so inheritance is what saves the
+run. Only the bot release PR, or a merge group whose entry is that PR, runs
+`inherit-verdict`; every other run skips it without building the tool. The
+`changes` job runs `release-intent inherit-verdict`, which reads the
+`merge-gate` verdict that the exact base commit's merge-queue run recorded.
+When that verdict is missing, pending past the 20-minute wait, failed,
+cancelled, ambiguous or from another producer, the job fails and the release
+candidate is not merged; it never falls back to the suite. Fix it by waiting
+for or rerunning the base commit's merge-queue run, then rerun the candidate's
+checks. The contract gates, the title guard, the release tree freeze check and
+the release group's vendor-hash check still run. Spec-freeze outputs
+(`versions.go`, numbered `generated/` documents) are never release-only and
+always run the full suite.
+
+`merge-gate` ends with one `verdict-source: full|inherited|unaffected` step
+per run, so a later release candidate can tell a verdict that rests on a
+`make check` run from an inherited one. `make check` runs without the race
+detector on every event; the merge-queue run adds `make race-selective`, the
+race pass over the validator schema caches.
 
 ## Vendor hash
 
@@ -201,7 +300,7 @@ Release recovery rules:
 - An immutable GitHub Release cannot be updated. Older publisher runs failed
   with `tag_name was used by an immutable release` or `target_commitish cannot
   be changed`. The current publisher leaves complete releases alone and fails
-  on incomplete releases. Delete an unpublished draft as described above; for
+  on incomplete releases. Delete an unpublished draft by its id as described above; for
   an already-published release without assets, fix forward with a new tag.
 - The npm version guard reads `typescript/package.json` with `jq`. The dev-shell
   banner polluted the old `nix develop -c node -p` capture; do not reintroduce

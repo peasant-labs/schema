@@ -86,10 +86,11 @@ func (LocalClaimSource) JSONSchema() (jsonschema.Schema, error) {
 // snapshot only, never identity, so a rename or a reused username never adds a
 // second account.
 //
-// Entries are newest first: ClaimedAt descending, then insertion order (the
-// store's monotonically increasing rowid) descending, never the random entry
-// id. A status read returns only the most recent LocalOwnerRecentClaimLimit
-// entries.
+// Entries are newest first by insertion order: the store's monotonically
+// increasing rowid descending, never ClaimedAt and never the random entry id.
+// A clock step can place an older ClaimedAt after a newer one, so time is
+// display data only and never an order key. A status read returns only the most
+// recent LocalOwnerRecentClaimLimit entries.
 type LocalClaimEntry struct {
 	// ID is the stable claim entry identifier.
 	ID string `json:"id" minLength:"1" maxLength:"64"`
@@ -108,8 +109,9 @@ type LocalClaimEntry struct {
 	// Source says why this entry exists.
 	Source LocalClaimSource `json:"source"`
 	// ClaimedAt is when this entry was appended. Later automatic claims join
-	// the newest automatic entry instead of moving or restamping it. It is one
-	// part of the claim order key; the other is insertion order.
+	// the newest automatic entry instead of moving or restamping it. It is
+	// display data only: insertion order is the sole claim order key, so a
+	// clock step never reorders the log.
 	ClaimedAt time.Time `json:"claimedAt"`
 }
 
@@ -164,7 +166,10 @@ const (
 	LocalOwnerPromptStateDeclined LocalOwnerPromptState = "declined"
 	// LocalOwnerPromptStateCompleted: a claim decision was completed for this
 	// local owner plus account scope, including a claim action that found
-	// nothing left to claim.
+	// nothing left to claim. A successful explicit claim (all true or false)
+	// records this state with the same state write as the prompt and replaces
+	// an earlier decline, so the read reports completed afterwards and a later
+	// sign-in does not prompt again.
 	LocalOwnerPromptStateCompleted LocalOwnerPromptState = "completed"
 )
 
@@ -197,7 +202,9 @@ func (LocalOwnerPromptState) JSONSchema() (jsonschema.Schema, error) {
 //
 // Account is present exactly when a Village account is selected, and absent for
 // not_applicable. DecidedAt is present exactly when the state is settled
-// (declined or completed) and absent for not_applicable and due.
+// (declined or completed) and absent for not_applicable and due. A successful
+// explicit claim records completed for the local owner plus account scope,
+// including when it moves nothing, and replaces an earlier decline.
 type LocalOwnerClaimPrompt struct {
 	// State is the computed prompt state.
 	State LocalOwnerPromptState `json:"state"`
@@ -251,30 +258,34 @@ func (p LocalOwnerClaimPrompt) Validate() error {
 	return nil
 }
 
-// LocalOwnerOwnershipCounts is the claimed partition of one local artifact
+// LocalOwnerOwnershipCounts is the ownership partition of one local artifact
 // kind.
 type LocalOwnerOwnershipCounts struct {
 	// Total is every artifact of this kind the local store holds.
 	Total int `json:"total" minimum:"0"`
-	// Claimed is how many of them name the selected account.
-	Claimed int `json:"claimed" minimum:"0"`
-	// Unclaimed is the remainder. It is the count a prompt shows, so the server
-	// owns it with the other two rather than each client subtracting.
+	// Unclaimed is how many of them have no owner pointer.
 	Unclaimed int `json:"unclaimed" minimum:"0"`
+	// Mine is how many of them name an entry of the selected account. It is 0
+	// signed out, because there is no selected account to own an artifact.
+	Mine int `json:"mine" minimum:"0"`
+	// Others is how many of them name another account's entry.
+	Others int `json:"others" minimum:"0"`
 }
 
 // Validate checks that the partition is complete and non-negative.
 func (c LocalOwnerOwnershipCounts) Validate() error {
-	if c.Total < 0 || c.Claimed < 0 || c.Unclaimed < 0 {
-		return fmt.Errorf("local owner ownership count validation failed at schema.LocalOwnerOwnershipCounts.Validate: total=%d claimed=%d unclaimed=%d; every count is zero or greater", c.Total, c.Claimed, c.Unclaimed)
+	if c.Total < 0 || c.Unclaimed < 0 || c.Mine < 0 || c.Others < 0 {
+		return fmt.Errorf("local owner ownership count validation failed at schema.LocalOwnerOwnershipCounts.Validate: total=%d unclaimed=%d mine=%d others=%d; every count is zero or greater", c.Total, c.Unclaimed, c.Mine, c.Others)
 	}
-	if c.Claimed+c.Unclaimed != c.Total {
-		return fmt.Errorf("local owner ownership count validation failed at schema.LocalOwnerOwnershipCounts.Validate: claimed %d plus unclaimed %d does not equal total %d; the three counts must partition the artifacts", c.Claimed, c.Unclaimed, c.Total)
+	if c.Unclaimed+c.Mine+c.Others != c.Total {
+		return fmt.Errorf("local owner ownership count validation failed at schema.LocalOwnerOwnershipCounts.Validate: unclaimed %d plus mine %d plus others %d does not equal total %d; the counts must partition the artifacts", c.Unclaimed, c.Mine, c.Others, c.Total)
 	}
 	return nil
 }
 
-// LocalOwnerOwnership is the local artifact partition the claim control shows.
+// LocalOwnerOwnership is the local artifact ownership partition the claim
+// control shows. Each kind partitions into unclaimed, mine, and others, and the
+// three add up to total.
 type LocalOwnerOwnership struct {
 	Sessions    LocalOwnerOwnershipCounts `json:"sessions"`
 	Annotations LocalOwnerOwnershipCounts `json:"annotations"`
@@ -294,8 +305,9 @@ func (o LocalOwnerOwnership) Validate() error {
 type LocalOwnerStatus struct {
 	Owner LocalOwner `json:"owner"`
 	// Claims is the most recent LocalOwnerRecentClaimLimit claim entries,
-	// newest first: claimedAt descending, then insertion order descending. It
-	// is never null; an installation with no claims answers [].
+	// newest first by insertion order (rowid descending). claimedAt is display
+	// data only and never decides the order. It is never null; an installation
+	// with no claims answers [].
 	Claims []LocalClaimEntry `json:"claims" nullable:"false"`
 	// TotalClaims is the number of entries in the whole append-only log, not
 	// only the page Claims carries. It never decides whether a cursor is
@@ -310,13 +322,14 @@ type LocalOwnerStatus struct {
 	// Prompt is the server-computed claim prompt state for the selected
 	// account.
 	Prompt LocalOwnerClaimPrompt `json:"prompt"`
-	// Ownership is the claimed partition of local sessions and annotations.
+	// Ownership is the ownership partition of local sessions and annotations.
 	Ownership LocalOwnerOwnership `json:"ownership"`
 }
 
-// Validate checks the owner, the bounded non-null claim page, newest-first
-// order, the total and cursor, the prompt, the ownership counts, and that every
-// returned claim belongs to this owner.
+// Validate checks the owner, the bounded non-null claim page, the total and
+// cursor, the prompt, the ownership counts, and that every returned claim
+// belongs to this owner. It never compares claimedAt: write order is the only
+// claim order key and a clock step must not invalidate a page.
 func (s LocalOwnerStatus) Validate() error {
 	if err := s.Owner.Validate(); err != nil {
 		return err
@@ -341,11 +354,6 @@ func (s LocalOwnerStatus) Validate() error {
 			return fmt.Errorf("local owner status validation failed at schema.LocalOwnerStatus.Validate: nextBefore %q does not name the last (oldest) returned entry; emit that entry's id so the next page is contiguous", *s.NextBefore)
 		}
 	}
-	for i := 1; i < len(s.Claims); i++ {
-		if s.Claims[i].ClaimedAt.After(s.Claims[i-1].ClaimedAt) {
-			return fmt.Errorf("local owner status validation failed at schema.LocalOwnerStatus.Validate: claim %q at %s is newer than the preceding claim %q at %s; emit claims newest first, claimedAt descending then insertion order descending", s.Claims[i].ID, s.Claims[i].ClaimedAt.Format(time.RFC3339), s.Claims[i-1].ID, s.Claims[i-1].ClaimedAt.Format(time.RFC3339))
-		}
-	}
 	for _, claim := range s.Claims {
 		if claim.LocalOwnerID != s.Owner.ID {
 			return fmt.Errorf("local owner status validation failed for claim %q at schema.LocalOwnerStatus.Validate: localOwnerId %q does not name this directory's owner %q; emit only claims appended for this local owner", claim.ID, claim.LocalOwnerID, s.Owner.ID)
@@ -367,13 +375,14 @@ type LocalOwnerClaimResult struct {
 	Status LocalOwnerStatus `json:"status"`
 	// Claimed is how many artifacts this action claimed.
 	Claimed int `json:"claimed" minimum:"0"`
-	// AlreadyClaimed is how many requested artifacts already named the
-	// selected account.
+	// AlreadyClaimed is how many requested artifacts already named the selected
+	// account, under both the default and all requests. It never counts an
+	// artifact merely because it has a non-null pointer to another account.
 	AlreadyClaimed int `json:"alreadyClaimed" minimum:"0"`
-	// ClaimID is the entry this action appended. Explicit claims append, so an
-	// explicit claim that claimed nothing still records its decision. It is
-	// absent only when the claim wrote no entry.
-	ClaimID *string `json:"claimId,omitempty" minLength:"1" maxLength:"64" nullable:"false"`
+	// ClaimID is the entry this action appended. Every explicit claim appends
+	// one, so a claim that moved nothing still records its decision and returns
+	// the id. It is always present.
+	ClaimID string `json:"claimId" minLength:"1" maxLength:"64"`
 }
 
 // Validate checks the nested status, the non-negative counts, and the entry id.
@@ -384,10 +393,8 @@ func (r LocalOwnerClaimResult) Validate() error {
 	if r.Claimed < 0 || r.AlreadyClaimed < 0 {
 		return fmt.Errorf("local owner claim result validation failed at schema.LocalOwnerClaimResult.Validate: claimed=%d alreadyClaimed=%d; every count is zero or greater", r.Claimed, r.AlreadyClaimed)
 	}
-	if r.ClaimID != nil {
-		if strings.TrimSpace(*r.ClaimID) == "" || len(*r.ClaimID) > 64 {
-			return fmt.Errorf("local owner claim result validation failed at schema.LocalOwnerClaimResult.Validate: claimId %q is empty or over 64 bytes; emit the appended entry id or omit the field", *r.ClaimID)
-		}
+	if strings.TrimSpace(r.ClaimID) == "" || len(r.ClaimID) > 64 {
+		return fmt.Errorf("local owner claim result validation failed at schema.LocalOwnerClaimResult.Validate: claimId %q is empty or over 64 bytes; emit the appended entry id", r.ClaimID)
 	}
 	return nil
 }

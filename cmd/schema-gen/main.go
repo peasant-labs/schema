@@ -14,10 +14,20 @@ import (
 
 func main() {
 	if len(os.Args) > 1 {
-		if os.Args[1] != "report" {
-			log.Fatalf("unknown schema-gen command %q; use report or omit the command to generate", os.Args[1])
+		var err error
+		switch os.Args[1] {
+		case "report":
+			err = runReport(os.Args[2:])
+		case "status":
+			err = runStatus(os.Args[2:])
+		case "freeze":
+			err = runFreeze(os.Args[2:])
+		case "freeze-render":
+			err = runFreezeRender(os.Args[2:])
+		default:
+			log.Fatalf("unknown schema-gen command %q; use report, status, freeze or omit the command to generate", os.Args[1])
 		}
-		if err := runReport(os.Args[2:]); err != nil {
+		if err != nil {
 			log.Fatal(err)
 		}
 		return
@@ -50,7 +60,7 @@ func main() {
 		log.Fatal(err)
 	}
 	for filename, data := range artifacts {
-		path := filepath.Join(generatedDir, filename)
+		path := filepath.Join(generatedDir, workingArtifactName(filename))
 		if err := os.WriteFile(path, data, 0644); err != nil {
 			log.Fatal(err)
 		}
@@ -77,11 +87,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	minReadSpec, err := openapi.BuildSegmentedReadSpec(openapi.SegmentedReadMinVersion)
+	minReadSpec, err := openapi.BuildSegmentedReadSpec(openapi.SegmentedReadMinVersion, openapi.SegmentedReadMinVersion)
 	if err != nil {
 		log.Fatal(err)
 	}
-	currentReadSpec, err := openapi.BuildSegmentedReadSpec(openapi.SegmentedReadAPIVersion)
+	currentReadSpec, err := openapi.BuildSegmentedReadSpec(openapi.SegmentedReadAPIVersion, openapi.SegmentedReadSpecVersion)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,7 +129,7 @@ func main() {
 		log.Fatal(err)
 	}
 	minReadName := "segmented-read-" + openapi.SegmentedReadMinVersion
-	currentReadName := "segmented-read-" + openapi.SegmentedReadAPIVersion
+	currentReadName := "segmented-read-" + openapi.SegmentedReadSpecVersion
 	if err := writeTypeCatalogHTML(minReadSpec, minReadName, "Segmented Read Protocol", docsDir); err != nil {
 		log.Fatal(err)
 	}
@@ -140,7 +150,7 @@ func main() {
 		{peasantLocalSpec, "peasantlocal-api", peasantLocalLabel, "REST + WebSocket"},
 		{sharedSpec, "types", typesLabel, "Domain type catalog + relationship diagram"},
 		{minReadSpec, minReadName, "Segmented Read Protocol v" + openapi.SegmentedReadMinVersion, "Frozen and still served"},
-		{currentReadSpec, currentReadName, "Segmented Read Protocol v" + openapi.SegmentedReadAPIVersion, "Positioned transcript read shapes"},
+		{currentReadSpec, currentReadName, "Segmented Read Protocol v" + openapi.SegmentedReadSpecVersion, "Positioned transcript read shapes"},
 		{nil, "type-graph", "Type Relationship Graph", "Full dependency graph across all types"},
 	}
 	if err := writeIndexHTML(indexEntries, docsDir); err != nil {

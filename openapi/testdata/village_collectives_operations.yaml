@@ -130,7 +130,7 @@ operations:
     operation_id: unsubscribeInvitationEmails
     request_components: []
     response_components: [VillageStatusResponse]
-    statuses: ["200", "400", "500"]
+    statuses: ["200", "400", "429", "500"]
     description_anchors: [without signing in, RFC 8058, can only turn this one setting off]
   - path: /api/v1/collectives/{id}/members/{userID}/role
     method: patch
@@ -150,9 +150,23 @@ operations:
     method: get
     operation_id: listContributableTranscripts
     request_components: []
-    response_components: [VillageContributableResponse]
-    statuses: ["200", "400", "401", "403", "413", "500"]
-    description_anchors: [already live, unpaginated]
+    response_components: [VillageContributableResponse, VillageContributionPageResponse, VillageContributionSnapshotResponse]
+    statuses: ["200", "400", "401", "403", "413", "500", "503"]
+    description_anchors: [already live, unpaginated, root sessions, a 413 without a code is that row-limit refusal, with no record-count cap, limited to 8 MiB (8388608 bytes) of response body, refused whole with a 413 whose code is snapshot_too_large, nothing partial is returned, narrows the search with the q or provider parameter and reads the snapshot again, snapshot_busy, ignored without view and with view=grouped, those two responses stay unchanged, view=snapshot without project_hash is a 400, also refuses with a 503 whose code is snapshot_timeout or snapshot_busy, "ordered by the last activity of the root session, newest first", "or its published_at when both are unknown", "ordered by the root's transcript id ascending", helpers do not affect the position of their family, "loops back on itself", "listed exactly once"]
+  - path: /api/v1/collectives/{id}/contributable/projects
+    method: get
+    operation_id: listContributionProjects
+    request_components: []
+    response_components: [VillageContributionProjectPage]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [root's project, Every count is in sessions, limit counts projects]
+  - path: /api/v1/collectives/{id}/shares/selection
+    method: post
+    operation_id: batchShareSelection
+    request_components: [VillageBatchShareSelectionRequest]
+    response_components: [VillageBatchShareResponse]
+    statuses: ["200", "400", "401", "403", "404", "409", "413", "500"]
+    description_anchors: [one exact selection, closed code, already_shared, offers exactly the listed transcript_ids, never expands a root into its helpers, project of the selected roots, not checked against it, "400: the request body violates the contract", "a transcript_ids or private_approvals list of more than 1000 ids", "holds at most 1000 ids", "One request offers at most 1000 sessions", "sends it as several requests", "403 with code membership", "403 with code policy", "409 with code moved, missing, private_unapproved, conflict or stale_selection", "the WHOLE request is refused and nothing is written", "413: the request body is larger than 1 MiB and nothing was written", becomes live before the write commits, is not a refusal]
   - path: /api/v1/collectives/{id}/shares
     method: post
     operation_id: batchShareProject
@@ -343,6 +357,10 @@ component_enums:
     values: ["", owner, member, contributor, pending]
   - component: VillageProjectNameSource
     values: [override, consented, remote, path, privacy]
+  - component: VillageContributableView
+    values: [grouped, paged, snapshot]
+  - component: VillageContributionErrorCode
+    values: [moved, missing, private_unapproved, conflict, policy, membership, stale_selection, snapshot_timeout, snapshot_busy, snapshot_too_large]
   - component: VillageTranscriptVisibility
     values: [private, shared, public]
   - component: VillageContributionStatus
@@ -425,6 +443,42 @@ component_required:
       - state
       - created_at
       - updated_at
+    excludes: []
+  - component: VillageContributableTranscript
+    contains: [id, local_id, title, visibility, project_hash, project_display_name, project_name_source, git_branch, parent_session_id, session_origin, model_provider, published_at, already_shared]
+    excludes: [session_start, session_end, parent_transcript_id, latest_status]
+  - component: VillageContributionPageResponse
+    contains: [group_id, items, has_more]
+    excludes: [next_cursor]
+  - component: VillageContributionPageItem
+    contains: [root, helpers]
+    excludes: []
+  - component: VillageContributionFamilyMember
+    contains: [transcript]
+    excludes: [matched]
+  - component: VillageContributionSnapshotResponse
+    contains: [group_id, project_hash, records, count]
+    excludes: []
+  - component: VillageContributionSnapshotRecord
+    contains: [id, visibility, project_hash]
+    excludes: [latest_status, parent_transcript_id]
+  - component: VillageContributionProjectPage
+    contains: [projects, has_more, matching_total, selectable_total, providers]
+    excludes: [next_cursor]
+  - component: VillageContributionProjectSummary
+    contains: [project_hash, project_display_name, project_name_source, matching_count, selectable_count]
+    excludes: [repository_state]
+  - component: VillageContributionProviderFacet
+    contains: [provider, count]
+    excludes: []
+  - component: VillageContributionErrorDetail
+    contains: [code]
+    excludes: [transcript_id, current_project_hash]
+  - component: VillageContributionErrorResponse
+    contains: [error]
+    excludes: [code, details]
+  - component: VillageBatchShareSelectionRequest
+    contains: [project_hash, transcript_ids, private_approvals]
     excludes: []
 component_properties:
   - component: VillageUserSettings
@@ -525,6 +579,19 @@ component_properties:
     required: true
     nullable: false
     items_ref: "#/components/schemas/SchemaTranscriptID"
+  - component: VillageBatchShareSelectionRequest
+    property: transcript_ids
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaTranscriptID"
+    min_items: 1
+    max_items: 1000
+  - component: VillageBatchShareSelectionRequest
+    property: private_approvals
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaTranscriptID"
+    max_items: 1000
   - component: VillageBatchReviewRequest
     property: transcript_ids
     required: true
@@ -565,10 +632,133 @@ component_properties:
     required: true
     nullable: false
     items_ref: "#/components/schemas/SchemaVillagePullRequestAttachedTranscript"
+  - component: VillageContributionPageResponse
+    property: items
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageContributionPageItem"
+  - component: VillageContributionPageItem
+    property: helpers
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageContributionFamilyMember"
+  - component: VillageContributionSnapshotResponse
+    property: records
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageContributionSnapshotRecord"
+  - component: VillageContributionProjectPage
+    property: projects
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageContributionProjectSummary"
+  - component: VillageContributionProjectPage
+    property: providers
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageContributionProviderFacet"
+  - component: VillageContributionErrorResponse
+    property: code
+    required: false
+    nullable: false
+  - component: VillageContributionErrorResponse
+    property: details
+    required: false
+    nullable: false
+  - component: VillageContributableTranscript
+    property: session_start
+    required: false
+    nullable: false
+  - component: VillageContributableTranscript
+    property: session_end
+    required: false
+    nullable: false
+  - component: VillageContributableTranscript
+    property: parent_transcript_id
+    required: false
+    nullable: false
+  - component: VillageContributableTranscript
+    property: latest_status
+    required: false
+    nullable: false
+  - component: VillageContributionPageResponse
+    property: next_cursor
+    required: false
+    nullable: false
+  - component: VillageContributionFamilyMember
+    property: matched
+    required: false
+    nullable: false
+  - component: VillageContributionSnapshotRecord
+    property: latest_status
+    required: false
+    nullable: false
+  - component: VillageContributionSnapshotRecord
+    property: parent_transcript_id
+    required: false
+    nullable: false
+  - component: VillageContributionProjectPage
+    property: next_cursor
+    required: false
+    nullable: false
+  - component: VillageContributionProjectSummary
+    property: repository_state
+    required: false
+    nullable: false
+  - component: VillageContributionErrorDetail
+    property: transcript_id
+    required: false
+    nullable: false
+  - component: VillageContributionErrorDetail
+    property: current_project_hash
+    required: false
+    nullable: false
+  - component: VillageContributionSnapshotResponse
+    property: count
+    required: true
+    nullable: false
+    minimum: 0
+    maximum: 9007199254740991
+  - component: VillageContributionProjectSummary
+    property: matching_count
+    required: true
+    nullable: false
+    minimum: 0
+    maximum: 9007199254740991
+  - component: VillageContributionProjectSummary
+    property: selectable_count
+    required: true
+    nullable: false
+    minimum: 0
+    maximum: 9007199254740991
+  - component: VillageContributionProjectPage
+    property: matching_total
+    required: true
+    nullable: false
+    minimum: 0
+    maximum: 9007199254740991
+  - component: VillageContributionProjectPage
+    property: selectable_total
+    required: true
+    nullable: false
+    minimum: 0
+    maximum: 9007199254740991
+  - component: VillageContributionProviderFacet
+    property: count
+    required: true
+    nullable: false
+    minimum: 0
+    maximum: 9007199254740991
 removed_operations:
   - {path: '/api/v1/groups/{id}/members', method: post, reason: an owner can no longer make a person a member without their consent; createGroupInvitation replaces it}
   - {path: '/api/v1/collectives/{id}/members', method: post, reason: the canonical alias of the removed add-member operation}
 request_body_names:
+  - selection-valid
+  - selection-empty-transcripts-rejected
+  - selection-missing-approvals-rejected
+  - selection-at-bound-valid
+  - selection-over-bound-rejected
+  - selection-approvals-over-bound-rejected
   - invite-username-valid
   - invite-empty-username-rejected
   - invite-missing-username-rejected
@@ -654,3 +844,108 @@ request_bodies:
     method: post
     body: {token: ""}
     valid: false
+  - name: selection-valid
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", transcript_ids: ["00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002"], private_approvals: []}
+    valid: true
+  - name: selection-empty-transcripts-rejected
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", transcript_ids: [], private_approvals: []}
+    valid: false
+  - name: selection-missing-approvals-rejected
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", transcript_ids: ["00000000-0000-4000-8000-000000000001"]}
+    valid: false
+  - name: selection-at-bound-valid
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", private_approvals: []}
+    fill: [{property: transcript_ids, count: 1000}]
+    valid: true
+  - name: selection-over-bound-rejected
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab", private_approvals: []}
+    fill: [{property: transcript_ids, count: 1001}]
+    valid: false
+  - name: selection-approvals-over-bound-rejected
+    path: /api/v1/groups/{id}/shares/selection
+    method: post
+    body: {project_hash: "abababababababababababababababababababababababababababababababab"}
+    fill: [{property: transcript_ids, count: 1000}, {property: private_approvals, count: 1001}]
+    valid: false
+retired_names:
+  - {name: snapshot_limit, kind: property, reason: "the snapshot limit is a contract constant, not a field, so no response declares a limit"}
+  - {name: snapshot_limit, kind: parameter, reason: "the snapshot limit is a contract constant, not a parameter, so no request declares a limit"}
+  - {name: project_q, kind: parameter, reason: "one q parameter searches both the picker and the paged view"}
+  - {name: project_q, kind: property, reason: "one q parameter searches both the picker and the paged view"}
+  - {name: live, kind: enum_value, reason: "a transcript already live in the collective is not a refusal; the selection write returns it under already_shared, so no refusal reports it"}
+response_arm_sample_names:
+  - canonical-flat
+  - canonical-grouped
+  - canonical-page
+  - canonical-snapshot
+  - deprecated-flat
+  - deprecated-grouped
+  - deprecated-page
+  - deprecated-snapshot
+response_arm_samples:
+  - path: /api/v1/collectives/{id}/contributable
+    method: get
+    status: "200"
+    arms: [SchemaVillageContributableResponse, SchemaVillageGroupedContributableResponse, SchemaVillageContributionPageResponse, SchemaVillageContributionSnapshotResponse]
+    samples:
+      - name: canonical-flat
+        arm: SchemaVillageContributableResponse
+        body:
+          group_id: 11111111-1111-4111-8111-111111111111
+          transcripts: []
+      - name: canonical-grouped
+        arm: SchemaVillageGroupedContributableResponse
+        body:
+          group_id: 11111111-1111-4111-8111-111111111111
+          transcriptList: {items: [], page: 1, limit: 2, totalItems: 0, ordinarySessionTotal: 0, helperThreadTotal: 0}
+      - name: canonical-page
+        arm: SchemaVillageContributionPageResponse
+        body:
+          group_id: 11111111-1111-4111-8111-111111111111
+          items: [{root: {transcript: &row {id: 00000000-0000-4000-8000-000000000001, local_id: sess_roota, title: null, visibility: private, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, project_display_name: peasant, project_name_source: remote, git_branch: null, parent_session_id: null, session_origin: user, model_provider: claude, published_at: "2026-01-01T00:00:00Z", already_shared: false, session_start: "2026-01-01T09:00:00Z", session_end: "2026-01-01T10:30:00Z"}}, helpers: []}]
+          has_more: false
+      - name: canonical-snapshot
+        arm: SchemaVillageContributionSnapshotResponse
+        body:
+          group_id: 11111111-1111-4111-8111-111111111111
+          project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          records: [{id: 00000000-0000-4000-8000-000000000001, title: null, visibility: private, project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}]
+          count: 1
+  - path: /api/v1/groups/{id}/contributable
+    method: get
+    status: "200"
+    arms: [SchemaVillageContributableResponse, SchemaVillageDeprecatedGroupedContributableResponse, SchemaVillageContributionPageResponse, SchemaVillageContributionSnapshotResponse]
+    samples:
+      - name: deprecated-flat
+        arm: SchemaVillageContributableResponse
+        body:
+          group_id: 11111111-1111-4111-8111-111111111111
+          transcripts: [*row]
+      - name: deprecated-grouped
+        arm: SchemaVillageDeprecatedGroupedContributableResponse
+        body:
+          groupId: 11111111-1111-4111-8111-111111111111
+          transcriptList: {items: [], page: 1, limit: 2, totalItems: 0, ordinarySessionTotal: 0, helperThreadTotal: 0}
+      - name: deprecated-page
+        arm: SchemaVillageContributionPageResponse
+        body:
+          group_id: 11111111-1111-4111-8111-111111111111
+          items: []
+          has_more: false
+      - name: deprecated-snapshot
+        arm: SchemaVillageContributionSnapshotResponse
+        body:
+          group_id: 11111111-1111-4111-8111-111111111111
+          project_hash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          records: []
+          count: 0

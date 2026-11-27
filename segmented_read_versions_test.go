@@ -8,12 +8,13 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
-	"github.com/peasant-labs/schema/openapi"
 	"github.com/peasant-labs/schema/testcase"
 	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
@@ -250,7 +251,7 @@ func TestSegmentedReadSpecAccessors(t *testing.T) {
 		Role string `yaml:"role"`
 	}
 	type expected struct {
-		Artifact string `yaml:"artifact"`
+		VersionSource string `yaml:"version_source"`
 	}
 	corpus, err := testcase.LoadCorpus[input, expected](segmentedReadSpecAccessorsYAML)
 	if err != nil {
@@ -261,24 +262,30 @@ func TestSegmentedReadSpecAccessors(t *testing.T) {
 		names = append(names, c.Name)
 	}
 	caseassert.RequireManifestNames(t, "segmented read spec accessors", segmentedReadSpecAccessorsManifestYAML, names)
-	artifacts, err := openapi.GenerateSpecArtifacts()
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, c := range corpus.Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			var got []byte
+			var version string
 			switch c.Input.Role {
 			case "current":
 				got = schema.SegmentedReadSpecJSON()
+				version = schema.SegmentedReadSpecVersion
+				if c.Expected.VersionSource != "document" {
+					t.Fatal("current accessor fixture must select the document version")
+				}
 			case "minimum":
 				got = schema.SegmentedReadMinSpecJSON()
+				version = schema.SegmentedReadMinVersion
+				if c.Expected.VersionSource != "minimum" {
+					t.Fatal("minimum accessor fixture must select the minimum protocol version")
+				}
 			default:
 				t.Fatalf("unknown accessor role %q", c.Input.Role)
 			}
-			want, ok := artifacts[c.Expected.Artifact]
-			if !ok || !bytes.Equal(got, want) {
-				t.Fatalf("embedded document does not match generated artifact %q", c.Expected.Artifact)
+			artifact := "segmented-read-" + version + ".json"
+			want, err := os.ReadFile(filepath.Join("generated", artifact))
+			if err != nil || !bytes.Equal(got, want) {
+				t.Fatalf("embedded document does not match frozen artifact %q: %v", artifact, err)
 			}
 		})
 	}

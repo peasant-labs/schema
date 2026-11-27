@@ -3,6 +3,27 @@ forbidden_components:
   - BestiaryHarness
   - VersionResponse
 types:
+  - {go_name: VillageAttestationType, disposition: catalog, component: VillageAttestationType, reason: Village account and auxiliary route contract}
+  - {go_name: VillageDiscoverabilityRequest, disposition: catalog, component: VillageDiscoverabilityRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageUsernameRequest, disposition: catalog, component: VillageUsernameRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageCreateAPIKeyRequest, disposition: catalog, component: VillageCreateAPIKeyRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageCreatedAPIKey, disposition: catalog, component: VillageCreatedAPIKey, reason: Village account and auxiliary route contract}
+  - {go_name: VillageAPIKey, disposition: catalog, component: VillageAPIKey, reason: Village account and auxiliary route contract}
+  - {go_name: VillageOrganizationVisibilityRequest, disposition: catalog, component: VillageOrganizationVisibilityRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageOrganizationVisibilityResponse, disposition: catalog, component: VillageOrganizationVisibilityResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageOrganizationSearchResult, disposition: catalog, component: VillageOrganizationSearchResult, reason: Village account and auxiliary route contract}
+  - {go_name: VillageOrganizationSearchResponse, disposition: catalog, component: VillageOrganizationSearchResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageTagUsage, disposition: catalog, component: VillageTagUsage, reason: Village account and auxiliary route contract}
+  - {go_name: VillageResolvedProject, disposition: catalog, component: VillageResolvedProject, reason: Village account and auxiliary route contract}
+  - {go_name: VillageProjectCollective, disposition: catalog, component: VillageProjectCollective, reason: Village account and auxiliary route contract}
+  - {go_name: VillageUserProjectResponse, disposition: catalog, component: VillageUserProjectResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageProjectDisplayNameRequest, disposition: catalog, component: VillageProjectDisplayNameRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageCreateAttestationRequest, disposition: catalog, component: VillageCreateAttestationRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageManualAnnotationRequest, disposition: catalog, component: VillageManualAnnotationRequest, reason: Village account and auxiliary route contract}
+  - {go_name: VillageTranscriptAnnotationsResponse, disposition: catalog, component: VillageTranscriptAnnotationsResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageTranscriptCommit, disposition: catalog, component: VillageTranscriptCommit, reason: Village account and auxiliary route contract}
+  - {go_name: VillageTranscriptCommitsResponse, disposition: catalog, component: VillageTranscriptCommitsResponse, reason: Village account and auxiliary route contract}
+  - {go_name: VillageHealthResponse, disposition: catalog, component: VillageHealthResponse, reason: Village account and auxiliary route contract}
   - {go_name: TranscriptReadTransportKind, disposition: catalog, component: TranscriptReadTransportKind, reason: segmented read transport kind}
   - {go_name: TranscriptReadTransport, disposition: catalog, component: TranscriptReadTransport, reason: segmented read route identity}
   - {go_name: TranscriptRecordedIndexState, disposition: catalog, component: TranscriptRecordedIndexState, reason: recorded index presence state}
@@ -37,6 +58,9 @@ types:
   - {go_name: TranscriptContentHashWord, disposition: runtime-only, reason: producer input for header validation identity}
   - {go_name: TranscriptRetainedOwnerVisibility, disposition: runtime-only, reason: producer input for header validation identity}
   - {go_name: TranscriptCookTurn, disposition: runtime-only, reason: paired raw and decoded producer input}
+  - {go_name: TranscriptCookTurnFacts, disposition: runtime-only, reason: producer partition index facts of a captured turn}
+  - {go_name: TranscriptCaptureRefusal, disposition: runtime-only, reason: Go-only capture refusal class}
+  - {go_name: TranscriptCaptureError, disposition: runtime-only, reason: Go-only capture refusal error}
   - {go_name: CookedTurn, disposition: runtime-only, reason: producer cooking verdict}
   - {go_name: PositionedWindowTurn, disposition: runtime-only, reason: producer window resolver input}
   - {go_name: PositionedWindowInput, disposition: runtime-only, reason: producer window resolver input}
@@ -717,6 +741,58 @@ types:
   - go_name: VillageBatchShareResponse
     disposition: catalog
     component: VillageBatchShareResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageBatchShareSelectionRequest
+    disposition: catalog
+    component: VillageBatchShareSelectionRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributableView
+    disposition: catalog
+    component: VillageContributableView
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionErrorCode
+    disposition: catalog
+    component: VillageContributionErrorCode
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionErrorDetail
+    disposition: catalog
+    component: VillageContributionErrorDetail
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionErrorResponse
+    disposition: catalog
+    component: VillageContributionErrorResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionFamilyMember
+    disposition: catalog
+    component: VillageContributionFamilyMember
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionPageItem
+    disposition: catalog
+    component: VillageContributionPageItem
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionPageResponse
+    disposition: catalog
+    component: VillageContributionPageResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionProjectPage
+    disposition: catalog
+    component: VillageContributionProjectPage
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionProjectSummary
+    disposition: catalog
+    component: VillageContributionProjectSummary
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionProviderFacet
+    disposition: catalog
+    component: VillageContributionProviderFacet
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionSnapshotRecord
+    disposition: catalog
+    component: VillageContributionSnapshotRecord
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionSnapshotResponse
+    disposition: catalog
+    component: VillageContributionSnapshotResponse
     reason: schema-owned Village collectives wire contract
   - go_name: VillageCollectiveSearchResponse
     disposition: catalog
@@ -1400,8 +1476,8 @@ types:
   - {go_name: LocalOwnerPromptState, disposition: catalog, component: LocalOwnerPromptState, reason: "closed server-computed claim prompt state"}
   - {go_name: LocalOwnerClaimPrompt, disposition: catalog, component: LocalOwnerClaimPrompt, reason: "per-account claim prompt state and decision, never a claim entry"}
   - {go_name: LocalOwnerStatus, disposition: catalog, component: LocalOwnerStatus, reason: "local owner read carrying the owner, bounded claim page, prompt state, and ownership counts"}
-  - {go_name: LocalOwnerOwnership, disposition: catalog, component: LocalOwnerOwnership, reason: "claimed partition of local sessions and annotations"}
-  - {go_name: LocalOwnerOwnershipCounts, disposition: catalog, component: LocalOwnerOwnershipCounts, reason: "total, claimed, and unclaimed counts for one artifact kind"}
+  - {go_name: LocalOwnerOwnership, disposition: catalog, component: LocalOwnerOwnership, reason: "ownership partition of local sessions and annotations into unclaimed, mine, and others"}
+  - {go_name: LocalOwnerOwnershipCounts, disposition: catalog, component: LocalOwnerOwnershipCounts, reason: "total, unclaimed, mine, and others counts for one artifact kind"}
   - {go_name: LocalArtifactIdentityKind, disposition: catalog, component: LocalArtifactIdentityKind, reason: "closed local artifact identity menu distinguishing local, village, foreign, and unknown"}
   - {go_name: LocalArtifactIdentity, disposition: catalog, component: LocalArtifactIdentity, reason: "role-neutral local read owner or author projection kept distinct from the producer"}
   - go_name: SessionTeammateSchemaProbe
@@ -1566,6 +1642,16 @@ types:
   - {go_name: LocalKickstartNode, disposition: catalog, component: LocalKickstartNode, reason: kickstart forest row}
   - {go_name: LocalKickstartTree, disposition: catalog, component: LocalKickstartTree, reason: kickstart whole forest}
   - {go_name: LocalKickstartPreview, disposition: catalog, component: LocalKickstartPreview, reason: kickstart bounded preview}
+  - {go_name: LocalKickstartPreviewOp, disposition: catalog, component: LocalKickstartPreviewOp, reason: preview stream operation}
+  - {go_name: LocalKickstartPreviewContinuation, disposition: catalog, component: LocalKickstartPreviewContinuation, reason: preview stream continuation}
+  - {go_name: LocalKickstartPreviewEventKind, disposition: catalog, component: LocalKickstartPreviewEventKind, reason: preview stream event kind}
+  - {go_name: LocalKickstartPreviewCutReason, disposition: catalog, component: LocalKickstartPreviewCutReason, reason: preview stream cut reason}
+  - {go_name: LocalKickstartPreviewCloseReason, disposition: catalog, component: LocalKickstartPreviewCloseReason, reason: preview stream close reason}
+  - {go_name: LocalKickstartPreviewRequest, disposition: catalog, component: LocalKickstartPreviewRequest, reason: preview stream request}
+  - {go_name: LocalKickstartPreviewEvent, disposition: catalog, component: LocalKickstartPreviewEvent, reason: preview stream event}
+  - {go_name: LocalKickstartPreviewDirectory, disposition: catalog, component: LocalKickstartPreviewDirectory, reason: preview stream directory}
+  - {go_name: LocalKickstartPreviewSegment, disposition: catalog, component: LocalKickstartPreviewSegment, reason: preview stream segment}
+  - {go_name: LocalKickstartPreviewState, disposition: runtime-only, reason: in-memory merge state is not a wire payload}
   - {go_name: LocalKickstartAnswers, disposition: catalog, component: LocalKickstartAnswers, reason: kickstart patch body}
   - {go_name: LocalKickstartOverwrite, disposition: catalog, component: LocalKickstartOverwrite, reason: kickstart stale-write notice}
   - {go_name: LocalKickstartPatchResult, disposition: catalog, component: LocalKickstartPatchResult, reason: kickstart patch result}

@@ -623,7 +623,6 @@ func buildIsolatedGateRepo(t *testing.T) (repo, base, head string) {
 		cmd := exec.Command("git", args...)
 		cmd.Dir = repo
 		cmd.Env = append(os.Environ(),
-			"GIT_CONFIG_GLOBAL=/dev/null",
 			"GIT_AUTHOR_NAME=isolatedgate", "GIT_AUTHOR_EMAIL=isolatedgate@invalid",
 			"GIT_COMMITTER_NAME=isolatedgate", "GIT_COMMITTER_EMAIL=isolatedgate@invalid",
 		)
@@ -661,7 +660,7 @@ func runIsolatedGate(t *testing.T, repo, base string, env ...string) (int, strin
 	t.Helper()
 	cmd := exec.Command("bash", filepath.Join(repo, "scripts", "contract-gates.sh"), "go-apidiff", base)
 	cmd.Dir = repo
-	cmd.Env = append(append(os.Environ(), "GOFLAGS=-mod=mod", "GIT_CONFIG_GLOBAL=/dev/null"), env...)
+	cmd.Env = append(append(os.Environ(), "GOFLAGS=-mod=mod"), env...)
 	out, err := cmd.CombinedOutput()
 	t.Logf("isolated gate output (exit %v):\n%s", err, out)
 	if err == nil {
@@ -1004,7 +1003,6 @@ func TestGoAPIDiffGateRunnerLinkedWorktree(t *testing.T) {
 	linked := filepath.Join(filepath.Dir(repo), "linked")
 	worktree := exec.Command("git", "worktree", "add", "--detach", linked, head)
 	worktree.Dir = repo
-	worktree.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null")
 	worktreeOut, err := worktree.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git worktree add linked checkout: %v\n%s", err, worktreeOut)
@@ -1012,7 +1010,6 @@ func TestGoAPIDiffGateRunnerLinkedWorktree(t *testing.T) {
 
 	status := exec.Command("git", "status", "--porcelain")
 	status.Dir = linked
-	status.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null")
 	statusOut, err := status.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git status linked worktree: %v\n%s", err, statusOut)

@@ -1,4 +1,5 @@
 // Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
+import { zVillageAttestationType } from "./contract/zod.gen.js";
 import { zTranscriptEntryReferenceKind } from "./contract/zod.gen.js";
 import { zTranscriptReadTransportKind } from "./contract/zod.gen.js";
 import { zTranscriptRecordedIndexState } from "./contract/zod.gen.js";
@@ -76,6 +77,8 @@ import { zVillageCollectiveAcceptanceMode } from "./contract/zod.gen.js";
 import { zVillageCollectiveDataAccess } from "./contract/zod.gen.js";
 import { zVillageCollectiveRole } from "./contract/zod.gen.js";
 import { zVillageCollectiveViewerRole } from "./contract/zod.gen.js";
+import { zVillageContributableView } from "./contract/zod.gen.js";
+import { zVillageContributionErrorCode } from "./contract/zod.gen.js";
 import { zVillageProjectNameSource } from "./contract/zod.gen.js";
 import { zVillageReviewDecision } from "./contract/zod.gen.js";
 import { zVillageShareEventActor } from "./contract/zod.gen.js";
@@ -131,6 +134,11 @@ import { zLocalKickstartResolution } from "./contract/zod.gen.js";
 import { zLocalKickstartNextStep } from "./contract/zod.gen.js";
 import { zLocalKickstartDiffLineType } from "./contract/zod.gen.js";
 import { zLocalKickstartEventKind } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewOp } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewContinuation } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewEventKind } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewCutReason } from "./contract/zod.gen.js";
+import { zLocalKickstartPreviewCloseReason } from "./contract/zod.gen.js";
 import { zLocalKickstartCloseReason } from "./contract/zod.gen.js";
 import { zLocalKickstartConnectAnswer } from "./contract/zod.gen.js";
 import { zLocalKickstartErrorCode } from "./contract/zod.gen.js";
@@ -139,6 +147,18 @@ import { zAutoPublishHookStatus } from "./contract/zod.gen.js";
 import { zAutoPublishRuleKind } from "./contract/zod.gen.js";
 import { zThinkingLevel } from "./contract/zod.gen.js";
 import { zScryVerdict } from "./contract/zod.gen.js";
+
+export const VillageAttestationType = Object.freeze({
+  UsedInTraining: "used_in_training",
+  Referenced: "referenced",
+  Evaluated: "evaluated",
+  Deployed: "deployed",
+} as const);
+export type VillageAttestationType = (typeof VillageAttestationType)[keyof typeof VillageAttestationType];
+export const AllVillageAttestationTypes = Object.freeze([VillageAttestationType.UsedInTraining, VillageAttestationType.Referenced, VillageAttestationType.Evaluated, VillageAttestationType.Deployed]) as readonly VillageAttestationType[];
+export function isVillageAttestationType(value: unknown): value is VillageAttestationType {
+  return zVillageAttestationType.safeParse(value).success;
+}
 
 export const TranscriptEntryReferenceKind = Object.freeze({
   Source: "source",
@@ -805,9 +825,10 @@ export const MessageType = Object.freeze({
   Connected: "connected",
   Error: "error",
   Kickstart: "kickstart",
+  KickstartPreview: "kickstart_preview",
 } as const);
 export type MessageType = (typeof MessageType)[keyof typeof MessageType];
-export const AllMessageTypes = Object.freeze([MessageType.Subscribe, MessageType.Unsubscribe, MessageType.Dashboard, MessageType.Sessions, MessageType.SessionDetail, MessageType.Trends, MessageType.Quality, MessageType.Annotations, MessageType.ProjectFamiliarity, MessageType.Connected, MessageType.Error, MessageType.Kickstart]) as readonly MessageType[];
+export const AllMessageTypes = Object.freeze([MessageType.Subscribe, MessageType.Unsubscribe, MessageType.Dashboard, MessageType.Sessions, MessageType.SessionDetail, MessageType.Trends, MessageType.Quality, MessageType.Annotations, MessageType.ProjectFamiliarity, MessageType.Connected, MessageType.Error, MessageType.Kickstart, MessageType.KickstartPreview]) as readonly MessageType[];
 export function isMessageType(value: unknown): value is MessageType {
   return zMessageType.safeParse(value).success;
 }
@@ -1067,6 +1088,35 @@ export type VillageCollectiveViewerRole = (typeof VillageCollectiveViewerRole)[k
 export const AllVillageCollectiveViewerRoles = Object.freeze([VillageCollectiveViewerRole.None, VillageCollectiveViewerRole.Owner, VillageCollectiveViewerRole.Member, VillageCollectiveViewerRole.Contributor, VillageCollectiveViewerRole.Pending]) as readonly VillageCollectiveViewerRole[];
 export function isVillageCollectiveViewerRole(value: unknown): value is VillageCollectiveViewerRole {
   return zVillageCollectiveViewerRole.safeParse(value).success;
+}
+
+export const VillageContributableView = Object.freeze({
+  Grouped: "grouped",
+  Paged: "paged",
+  Snapshot: "snapshot",
+} as const);
+export type VillageContributableView = (typeof VillageContributableView)[keyof typeof VillageContributableView];
+export const AllVillageContributableViews = Object.freeze([VillageContributableView.Grouped, VillageContributableView.Paged, VillageContributableView.Snapshot]) as readonly VillageContributableView[];
+export function isVillageContributableView(value: unknown): value is VillageContributableView {
+  return zVillageContributableView.safeParse(value).success;
+}
+
+export const VillageContributionErrorCode = Object.freeze({
+  Moved: "moved",
+  Missing: "missing",
+  PrivateUnapproved: "private_unapproved",
+  Conflict: "conflict",
+  Policy: "policy",
+  Membership: "membership",
+  StaleSelection: "stale_selection",
+  SnapshotTimeout: "snapshot_timeout",
+  SnapshotBusy: "snapshot_busy",
+  SnapshotTooLarge: "snapshot_too_large",
+} as const);
+export type VillageContributionErrorCode = (typeof VillageContributionErrorCode)[keyof typeof VillageContributionErrorCode];
+export const AllVillageContributionErrorCodes = Object.freeze([VillageContributionErrorCode.Moved, VillageContributionErrorCode.Missing, VillageContributionErrorCode.PrivateUnapproved, VillageContributionErrorCode.Conflict, VillageContributionErrorCode.Policy, VillageContributionErrorCode.Membership, VillageContributionErrorCode.StaleSelection, VillageContributionErrorCode.SnapshotTimeout, VillageContributionErrorCode.SnapshotBusy, VillageContributionErrorCode.SnapshotTooLarge]) as readonly VillageContributionErrorCode[];
+export function isVillageContributionErrorCode(value: unknown): value is VillageContributionErrorCode {
+  return zVillageContributionErrorCode.safeParse(value).success;
 }
 
 export const VillageProjectNameSource = Object.freeze({
@@ -1713,6 +1763,77 @@ export function isLocalKickstartEventKind(value: unknown): value is LocalKicksta
   return zLocalKickstartEventKind.safeParse(value).success;
 }
 
+export const LocalKickstartPreviewOp = Object.freeze({
+  Open: "open",
+  More: "more",
+  Close: "close",
+} as const);
+export type LocalKickstartPreviewOp = (typeof LocalKickstartPreviewOp)[keyof typeof LocalKickstartPreviewOp];
+export const AllLocalKickstartPreviewOps = Object.freeze([LocalKickstartPreviewOp.Open, LocalKickstartPreviewOp.More, LocalKickstartPreviewOp.Close]) as readonly LocalKickstartPreviewOp[];
+export function isLocalKickstartPreviewOp(value: unknown): value is LocalKickstartPreviewOp {
+  return zLocalKickstartPreviewOp.safeParse(value).success;
+}
+
+export const LocalKickstartPreviewContinuation = Object.freeze({
+  More: "more",
+  End: "end",
+  Cut: "cut",
+} as const);
+export type LocalKickstartPreviewContinuation = (typeof LocalKickstartPreviewContinuation)[keyof typeof LocalKickstartPreviewContinuation];
+export const AllLocalKickstartPreviewContinuations = Object.freeze([LocalKickstartPreviewContinuation.More, LocalKickstartPreviewContinuation.End, LocalKickstartPreviewContinuation.Cut]) as readonly LocalKickstartPreviewContinuation[];
+export function isLocalKickstartPreviewContinuation(value: unknown): value is LocalKickstartPreviewContinuation {
+  return zLocalKickstartPreviewContinuation.safeParse(value).success;
+}
+
+export const LocalKickstartPreviewEventKind = Object.freeze({
+  Opened: "opened",
+  Segment: "segment",
+  Closed: "closed",
+} as const);
+export type LocalKickstartPreviewEventKind = (typeof LocalKickstartPreviewEventKind)[keyof typeof LocalKickstartPreviewEventKind];
+export const AllLocalKickstartPreviewEventKinds = Object.freeze([LocalKickstartPreviewEventKind.Opened, LocalKickstartPreviewEventKind.Segment, LocalKickstartPreviewEventKind.Closed]) as readonly LocalKickstartPreviewEventKind[];
+export function isLocalKickstartPreviewEventKind(value: unknown): value is LocalKickstartPreviewEventKind {
+  return zLocalKickstartPreviewEventKind.safeParse(value).success;
+}
+
+export const LocalKickstartPreviewCutReason = Object.freeze({
+  SourceBudget: "source_budget",
+  SerializedBudget: "serialized_budget",
+  TurnBudget: "turn_budget",
+  OversizedRecord: "oversized_record",
+  OriginNotResumable: "origin_not_resumable",
+} as const);
+export type LocalKickstartPreviewCutReason = (typeof LocalKickstartPreviewCutReason)[keyof typeof LocalKickstartPreviewCutReason];
+export const AllLocalKickstartPreviewCutReasons = Object.freeze([LocalKickstartPreviewCutReason.SourceBudget, LocalKickstartPreviewCutReason.SerializedBudget, LocalKickstartPreviewCutReason.TurnBudget, LocalKickstartPreviewCutReason.OversizedRecord, LocalKickstartPreviewCutReason.OriginNotResumable]) as readonly LocalKickstartPreviewCutReason[];
+export function isLocalKickstartPreviewCutReason(value: unknown): value is LocalKickstartPreviewCutReason {
+  return zLocalKickstartPreviewCutReason.safeParse(value).success;
+}
+
+export const LocalKickstartPreviewCloseReason = Object.freeze({
+  ClosedByClient: "closed_by_client",
+  Replaced: "replaced",
+  SessionClosed: "session_closed",
+  Rescanned: "rescanned",
+  Idle: "idle",
+  Evicted: "evicted",
+  Shutdown: "shutdown",
+  SourceChanged: "source_changed",
+  LateResult: "late_result",
+  Unreadable: "unreadable",
+  OutOfOrder: "out_of_order",
+  SlowClient: "slow_client",
+  RowNotFound: "row_not_found",
+  NotASessionRow: "not_a_session_row",
+  Unavailable: "unavailable",
+  NoTurns: "no_turns",
+  Capacity: "capacity",
+} as const);
+export type LocalKickstartPreviewCloseReason = (typeof LocalKickstartPreviewCloseReason)[keyof typeof LocalKickstartPreviewCloseReason];
+export const AllLocalKickstartPreviewCloseReasons = Object.freeze([LocalKickstartPreviewCloseReason.ClosedByClient, LocalKickstartPreviewCloseReason.Replaced, LocalKickstartPreviewCloseReason.SessionClosed, LocalKickstartPreviewCloseReason.Rescanned, LocalKickstartPreviewCloseReason.Idle, LocalKickstartPreviewCloseReason.Evicted, LocalKickstartPreviewCloseReason.Shutdown, LocalKickstartPreviewCloseReason.SourceChanged, LocalKickstartPreviewCloseReason.LateResult, LocalKickstartPreviewCloseReason.Unreadable, LocalKickstartPreviewCloseReason.OutOfOrder, LocalKickstartPreviewCloseReason.SlowClient, LocalKickstartPreviewCloseReason.RowNotFound, LocalKickstartPreviewCloseReason.NotASessionRow, LocalKickstartPreviewCloseReason.Unavailable, LocalKickstartPreviewCloseReason.NoTurns, LocalKickstartPreviewCloseReason.Capacity]) as readonly LocalKickstartPreviewCloseReason[];
+export function isLocalKickstartPreviewCloseReason(value: unknown): value is LocalKickstartPreviewCloseReason {
+  return zLocalKickstartPreviewCloseReason.safeParse(value).success;
+}
+
 export const LocalKickstartCloseReason = Object.freeze({
   Committed: "committed",
   Expired: "expired",
@@ -1752,6 +1873,11 @@ export const LocalKickstartErrorCode = Object.freeze({
   CommitRefused: "kickstart_commit_refused",
   SessionNotFound: "kickstart_session_not_found",
   PreviewRowNotFound: "kickstart_preview_row_not_found",
+  PreviewCaptureNotFound: "kickstart_preview_capture_not_found",
+  PreviewSourceChanged: "kickstart_preview_source_changed",
+  PreviewLateResult: "kickstart_preview_late_result",
+  PreviewCapacity: "kickstart_preview_capacity",
+  PreviewOutOfOrder: "kickstart_preview_out_of_order",
   Failed: "kickstart_failed",
   StatusUnreadable: "kickstart_status_unreadable",
   ConfigUnreadable: "kickstart_config_unreadable",
@@ -1765,7 +1891,7 @@ export const LocalKickstartErrorCode = Object.freeze({
   ConfigChanging: "kickstart_config_changing",
 } as const);
 export type LocalKickstartErrorCode = (typeof LocalKickstartErrorCode)[keyof typeof LocalKickstartErrorCode];
-export const AllLocalKickstartErrorCodes = Object.freeze([LocalKickstartErrorCode.BodyMissing, LocalKickstartErrorCode.BodyInvalid, LocalKickstartErrorCode.ScopeInvalid, LocalKickstartErrorCode.AnswersInvalid, LocalKickstartErrorCode.SessionCommitting, LocalKickstartErrorCode.RevisionAhead, LocalKickstartErrorCode.AnswerRefused, LocalKickstartErrorCode.ScanNotDone, LocalKickstartErrorCode.FieldUnknown, LocalKickstartErrorCode.FieldOutOfScope, LocalKickstartErrorCode.FieldHidden, LocalKickstartErrorCode.TreeAnswerShape, LocalKickstartErrorCode.ConnectOutOfScope, LocalKickstartErrorCode.ConnectNotConnected, LocalKickstartErrorCode.ConnectUnknown, LocalKickstartErrorCode.CommitRefused, LocalKickstartErrorCode.SessionNotFound, LocalKickstartErrorCode.PreviewRowNotFound, LocalKickstartErrorCode.Failed, LocalKickstartErrorCode.StatusUnreadable, LocalKickstartErrorCode.ConfigUnreadable, LocalKickstartErrorCode.ConfigUnwritable, LocalKickstartErrorCode.SessionUnbuildable, LocalKickstartErrorCode.AnswerUnencodable, LocalKickstartErrorCode.PreviewUnreadable, LocalKickstartErrorCode.ContractBreach, LocalKickstartErrorCode.Unavailable, LocalKickstartErrorCode.ConfigBusy, LocalKickstartErrorCode.ConfigChanging]) as readonly LocalKickstartErrorCode[];
+export const AllLocalKickstartErrorCodes = Object.freeze([LocalKickstartErrorCode.BodyMissing, LocalKickstartErrorCode.BodyInvalid, LocalKickstartErrorCode.ScopeInvalid, LocalKickstartErrorCode.AnswersInvalid, LocalKickstartErrorCode.SessionCommitting, LocalKickstartErrorCode.RevisionAhead, LocalKickstartErrorCode.AnswerRefused, LocalKickstartErrorCode.ScanNotDone, LocalKickstartErrorCode.FieldUnknown, LocalKickstartErrorCode.FieldOutOfScope, LocalKickstartErrorCode.FieldHidden, LocalKickstartErrorCode.TreeAnswerShape, LocalKickstartErrorCode.ConnectOutOfScope, LocalKickstartErrorCode.ConnectNotConnected, LocalKickstartErrorCode.ConnectUnknown, LocalKickstartErrorCode.CommitRefused, LocalKickstartErrorCode.SessionNotFound, LocalKickstartErrorCode.PreviewRowNotFound, LocalKickstartErrorCode.PreviewCaptureNotFound, LocalKickstartErrorCode.PreviewSourceChanged, LocalKickstartErrorCode.PreviewLateResult, LocalKickstartErrorCode.PreviewCapacity, LocalKickstartErrorCode.PreviewOutOfOrder, LocalKickstartErrorCode.Failed, LocalKickstartErrorCode.StatusUnreadable, LocalKickstartErrorCode.ConfigUnreadable, LocalKickstartErrorCode.ConfigUnwritable, LocalKickstartErrorCode.SessionUnbuildable, LocalKickstartErrorCode.AnswerUnencodable, LocalKickstartErrorCode.PreviewUnreadable, LocalKickstartErrorCode.ContractBreach, LocalKickstartErrorCode.Unavailable, LocalKickstartErrorCode.ConfigBusy, LocalKickstartErrorCode.ConfigChanging]) as readonly LocalKickstartErrorCode[];
 export function isLocalKickstartErrorCode(value: unknown): value is LocalKickstartErrorCode {
   return zLocalKickstartErrorCode.safeParse(value).success;
 }

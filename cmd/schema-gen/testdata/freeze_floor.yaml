@@ -1,0 +1,56 @@
+# Each case builds a develop history, then runs the release job's freeze-floor
+# step (release-batch.yml, id freeze-floor) against it. A history entry
+# commits on develop; side: true commits on a side branch instead, and the
+# next merge: true entry merges that branch into develop with --no-ff. config
+# replaces .github/release-intent.yaml; an entry without config changes only
+# an unrelated file. expected.floor names the entry whose commit is the floor.
+cases:
+  - name: migration-commit-is-the-floor
+    input:
+      history:
+        - {label: before, config: "changelog: CHANGELOG.md\n"}
+        - {label: migration, config: "changelog: CHANGELOG.md\nspec_freeze: true\n"}
+        - {label: content}
+    expected: {floor: migration}
+    classification: must-pass
+    provenance: &p {source: requirement, ref: "the freeze floor is the commit that merged the spec-freeze migration"}
+    mutation: {description: "Drop -S or the config path filter so a later commit is chosen."}
+  - name: later-edits-keep-the-earliest-floor
+    input:
+      history:
+        - {label: before, config: "changelog: CHANGELOG.md\n"}
+        - {label: migration, config: "changelog: CHANGELOG.md\nspec_freeze: true\n"}
+        - {label: removed, config: "changelog: CHANGELOG.md\n"}
+        - {label: restored, config: "changelog: CHANGELOG.md\nspec_freeze: true\n"}
+    expected: {floor: migration}
+    classification: must-pass
+    provenance: *p
+    mutation: {description: "Drop --reverse so the latest change to the line is chosen."}
+  - name: side-branch-commit-is-not-the-floor
+    input:
+      history:
+        - {label: before, config: "changelog: CHANGELOG.md\n"}
+        - {label: branch-commit, side: true, config: "changelog: CHANGELOG.md\nspec_freeze: true\n"}
+        - {label: merge, merge: true}
+    expected: {floor: merge}
+    classification: must-pass
+    provenance: *p
+    mutation: {description: "Drop --first-parent so the side-branch commit is chosen."}
+  - name: missing-migration-fails-closed
+    input:
+      history:
+        - {label: before, config: "changelog: CHANGELOG.md\n"}
+        - {label: content}
+    expected: {error_contains: "spec-freeze migration commit not found on develop"}
+    classification: must-fail
+    provenance: *p
+    mutation: {description: "Default the floor instead of failing when the search finds nothing."}
+  - name: reformatted-line-fails-closed
+    input:
+      history:
+        - {label: before, config: "changelog: CHANGELOG.md\n"}
+        - {label: migration, config: "changelog: CHANGELOG.md\nspec_freeze:  true\n"}
+    expected: {error_contains: "spec-freeze migration commit not found on develop"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the search matches the literal line, so a reformatted line finds nothing and must stop the run"}
+    mutation: {description: "Loosen the search into a pattern that guesses a floor from a reformatted line."}

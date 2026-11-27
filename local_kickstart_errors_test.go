@@ -26,6 +26,7 @@ type kickstartErrorsFixture struct {
 	RequiredRoutes []string          `yaml:"required_routes"`
 	Routes         []localErrorRoute `yaml:"routes"`
 	CodeStatus     map[string]int    `yaml:"code_status"`
+	SocketCodes    []string          `yaml:"socket_codes"`
 }
 
 // localErrorRoute is one operation's error statuses and the codes each carries.
@@ -100,6 +101,12 @@ func TestKickstartErrorCodeSetMatchesFixtureStatuses(t *testing.T) {
 	}
 
 	used := map[string]bool{}
+	for _, code := range fixture.SocketCodes {
+		if _, err := schema.NewLocalKickstartErrorCode(code); err != nil {
+			t.Errorf("preview socket names an unknown error code: %v", err)
+		}
+		used[code] = true
+	}
 	for _, route := range fixture.Routes {
 		for status, codes := range route.Errors {
 			want, err := strconv.Atoi(status)

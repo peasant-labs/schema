@@ -20,6 +20,7 @@ routes:
       forbiddenRoot: [turns]
       reachableComponents: [TranscriptSegmentRef, ConversationTurnSpan, SessionID]
       statuses: [200, 400, 404, 409, 410, 500, 503]
+      localStatuses: [200, 400, 404, 409, 500, 503]
       errorRef: "#/components/schemas/SchemaVillageErrorResponse"
     classification: must-pass
     provenance: {source: requirement, ref: "village declares the directory read with the type the local read serves"}
@@ -36,6 +37,7 @@ routes:
       nonnullArrays: [turns]
       reachableComponents: [TranscriptTurn, TurnContentPart, ImagePart, ToolCallDetail, UsageDetail, Role, EntryType]
       statuses: [200, 400, 404, 409, 410, 500, 503]
+      localStatuses: [200, 400, 404, 409, 500, 503]
       errorRef: "#/components/schemas/SchemaVillageErrorResponse"
     classification: must-pass
     provenance: {source: requirement, ref: "village declares the segment read with the type the local read serves"}
@@ -53,6 +55,7 @@ routes:
       forbiddenRoot: [turns, content, toolCalls]
       reachableComponents: [SessionID]
       statuses: [200, 400, 404, 409, 410, 500, 503]
+      localStatuses: [200, 400, 404, 409, 500, 503]
       errorRef: "#/components/schemas/SchemaVillageErrorResponse"
     classification: must-pass
     provenance: {source: requirement, ref: "village declares the window read as a descriptor and never turn content"}

@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
-	"github.com/peasant-labs/schema/openapi"
 	"github.com/peasant-labs/schema/testcase"
 	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
@@ -31,6 +30,9 @@ var transcriptV1DirectoryGolden []byte
 
 //go:embed testdata/local_api_document_v1_unchanged.json
 var transcriptV1LocalDocument []byte
+
+//go:embed generated/peasantlocal-api-0.38.0.json
+var retiredTranscriptV1LocalDocument []byte
 
 type v1CompatibilityInput struct {
 	Kind string `yaml:"kind"`
@@ -118,19 +120,7 @@ func TestTranscriptV1LocalDocumentBytes(t *testing.T) {
 	if got := fmt.Sprintf("%x", sha256.Sum256(transcriptV1LocalDocument)); got != fixture.LocalDocumentSHA256 {
 		t.Fatalf("stored v1 Local API document digest = %s, want %s", got, fixture.LocalDocumentSHA256)
 	}
-	spec, err := openapi.BuildPeasantLocalAPISpec()
-	if err != nil {
-		t.Fatal(err)
-	}
-	raw, err := spec.MarshalJSON()
-	if err != nil {
-		t.Fatal(err)
-	}
-	got, err := json.MarshalIndent(json.RawMessage(raw), "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(got, transcriptV1LocalDocument) {
-		t.Fatal("the built Local API document differs from its frozen v1 bytes")
+	if !bytes.Equal(retiredTranscriptV1LocalDocument, transcriptV1LocalDocument) {
+		t.Fatal("the retired Local API document differs from its frozen v1 bytes")
 	}
 }

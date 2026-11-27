@@ -1,4 +1,235 @@
 cases:
+  - name: village shape VillageDiscoverabilityRequest
+    input:
+      component: VillageDiscoverabilityRequest
+      required: ["is_discoverable"]
+      optional: []
+      nullable: []
+      nonnullable: ["is_discoverable"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageUsernameRequest
+    input:
+      component: VillageUsernameRequest
+      required: ["username"]
+      optional: []
+      nullable: []
+      nonnullable: ["username"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageCreateAPIKeyRequest
+    input:
+      component: VillageCreateAPIKeyRequest
+      required: []
+      optional: ["label"]
+      nullable: []
+      nonnullable: ["label"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageCreatedAPIKey
+    input:
+      component: VillageCreatedAPIKey
+      required: ["created_at", "id", "key", "label", "prefix"]
+      optional: []
+      nullable: []
+      nonnullable: ["created_at", "id", "key", "label", "prefix"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageAPIKey
+    input:
+      component: VillageAPIKey
+      required: ["id", "key_prefix", "label", "created_at", "last_used", "revoked_at"]
+      optional: []
+      nullable: ["created_at", "label", "last_used", "revoked_at"]
+      nonnullable: ["id", "key_prefix"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageOrganizationVisibilityRequest
+    input:
+      component: VillageOrganizationVisibilityRequest
+      required: []
+      optional: ["visible"]
+      nullable: []
+      nonnullable: ["visible"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageOrganizationVisibilityResponse
+    input:
+      component: VillageOrganizationVisibilityResponse
+      required: ["status", "visible"]
+      optional: []
+      nullable: []
+      nonnullable: ["status", "visible"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageOrganizationSearchResult
+    input:
+      component: VillageOrganizationSearchResult
+      required: ["org_login", "avatar_url", "member_count", "transcript_count"]
+      optional: []
+      nullable: ["avatar_url"]
+      nonnullable: ["member_count", "org_login", "transcript_count"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageOrganizationSearchResponse
+    input:
+      component: VillageOrganizationSearchResponse
+      required: ["organizations"]
+      optional: []
+      nullable: []
+      nonnullable: ["organizations"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageTagUsage
+    input:
+      component: VillageTagUsage
+      required: ["id", "name", "usage_count"]
+      optional: []
+      nullable: []
+      nonnullable: ["id", "name", "usage_count"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageResolvedProject
+    input:
+      component: VillageResolvedProject
+      required: ["project_hash", "project_display_name", "project_name_source", "project_remote_label"]
+      optional: []
+      nullable: []
+      nonnullable: ["project_display_name", "project_hash", "project_name_source", "project_remote_label"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageProjectCollective
+    input:
+      component: VillageProjectCollective
+      required: ["id", "name", "description", "linked_github_org", "transcript_count"]
+      optional: []
+      nullable: ["description", "linked_github_org"]
+      nonnullable: ["id", "name", "transcript_count"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageUserProjectResponse
+    input:
+      component: VillageUserProjectResponse
+      required: ["collectives", "owner", "project", "transcripts"]
+      optional: []
+      nullable: []
+      nonnullable: ["collectives", "owner", "project", "transcripts"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageProjectDisplayNameRequest
+    input:
+      component: VillageProjectDisplayNameRequest
+      required: ["display_name"]
+      optional: []
+      nullable: []
+      nonnullable: ["display_name"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageCreateAttestationRequest
+    input:
+      component: VillageCreateAttestationRequest
+      required: ["org_login", "attestation_type"]
+      optional: ["note"]
+      nullable: []
+      nonnullable: ["attestation_type", "note", "org_login"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageManualAnnotationRequest
+    input:
+      component: VillageManualAnnotationRequest
+      required: ["typeId", "value", "entryIndex"]
+      optional: ["endIndex", "isPrimary", "reason"]
+      nullable: ["reason"]
+      nonnullable: ["endIndex", "entryIndex", "isPrimary", "typeId", "value"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageTranscriptAnnotationsResponse
+    input:
+      component: VillageTranscriptAnnotationsResponse
+      required: ["annotations"]
+      optional: []
+      nullable: []
+      nonnullable: ["annotations"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageTranscriptCommit
+    input:
+      component: VillageTranscriptCommit
+      required: ["sha", "message", "authorName", "authorEmail", "authoredAt", "committedAt", "order"]
+      optional: []
+      nullable: ["authorEmail", "authorName", "authoredAt", "committedAt", "message"]
+      nonnullable: ["order", "sha"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageTranscriptCommitsResponse
+    input:
+      component: VillageTranscriptCommitsResponse
+      required: ["commits"]
+      optional: []
+      nullable: []
+      nonnullable: ["commits"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageHealthResponse
+    input:
+      component: VillageHealthResponse
+      required: ["status", "serves"]
+      optional: ["buildRevision", "migrations"]
+      nullable: []
+      nonnullable: ["buildRevision", "migrations", "serves", "status"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
+  - name: village shape VillageUser
+    input:
+      component: VillageUser
+      required: ["id", "github_id", "github_username", "display_name", "avatar_url", "created_at", "updated_at", "is_discoverable", "provider", "provider_user_id", "username_chosen", "provider_username", "preview_before_attach", "auto_attach_pull_requests"]
+      optional: []
+      nullable: ["avatar_url", "display_name", "provider_username"]
+      nonnullable: ["auto_attach_pull_requests", "created_at", "github_id", "github_username", "id", "is_discoverable", "preview_before_attach", "provider", "provider_user_id", "updated_at", "username_chosen"]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village route contract}
+    mutation: {description: preserves member presence and nullability}
   - name: collective detail compatible group record
     input:
       component: VillageCollectiveDetailRecord
@@ -321,11 +552,11 @@ cases:
   - name: local owner claim result
     input:
       component: LocalOwnerClaimResult
-      required: [status, claimed, alreadyClaimed]
-      optional: [claimId]
+      required: [status, claimed, alreadyClaimed, claimId]
+      optional: []
       nullable: []
       nonnullable: [status, claimed, alreadyClaimed, claimId]
     expected: true
     classification: must-pass
-    provenance: {source: requirement, ref: "the claim answer reports what the action did beside the recomputed status"}
-    mutation: {description: "pins the required result counts and optional claim entry id"}
+    provenance: {source: requirement, ref: "the claim answer reports what the action did beside the recomputed status and always returns the appended entry id"}
+    mutation: {description: "pins the required result counts and the always-present claim entry id"}

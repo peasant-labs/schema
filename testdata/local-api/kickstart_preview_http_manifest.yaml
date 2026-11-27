@@ -1,0 +1,4 @@
+requiredNames:
+  - http-preview-lines-only
+  - http-preview-has-no-detail
+  - http-preview-has-no-cursor

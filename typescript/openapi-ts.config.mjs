@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,8 +5,6 @@ import { shouldBrandProjectHash } from "./scripts/lib/project-hash-resolver.mjs"
 
 const packageRoot = dirname(fileURLToPath(import.meta.url));
 const moduleRoot = join(packageRoot, "..");
-const versionsSource = readFileSync(join(moduleRoot, "versions.go"), "utf8");
-const typesVersion = requiredMatch(versionsSource, /TypesVersion\s*=\s*"([^"]+)"/, "TypesVersion", "versions.go");
 
 // canonicalTypeName is the identity function: Hey API's `case: "preserve"`
 // (set below on both `definitions.name` and `types.infer.name`) already emits
@@ -22,7 +19,7 @@ const typesVersion = requiredMatch(versionsSource, /TypesVersion\s*=\s*"([^"]+)"
 const canonicalTypeName = (name) => name;
 
 export default {
-  input: join(moduleRoot, "generated", `types-${typesVersion}.json`),
+  input: join(moduleRoot, "generated", "types-next.json"),
   output: join(packageRoot, "src", "internal", "generated", "contract"),
   plugins: [
     {
@@ -50,9 +47,3 @@ export default {
     },
   ],
 };
-
-function requiredMatch(source, pattern, field, location) {
-  const match = pattern.exec(source);
-  if (match?.[1] !== undefined) return match[1];
-  throw new Error(`TypeScript contract generation could not read ${field} from ${location}; the generator cannot identify its OpenAPI input; keep the canonical Go constant in the expected assignment form or update typescript/openapi-ts.config.mjs.`);
-}

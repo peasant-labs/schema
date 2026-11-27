@@ -49,7 +49,7 @@ func TestCodegenFreshness_SpecsMatchSource(t *testing.T) {
 
 	for _, dir := range committedSpecDirs(root) {
 		for filename, want := range artifacts {
-			path := filepath.Join(dir, filename)
+			path := filepath.Join(dir, workingArtifactName(filename))
 			got, err := os.ReadFile(path)
 			if err != nil {
 				t.Errorf("committed spec missing: %s\nRegenerate with `%s` and commit.", path, regenCmd)

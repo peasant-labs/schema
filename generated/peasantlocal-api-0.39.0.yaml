@@ -37,8 +37,7 @@ paths:
       - annotations
   /api/v1/annotations:
     get:
-      description: List annotations for a session, each with the optional local owner
-        and author projections kept distinct from the shared annotation summary.
+      description: List annotations for a session.
       operationId: listAnnotations
       parameters:
       - description: Session ID to filter annotations
@@ -54,7 +53,7 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/SchemaLocalAnnotationRow'
+                  $ref: '#/components/schemas/SchemaAnnotationSummary'
                 type:
                 - "null"
                 - array
@@ -708,143 +707,6 @@ paths:
             code is one of: kickstart_unavailable.'
       tags:
       - kickstart
-  /api/v1/local-owner:
-    get:
-      description: 'Read this data directory''s one permanent local owner, the most
-        recent claim entries, the full claim total, the claim prompt state, and the
-        ownership counts. Entries are newest first: claimedAt descending, then insertion
-        order descending. nextBefore names the last returned entry and is present
-        exactly when an older entry exists, found by reading one row past the page;
-        a page shorter than 100 never carries it. Pass before=<nextBefore> to read
-        the next older page. This is a local read: it needs no Village login and makes
-        no network call. claims is [] when this directory has no claims.'
-      operationId: getLocalOwnerStatus
-      parameters:
-      - description: 'Older-page cursor: the nextBefore value from the previous status
-          read. Omit for the most recent page.'
-        in: query
-        name: before
-        schema:
-          description: 'Older-page cursor: the nextBefore value from the previous
-            status read. Omit for the most recent page.'
-          maxLength: 64
-          minLength: 1
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SchemaLocalOwnerStatus'
-          description: OK
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Internal Server Error
-      tags:
-      - local-owner
-  /api/v1/local-owner/claim:
-    post:
-      description: 'Claim local sessions and annotations for the signed-in Village
-        account. all=false claims only unclaimed artifacts; all=true claims every
-        local session and annotation. An explicit claim always appends one entry and
-        never rewrites an earlier one, including when it moves nothing, and returns
-        its claimId. An automatic claim reuses this account''s automatic entry only
-        while that entry is the newest in the whole log for this local owner; otherwise
-        it appends one. Pulled transcripts and annotations are never claimed. The
-        answer is the recomputed status plus what this action claimed. Returns 403
-        with a JSON error, and changes nothing, when the request did not come from
-        this local server: the request''s Host header does not name a loopback address
-        (code request_host_not_local), or a browser sent it from another origin or
-        from a page this server did not serve (code request_origin_not_local).'
-      operationId: claimLocalOwner
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SchemaLocalOwnerClaimRequest'
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SchemaLocalOwnerClaimResult'
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Refused, and nothing was changed, because the request did not
-            come from this local server. The JSON error code is request_host_not_local
-            when the request's Host header does not name a loopback address, and request_origin_not_local
-            when a browser sent it from another origin or from a page this server
-            did not serve.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Internal Server Error
-      tags:
-      - local-owner
-  /api/v1/local-owner/decline:
-    post:
-      description: 'Decline the claim prompt for the signed-in Village account. A
-        decline writes no claim entry; it records only that the prompt was dismissed
-        so the product does not ask again for the same local owner plus account scope.
-        The claim control stays available. Returns 403 with a JSON error, and changes
-        nothing, when the request did not come from this local server: the request''s
-        Host header does not name a loopback address (code request_host_not_local),
-        or a browser sent it from another origin or from a page this server did not
-        serve (code request_origin_not_local).'
-      operationId: declineLocalOwnerPrompt
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SchemaLocalOwnerStatus'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Refused, and nothing was changed, because the request did not
-            come from this local server. The JSON error code is request_host_not_local
-            when the request's Host header does not name a loopback address, and request_origin_not_local
-            when a browser sent it from another origin or from a page this server
-            did not serve.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Internal Server Error
-      tags:
-      - local-owner
   /api/v1/map/{projectHash}:
     get:
       description: Get the full map graph for a project (optionally at a commit).
@@ -2655,6 +2517,10 @@ components:
           items:
             $ref: '#/components/schemas/SchemaChannelSubscription'
           type: array
+        preview:
+          anyOf:
+          - $ref: '#/components/schemas/LocalKickstartPreviewRequest'
+          - type: "null"
         type:
           $ref: '#/components/schemas/SchemaMessageType'
       required:
@@ -2744,6 +2610,172 @@ components:
       - closed
       title: Kickstart Event Kind
       type: string
+    LocalKickstartPreviewDirectory:
+      additionalProperties: false
+      properties:
+        complete:
+          type: boolean
+        loadedConversationTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        loadedSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        loadedTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            $ref: '#/components/schemas/TranscriptSegmentRef'
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        totalConversationTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - complete
+      - loadedSegments
+      - loadedTurns
+      - segments
+      type: object
+    LocalKickstartPreviewEvent:
+      additionalProperties: false
+      properties:
+        captureId:
+          type: string
+        code:
+          $ref: '#/components/schemas/SchemaLocalKickstartErrorCode'
+        continuation:
+          $ref: '#/components/schemas/SchemaLocalKickstartPreviewContinuation'
+        cutReason:
+          $ref: '#/components/schemas/SchemaLocalKickstartPreviewCutReason'
+        directory:
+          $ref: '#/components/schemas/LocalKickstartPreviewDirectory'
+        header:
+          $ref: '#/components/schemas/SessionDetailPayload'
+        kind:
+          $ref: '#/components/schemas/SchemaLocalKickstartPreviewEventKind'
+        lines:
+          items:
+            $ref: '#/components/schemas/SchemaLocalKickstartLine'
+          type: array
+        message:
+          type: string
+        reason:
+          $ref: '#/components/schemas/SchemaLocalKickstartPreviewCloseReason'
+        requestId:
+          type: string
+        segment:
+          $ref: '#/components/schemas/LocalKickstartPreviewSegment'
+        seq:
+          maximum: 4.294967295e+09
+          minimum: 0
+          type: integer
+        sessionId:
+          type: string
+      required:
+      - kind
+      - sessionId
+      - seq
+      type: object
+    LocalKickstartPreviewRequest:
+      additionalProperties: false
+      properties:
+        after:
+          maximum: 4.294967295e+09
+          minimum: 0
+          type: integer
+        captureId:
+          maxLength: 22
+          minLength: 22
+          pattern: ^[A-Za-z0-9_-]{21}[AQgw]$
+          type: string
+        nodeId:
+          maxLength: 512
+          type: string
+        op:
+          $ref: '#/components/schemas/SchemaLocalKickstartPreviewOp'
+        requestId:
+          maxLength: 32
+          minLength: 1
+          pattern: ^[A-Za-z0-9_-]+$
+          type: string
+        sessionId:
+          maxLength: 128
+          minLength: 1
+          pattern: ^[A-Za-z0-9_-]+$
+          type: string
+      required:
+      - op
+      - requestId
+      - sessionId
+      type: object
+    LocalKickstartPreviewSegment:
+      additionalProperties: false
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        nativeMetadata:
+          items:
+            $ref: '#/components/schemas/SchemaNativeMetadataRecord'
+          type: array
+        retainedUnknown:
+          items:
+            $ref: '#/components/schemas/SchemaRetainedUnknownRecord'
+          type: array
+        revision:
+          minLength: 1
+          type: string
+        turns:
+          items:
+            $ref: '#/components/schemas/TranscriptTurn'
+          type: array
+      required:
+      - index
+      - revision
+      - firstTurn
+      - lastTurn
+      - byteLength
+      - hasOlder
+      - hasNewer
+      - turns
+      type: object
     LocalSessionPage:
       properties:
         items:
@@ -4764,172 +4796,6 @@ components:
       required:
       - partial
       type: object
-    SchemaLocalAnnotationRow:
-      properties:
-        annotatorKind:
-          $ref: '#/components/schemas/SchemaAnnotatorKind'
-        annotatorName:
-          type: string
-        author:
-          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
-        confidence:
-          type:
-          - "null"
-          - number
-        contentHash:
-          type:
-          - "null"
-          - string
-        createdAt:
-          format: int64
-          type: integer
-        id:
-          type: string
-        isPrimary:
-          type: boolean
-        owner:
-          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
-        provenance:
-          $ref: '#/components/schemas/SchemaProvenance'
-        reason:
-          type:
-          - "null"
-          - string
-        supersededBy:
-          type:
-          - "null"
-          - string
-        targetAnnotationId:
-          type:
-          - "null"
-          - string
-        targetAssociationId:
-          $ref: '#/components/schemas/SchemaAssociationID'
-        targetContentHash:
-          type:
-          - "null"
-          - string
-        targetEntryEndIndex:
-          type:
-          - "null"
-          - integer
-        targetEntryIndex:
-          type:
-          - "null"
-          - integer
-        targetFilePath:
-          type:
-          - "null"
-          - string
-        targetKind:
-          $ref: '#/components/schemas/SchemaTargetKind'
-        targetProjectHash:
-          $ref: '#/components/schemas/SchemaProjectHash'
-        targetSessionId:
-          type:
-          - "null"
-          - string
-        typeId:
-          type: string
-        typeName:
-          type: string
-        value:
-          type: string
-      required:
-      - id
-      - targetKind
-      - isPrimary
-      - annotatorKind
-      - annotatorName
-      - typeId
-      - typeName
-      - value
-      - createdAt
-      type: object
-    SchemaLocalArtifactIdentity:
-      properties:
-        claimId:
-          maxLength: 64
-          minLength: 1
-          type: string
-        kind:
-          $ref: '#/components/schemas/SchemaLocalArtifactIdentityKind'
-        localOwnerId:
-          maxLength: 64
-          minLength: 1
-          type: string
-        userId:
-          $ref: '#/components/schemas/SchemaVillageUUID'
-        username:
-          minLength: 1
-          type: string
-        villageUrl:
-          maxLength: 1024
-          type: string
-      required:
-      - kind
-      type: object
-    SchemaLocalArtifactIdentityKind:
-      description: 'Whose artifact a local read describes: this data directory''s
-        local owner, the Village account that claimed it, a foreign pull-manifest
-        owner, or an owner that is projected but withheld'
-      enum:
-      - local
-      - village
-      - foreign
-      - unknown
-      examples:
-      - local
-      - village
-      - foreign
-      - unknown
-      title: Local Artifact Identity Kind
-      type: string
-    SchemaLocalClaimEntry:
-      properties:
-        claimedAt:
-          format: date-time
-          type: string
-        id:
-          maxLength: 64
-          minLength: 1
-          type: string
-        localOwnerId:
-          maxLength: 64
-          minLength: 1
-          type: string
-        source:
-          $ref: '#/components/schemas/SchemaLocalClaimSource'
-        userId:
-          $ref: '#/components/schemas/SchemaVillageUUID'
-        username:
-          minLength: 1
-          type: string
-        villageUrl:
-          maxLength: 1024
-          type: string
-      required:
-      - id
-      - localOwnerId
-      - villageUrl
-      - userId
-      - username
-      - source
-      - claimedAt
-      type: object
-    SchemaLocalClaimSource:
-      description: 'Why one claim entry exists: an explicit command, the sign-in prompt,
-        or an automatic claim of sessions first stored by this harvest'
-      enum:
-      - manual
-      - sign_in_prompt
-      - automatic
-      examples:
-      - manual
-      - sign_in_prompt
-      - automatic
-      title: Local Claim Source
-      type: string
     SchemaLocalCollectiveSuggestion:
       properties:
         match:
@@ -5354,6 +5220,11 @@ components:
       - kickstart_commit_refused
       - kickstart_session_not_found
       - kickstart_preview_row_not_found
+      - kickstart_preview_capture_not_found
+      - kickstart_preview_source_changed
+      - kickstart_preview_late_result
+      - kickstart_preview_capacity
+      - kickstart_preview_out_of_order
       - kickstart_failed
       - kickstart_status_unreadable
       - kickstart_config_unreadable
@@ -5384,6 +5255,11 @@ components:
       - kickstart_commit_refused
       - kickstart_session_not_found
       - kickstart_preview_row_not_found
+      - kickstart_preview_capture_not_found
+      - kickstart_preview_source_changed
+      - kickstart_preview_late_result
+      - kickstart_preview_capacity
+      - kickstart_preview_out_of_order
       - kickstart_failed
       - kickstart_status_unreadable
       - kickstart_config_unreadable
@@ -5680,6 +5556,224 @@ components:
       required:
       - lines
       type: object
+    SchemaLocalKickstartPreviewCloseReason:
+      description: Why the capture closed
+      enum:
+      - closed_by_client
+      - replaced
+      - session_closed
+      - rescanned
+      - idle
+      - evicted
+      - shutdown
+      - source_changed
+      - late_result
+      - unreadable
+      - out_of_order
+      - slow_client
+      - row_not_found
+      - not_a_session_row
+      - unavailable
+      - no_turns
+      - capacity
+      examples:
+      - closed_by_client
+      - replaced
+      - session_closed
+      - rescanned
+      - idle
+      - evicted
+      - shutdown
+      - source_changed
+      - late_result
+      - unreadable
+      - out_of_order
+      - slow_client
+      - row_not_found
+      - not_a_session_row
+      - unavailable
+      - no_turns
+      - capacity
+      title: Preview close reason
+      type: string
+    SchemaLocalKickstartPreviewContinuation:
+      description: Whether the capture can continue
+      enum:
+      - more
+      - end
+      - cut
+      examples:
+      - more
+      - end
+      - cut
+      title: Preview continuation
+      type: string
+    SchemaLocalKickstartPreviewCutReason:
+      description: Why the capture ended early
+      enum:
+      - source_budget
+      - serialized_budget
+      - turn_budget
+      - oversized_record
+      - origin_not_resumable
+      examples:
+      - source_budget
+      - serialized_budget
+      - turn_budget
+      - oversized_record
+      - origin_not_resumable
+      title: Preview cut reason
+      type: string
+    SchemaLocalKickstartPreviewDirectory:
+      additionalProperties: false
+      properties:
+        complete:
+          type: boolean
+        loadedConversationTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        loadedSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        loadedTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            $ref: '#/components/schemas/TranscriptSegmentRef'
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        totalConversationTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - complete
+      - loadedSegments
+      - loadedTurns
+      - segments
+      type: object
+    SchemaLocalKickstartPreviewEventKind:
+      description: Kind of capture event
+      enum:
+      - opened
+      - segment
+      - closed
+      examples:
+      - opened
+      - segment
+      - closed
+      title: Preview event kind
+      type: string
+    SchemaLocalKickstartPreviewOp:
+      description: Operation on a connection-owned capture
+      enum:
+      - open
+      - more
+      - close
+      examples:
+      - open
+      - more
+      - close
+      title: Preview operation
+      type: string
+    SchemaLocalKickstartPreviewRequest:
+      additionalProperties: false
+      properties:
+        after:
+          maximum: 4.294967295e+09
+          minimum: 0
+          type: integer
+        captureId:
+          maxLength: 22
+          minLength: 22
+          pattern: ^[A-Za-z0-9_-]{21}[AQgw]$
+          type: string
+        nodeId:
+          maxLength: 512
+          type: string
+        op:
+          $ref: '#/components/schemas/SchemaLocalKickstartPreviewOp'
+        requestId:
+          maxLength: 32
+          minLength: 1
+          pattern: ^[A-Za-z0-9_-]+$
+          type: string
+        sessionId:
+          maxLength: 128
+          minLength: 1
+          pattern: ^[A-Za-z0-9_-]+$
+          type: string
+      required:
+      - op
+      - requestId
+      - sessionId
+      type: object
+    SchemaLocalKickstartPreviewSegment:
+      additionalProperties: false
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        nativeMetadata:
+          items:
+            $ref: '#/components/schemas/SchemaNativeMetadataRecord'
+          type: array
+        retainedUnknown:
+          items:
+            $ref: '#/components/schemas/SchemaRetainedUnknownRecord'
+          type: array
+        revision:
+          minLength: 1
+          type: string
+        turns:
+          items:
+            $ref: '#/components/schemas/TranscriptTurn'
+          type: array
+      required:
+      - index
+      - revision
+      - firstTurn
+      - lastTurn
+      - byteLength
+      - hasOlder
+      - hasNewer
+      - turns
+      type: object
     SchemaLocalKickstartResolution:
       description: 'Which side of one conflict row to keep: mine is the draft, theirs
         is the file'
@@ -5930,124 +6024,6 @@ components:
       - uncertain
       title: Local Operation Diagnostic Outcome
       type: string
-    SchemaLocalOwner:
-      properties:
-        createdAt:
-          format: date-time
-          type: string
-        id:
-          maxLength: 64
-          minLength: 1
-          type: string
-      required:
-      - id
-      - createdAt
-      type: object
-    SchemaLocalOwnerClaimPrompt:
-      properties:
-        account:
-          $ref: '#/components/schemas/SchemaCollectiveObservationScope'
-        decidedAt:
-          format: date-time
-          type: string
-        state:
-          $ref: '#/components/schemas/SchemaLocalOwnerPromptState'
-      required:
-      - state
-      type: object
-    SchemaLocalOwnerClaimRequest:
-      properties:
-        all:
-          type: boolean
-      required:
-      - all
-      type: object
-    SchemaLocalOwnerClaimResult:
-      properties:
-        alreadyClaimed:
-          minimum: 0
-          type: integer
-        claimId:
-          maxLength: 64
-          minLength: 1
-          type: string
-        claimed:
-          minimum: 0
-          type: integer
-        status:
-          $ref: '#/components/schemas/SchemaLocalOwnerStatus'
-      required:
-      - status
-      - claimed
-      - alreadyClaimed
-      type: object
-    SchemaLocalOwnerOwnership:
-      properties:
-        annotations:
-          $ref: '#/components/schemas/SchemaLocalOwnerOwnershipCounts'
-        sessions:
-          $ref: '#/components/schemas/SchemaLocalOwnerOwnershipCounts'
-      required:
-      - sessions
-      - annotations
-      type: object
-    SchemaLocalOwnerOwnershipCounts:
-      properties:
-        claimed:
-          minimum: 0
-          type: integer
-        total:
-          minimum: 0
-          type: integer
-        unclaimed:
-          minimum: 0
-          type: integer
-      required:
-      - total
-      - claimed
-      - unclaimed
-      type: object
-    SchemaLocalOwnerPromptState:
-      description: 'The server-computed claim prompt state: no account selected, due,
-        declined, or completed for one local owner plus account scope'
-      enum:
-      - not_applicable
-      - due
-      - declined
-      - completed
-      examples:
-      - not_applicable
-      - due
-      - declined
-      - completed
-      title: Local Owner Prompt State
-      type: string
-    SchemaLocalOwnerStatus:
-      properties:
-        claims:
-          items:
-            $ref: '#/components/schemas/SchemaLocalClaimEntry'
-          type: array
-        nextBefore:
-          maxLength: 64
-          minLength: 1
-          type: string
-        owner:
-          $ref: '#/components/schemas/SchemaLocalOwner'
-        ownership:
-          $ref: '#/components/schemas/SchemaLocalOwnerOwnership'
-        prompt:
-          $ref: '#/components/schemas/SchemaLocalOwnerClaimPrompt'
-        totalClaims:
-          minimum: 0
-          type: integer
-      required:
-      - owner
-      - claims
-      - totalClaims
-      - prompt
-      - ownership
-      type: object
     SchemaLocalPublication:
       properties:
         audience:
@@ -6373,12 +6349,6 @@ components:
       type: object
     SchemaLocalSyncSummary:
       properties:
-        adapterVersion:
-          description: Successful Peasant adapter/parser revision for this local artifact,
-            not the native harness release. Omit when unknown; a present revision
-            must be positive.
-          minimum: 1
-          type: integer
         conversationTurnCount:
           maximum: 9.007199254740991e+15
           minimum: 0
@@ -6400,8 +6370,6 @@ components:
           type: integer
         model:
           type: string
-        owner:
-          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
         parentSessionId:
           type: string
         parentUnresolved:
@@ -6769,6 +6737,7 @@ components:
       - connected
       - error
       - kickstart
+      - kickstart_preview
       examples:
       - subscribe
       - unsubscribe
@@ -6782,6 +6751,7 @@ components:
       - connected
       - error
       - kickstart
+      - kickstart_preview
       title: Message Type
       type: string
     SchemaMockConfigResponse:
@@ -7650,14 +7620,127 @@ components:
       required:
       - commits
       type: object
+    SchemaSessionDetailPayload:
+      properties:
+        childSessions:
+          items:
+            $ref: '#/components/schemas/SchemaChildSessionRef'
+          type: array
+        conversationTurnCount:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        diagnostics:
+          $ref: '#/components/schemas/SchemaInterpretationDiagnostics'
+        durationMins:
+          format: double
+          type: number
+        earlierHistory:
+          items:
+            $ref: '#/components/schemas/SchemaEarlierHistorySection'
+          type: array
+        endTime:
+          format: date-time
+          type: string
+        gitBranch:
+          type: string
+        gitRemote:
+          type: string
+        harness:
+          $ref: '#/components/schemas/BestiaryHarness'
+        id:
+          type: string
+        inputSubmissionCount:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        model:
+          type: string
+        nativeMetadata:
+          items:
+            $ref: '#/components/schemas/SchemaNativeMetadataRecord'
+          type: array
+        outcome:
+          $ref: '#/components/schemas/SchemaSessionOutcome'
+        parentSessionId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionID'
+          - type: "null"
+        project:
+          type: string
+        purpose:
+          $ref: '#/components/schemas/SchemaSessionPurpose'
+        relationships:
+          items:
+            $ref: '#/components/schemas/SchemaSessionRelationship'
+          type: array
+        retainedUnknown:
+          items:
+            $ref: '#/components/schemas/SchemaRetainedUnknownRecord'
+          type: array
+        rootSessionId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionID'
+          - type: "null"
+        schemaVersion:
+          type: string
+        scorecard:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionScorecard'
+          - type: "null"
+        sessionOrigin:
+          $ref: '#/components/schemas/SchemaSessionOrigin'
+        source:
+          type: string
+        startTime:
+          format: date-time
+          type: string
+        status:
+          type: string
+        thinkingLevel:
+          $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/SchemaThinkingLevelChange'
+          type: array
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        totalTokens:
+          type: integer
+        turnCount:
+          description: 'Turns: the number of folded turns of the session''s main partition,
+            system and tool rows included. Equal to the segment directory''s totalTurns
+            at the same revision. Not the count a reader is shown; see conversationTurnCount.'
+          type: integer
+        turns:
+          items:
+            $ref: '#/components/schemas/SchemaTurnDetail'
+          type:
+          - array
+          - "null"
+        workingDirectory:
+          type: string
+      required:
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      - turns
+      type: object
     SchemaSessionDetailReadPayload:
       properties:
-        adapterVersion:
-          description: Successful Peasant adapter/parser revision for this local artifact,
-            not the native harness release. Omit when unknown; a present revision
-            must be positive.
-          minimum: 1
-          type: integer
         childSessions:
           items:
             $ref: '#/components/schemas/SchemaChildSessionRef'
@@ -7702,8 +7785,6 @@ components:
           type: array
         outcome:
           $ref: '#/components/schemas/SchemaSessionOutcome'
-        owner:
-          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
         parentSessionId:
           $ref: '#/components/schemas/SchemaSessionID'
         project:
@@ -8043,12 +8124,6 @@ components:
       type: object
     SchemaSessionSummary:
       properties:
-        adapterVersion:
-          description: Successful Peasant adapter/parser revision for this local artifact,
-            not the native harness release. Omit when unknown; a present revision
-            must be positive.
-          minimum: 1
-          type: integer
         conversationTurnCount:
           maximum: 9.007199254740991e+15
           minimum: 0
@@ -8066,8 +8141,6 @@ components:
           type: integer
         outcome:
           type: string
-        owner:
-          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
         parentSessionId:
           anyOf:
           - type:
@@ -9845,12 +9918,6 @@ components:
       type: object
     SessionDetailReadPayload:
       properties:
-        adapterVersion:
-          description: Successful Peasant adapter/parser revision for this local artifact,
-            not the native harness release. Omit when unknown; a present revision
-            must be positive.
-          minimum: 1
-          type: integer
         childSessions:
           items:
             $ref: '#/components/schemas/SchemaChildSessionRef'
@@ -9895,8 +9962,6 @@ components:
           type: array
         outcome:
           $ref: '#/components/schemas/SchemaSessionOutcome'
-        owner:
-          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
         parentSessionId:
           $ref: '#/components/schemas/SchemaSessionID'
         project:

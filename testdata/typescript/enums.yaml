@@ -1,4 +1,5 @@
 enums:
+  - {name: VillageAttestationType, all_name: AllVillageAttestationTypes, members: [{name: UsedInTraining, value: used_in_training}, {name: Referenced, value: referenced}, {name: Evaluated, value: evaluated}, {name: Deployed, value: deployed}], all_values: [used_in_training, referenced, evaluated, deployed]}
   - {name: TranscriptEntryReferenceKind, all_name: AllTranscriptEntryReferenceKinds, members: [{name: Source, value: source}, {name: ToolCall, value: tool_call}, {name: ToolResult, value: tool_result}], all_values: [source, tool_call, tool_result]}
   - {name: TranscriptReadTransportKind, all_name: AllTranscriptReadTransportKinds, members: [{name: LocalSession, value: local_session}, {name: VillageTranscript, value: village_transcript}], all_values: [local_session, village_transcript]}
   - {name: TranscriptRecordedIndexState, all_name: AllTranscriptRecordedIndexStates, members: [{name: Present, value: present}, {name: Absent, value: absent}, {name: Invalid, value: invalid}], all_values: [present, absent, invalid]}
@@ -301,7 +302,8 @@ enums:
       - {name: Connected, value: "connected"}
       - {name: Error, value: "error"}
       - {name: Kickstart, value: "kickstart"}
-    all_values: ["subscribe", "unsubscribe", "dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity", "connected", "error", "kickstart"]
+      - {name: KickstartPreview, value: "kickstart_preview"}
+    all_values: ["subscribe", "unsubscribe", "dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity", "connected", "error", "kickstart", "kickstart_preview"]
   - name: ReadAttributionState
     all_name: AllReadAttributionStates
     members:
@@ -471,6 +473,27 @@ enums:
       - {name: Contributor, value: "contributor"}
       - {name: Pending, value: "pending"}
     all_values: ["", "owner", "member", "contributor", "pending"]
+  - name: VillageContributableView
+    all_name: AllVillageContributableViews
+    members:
+      - {name: Grouped, value: "grouped"}
+      - {name: Paged, value: "paged"}
+      - {name: Snapshot, value: "snapshot"}
+    all_values: ["grouped", "paged", "snapshot"]
+  - name: VillageContributionErrorCode
+    all_name: AllVillageContributionErrorCodes
+    members:
+      - {name: Moved, value: "moved"}
+      - {name: Missing, value: "missing"}
+      - {name: PrivateUnapproved, value: "private_unapproved"}
+      - {name: Conflict, value: "conflict"}
+      - {name: Policy, value: "policy"}
+      - {name: Membership, value: "membership"}
+      - {name: StaleSelection, value: "stale_selection"}
+      - {name: SnapshotTimeout, value: "snapshot_timeout"}
+      - {name: SnapshotBusy, value: "snapshot_busy"}
+      - {name: SnapshotTooLarge, value: "snapshot_too_large"}
+    all_values: ["moved", "missing", "private_unapproved", "conflict", "policy", "membership", "stale_selection", "snapshot_timeout", "snapshot_busy", "snapshot_too_large"]
   - name: VillageProjectNameSource
     all_name: AllVillageProjectNameSources
     members:
@@ -878,6 +901,57 @@ enums:
       - {name: Ingest, value: "ingest"}
       - {name: Closed, value: "closed"}
     all_values: ["session", "answers", "conflicts", "scan", "ingest", "closed"]
+  - name: LocalKickstartPreviewOp
+    all_name: AllLocalKickstartPreviewOps
+    members:
+      - {name: Open, value: "open"}
+      - {name: More, value: "more"}
+      - {name: Close, value: "close"}
+    all_values: ["open", "more", "close"]
+  - name: LocalKickstartPreviewContinuation
+    all_name: AllLocalKickstartPreviewContinuations
+    members:
+      - {name: More, value: "more"}
+      - {name: End, value: "end"}
+      - {name: Cut, value: "cut"}
+    all_values: ["more", "end", "cut"]
+  - name: LocalKickstartPreviewEventKind
+    all_name: AllLocalKickstartPreviewEventKinds
+    members:
+      - {name: Opened, value: "opened"}
+      - {name: Segment, value: "segment"}
+      - {name: Closed, value: "closed"}
+    all_values: ["opened", "segment", "closed"]
+  - name: LocalKickstartPreviewCutReason
+    all_name: AllLocalKickstartPreviewCutReasons
+    members:
+      - {name: SourceBudget, value: "source_budget"}
+      - {name: SerializedBudget, value: "serialized_budget"}
+      - {name: TurnBudget, value: "turn_budget"}
+      - {name: OversizedRecord, value: "oversized_record"}
+      - {name: OriginNotResumable, value: "origin_not_resumable"}
+    all_values: ["source_budget", "serialized_budget", "turn_budget", "oversized_record", "origin_not_resumable"]
+  - name: LocalKickstartPreviewCloseReason
+    all_name: AllLocalKickstartPreviewCloseReasons
+    members:
+      - {name: ClosedByClient, value: "closed_by_client"}
+      - {name: Replaced, value: "replaced"}
+      - {name: SessionClosed, value: "session_closed"}
+      - {name: Rescanned, value: "rescanned"}
+      - {name: Idle, value: "idle"}
+      - {name: Evicted, value: "evicted"}
+      - {name: Shutdown, value: "shutdown"}
+      - {name: SourceChanged, value: "source_changed"}
+      - {name: LateResult, value: "late_result"}
+      - {name: Unreadable, value: "unreadable"}
+      - {name: OutOfOrder, value: "out_of_order"}
+      - {name: SlowClient, value: "slow_client"}
+      - {name: RowNotFound, value: "row_not_found"}
+      - {name: NotASessionRow, value: "not_a_session_row"}
+      - {name: Unavailable, value: "unavailable"}
+      - {name: NoTurns, value: "no_turns"}
+      - {name: Capacity, value: "capacity"}
+    all_values: ["closed_by_client", "replaced", "session_closed", "rescanned", "idle", "evicted", "shutdown", "source_changed", "late_result", "unreadable", "out_of_order", "slow_client", "row_not_found", "not_a_session_row", "unavailable", "no_turns", "capacity"]
   - name: LocalKickstartCloseReason
     all_name: AllLocalKickstartCloseReasons
     members:
@@ -911,6 +985,11 @@ enums:
       - {name: CommitRefused, value: "kickstart_commit_refused"}
       - {name: SessionNotFound, value: "kickstart_session_not_found"}
       - {name: PreviewRowNotFound, value: "kickstart_preview_row_not_found"}
+      - {name: PreviewCaptureNotFound, value: "kickstart_preview_capture_not_found"}
+      - {name: PreviewSourceChanged, value: "kickstart_preview_source_changed"}
+      - {name: PreviewLateResult, value: "kickstart_preview_late_result"}
+      - {name: PreviewCapacity, value: "kickstart_preview_capacity"}
+      - {name: PreviewOutOfOrder, value: "kickstart_preview_out_of_order"}
       - {name: Failed, value: "kickstart_failed"}
       - {name: StatusUnreadable, value: "kickstart_status_unreadable"}
       - {name: ConfigUnreadable, value: "kickstart_config_unreadable"}
@@ -922,7 +1001,7 @@ enums:
       - {name: Unavailable, value: "kickstart_unavailable"}
       - {name: ConfigBusy, value: "kickstart_config_busy"}
       - {name: ConfigChanging, value: "kickstart_config_changing"}
-    all_values: ["kickstart_body_missing", "kickstart_body_invalid", "kickstart_scope_invalid", "kickstart_answers_invalid", "kickstart_session_committing", "kickstart_revision_ahead", "kickstart_answer_refused", "kickstart_scan_not_done", "kickstart_field_unknown", "kickstart_field_out_of_scope", "kickstart_field_hidden", "kickstart_tree_answer_shape", "kickstart_connect_out_of_scope", "kickstart_connect_not_connected", "kickstart_connect_unknown", "kickstart_commit_refused", "kickstart_session_not_found", "kickstart_preview_row_not_found", "kickstart_failed", "kickstart_status_unreadable", "kickstart_config_unreadable", "kickstart_config_unwritable", "kickstart_session_unbuildable", "kickstart_answer_unencodable", "kickstart_preview_unreadable", "publishing_contract_breach", "kickstart_unavailable", "kickstart_config_busy", "kickstart_config_changing"]
+    all_values: ["kickstart_body_missing", "kickstart_body_invalid", "kickstart_scope_invalid", "kickstart_answers_invalid", "kickstart_session_committing", "kickstart_revision_ahead", "kickstart_answer_refused", "kickstart_scan_not_done", "kickstart_field_unknown", "kickstart_field_out_of_scope", "kickstart_field_hidden", "kickstart_tree_answer_shape", "kickstart_connect_out_of_scope", "kickstart_connect_not_connected", "kickstart_connect_unknown", "kickstart_commit_refused", "kickstart_session_not_found", "kickstart_preview_row_not_found", "kickstart_preview_capture_not_found", "kickstart_preview_source_changed", "kickstart_preview_late_result", "kickstart_preview_capacity", "kickstart_preview_out_of_order", "kickstart_failed", "kickstart_status_unreadable", "kickstart_config_unreadable", "kickstart_config_unwritable", "kickstart_session_unbuildable", "kickstart_answer_unencodable", "kickstart_preview_unreadable", "publishing_contract_breach", "kickstart_unavailable", "kickstart_config_busy", "kickstart_config_changing"]
   - name: AutoPublishEvent
     all_name: AllAutoPublishEvents
     members:

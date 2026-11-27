@@ -7,7 +7,7 @@ import { collectiveCompatibilityAliases } from "../scripts/lib/collective-compat
 
 const fixture = parse(await readFile(new URL("../../testdata/typescript/collective_compatibility.yaml", import.meta.url), "utf8"));
 const baseline = JSON.parse(await readFile(new URL("../../generated/types-0.30.0.json", import.meta.url), "utf8"));
-const current = JSON.parse(await readFile(new URL(`../../generated/types-${root.TypesVersion}.json`, import.meta.url), "utf8"));
+const current = JSON.parse(await readFile(new URL("../../generated/types-next.json", import.meta.url), "utf8"));
 const enums = parse(await readFile(new URL("../../testdata/typescript/enums.yaml", import.meta.url), "utf8"));
 const source = await readFile(new URL("../../collective_compatibility.go", import.meta.url), "utf8");
 const byName = rows => [...rows].sort((a,b) => a.name.localeCompare(b.name, "en"));

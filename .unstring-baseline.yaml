@@ -17,8 +17,6 @@ rules:
     annotation_summary_validate_test.go: 2
     annotation_test.go: 1
     attachment_route_test.go: 4
-    cmd/release-guard/bubble_test.go: 1
-    cmd/release-guard/githubclient_test.go: 2
     cmd/schema-gen/peasantlocal_surface_test.go: 1
     cmd/schema-gen/routes.go: 1
     cmd/schema-gen/segmented_read_description_test.go: 2
@@ -27,9 +25,6 @@ rules:
     commandpr/detect.go: 3
     content_capability_test.go: 4
     cross_origin_writes_test.go: 2
-    internal/release/workflow_fixtures_test.go: 1
-    internal/release/workflow_guard.go: 1
-    local_read_contract_test.go: 1
     local_sync_page_test.go: 1
     map_api_enums_test.go: 1
     openapi/collective_aliases.go: 1
@@ -53,13 +48,12 @@ rules:
     transcript_cut_test.go: 1
     transcript_download_test.go: 2
     transcript_segments_test.go: 2
-    transcript_served_turn_test.go: 1
+    unverified_pull_request_test.go: 1
     usage_metadata_test.go: 1
     village_grouped_contract_test.go: 6
   go-data-path-literal:
     analytics_manifest_test.go: 1
     cmd/gen-enum-corpora/main.go: 10
-    cmd/release-guard/githubfixtures_test.go: 3
     cmd/schema-gen/frozen_specs_test.go: 2
     cmd/schema-gen/peasantlocal_surface_test.go: 1
     cmd/schema-gen/redactions.go: 1
@@ -70,7 +64,6 @@ rules:
     enumcorpus/enumcorpus_test.go: 10
     insights_test.go: 1
     internal/release/grammar_fixtures_test.go: 1
-    internal/release/workflow_fixtures_test.go: 3
     licensecorpus/licensecorpus_test.go: 1
     local_kickstart_api_test.go: 1
     openapi/local_grouped_routes_test.go: 1
@@ -89,7 +82,6 @@ rules:
     testcase/require_valid_test.go: 2
     testdata_timeline_internal_test.go: 1
     usage_metadata_test.go: 1
-    village_components_in_local_api_test.go: 1
     village_grouped_contract_test.go: 1
   go-endpoint-literal:
     attachment_route.go: 1

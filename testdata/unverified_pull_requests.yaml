@@ -26,7 +26,7 @@ required_names:
 cases:
   - name: local omitted
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":"future_detector"}]}'
     expected:
       valid: true
@@ -38,7 +38,7 @@ cases:
       description: local omitted
   - name: local empty
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":[]}'
     expected:
       valid: true
@@ -50,7 +50,7 @@ cases:
       description: local empty
   - name: local coexistence
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":"future_detector"}],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1,"toolCallId":"real-id"}}]}'
     expected:
       valid: true
@@ -62,7 +62,7 @@ cases:
       description: local coexistence
   - name: local null
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":null}'
     expected:
       valid: false
@@ -74,7 +74,7 @@ cases:
       description: local null
   - name: local absent turn index
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"toolCallIndex":0}}]}'
     expected:
       valid: false
@@ -86,7 +86,7 @@ cases:
       description: local absent turn index
   - name: local null turn index
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":null,"toolCallIndex":0}}]}'
     expected:
       valid: false
@@ -98,7 +98,7 @@ cases:
       description: local null turn index
   - name: local negative index
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":-1}}]}'
     expected:
       valid: false
@@ -110,7 +110,7 @@ cases:
       description: local negative index
   - name: local unsafe index
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9007199254740992,"toolCallIndex":0}}]}'
     expected:
       valid: false
@@ -122,7 +122,7 @@ cases:
       description: local unsafe index
   - name: local empty id
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0,"toolCallId":""}}]}'
     expected:
       valid: false
@@ -134,7 +134,7 @@ cases:
       description: local empty id
   - name: local null id
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0,"toolCallId":null}}]}'
     expected:
       valid: false
@@ -146,7 +146,7 @@ cases:
       description: local null id
   - name: village omitted
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[{"owner":"Acme","name":"repo","number":17,"title":null,"head_ref":null,"state":"attached"}]}'
     expected:
       valid: true
@@ -158,7 +158,7 @@ cases:
       description: village omitted
   - name: village empty
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":[]}'
     expected:
       valid: true
@@ -170,7 +170,7 @@ cases:
       description: village empty
   - name: village coexistence
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[{"owner":"Acme","name":"repo","number":17,"title":null,"head_ref":null,"state":"attached"}],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1,"toolCallId":"real-id"}}]}'
     expected:
       valid: true
@@ -182,7 +182,7 @@ cases:
       description: village coexistence
   - name: village null
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":null}'
     expected:
       valid: false
@@ -194,7 +194,7 @@ cases:
       description: village null
   - name: village absent turn index
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"toolCallIndex":0}}]}'
     expected:
       valid: false
@@ -206,7 +206,7 @@ cases:
       description: village absent turn index
   - name: village null turn index
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":null,"toolCallIndex":0}}]}'
     expected:
       valid: false
@@ -218,7 +218,7 @@ cases:
       description: village null turn index
   - name: village negative index
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":-1}}]}'
     expected:
       valid: false
@@ -230,7 +230,7 @@ cases:
       description: village negative index
   - name: village unsafe index
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9007199254740992,"toolCallIndex":0}}]}'
     expected:
       valid: false
@@ -242,7 +242,7 @@ cases:
       description: village unsafe index
   - name: village empty id
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0,"toolCallId":""}}]}'
     expected:
       valid: false
@@ -254,7 +254,7 @@ cases:
       description: village empty id
   - name: village null id
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0,"toolCallId":null}}]}'
     expected:
       valid: false
@@ -266,7 +266,7 @@ cases:
       description: village null id
   - name: local missing source
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17"}]}'
     expected:
       valid: false
@@ -278,7 +278,7 @@ cases:
       description: local missing source
   - name: local null source
     input:
-      kind: local-session
+      kind: local
       json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":null}]}'
     expected:
       valid: false
@@ -290,7 +290,7 @@ cases:
       description: local null source
   - name: village missing source
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17"}]}'
     expected:
       valid: false
@@ -302,7 +302,7 @@ cases:
       description: village missing source
   - name: village null source
     input:
-      kind: village-transcript
+      kind: village
       json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":null}]}'
     expected:
       valid: false

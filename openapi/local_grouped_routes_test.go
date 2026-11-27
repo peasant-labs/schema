@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -26,6 +27,7 @@ type localRouteExpected struct {
 		Minimum        *int
 	} `yaml:"parameters"`
 	ResponseRefs  []string `yaml:"responseRefs"`
+	PrimaryRef    string   `yaml:"primaryRef"`
 	LegacyBody    string   `yaml:"legacyBody"`
 	GroupedBody   string   `yaml:"groupedBody"`
 	RequiredRoot  []string `yaml:"requiredRoot"`
@@ -132,7 +134,14 @@ func TestLocalGroupedRouteContract(t *testing.T) {
 					t.Fatalf("response ref %q does not resolve", ref)
 				}
 			}
-			primary := components[strings.TrimPrefix(refs[len(refs)-1], "#/components/schemas/")].(map[string]any)
+			primaryRef := refs[len(refs)-1]
+			if c.Expected.PrimaryRef != "" {
+				if !slices.Contains(refs, c.Expected.PrimaryRef) {
+					t.Fatalf("primary response %s is not in %v", c.Expected.PrimaryRef, refs)
+				}
+				primaryRef = c.Expected.PrimaryRef
+			}
+			primary := components[strings.TrimPrefix(primaryRef, "#/components/schemas/")].(map[string]any)
 			properties, _ := primary["properties"].(map[string]any)
 			for _, name := range c.Expected.RequiredRoot {
 				if _, ok := properties[name]; !ok {

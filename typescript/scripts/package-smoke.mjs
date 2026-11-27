@@ -10,10 +10,7 @@ import { parse } from "yaml";
 const fixture = parse(await readFile(new URL("../tests/fixtures/public-subpaths.yaml", import.meta.url), "utf8"));
 assert.deepEqual(Object.keys(fixture), ["subpaths"]);
 assert.ok(Array.isArray(fixture.subpaths));
-const publicExports = parse(await readFile(new URL("../../testdata/typescript/public_exports.yaml", import.meta.url), "utf8"));
-const typesVersion = publicExports.constants?.find((constant) => constant.name === "TypesVersion")?.value;
-assert.equal(typeof typesVersion, "string", "public_exports.yaml must declare the TypesVersion string used to locate the canonical OpenAPI catalog");
-const spec = JSON.parse(await readFile(new URL(`../../generated/types-${typesVersion}.json`, import.meta.url), "utf8"));
+const spec = JSON.parse(await readFile(new URL("../../generated/types-next.json", import.meta.url), "utf8"));
 const enumCatalog = parse(await readFile(new URL("../../testdata/typescript/enums.yaml", import.meta.url), "utf8"));
 assert.ok(Array.isArray(enumCatalog.enums) && enumCatalog.enums.length > 0, "enums.yaml must provide at least one enum facade for the packed-package runtime probe");
 const villageCollectivesFixture = parse(await readFile(new URL("../../openapi/testdata/village_collectives_operations.yaml", import.meta.url), "utf8"));
@@ -109,6 +106,8 @@ try {
     cwd: consumerDir,
     stdio: "inherit",
   });
+  const numberingPath = execFileSync("node", ["--input-type=module", "-e", `console.log(import.meta.resolve("@peasant-labs/schema/fixtures/transcript-numbering"))`], { cwd: consumerDir, encoding: "utf8" }).trim();
+  assert.deepEqual(await readFile(new URL(numberingPath)), await readFile(new URL("../../testdata/transcript_numbering.yaml", import.meta.url)), "packed numbering corpus differs from the Go module source");
 
   const routePaths = parse(await readFile(new URL("../../testdata/route_paths.yaml", import.meta.url), "utf8"));
   assert.ok(Array.isArray(routePaths.cases) && routePaths.cases.length > 0, "route_paths.yaml must provide route member paths for the packed-package probe");

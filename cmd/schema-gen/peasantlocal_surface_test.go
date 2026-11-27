@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	schema "github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/testcase"
 	"gopkg.in/yaml.v3"
 )
@@ -105,7 +104,7 @@ func TestPeasantLocalGeneratedSurfaceHasExactIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	fixture := loadLocalAPISurfaceFixture(t, root)
-	specPath := filepath.Join(root, "generated", "peasantlocal-api-"+schema.PeasantLocalAPIVersion+".json")
+	specPath := filepath.Join(root, "generated", "peasantlocal-api-next.json")
 	spec, err := os.ReadFile(specPath)
 	if err != nil {
 		t.Fatal(err)

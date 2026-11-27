@@ -10,15 +10,18 @@ aliases:
     surfaces: [local, village]
 constants:
   - name: VillageAPIVersion
-    value: 0.42.0
+    value: 0.44.0
     surfaces: [root, village]
   - name: PeasantLocalAPIVersion
-    value: 0.39.0
+    value: 0.40.0
     surfaces: [root, local]
   - name: TypesVersion
-    value: 0.52.0
+    value: 0.54.0
     surfaces: [root]
   - name: SegmentedReadAPIVersion
+    value: 0.2.0
+    surfaces: [root]
+  - name: SegmentedReadSpecVersion
     value: 0.2.0
     surfaces: [root]
   - name: SegmentedReadMinVersion
@@ -30,6 +33,8 @@ constants:
   - name: LocalKickstartDroppedLabelsMax
     value: "3"
     surfaces: [root, local]
+  - {name: MaxLocalKickstartPreviewNodeIDBytes, value: "512", surfaces: [root]}
+  - {name: MaxTranscriptDirectoryRefs, value: "10000", surfaces: [root]}
   - name: TranscriptSourceReadPolicy
     value: {maxDocumentBytes: 134217728, maxDocumentDepth: 64, opaqueMetadataPointers: ["/sessionDetail/nativeMetadata/*/data"]}
     surfaces: [root]
@@ -46,6 +51,10 @@ constants:
         - "/earlierHistory/*/nativeMetadata/*/data"
     surfaces: [root]
 functions:
+  - {name: parseLocalKickstartPreviewValue, target: runtime-preview-parser, surfaces: [root]}
+  - {name: parseLocalKickstartPreviewRequest, target: runtime-preview-request-parser, surfaces: [root]}
+  - {name: parseLocalKickstartPreviewEvent, target: runtime-preview-event-parser, surfaces: [root]}
+  - {name: mergeLocalKickstartPreview, target: runtime-preview-stream-merge, surfaces: [root]}
   - {name: normalizeCollectiveObservationScope, target: runtime-scope-normalizer, surfaces: [root]}
   - {name: encodeContributionTraversalRevision, target: runtime-selected-category-token-encoder, surfaces: [root]}
   - {name: parseContributionTraversalRevision, target: runtime-selected-category-token-parser, surfaces: [root]}

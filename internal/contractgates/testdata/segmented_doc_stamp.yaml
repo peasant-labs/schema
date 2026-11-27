@@ -1,0 +1,31 @@
+cases:
+  - name: document-version-value-change-is-exempt
+    input:
+      apidiff: |
+        example.com/schema
+          Incompatible changes:
+          - SegmentedReadSpecVersion: value changed from "0.2.0" to "0.3.0"
+    expected: {payload_contains: ""}
+    classification: must-pass
+    provenance: &p {source: requirement, ref: "A release freeze advances a document stamp"}
+    mutation: &m {description: "Change the incompatible API-diff bullet."}
+  - name: document-version-removal-is-not-exempt
+    input:
+      apidiff: |
+        example.com/schema
+          Incompatible changes:
+          - SegmentedReadSpecVersion: removed
+    expected: {payload_contains: "SegmentedReadSpecVersion"}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: unrelated-version-is-not-exempt
+    input:
+      apidiff: |
+        example.com/schema
+          Incompatible changes:
+          - OtherVersion: value changed from "0.2.0" to "0.3.0"
+    expected: {payload_contains: "OtherVersion"}
+    classification: must-fail
+    provenance: *p
+    mutation: *m

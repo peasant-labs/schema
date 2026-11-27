@@ -38,6 +38,9 @@ Generated enum members now retain their literal types: for example, `Role.User`
 is `"user"`, not the whole `Role` union. Generated schemas such as `zRole` have
 the structural type `ClosedSet<...>`, not a nominal `ZodEnum` type; `ClosedSet`
 is internal to the generated declarations and is not a public export.
+Optional, nullable and nullish fields keep the name as well: `TurnDetail`'s
+`entryType` is `EntryType | undefined`, so compare it with `EntryType.Thinking`
+rather than reaching the set through `TurnDetail["entryType"]`.
 One-member sets still narrow to their single literal, but TypeScript does not
 retain a named field alias for them. Runtime validation and wire values are
 unchanged.

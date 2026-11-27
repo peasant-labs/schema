@@ -86,8 +86,20 @@ func loadLocalOwnerFixtures(t *testing.T) localOwnerFixtures {
 	if len(seen) != len(fixtures.RequiredNames) {
 		t.Fatalf("local owner required-name manifest has %d names for %d cases", len(fixtures.RequiredNames), len(seen))
 	}
-	if len(fixtures.Operations) != 3 {
-		t.Fatalf("local owner operations fixture has %d rows, want the read, claim, and decline routes", len(fixtures.Operations))
+	wantOperations := map[string]bool{"read": false, "claim": false, "decline": false}
+	for _, operation := range fixtures.Operations {
+		if _, ok := wantOperations[operation.Name]; !ok {
+			t.Fatalf("local owner operations fixture has unexpected row %q; want exactly read, claim, and decline", operation.Name)
+		}
+		if wantOperations[operation.Name] {
+			t.Fatalf("local owner operations fixture names %q more than once", operation.Name)
+		}
+		wantOperations[operation.Name] = true
+	}
+	for name, seen := range wantOperations {
+		if !seen {
+			t.Fatalf("local owner operations fixture is missing the %q route", name)
+		}
 	}
 	return fixtures
 }

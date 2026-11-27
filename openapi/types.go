@@ -23,6 +23,28 @@ type TypeCatalogEntry struct {
 // this language-neutral contract surface.
 func TypeCatalogEntries() []TypeCatalogEntry {
 	return []TypeCatalogEntry{
+		{"VillageAttestationType", new(schema.VillageAttestationType)},
+		{"VillageDiscoverabilityRequest", new(schema.VillageDiscoverabilityRequest)},
+		{"VillageUsernameRequest", new(schema.VillageUsernameRequest)},
+		{"VillageCreateAPIKeyRequest", new(schema.VillageCreateAPIKeyRequest)},
+		{"VillageCreatedAPIKey", new(schema.VillageCreatedAPIKey)},
+		{"VillageAPIKey", new(schema.VillageAPIKey)},
+		{"VillageOrganizationVisibilityRequest", new(schema.VillageOrganizationVisibilityRequest)},
+		{"VillageOrganizationVisibilityResponse", new(schema.VillageOrganizationVisibilityResponse)},
+		{"VillageOrganizationSearchResult", new(schema.VillageOrganizationSearchResult)},
+		{"VillageOrganizationSearchResponse", new(schema.VillageOrganizationSearchResponse)},
+		{"VillageTagUsage", new(schema.VillageTagUsage)},
+		{"VillageResolvedProject", new(schema.VillageResolvedProject)},
+		{"VillageProjectCollective", new(schema.VillageProjectCollective)},
+		{"VillageUserProjectResponse", new(schema.VillageUserProjectResponse)},
+		{"VillageProjectDisplayNameRequest", new(schema.VillageProjectDisplayNameRequest)},
+		{"VillageCreateAttestationRequest", new(schema.VillageCreateAttestationRequest)},
+		{"VillageManualAnnotationRequest", new(schema.VillageManualAnnotationRequest)},
+		{"VillageTranscriptAnnotationsResponse", new(schema.VillageTranscriptAnnotationsResponse)},
+		{"VillageTranscriptCommit", new(schema.VillageTranscriptCommit)},
+		{"VillageTranscriptCommitsResponse", new(schema.VillageTranscriptCommitsResponse)},
+		{"VillageHealthResponse", new(schema.VillageHealthResponse)},
+
 		{"VillageOrganizationCollective", new(schema.VillageOrganizationCollective)}, {"VillageOrganizationCollectivesResponse", new(schema.VillageOrganizationCollectivesResponse)},
 		{"CollectiveObservationScope", new(schema.CollectiveObservationScope)}, {"CollectiveObservationReason", new(schema.CollectiveObservationReason)}, {"CollectiveObservationState", new(schema.CollectiveObservationState)}, {"CollectiveObservation", new(schema.CollectiveObservation)},
 		{"CollectiveOperation", new(schema.CollectiveOperation)}, {"OperationIssueCode", new(schema.OperationIssueCode)}, {"OperationIssue", new(schema.OperationIssue)},
@@ -219,6 +241,14 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageCollectiveSearchResult", new(schema.VillageCollectiveSearchResult)}, {"VillageCollectiveSubmission", new(schema.VillageCollectiveSubmission)},
 		{"VillageContributableResponse", new(schema.VillageContributableResponse)}, {"VillageContributableTranscript", new(schema.VillageContributableTranscript)},
 		{"VillageContributedCollective", new(schema.VillageContributedCollective)}, {"VillageContributedCollectivesResponse", new(schema.VillageContributedCollectivesResponse)},
+		{"VillageContributableView", new(schema.VillageContributableView)},
+		{"VillageContributionErrorCode", new(schema.VillageContributionErrorCode)}, {"VillageContributionErrorDetail", new(schema.VillageContributionErrorDetail)},
+		{"VillageContributionErrorResponse", new(schema.VillageContributionErrorResponse)},
+		{"VillageContributionFamilyMember", new(schema.VillageContributionFamilyMember)}, {"VillageContributionPageItem", new(schema.VillageContributionPageItem)},
+		{"VillageContributionPageResponse", new(schema.VillageContributionPageResponse)}, {"VillageContributionProjectPage", new(schema.VillageContributionProjectPage)},
+		{"VillageContributionProjectSummary", new(schema.VillageContributionProjectSummary)}, {"VillageContributionProviderFacet", new(schema.VillageContributionProviderFacet)},
+		{"VillageContributionSnapshotRecord", new(schema.VillageContributionSnapshotRecord)}, {"VillageContributionSnapshotResponse", new(schema.VillageContributionSnapshotResponse)},
+		{"VillageBatchShareSelectionRequest", new(schema.VillageBatchShareSelectionRequest)},
 		{"VillageContributionStatus", new(schema.VillageContributionStatus)}, {"VillageCreateCollectiveRequest", new(schema.VillageCreateCollectiveRequest)},
 		{"VillageErrorResponse", new(schema.VillageErrorResponse)},
 		{"VillageGitHubWebhookPayload", new(schema.VillageGitHubWebhookPayload)},
@@ -307,6 +337,10 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"LocalKickstartAnswers", new(schema.LocalKickstartAnswers)}, {"LocalKickstartOverwrite", new(schema.LocalKickstartOverwrite)},
 		{"LocalKickstartPatchResult", new(schema.LocalKickstartPatchResult)}, {"LocalKickstartCommitted", new(schema.LocalKickstartCommitted)},
 		{"LocalKickstartCommitRefusal", new(schema.LocalKickstartCommitRefusal)}, {"LocalKickstartEvent", new(schema.LocalKickstartEvent)},
+		{"LocalKickstartPreviewOp", new(schema.LocalKickstartPreviewOp)}, {"LocalKickstartPreviewContinuation", new(schema.LocalKickstartPreviewContinuation)},
+		{"LocalKickstartPreviewEventKind", new(schema.LocalKickstartPreviewEventKind)}, {"LocalKickstartPreviewCutReason", new(schema.LocalKickstartPreviewCutReason)}, {"LocalKickstartPreviewCloseReason", new(schema.LocalKickstartPreviewCloseReason)},
+		{"LocalKickstartPreviewRequest", new(schema.LocalKickstartPreviewRequest)}, {"LocalKickstartPreviewEvent", new(schema.LocalKickstartPreviewEvent)},
+		{"LocalKickstartPreviewDirectory", new(schema.LocalKickstartPreviewDirectory)}, {"LocalKickstartPreviewSegment", new(schema.LocalKickstartPreviewSegment)},
 		{"LocalKickstartErrorCode", new(schema.LocalKickstartErrorCode)}, {"LocalKickstartErrorResponse", new(schema.LocalKickstartErrorResponse)},
 		{"AutoPublishEvent", new(schema.AutoPublishEvent)}, {"AutoPublishHookStatus", new(schema.AutoPublishHookStatus)},
 		{"AutoPublishHookRemedy", new(schema.AutoPublishHookRemedy)}, {"AutoPublishHook", new(schema.AutoPublishHook)},
@@ -435,10 +469,22 @@ func constrainHelperMemberItems(components map[string]map[string]interface{}) er
 // component opts in when its embedding is the wire shape itself rather than a
 // nested object, so the promoted properties are the fields a consumer receives.
 var expandedEmbeddedRequired = map[string]struct{}{
-	"SessionDetailReadPayload":   {},
-	"SessionDetailHeaderPayload": {},
-	"TranscriptTurn":             {},
-	"LocalAnnotationRow":         {},
+	"SessionDetailReadPayload":     {},
+	"SessionDetailHeaderPayload":   {},
+	"TranscriptTurn":               {},
+	"LocalKickstartPreviewSegment": {},
+	"LocalAnnotationRow":           {},
+}
+
+// copiedEmbeddedProperties names catalog components whose embedded struct is a
+// shared wire summary and whose promoted property schemas must be copied
+// exactly as the summary's own component declares them. LocalAnnotationRow adds
+// owner and author to AnnotationSummary without changing it; without this copy
+// the flattening leaves the summary's optional fields in reflection's raw
+// nullable form (type: [null, string] and a $ref with no null arm), which is the
+// same value set but reads as a rewrite of every optional field.
+var copiedEmbeddedProperties = map[string]struct{}{
+	"LocalAnnotationRow": {},
 }
 
 // applyGoRequiredFields preserves Go's JSON presence contract in the canonical
@@ -473,6 +519,7 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 				embedded = embedded.Elem()
 			}
 			_, expandEmbedded := expandedEmbeddedRequired[componentName]
+			_, copyProperties := copiedEmbeddedProperties[componentName]
 			if embedded.Kind() == reflect.Struct && (expandEmbedded || strings.Contains(embedded.Name(), "[")) {
 				for j := 0; j < embedded.NumField(); j++ {
 					inner := embedded.Field(j)
@@ -494,6 +541,15 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 					}
 					if !innerOptional {
 						required = append(required, innerName)
+					}
+					if copyProperties && inner.Type.Kind() == reflect.Pointer {
+						if property, ok := properties[innerName].(map[string]interface{}); ok {
+							if inner.Tag.Get("nullable") == "false" {
+								properties[innerName] = dropNullArm(property)
+							} else {
+								properties[innerName] = nullableSchema(property)
+							}
+						}
 					}
 				}
 				continue
@@ -682,7 +738,8 @@ var strictNullableProperties = map[string]map[string]struct{}{
 // API document that references the same canonical type, so the Types catalog and
 // the operation cannot disagree about what the body accepts.
 func closeStrictComponents(components map[string]map[string]interface{}) error {
-	for _, name := range strictComponents {
+	names := append(append([]string(nil), strictComponents...), "LocalKickstartPreviewRequest", "LocalKickstartPreviewEvent", "LocalKickstartPreviewDirectory", "LocalKickstartPreviewSegment")
+	for _, name := range names {
 		component, ok := components[name]
 		if !ok {
 			return fmt.Errorf("close strict component %s: it is named as strict but absent from the Types catalog; either add it to TypeCatalogEntries or remove it from strictComponents, because a strict name that matches nothing would silently stop closing anything", name)

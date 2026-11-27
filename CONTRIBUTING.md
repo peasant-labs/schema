@@ -104,7 +104,8 @@ never `nix search nixpkgs` (it is slow and can hang).
 
 ```bash
 pnpm --dir typescript install --frozen-lockfile --ignore-scripts
-make check                 # gofmt + vet + release-workflow guard + go test -race ./...
+make check                 # gofmt + vet + release-workflow guard + go test ./... (RACE=1 adds -race)
+make race-selective        # go test -race over the validator schema caches, in seconds
 make gates BASE_REF=origin/develop  # oasdiff + go-apidiff + vacuum vs a base ref
 make schema                # regenerate OpenAPI, docs, and TypeScript contract outputs
 nix build                  # hermetic build + go test ./... sanity gate
@@ -156,10 +157,29 @@ Title a content PR `type(scope)[level]: description`. For example,
 `docs` and `chore` take no level. CI compares the live title with the contract
 report on the PR and in the merge group.
 
-The release bot computes the module version, updates the changelog and npm
-version in one standing PR, and tags its fresh queued commit. Do not edit those
-release fields or push a tag by hand. Content PRs still bump spec versions
-manually until the freeze migration. The tag publishes both the GitHub Release
-and the npm package, independently, after the common checks. Historical
+For Types, Village, Local, and segmented read, regenerate `generated/*-next.*` and never
+change a numbered spec or `versions.go` in a content PR. Public accessors and
+validators use the frozen numbered files; generators and internal tests use
+the working files. The two Village request schemas share the Village version.
+The segmented read document version is separate from its protocol versions:
+freezes move `SegmentedReadSpecVersion`, not the selected
+`SegmentedReadAPIVersion` or oldest served `SegmentedReadMinVersion`.
+A breaking protocol change that needs a new `v=` generation is separate P1
+work, not a document freeze.
+
+A functional change needs a releasing title naming every functionally changed
+surface; a releasing title cannot name a docs-only or unchanged surface unless
+it is already ahead on the base. `docs(local-api): clarify a description` is
+valid for a docs-only change. The report's `spec-change-needs-bump` and
+`surface-mismatch` errors explain the required correction.
+
+The release bot computes the module version and the spec freeze, updates the
+changelog, npm version, frozen specs, registry and mirrors in one standing PR,
+and tags its fresh queued commit. Its PR title is passed through from the
+release tool. `schema-gen status` reports clean, docs-ahead or ahead;
+`schema-gen freeze --check` refuses a release tree containing an ahead
+surface. Do not edit release-owned files or push a tag by hand. The tag
+publishes numbered frozen assets and the npm package, independently, after the
+common checks. Historical
 `pkg/schema/v*` tags remain immutable. Operator setup and recovery are in
 [`docs/release-runbook.md`](docs/release-runbook.md).

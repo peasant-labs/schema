@@ -3453,6 +3453,16 @@
             },
             "type": "array"
           },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalKickstartPreviewRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "$ref": "#/components/schemas/MessageType"
           }
@@ -5777,231 +5787,6 @@
         "title": "License",
         "type": "string"
       },
-      "LocalAnnotationRow": {
-        "properties": {
-          "annotatorKind": {
-            "$ref": "#/components/schemas/AnnotatorKind"
-          },
-          "annotatorName": {
-            "type": "string"
-          },
-          "author": {
-            "$ref": "#/components/schemas/LocalArtifactIdentity"
-          },
-          "confidence": {
-            "type": [
-              "null",
-              "number"
-            ]
-          },
-          "contentHash": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "createdAt": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "id": {
-            "type": "string"
-          },
-          "isPrimary": {
-            "type": "boolean"
-          },
-          "owner": {
-            "$ref": "#/components/schemas/LocalArtifactIdentity"
-          },
-          "provenance": {
-            "$ref": "#/components/schemas/Provenance"
-          },
-          "reason": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "supersededBy": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "targetAnnotationId": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "targetAssociationId": {
-            "$ref": "#/components/schemas/AssociationID"
-          },
-          "targetContentHash": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "targetEntryEndIndex": {
-            "type": [
-              "null",
-              "integer"
-            ]
-          },
-          "targetEntryIndex": {
-            "type": [
-              "null",
-              "integer"
-            ]
-          },
-          "targetFilePath": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "targetKind": {
-            "$ref": "#/components/schemas/TargetKind"
-          },
-          "targetProjectHash": {
-            "$ref": "#/components/schemas/ProjectHash"
-          },
-          "targetSessionId": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "typeId": {
-            "type": "string"
-          },
-          "typeName": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "targetKind",
-          "isPrimary",
-          "annotatorKind",
-          "annotatorName",
-          "typeId",
-          "typeName",
-          "value",
-          "createdAt"
-        ],
-        "type": "object"
-      },
-      "LocalArtifactIdentity": {
-        "properties": {
-          "claimId": {
-            "maxLength": 64,
-            "minLength": 1,
-            "type": "string"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/LocalArtifactIdentityKind"
-          },
-          "localOwnerId": {
-            "maxLength": 64,
-            "minLength": 1,
-            "type": "string"
-          },
-          "userId": {
-            "$ref": "#/components/schemas/VillageUUID"
-          },
-          "username": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "villageUrl": {
-            "maxLength": 1024,
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind"
-        ],
-        "type": "object"
-      },
-      "LocalArtifactIdentityKind": {
-        "description": "Whose artifact a local read describes: this data directory's local owner, the Village account that claimed it, a foreign pull-manifest owner, or an owner that is projected but withheld",
-        "enum": [
-          "local",
-          "village",
-          "foreign",
-          "unknown"
-        ],
-        "examples": [
-          "local",
-          "village",
-          "foreign",
-          "unknown"
-        ],
-        "title": "Local Artifact Identity Kind",
-        "type": "string"
-      },
-      "LocalClaimEntry": {
-        "properties": {
-          "claimedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "id": {
-            "maxLength": 64,
-            "minLength": 1,
-            "type": "string"
-          },
-          "localOwnerId": {
-            "maxLength": 64,
-            "minLength": 1,
-            "type": "string"
-          },
-          "source": {
-            "$ref": "#/components/schemas/LocalClaimSource"
-          },
-          "userId": {
-            "$ref": "#/components/schemas/VillageUUID"
-          },
-          "username": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "villageUrl": {
-            "maxLength": 1024,
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "localOwnerId",
-          "villageUrl",
-          "userId",
-          "username",
-          "source",
-          "claimedAt"
-        ],
-        "type": "object"
-      },
-      "LocalClaimSource": {
-        "description": "Why one claim entry exists: an explicit command, the sign-in prompt, or an automatic claim of sessions first stored by this harvest",
-        "enum": [
-          "manual",
-          "sign_in_prompt",
-          "automatic"
-        ],
-        "examples": [
-          "manual",
-          "sign_in_prompt",
-          "automatic"
-        ],
-        "title": "Local Claim Source",
-        "type": "string"
-      },
       "LocalCollectiveSuggestion": {
         "properties": {
           "match": {
@@ -6603,6 +6388,11 @@
           "kickstart_commit_refused",
           "kickstart_session_not_found",
           "kickstart_preview_row_not_found",
+          "kickstart_preview_capture_not_found",
+          "kickstart_preview_source_changed",
+          "kickstart_preview_late_result",
+          "kickstart_preview_capacity",
+          "kickstart_preview_out_of_order",
           "kickstart_failed",
           "kickstart_status_unreadable",
           "kickstart_config_unreadable",
@@ -6634,6 +6424,11 @@
           "kickstart_commit_refused",
           "kickstart_session_not_found",
           "kickstart_preview_row_not_found",
+          "kickstart_preview_capture_not_found",
+          "kickstart_preview_source_changed",
+          "kickstart_preview_late_result",
+          "kickstart_preview_capacity",
+          "kickstart_preview_out_of_order",
           "kickstart_failed",
           "kickstart_status_unreadable",
           "kickstart_config_unreadable",
@@ -7089,6 +6884,336 @@
         ],
         "type": "object"
       },
+      "LocalKickstartPreviewCloseReason": {
+        "description": "Why the capture closed",
+        "enum": [
+          "closed_by_client",
+          "replaced",
+          "session_closed",
+          "rescanned",
+          "idle",
+          "evicted",
+          "shutdown",
+          "source_changed",
+          "late_result",
+          "unreadable",
+          "out_of_order",
+          "slow_client",
+          "row_not_found",
+          "not_a_session_row",
+          "unavailable",
+          "no_turns",
+          "capacity"
+        ],
+        "examples": [
+          "closed_by_client",
+          "replaced",
+          "session_closed",
+          "rescanned",
+          "idle",
+          "evicted",
+          "shutdown",
+          "source_changed",
+          "late_result",
+          "unreadable",
+          "out_of_order",
+          "slow_client",
+          "row_not_found",
+          "not_a_session_row",
+          "unavailable",
+          "no_turns",
+          "capacity"
+        ],
+        "title": "Preview close reason",
+        "type": "string"
+      },
+      "LocalKickstartPreviewContinuation": {
+        "description": "Whether the capture can continue",
+        "enum": [
+          "more",
+          "end",
+          "cut"
+        ],
+        "examples": [
+          "more",
+          "end",
+          "cut"
+        ],
+        "title": "Preview continuation",
+        "type": "string"
+      },
+      "LocalKickstartPreviewCutReason": {
+        "description": "Why the capture ended early",
+        "enum": [
+          "source_budget",
+          "serialized_budget",
+          "turn_budget",
+          "oversized_record",
+          "origin_not_resumable"
+        ],
+        "examples": [
+          "source_budget",
+          "serialized_budget",
+          "turn_budget",
+          "oversized_record",
+          "origin_not_resumable"
+        ],
+        "title": "Preview cut reason",
+        "type": "string"
+      },
+      "LocalKickstartPreviewDirectory": {
+        "additionalProperties": false,
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "loadedConversationTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "loadedSegments": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "loadedTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegmentRef"
+            },
+            "type": "array"
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "totalConversationTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalSegments": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionId",
+          "revision",
+          "complete",
+          "loadedSegments",
+          "loadedTurns",
+          "segments"
+        ],
+        "type": "object"
+      },
+      "LocalKickstartPreviewEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "captureId": {
+            "type": "string"
+          },
+          "code": {
+            "$ref": "#/components/schemas/LocalKickstartErrorCode"
+          },
+          "continuation": {
+            "$ref": "#/components/schemas/LocalKickstartPreviewContinuation"
+          },
+          "cutReason": {
+            "$ref": "#/components/schemas/LocalKickstartPreviewCutReason"
+          },
+          "directory": {
+            "$ref": "#/components/schemas/LocalKickstartPreviewDirectory"
+          },
+          "header": {
+            "$ref": "#/components/schemas/SessionDetailPayload"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LocalKickstartPreviewEventKind"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LocalKickstartLine"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/LocalKickstartPreviewCloseReason"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "segment": {
+            "$ref": "#/components/schemas/LocalKickstartPreviewSegment"
+          },
+          "seq": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sessionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "sessionId",
+          "seq"
+        ],
+        "type": "object"
+      },
+      "LocalKickstartPreviewEventKind": {
+        "description": "Kind of capture event",
+        "enum": [
+          "opened",
+          "segment",
+          "closed"
+        ],
+        "examples": [
+          "opened",
+          "segment",
+          "closed"
+        ],
+        "title": "Preview event kind",
+        "type": "string"
+      },
+      "LocalKickstartPreviewOp": {
+        "description": "Operation on a connection-owned capture",
+        "enum": [
+          "open",
+          "more",
+          "close"
+        ],
+        "examples": [
+          "open",
+          "more",
+          "close"
+        ],
+        "title": "Preview operation",
+        "type": "string"
+      },
+      "LocalKickstartPreviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "captureId": {
+            "maxLength": 22,
+            "minLength": 22,
+            "pattern": "^[A-Za-z0-9_-]{21}[AQgw]$",
+            "type": "string"
+          },
+          "nodeId": {
+            "maxLength": 512,
+            "type": "string"
+          },
+          "op": {
+            "$ref": "#/components/schemas/LocalKickstartPreviewOp"
+          },
+          "requestId": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "sessionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "op",
+          "requestId",
+          "sessionId"
+        ],
+        "type": "object"
+      },
+      "LocalKickstartPreviewSegment": {
+        "additionalProperties": false,
+        "properties": {
+          "byteLength": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "firstTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "index": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "lastTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/NativeMetadataRecord"
+            },
+            "type": "array"
+          },
+          "retainedUnknown": {
+            "items": {
+              "$ref": "#/components/schemas/RetainedUnknownRecord"
+            },
+            "type": "array"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptTurn"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "index",
+          "revision",
+          "firstTurn",
+          "lastTurn",
+          "byteLength",
+          "hasOlder",
+          "hasNewer",
+          "turns"
+        ],
+        "type": "object"
+      },
       "LocalKickstartResolution": {
         "description": "Which side of one conflict row to keep: mine is the draft, theirs is the file",
         "enum": [
@@ -7431,169 +7556,6 @@
         ],
         "title": "Local Operation Diagnostic Outcome",
         "type": "string"
-      },
-      "LocalOwner": {
-        "properties": {
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "id": {
-            "maxLength": 64,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "createdAt"
-        ],
-        "type": "object"
-      },
-      "LocalOwnerClaimPrompt": {
-        "properties": {
-          "account": {
-            "$ref": "#/components/schemas/CollectiveObservationScope"
-          },
-          "decidedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "state": {
-            "$ref": "#/components/schemas/LocalOwnerPromptState"
-          }
-        },
-        "required": [
-          "state"
-        ],
-        "type": "object"
-      },
-      "LocalOwnerClaimRequest": {
-        "properties": {
-          "all": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "all"
-        ],
-        "type": "object"
-      },
-      "LocalOwnerClaimResult": {
-        "properties": {
-          "alreadyClaimed": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "claimId": {
-            "maxLength": 64,
-            "minLength": 1,
-            "type": "string"
-          },
-          "claimed": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "status": {
-            "$ref": "#/components/schemas/LocalOwnerStatus"
-          }
-        },
-        "required": [
-          "status",
-          "claimed",
-          "alreadyClaimed"
-        ],
-        "type": "object"
-      },
-      "LocalOwnerOwnership": {
-        "properties": {
-          "annotations": {
-            "$ref": "#/components/schemas/LocalOwnerOwnershipCounts"
-          },
-          "sessions": {
-            "$ref": "#/components/schemas/LocalOwnerOwnershipCounts"
-          }
-        },
-        "required": [
-          "sessions",
-          "annotations"
-        ],
-        "type": "object"
-      },
-      "LocalOwnerOwnershipCounts": {
-        "properties": {
-          "claimed": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "total": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "unclaimed": {
-            "minimum": 0,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "total",
-          "claimed",
-          "unclaimed"
-        ],
-        "type": "object"
-      },
-      "LocalOwnerPromptState": {
-        "description": "The server-computed claim prompt state: no account selected, due, declined, or completed for one local owner plus account scope",
-        "enum": [
-          "not_applicable",
-          "due",
-          "declined",
-          "completed"
-        ],
-        "examples": [
-          "not_applicable",
-          "due",
-          "declined",
-          "completed"
-        ],
-        "title": "Local Owner Prompt State",
-        "type": "string"
-      },
-      "LocalOwnerStatus": {
-        "properties": {
-          "claims": {
-            "items": {
-              "$ref": "#/components/schemas/LocalClaimEntry"
-            },
-            "type": "array"
-          },
-          "nextBefore": {
-            "maxLength": 64,
-            "minLength": 1,
-            "type": "string"
-          },
-          "owner": {
-            "$ref": "#/components/schemas/LocalOwner"
-          },
-          "ownership": {
-            "$ref": "#/components/schemas/LocalOwnerOwnership"
-          },
-          "prompt": {
-            "$ref": "#/components/schemas/LocalOwnerClaimPrompt"
-          },
-          "totalClaims": {
-            "minimum": 0,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "owner",
-          "claims",
-          "totalClaims",
-          "prompt",
-          "ownership"
-        ],
-        "type": "object"
       },
       "LocalPublication": {
         "properties": {
@@ -8181,11 +8143,6 @@
       },
       "LocalSyncSummary": {
         "properties": {
-          "adapterVersion": {
-            "description": "Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive.",
-            "minimum": 1,
-            "type": "integer"
-          },
           "conversationTurnCount": {
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -8214,9 +8171,6 @@
           },
           "model": {
             "type": "string"
-          },
-          "owner": {
-            "$ref": "#/components/schemas/LocalArtifactIdentity"
           },
           "parentSessionId": {
             "type": "string"
@@ -8756,7 +8710,8 @@
           "project_familiarity",
           "connected",
           "error",
-          "kickstart"
+          "kickstart",
+          "kickstart_preview"
         ],
         "examples": [
           "subscribe",
@@ -8770,7 +8725,8 @@
           "project_familiarity",
           "connected",
           "error",
-          "kickstart"
+          "kickstart",
+          "kickstart_preview"
         ],
         "title": "Message Type",
         "type": "string"
@@ -12494,11 +12450,6 @@
       },
       "SessionDetailReadPayload": {
         "properties": {
-          "adapterVersion": {
-            "description": "Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive.",
-            "minimum": 1,
-            "type": "integer"
-          },
           "childSessions": {
             "items": {
               "$ref": "#/components/schemas/ChildSessionRef"
@@ -12565,9 +12516,6 @@
           },
           "outcome": {
             "$ref": "#/components/schemas/SessionOutcome"
-          },
-          "owner": {
-            "$ref": "#/components/schemas/LocalArtifactIdentity"
           },
           "parentSessionId": {
             "$ref": "#/components/schemas/SessionID"
@@ -13462,11 +13410,6 @@
       },
       "SessionSummary": {
         "properties": {
-          "adapterVersion": {
-            "description": "Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive.",
-            "minimum": 1,
-            "type": "integer"
-          },
           "conversationTurnCount": {
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -13489,9 +13432,6 @@
           },
           "outcome": {
             "type": "string"
-          },
-          "owner": {
-            "$ref": "#/components/schemas/LocalArtifactIdentity"
           },
           "parentSessionId": {
             "anyOf": [

@@ -4,7 +4,22 @@ automation_author: app/peasant-labs-releaser
 changelog: CHANGELOG.md
 version_files:
   - {path: typescript/package.json, field: version}
-protected_paths: []
+spec_freeze: true
+freeze_dir: generated
+protected_paths:
+  - versions.go
+  - "generated/*-[0-9]*"
+  - cmd/schema-gen/testdata/frozen_specs.yaml
+  - cmd/schema-gen/testdata/frozen_specs_manifest.yaml
+freeze_outputs:
+  - "generated/types-*.*"
+  - "generated/village-api-*.*"
+  - "generated/publish-request-*.*"
+  - "generated/annotation-push-request-*.*"
+  - "generated/peasantlocal-api-*.*"
+  - "generated/segmented-read-*.*"
+  - typescript/src/internal/generated/versions.gen.ts
+  - testdata/typescript/public_exports.yaml
 surfaces:
   types: [types]
   village-api: [village-api, publish-request, annotation-push-request]

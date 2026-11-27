@@ -10,9 +10,9 @@ name: Release
 # release-e2e / e2e / smoke. The publisher is a single GitHub Release carrying the
 # generated/ OpenAPI specs as downloadable ASSETS (prerelease for -rcN).
 #
-# The job graph is asserted by `release-guard check-workflow` (run in `make
-# check`): the `release` publish job must sit behind guard, nix-vendor-hash, and
-# contract-gates.
+# title-guard.yml runs the pinned release-intent workflow checks.
+# TestReleaseAdoptionPublicationWiring also pins the publication job graph,
+# npm OIDC permission, and environment in the schema test suite.
 on:
   push:
     tags:
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
+          ref: db8f1938e9a67a40914c2ab0a232ebc2243adaac
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -144,7 +144,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: peasant-labs/infra
-          ref: 86b7e01fb28fbaf789fde7eb7357ef168857a0c9
+          ref: db8f1938e9a67a40914c2ab0a232ebc2243adaac
           path: infra-tool
           sparse-checkout: tools/release
           persist-credentials: false
@@ -197,11 +197,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+      # The release assets go in dist/assets, which holds only files, and the
+      # notes sit beside it in dist, so the publisher's one asset glob
+      # uploads the contracts and not the notes.
       - name: Prepare the generated contracts and release notes
         run: |
           set -euo pipefail
-          mkdir -p dist
-          cp generated/*.json generated/*.yaml dist/
+          mkdir -p dist/assets
+          ./scripts/collect-release-assets.sh generated dist/assets
           awk -v tag="$TAG" -v version="${TAG#v}" '
             /^## / {
               if (found) exit
@@ -228,58 +231,40 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write # create the GitHub Release + upload assets
-    env:
-      TAG: ${{ github.ref_name }}
     steps:
+      - name: Check out release-intent
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: peasant-labs/infra
+          ref: db8f1938e9a67a40914c2ab0a232ebc2243adaac
+          path: infra-tool
+          sparse-checkout: tools/release
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: infra-tool/tools/release/go.mod
+          cache: false
+
+      - name: Build release-intent
+        env:
+          GOWORK: "off"
+        run: go build -C infra-tool/tools/release -o "${RUNNER_TEMP}/release-intent" ./cmd/release-intent
+
       - name: Download the release assets
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-dist
           path: dist
 
-      # Any view failure, including network or authentication errors, is
-      # treated as no release. Create fails loudly if the release exists.
-      - name: Look for an existing release
-        id: view
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY"
-
-      # \u0024 prints a dollar sign in the jq message without a jq variable.
-      - name: Verify the existing release is complete
-        if: steps.view.outcome == 'success'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq 'if (.isDraft | type) != "boolean" then error("release draft status is invalid; inspect the release before retrying") elif .isDraft then error("release is an unpublished draft; delete it with gh release delete \"\u0024TAG\" --repo \"\u0024GITHUB_REPOSITORY\" (without --cleanup-tag), then rerun; do not create a new tag") elif (.assets | type) != "array" then error("published release assets are invalid; inspect the release before retrying") elif (.assets | length == 0) then error("published release has no assets; tags are immutable, so fix forward with a new tag") else "existing release is published and has assets" end'
-
-      - name: Create the draft release
-        id: create
-        if: steps.view.outcome == 'failure'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}
-        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "$TAG" --notes-file dist/release-notes.md --prerelease="$PRERELEASE"
-
-      - name: Upload the release assets
-        if: steps.view.outcome == 'failure' && steps.create.outcome == 'success'
-        uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2.4.2
-        with:
-          tag_name: ${{ github.ref_name }}
-          repository: ${{ github.repository }}
-          files: dist/*
-          fail_on_unmatched_files: true
-          overwrite_files: true
-          draft: true
-          prerelease: ${{ needs.guard.outputs.prerelease }}
-
       - name: Publish the release
-        if: steps.view.outcome == 'failure' && steps.create.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
-          PRERELEASE: ${{ needs.guard.outputs.kind == 'rc' }}
-          LATEST: ${{ needs.guard.outputs.kind == 'final' }}
-        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease="$PRERELEASE" --latest="$LATEST"
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.guard.outputs.prerelease }}
+          LATEST: ${{ needs.guard.outputs.latest }}
+        run: '"${RUNNER_TEMP}/release-intent" publish-release --tag "$TAG" --repo "$GITHUB_REPOSITORY" --assets dist/assets --notes dist/release-notes.md --prerelease "$PRERELEASE" --latest "$LATEST" --require-immutable'
 
   # Publish the generated @peasant-labs/schema TypeScript package to npm. Sits
   # behind the SAME three gates as the GitHub Release publish job above (guard ->

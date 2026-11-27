@@ -53,7 +53,7 @@
       # in this leaf module (proven by TestVendorHashStableOnFirstPartyEdit).
       # Recompute ONLY on a go.mod/go.sum dep bump: set this to
       # nixpkgs.lib.fakeHash, run `nix build`, copy the reported `got:` hash here.
-      vendorHash = "sha256-Z5x7DuLZFziyowaYlXvW5i2V2sgVNyIcl4FaCn37Ei8=";
+      vendorHash = "sha256-x5e7s9kfP5EF2e6uVJAN20yJZ5eustiQTh48Ipmhqbw=";
 
       # Extra CLI tools available in the dev shell. The contract-gate CLIs
       # (oasdiff / go-apidiff / vacuum) are dev/CI tools and MUST NOT enter
@@ -87,6 +87,7 @@
       # is pure Go (modernc/zombiezen sqlite are cgo-free), so none are required.
       nativeBuildDeps = pkgs: with pkgs; [
         gitMinimal # tests exercise isolated git-runner failure boundaries
+        jq # tests execute the release and merge-gate workflow steps
       ];
 
       # Extra check commands run during `nix build` after go test
@@ -193,7 +194,7 @@
 
               # Build the schema repo's dev/CI tools. cmd/schema-gen regenerates
               # the OpenAPI specs + Redoc HTML; cmd/release-guard is the release
-              # pipeline's title/tag/guard CLI. The schema module ships NO runtime
+              # pipeline's release-tag parser (`parse-tag`). The schema module ships NO runtime
               # binary (it is a contract-only leaf). The default `./...` would also
               # try to "build" the library packages, which is fine, but we name the
               # two commands explicitly so the package output is just those tools.
@@ -212,11 +213,11 @@
 
               nativeBuildInputs = nativeBuildDeps pkgs;
 
-              # The schema leaf is pure Go and fully hermetic (no network in
-              # tests); git is present only for isolated local-runner fixtures.
-              # The whole suite runs as a packaging sanity gate. No
-              # -race: the detector requires cgo and this build is CGO_ENABLED=0;
-              # the authoritative race-enabled suite runs in CI (`go test -race`).
+              # The package tests use no network. The cross-repository title
+              # fixture runs in CI's contract gates with the pinned tool.
+              # No -race: the detector requires cgo and this build is CGO_ENABLED=0;
+              # CI's merge queue runs `make race-selective` over the module's
+              # concurrency, and `make check RACE=1` is the full race pass.
               checkPhase = ''
                 runHook preCheck
                 go test ./...

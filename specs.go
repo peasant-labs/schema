@@ -14,9 +14,15 @@ import (
 //go:embed generated
 var generatedFS embed.FS
 
-// SegmentedReadSpecJSON returns the newest declared segmented read document.
+// workingSpec reads an internal working artifact; exported accessors continue
+// to serve the numbered document named by the frozen version constant.
+func workingSpec(name string) ([]byte, error) {
+	return generatedFS.ReadFile("generated/" + name)
+}
+
+// SegmentedReadSpecJSON returns the current frozen segmented read document.
 func SegmentedReadSpecJSON() []byte {
-	return segmentedReadSpecJSON(SegmentedReadAPIVersion)
+	return segmentedReadSpecJSON(SegmentedReadSpecVersion)
 }
 
 // SegmentedReadMinSpecJSON returns the oldest still-served read document.

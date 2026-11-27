@@ -630,18 +630,20 @@ type VillageTag struct {
 // that account (GET /api/v1/auth/me). A response that shows a person to
 // anyone else carries a VillagePublicOwner instead.
 type VillageUser struct {
-	ID               VillageUUID `json:"id"`
-	GithubID         int64       `json:"github_id"`
-	GithubUsername   string      `json:"github_username"`
-	DisplayName      *string     `json:"display_name"`
-	AvatarURL        *string     `json:"avatar_url"`
-	CreatedAt        time.Time   `json:"created_at"`
-	UpdatedAt        time.Time   `json:"updated_at"`
-	IsDiscoverable   bool        `json:"is_discoverable"`
-	Provider         string      `json:"provider"`
-	ProviderUserID   string      `json:"provider_user_id"`
-	UsernameChosen   bool        `json:"username_chosen"`
-	ProviderUsername *string     `json:"provider_username"`
+	ID                     VillageUUID `json:"id"`
+	GithubID               int64       `json:"github_id"`
+	GithubUsername         string      `json:"github_username"`
+	DisplayName            *string     `json:"display_name"`
+	AvatarURL              *string     `json:"avatar_url"`
+	CreatedAt              time.Time   `json:"created_at"`
+	UpdatedAt              time.Time   `json:"updated_at"`
+	IsDiscoverable         bool        `json:"is_discoverable"`
+	Provider               string      `json:"provider"`
+	ProviderUserID         string      `json:"provider_user_id"`
+	UsernameChosen         bool        `json:"username_chosen"`
+	ProviderUsername       *string     `json:"provider_username"`
+	PreviewBeforeAttach    bool        `json:"preview_before_attach"`
+	AutoAttachPullRequests bool        `json:"auto_attach_pull_requests"`
 }
 type VillageMetadataUserOrganization struct {
 	OrgLogin  string    `json:"org_login"`
@@ -1052,6 +1054,18 @@ type VillageContributableTranscript struct {
 	RootSessionID        *SessionID                  `json:"root_session_id,omitempty"`
 	Purpose              SessionPurpose              `json:"purpose,omitempty"`
 	Relationships        []SessionRelationship       `json:"relationships,omitempty"`
+	// SessionStart is when the session began. It is absent when unknown.
+	SessionStart *time.Time `json:"session_start,omitempty" nullable:"false" description:"When the session began. Absent when unknown."`
+	// SessionEnd is when the session's last turn happened. It is absent when
+	// unknown.
+	SessionEnd *time.Time `json:"session_end,omitempty" nullable:"false" description:"When the session's last turn happened. Absent when unknown."`
+	// ParentTranscriptID is the published transcript of the parent session. It
+	// is absent for a root, and for a helper whose parent is not published.
+	ParentTranscriptID *TranscriptID `json:"parent_transcript_id,omitempty" nullable:"false" description:"The published transcript of the parent session. Absent for a root, and for a helper whose parent is not published."`
+	// LatestStatus is the status of the latest contribution attempt in this
+	// collective; absence means no attempt. already_shared stays and is true
+	// only for pending and approved.
+	LatestStatus *VillageShareStatus `json:"latest_status,omitempty" nullable:"false" description:"The status of the latest contribution attempt in this collective. Absent means no attempt. already_shared stays and is true only for pending and approved."`
 }
 
 type VillageContributableResponse struct {

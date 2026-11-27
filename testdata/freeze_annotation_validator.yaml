@@ -1,0 +1,7 @@
+cases:
+  - name: empty-batch-accepted-by-frozen
+    input: {body: '{"annotations":[]}', require: retractions}
+    expected: {frozen_accepts: true, changed_accepts: false}
+    classification: must-pass
+    provenance: {source: requirement, ref: "exported validation continues to use the frozen request schema"}
+    mutation: {description: "Require retractions only in the internal working-schema validator."}

@@ -1,4 +1,25 @@
 required_names:
+  - village shape VillageDiscoverabilityRequest
+  - village shape VillageUsernameRequest
+  - village shape VillageCreateAPIKeyRequest
+  - village shape VillageCreatedAPIKey
+  - village shape VillageAPIKey
+  - village shape VillageOrganizationVisibilityRequest
+  - village shape VillageOrganizationVisibilityResponse
+  - village shape VillageOrganizationSearchResult
+  - village shape VillageOrganizationSearchResponse
+  - village shape VillageTagUsage
+  - village shape VillageResolvedProject
+  - village shape VillageProjectCollective
+  - village shape VillageUserProjectResponse
+  - village shape VillageProjectDisplayNameRequest
+  - village shape VillageCreateAttestationRequest
+  - village shape VillageManualAnnotationRequest
+  - village shape VillageTranscriptAnnotationsResponse
+  - village shape VillageTranscriptCommit
+  - village shape VillageTranscriptCommitsResponse
+  - village shape VillageHealthResponse
+  - village shape VillageUser
   - collective detail compatible group record
   - session detail payload
   - unified metadata

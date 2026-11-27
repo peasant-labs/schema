@@ -181,6 +181,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("new login operation: %w", err)
 	}
 	loginOC.AddReqStructure(new(schema.CLILoginQuery))
+	for _, status := range []int{http.StatusBadRequest, http.StatusInternalServerError} {
+		loginOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(status))
+	}
 	loginOC.SetDescription("Initiate CLI login via browser OAuth flow. " +
 		"The CLI opens this URL in the user's browser with a local callback port and CSRF state. " +
 		"After authentication, the village redirects the browser to the CLI's local callback server.")
@@ -189,20 +192,28 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := r.AddOperation(loginOC); err != nil {
 		return nil, fmt.Errorf("add login operation: %w", err)
 	}
-
-	// POST /api/v1/auth/cli/exchange — exchange OAuth code for credentials.
-	exchangeOC, err := r.NewOperationContext(http.MethodPost, "/api/v1/auth/cli/exchange")
-	if err != nil {
-		return nil, fmt.Errorf("new exchange operation: %w", err)
+	if err := declareVillageResponses(r.Spec, cliLoginResponses()); err != nil {
+		return nil, err
 	}
-	exchangeOC.AddReqStructure(new(schema.ExchangeCodeRequest))
-	exchangeOC.AddRespStructure(new(schema.ExchangeCodeResponse))
-	exchangeOC.SetDescription("Exchange an OAuth authorization code and state for API credentials. " +
-		"Called by the CLI's local callback server after receiving the browser redirect.")
-	exchangeOC.SetID("cliExchangeCode")
-	exchangeOC.SetTags("auth")
-	if err := r.AddOperation(exchangeOC); err != nil {
-		return nil, fmt.Errorf("add exchange operation: %w", err)
+
+	// POST /api/v1/auth/cli/exchange: exchange OAuth code for credentials. It
+	// sits behind the same per-client limiter as the sign-in entry points.
+	if err := addVillageOperations(r, []villageOperationSpec{{
+		method: http.MethodPost, path: "/api/v1/auth/cli/exchange", id: "cliExchangeCode", tag: "auth",
+		description: "Exchange an OAuth authorization code and state for API credentials. " +
+			"Called by the CLI's local callback server after receiving the browser redirect.",
+		rateLimited:   true,
+		requiredBody:  true,
+		requests:      []interface{}{new(schema.ExchangeCodeRequest)},
+		response:      new(schema.ExchangeCodeResponse),
+		errorStatuses: []int{http.StatusBadRequest, http.StatusUnauthorized, http.StatusInternalServerError},
+		errorSummaries: map[int]string{
+			http.StatusBadRequest:          "Bad Request. The body is missing or does not decode as the request, or code or state is empty.",
+			http.StatusUnauthorized:        "Unauthorized. No unexchanged code issued within the last five minutes matches this code and state.",
+			http.StatusInternalServerError: "Internal Server Error. The API key could not be generated or stored.",
+		},
+	}}); err != nil {
+		return nil, err
 	}
 
 	// POST /api/v1/annotations accepts owner-authenticated annotation pushes.
@@ -407,10 +418,22 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := addVillageCollectiveOperations(r); err != nil {
 		return nil, err
 	}
+	if err := addVillageOperations(r, villageSignInOperations()); err != nil {
+		return nil, err
+	}
 	if err := addVillagePullRequestOperations(r); err != nil {
 		return nil, err
 	}
+	if err := addVillageAccountOperations(r); err != nil {
+		return nil, err
+	}
+	if err := addVillageBrowseOperations(r); err != nil {
+		return nil, err
+	}
 	if err := addVillageInvitationOperations(r); err != nil {
+		return nil, err
+	}
+	if err := addVillageTranscriptAuxOperations(r); err != nil {
 		return nil, err
 	}
 
@@ -452,8 +475,88 @@ type villageOperationSpec struct {
 	successStatus        int
 	errorStatuses        []int
 	// errorSummaries, when set, replaces the default description of the named
-	// error statuses. Each key must be a status in errorStatuses.
+	// error statuses. Each key must be a status in errorStatuses or
+	// browserErrorStatuses.
 	errorSummaries map[int]string
+
+	// The fields below describe what the reflector cannot express on its own.
+	// Their zero values declare nothing, so an operation that leaves them unset
+	// generates the same document it always did. checkVillageOperation refuses
+	// contradictory combinations before anything is reflected.
+
+	// session is the session middleware in front of the handler. Only
+	// villageSessionRequired adds statuses: the middleware's 401 and 503.
+	session villageSession
+	// rateLimited declares the per-client limiter in front of the handler: the
+	// limiter headers on every response, and a 429 text/plain refusal with
+	// Retry-After. 429 is then never listed by hand.
+	rateLimited bool
+	// responses lists statuses the success and error fields cannot express: a
+	// body-less redirect, a response with headers, or a text body. A JSON
+	// success with headers (for example a Cache-Control or a Set-Cookie) is
+	// declared here rather than through response.
+	responses []villageResponse
+	// browserErrorStatuses are refusals the server negotiates by Accept: an
+	// HTML page when the first recognised media type is text/html or
+	// application/xhtml+xml, a VillageErrorResponse otherwise. The status is the
+	// same both ways.
+	browserErrorStatuses []int
+	// declaredStub marks a mounted route whose behaviour is not implemented
+	// yet: it declares only its refusals, one of them 501, and no success.
+	// Without it, an operation with no success response is refused as a
+	// forgotten response.
+	declaredStub bool
+	// requiredBody marks the request body required: the handler decodes it
+	// unconditionally and refuses a request without one.
+	requiredBody bool
+	// servers overrides the document's servers on this path item. It is
+	// allowed only outside the API prefix, for a route the server mounts at
+	// its root.
+	servers []string
+}
+
+// villageSession is the session middleware an operation sits behind.
+type villageSession int
+
+const (
+	// villageSessionNone means no session middleware. It is the zero value, so
+	// an operation that predates this field and lists 401 by hand is
+	// unaffected.
+	villageSessionNone villageSession = iota
+	// villageSessionOptional reads a session when one is present and never
+	// refuses, so it declares nothing.
+	villageSessionOptional
+	// villageSessionRequired refuses a request without a valid session with
+	// 401, and answers 503 with Retry-After when the account behind the
+	// session cannot be read. Both are VillageErrorResponse JSON.
+	villageSessionRequired
+)
+
+// villageHeader is one response header.
+type villageHeader struct {
+	name        string
+	description string
+	required    bool
+	// valueType is the type of the header value; empty means a string.
+	valueType jsonschema.SimpleType
+}
+
+// villageMedia is one media type of a response.
+type villageMedia struct {
+	// mediaType is application/json, text/html or text/plain.
+	mediaType string
+	// body is the Go value reflected for application/json, and nil for a text
+	// medium, which is declared as a plain string.
+	body interface{}
+}
+
+// villageResponse is one status the reflector cannot express on its own.
+type villageResponse struct {
+	status      int
+	description string
+	headers     []villageHeader
+	// media empty means the response has no body, as a redirect does.
+	media []villageMedia
 }
 
 // The two copies of the 410 a transcript read can answer. They name no
@@ -487,6 +590,12 @@ func describeVillageErrorSummaries(spec *openapi31.Spec, op villageOperationSpec
 	for _, status := range op.errorStatuses {
 		declared[status] = struct{}{}
 	}
+	// A browser refusal's summary is applied by declareVillageResponses,
+	// which adds the Accept negotiation to it.
+	browser := make(map[int]struct{}, len(op.browserErrorStatuses))
+	for _, status := range op.browserErrorStatuses {
+		browser[status] = struct{}{}
+	}
 	item, ok := declaredPathItem(spec, op.path)
 	if !ok {
 		return fmt.Errorf("%s: the path is not in the document, so its error statuses cannot be described; add the operation before describing it", where)
@@ -496,8 +605,11 @@ func describeVillageErrorSummaries(spec *openapi31.Spec, op villageOperationSpec
 		return fmt.Errorf("%s: the path has no %s operation, so its error statuses cannot be described", where, op.method)
 	}
 	for status, summary := range op.errorSummaries {
+		if _, ok := browser[status]; ok {
+			continue
+		}
 		if _, ok := declared[status]; !ok {
-			return fmt.Errorf("%s: errorSummaries names status %d, which errorStatuses does not declare; declare the status or drop its summary", where, status)
+			return fmt.Errorf("%s: errorSummaries names status %d, which neither errorStatuses nor browserErrorStatuses declares; declare the status or drop its summary", where, status)
 		}
 		key := statusText(status)
 		response, ok := operation.Responses.MapOfResponseOrReferenceValues[key]
@@ -544,14 +656,6 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		Representation string              `query:"representation" description:"Optional projection identity to revalidate; a mismatch requires reload."`
 		IfNoneMatch    string              `header:"If-None-Match" description:"Optional entity tag of the previously authorized header."`
 	})
-	// The Village operations retain the Local API's v1 parameters and shapes;
-	// The positioned protocol is an opt-in addition on these Village paths only.
-	type positionedQuery struct {
-		Version        int                                   `query:"v" description:"Segmented read protocol generation."`
-		Partition      schema.TranscriptSegmentPartitionKind `query:"partition" description:"Positioned partition: main or history; omitted selects main."`
-		Section        *int                                  `query:"section" minimum:"0" nullable:"false" description:"History section index. Required for history and omitted for main."`
-		Representation string                                `query:"representation" description:"Optional positioned representation to revalidate; a mismatch requires reload."`
-	}
 	transcriptSegmentsQuery := new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 		transcriptSegmentsParams
@@ -584,6 +688,20 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	})
 	groupedViewQuery := new(struct {
 		View villageGroupedView `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the legacy response."`
+	})
+	contributableQuery := new(struct {
+		View        schema.VillageContributableView `query:"view" description:"grouped selects the helper-group list, paged selects one page of root sessions each with its helper family, snapshot selects the compact records of one project. Omission preserves the flat response. Any other value is refused with 400 and the accepted values are named."`
+		Query       string                          `query:"q" description:"Paged and snapshot views only; ignored without view and with view=grouped. One search text matched against project display names, root and helper titles, and exact transcript ids. A family is returned when its root or any helper matches, and each returned member carries matched. Matching is the server's rule."`
+		ProjectHash schema.ProjectHash              `query:"project_hash" description:"Paged view: keep only the families whose root is in this project. Snapshot view: required, the project whose families are recorded; omitting it is a 400. Ignored without view and with view=grouped."`
+		Provider    string                          `query:"provider" description:"Paged and snapshot views only; ignored without view and with view=grouped. Keep only the families that hold a session of this model provider."`
+		Cursor      string                          `query:"cursor" description:"Paged view only; ignored without view and with view=grouped. The opaque next_cursor of the previous page; omitted reads the first page."`
+		Limit       int                             `query:"limit" minimum:"1" maximum:"500" default:"500" description:"Paged view only; ignored without view and with view=grouped. Page size in ROOT sessions, 1 to 500, omitted reads 500. A root is a session with no parent_session_id, or whose parent is not among the owner's published transcripts. A session whose chain of parents loops back on itself (for example a session that names itself as its parent) is listed as a root with no helpers taken from the loop, so every session of the library is listed exactly once. Each item carries its root and its whole family of helpers, so a page can hold more transcripts than limit."`
+	})
+	contributionProjectsQuery := new(struct {
+		Query    string `query:"q" description:"One search text matched against project display names, root and helper titles, and exact transcript ids. Counts cover the matching families."`
+		Provider string `query:"provider" description:"Keep only the families that hold a session of this model provider."`
+		Cursor   string `query:"cursor" description:"The opaque next_cursor of the previous page; omitted reads the first page."`
+		Limit    int    `query:"limit" minimum:"1" maximum:"500" default:"500" description:"Page size in PROJECTS, 1 to 500, omitted reads 500."`
 	})
 	memberQuery := new(struct {
 		GroupID string `path:"groupId" description:"Stable helper group identifier"`
@@ -841,15 +959,32 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			path:                 "/api/v1/groups/{id}/contributable",
 			id:                   "listContributableTranscripts",
 			tag:                  "contributions",
-			description:          "List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit.",
-			requests:             []interface{}{groupPath, groupedViewQuery},
+			description:          "List the transcripts the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. Without view the response is the flat whole-library list, which is unpaginated and bounded by the server row limit; a 413 without a code is that row-limit refusal. view=paged returns one page of root sessions, each with its family of helper sessions, ordered by the last activity of the root session, newest first, where last activity is the root's session_end, or its session_start when session_end is unknown, or its published_at when both are unknown; families with the same last activity are ordered by the root's transcript id ascending, and helpers do not affect the position of their family. A session whose chain of parents loops back on itself (for example a session that names itself as its parent) is listed as a root with no helpers taken from the loop, so every session of the library is listed exactly once. view=snapshot returns the compact record of every session in the matching families of one project, in one document, with no record-count cap. The snapshot document is limited to 8 MiB (8388608 bytes) of response body. A snapshot that would exceed the limit is refused whole with a 413 whose code is snapshot_too_large, and nothing partial is returned; the client narrows the search with the q or provider parameter and reads the snapshot again. The parameters q, project_hash, provider, cursor and limit apply only to view=paged and view=snapshot; they are ignored without view and with view=grouped, and those two responses stay unchanged. view=snapshot without project_hash is a 400. The snapshot also refuses with a 503 whose code is snapshot_timeout or snapshot_busy. The project picker is the count authority.",
+			requests:             []interface{}{groupPath, contributableQuery},
 			response:             new(schema.VillageContributableResponse),
-			responseAlternatives: []interface{}{new(schema.VillageContributableResponse), new(schema.VillageGroupedContributableResponse), new(schema.VillageDeprecatedGroupedContributableResponse)},
+			responseAlternatives: []interface{}{new(schema.VillageContributableResponse), new(schema.VillageGroupedContributableResponse), new(schema.VillageDeprecatedGroupedContributableResponse), new(schema.VillageContributionPageResponse), new(schema.VillageContributionSnapshotResponse)},
 			errorStatuses: []int{
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
 				http.StatusForbidden,
 				http.StatusRequestEntityTooLarge,
+				http.StatusInternalServerError,
+				http.StatusServiceUnavailable,
+			},
+		},
+		{
+			method: http.MethodGet,
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
+			path:        "/api/v1/groups/{id}/contributable/projects",
+			id:          "listContributionProjects",
+			tag:         "contributions",
+			description: "List the caller's projects for the contribution picker, with the counts that decide what a selection can hold. A family belongs to its root's project. Every count is in sessions, meaning every transcript in the matching families, while limit counts projects. The picker is the count authority for the paged view.",
+			requests:    []interface{}{groupPath, contributionProjectsQuery},
+			response:    new(schema.VillageContributionProjectPage),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
 				http.StatusInternalServerError,
 			},
 		},
@@ -869,6 +1004,27 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 				http.StatusConflict,
 				http.StatusUnprocessableEntity,
 				http.StatusInternalServerError,
+			},
+		},
+		{
+			method: http.MethodPost,
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
+			path:        "/api/v1/groups/{id}/shares/selection",
+			id:          "batchShareSelection",
+			tag:         "contributions",
+			description: "Offer one exact selection of sessions from one project to one collective in one transaction. transcript_ids is required and non-empty, holds at most 1000 ids and lists roots and helpers alike; the server offers exactly the listed transcript_ids and never expands a root into its helpers. project_hash is the project of the selected roots; helpers may belong to other projects and are not checked against it. private_approvals lists the private transcripts among them whose visibility the owner approved and holds at most 1000 ids. One request offers at most 1000 sessions; a client with a larger selection sends it as several requests. A refusal with a closed reason is a VillageContributionErrorResponse: the common error text plus a code (VillageContributionErrorCode) and per-transcript details, and the status says which kind of refusal it is. 400: the request body violates the contract, including a transcript_ids or private_approvals list of more than 1000 ids; it carries no closed code, only the standard error. 403 with code membership: the caller may not contribute to the collective. 403 with code policy: the collective's policy refuses the request as a whole, and its detail has no transcript_id. 409 with code moved, missing, private_unapproved, conflict or stale_selection: a true refusal; the WHOLE request is refused and nothing is written, and details lists every offending transcript with its code. 413: the request body is larger than 1 MiB and nothing was written. A transcript that is already live in the collective, or becomes live before the write commits, is not a refusal: it is returned under already_shared in the 200 response and the rest are shared. The response separates shared from already_shared.",
+			requests:    []interface{}{groupPath, new(schema.VillageBatchShareSelectionRequest)},
+			response:    new(schema.VillageBatchShareResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusNotFound,
+				http.StatusRequestEntityTooLarge,
+				http.StatusInternalServerError,
+			},
+			responses: []villageResponse{
+				villageContributionRefusal(http.StatusForbidden, "The caller may not contribute to the collective (code membership), or the collective's policy refuses the request as a whole (code policy)."),
+				villageContributionRefusal(http.StatusConflict, "The whole request is refused and nothing is written (code moved, missing, private_unapproved, conflict or stale_selection); details lists every offending transcript with its code."),
 			},
 		},
 		{
@@ -1147,14 +1303,15 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		path    string
 		legacy  map[string]interface{}
 		grouped string
+		extra   []string
 	}{
-		{"/api/v1/transcripts", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageTranscriptListResponse"}, "SchemaVillageSessionListPayload"},
-		{"/api/v1/groups/{id}", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageCollectiveDetailResponse"}, "SchemaVillageGroupedCollectiveDetailResponse"},
-		{"/api/v1/groups/{id}/contributable", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageContributableResponse"}, "SchemaVillageGroupedContributableResponse"},
-		{"/api/v1/groups/{id}/pending", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillagePendingShare"}}, "SchemaVillageSessionListPayload"},
-		{"/api/v1/groups/{id}/my-shares", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageUserCollectiveShare"}}, "SchemaVillageSessionListPayload"},
+		{"/api/v1/transcripts", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageTranscriptListResponse"}, "SchemaVillageSessionListPayload", nil},
+		{"/api/v1/groups/{id}", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageCollectiveDetailResponse"}, "SchemaVillageGroupedCollectiveDetailResponse", nil},
+		{"/api/v1/groups/{id}/contributable", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageContributableResponse"}, "SchemaVillageGroupedContributableResponse", villageContributableExtraResponses},
+		{"/api/v1/groups/{id}/pending", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillagePendingShare"}}, "SchemaVillageSessionListPayload", nil},
+		{"/api/v1/groups/{id}/my-shares", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageUserCollectiveShare"}}, "SchemaVillageSessionListPayload", nil},
 	} {
-		if err := setVillageAlternativeResponse(r.Spec, variant.path, variant.legacy, variant.grouped); err != nil {
+		if err := setVillageAlternativeResponse(r.Spec, variant.path, variant.legacy, variant.grouped, variant.extra...); err != nil {
 			return err
 		}
 	}
@@ -1167,6 +1324,8 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		{http.MethodPatch, "/api/v1/groups/{id}"},
 		{http.MethodPatch, "/api/v1/groups/{id}/members/{userID}/role"},
 		{http.MethodPost, "/api/v1/groups/{id}/shares"},
+		// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
+		{http.MethodPost, "/api/v1/groups/{id}/shares/selection"},
 		{http.MethodPatch, "/api/v1/groups/{id}/shares"},
 		{http.MethodPatch, "/api/v1/groups/{id}/shares/{transcriptID}"},
 		{http.MethodPost, "/api/v1/transcripts/{id}/share"},
@@ -1179,6 +1338,17 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	}
 
 	return nil
+}
+
+// villageContributableExtraResponses are the components, after the flat and the
+// grouped arm, that the contributable 200 response may also be. They are shared
+// by the canonical and the deprecated route so the two unions cannot drift.
+var villageContributableExtraResponses = []string{"SchemaVillageContributionPageResponse", "SchemaVillageContributionSnapshotResponse"}
+
+// villageContributionRefusal is a contribution-write refusal that carries a
+// closed reason: the common error text plus code and details.
+func villageContributionRefusal(status int, description string) villageResponse {
+	return villageResponse{status: status, description: description, media: []villageMedia{{mediaType: villageMediaJSON, body: new(schema.VillageContributionErrorResponse)}}}
 }
 
 func setSegmentedReadGeneration(spec *openapi31.Spec, path string) error {
@@ -1280,7 +1450,9 @@ func setTranscriptReadOperationHeaders(spec *openapi31.Spec, method, path string
 	return nil
 }
 
-func setVillageAlternativeResponse(spec *openapi31.Spec, path string, legacy map[string]interface{}, alternate string) error {
+// setVillageAlternativeResponse replaces the 200 schema of one GET with a union
+// of the legacy shape, the alternate shape and any further response components.
+func setVillageAlternativeResponse(spec *openapi31.Spec, path string, legacy map[string]interface{}, alternate string, extra ...string) error {
 	item, ok := spec.Paths.MapOfPathItemValues[path]
 	if !ok || item.Get == nil || item.Get.Responses == nil {
 		return fmt.Errorf("configure response alternatives for GET %s: operation is missing; clients cannot distinguish its response shapes; register the route before its variants", path)
@@ -1293,47 +1465,41 @@ func setVillageAlternativeResponse(spec *openapi31.Spec, path string, legacy map
 	if !ok {
 		return fmt.Errorf("configure response alternatives for GET %s: JSON media type is missing; clients cannot decode the selected shape; register an application/json response", path)
 	}
-	media.Schema = map[string]interface{}{"oneOf": []interface{}{legacy, map[string]interface{}{"$ref": "#/components/schemas/" + alternate}}}
+	arms := []interface{}{legacy, schemaRef(alternate)}
+	for _, name := range extra {
+		arms = append(arms, schemaRef(name))
+	}
+	media.Schema = map[string]interface{}{"oneOf": arms}
 	response.Response.Content["application/json"] = media
 	item.Get.Responses.MapOfResponseOrReferenceValues["200"] = response
 	spec.Paths.MapOfPathItemValues[path] = item
 	return nil
 }
 
-// addVillageOperations reflects one table of Village operations. Every request
-// structure is added, the success response takes its declared status, and each
-// error status shares the common VillageErrorResponse envelope.
+// addVillageOperations declares one table of Village operations. Each
+// declaration is checked first, so a contradictory one fails before anything
+// is reflected. Every request structure is added, the success response takes
+// its declared status, each error status shares the common
+// VillageErrorResponse envelope, and the responses the reflector cannot express
+// are completed afterwards.
 func addVillageOperations(r *openapi31.Reflector, operations []villageOperationSpec) error {
 	for _, op := range operations {
-		oc, err := r.NewOperationContext(op.method, op.path)
-		if err != nil {
-			return fmt.Errorf("new Village operation %s %s: %w", op.method, op.path, err)
+		if err := checkVillageOperation(op); err != nil {
+			return err
 		}
-		for _, request := range op.requests {
-			oc.AddReqStructure(request)
+		if err := reflectVillageOperation(r, op); err != nil {
+			return err
 		}
-		if len(op.responseAlternatives) > 0 {
-			for _, response := range op.responseAlternatives {
-				oc.AddRespStructure(response)
-			}
-		} else if op.response != nil {
-			if op.successStatus != 0 && op.successStatus != http.StatusOK {
-				oc.AddRespStructure(op.response, openapicore.WithHTTPStatus(op.successStatus))
-			} else {
-				oc.AddRespStructure(op.response)
-			}
-		}
-		for _, status := range op.errorStatuses {
-			oc.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(status))
-		}
-		oc.SetDescription(op.description)
-		oc.SetID(op.id)
-		oc.SetTags(op.tag)
-		if err := r.AddOperation(oc); err != nil {
-			return fmt.Errorf("add Village operation %s %s: %w", op.method, op.path, err)
+		if err := declareVillageResponses(r.Spec, op); err != nil {
+			return err
 		}
 		if err := describeVillageErrorSummaries(r.Spec, op); err != nil {
 			return err
+		}
+		if op.requiredBody {
+			if err := requireRequestBody(r.Spec, op.method, op.path); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

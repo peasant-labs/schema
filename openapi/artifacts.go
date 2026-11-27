@@ -38,6 +38,8 @@ const (
 	TypesVersion = schema.TypesVersion
 	// SegmentedReadAPIVersion identifies the newest segmented read protocol.
 	SegmentedReadAPIVersion = schema.SegmentedReadAPIVersion
+	// SegmentedReadSpecVersion identifies the current frozen read document.
+	SegmentedReadSpecVersion = schema.SegmentedReadSpecVersion
 	// SegmentedReadMinVersion identifies the oldest served read protocol.
 	SegmentedReadMinVersion = schema.SegmentedReadMinVersion
 )
@@ -81,8 +83,12 @@ func GenerateSpecArtifacts() (SpecArtifacts, error) {
 		{"village-api-" + VillageAPIVersion, BuildVillageAPISpec},
 		{"peasantlocal-api-" + PeasantLocalAPIVersion, BuildPeasantLocalAPISpec},
 		{"types-" + TypesVersion, BuildTypesSpec},
-		{"segmented-read-" + SegmentedReadMinVersion, func() (*openapi31.Spec, error) { return BuildSegmentedReadSpec(SegmentedReadMinVersion) }},
-		{"segmented-read-" + SegmentedReadAPIVersion, func() (*openapi31.Spec, error) { return BuildSegmentedReadSpec(SegmentedReadAPIVersion) }},
+		{"segmented-read-" + SegmentedReadMinVersion, func() (*openapi31.Spec, error) {
+			return BuildSegmentedReadSpec(SegmentedReadMinVersion, SegmentedReadMinVersion)
+		}},
+		{"segmented-read-" + SegmentedReadSpecVersion, func() (*openapi31.Spec, error) {
+			return BuildSegmentedReadSpec(SegmentedReadAPIVersion, SegmentedReadSpecVersion)
+		}},
 	}
 	for _, s := range specs {
 		spec, err := s.build()

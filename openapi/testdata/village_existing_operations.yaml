@@ -1,0 +1,31 @@
+# Operations and components of the last frozen Village document that the
+# working document may change. Every other operation of the frozen document
+# must be generated unchanged, together with every component it references,
+# directly or through other components.
+#
+# against_version names the frozen document these changes are measured from.
+# While VillageAPIVersion equals it, the operations and components that differ
+# must be exactly the ones listed here. Once a later version is frozen, the
+# frozen document already carries these changes, so nothing may differ until a
+# change sets against_version to the then-current version and lists itself.
+against_version: 0.43.0
+allowed_changes:
+  operations:
+    # Gains the paged and snapshot views and their query parameters, the two
+    # new 200 arms, and a 503 for a snapshot that times out or is busy.
+    - listContributableTranscripts
+    - listContributableTranscriptsDeprecated
+    # Unchanged themselves; each reaches the contributable record through a
+    # grouped response component, and that record gains four optional fields.
+    - getGroup
+    - getGroupDeprecated
+    - listMyGroupShares
+    - listMyGroupSharesDeprecated
+    - listPendingShares
+    - listPendingSharesDeprecated
+    - listTranscriptGroupMembers
+    - listTranscripts
+  components:
+    # Gains session_start, session_end, parent_transcript_id and latest_status,
+    # all optional.
+    - SchemaVillageContributableTranscript
