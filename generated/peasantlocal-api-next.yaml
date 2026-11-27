@@ -37,7 +37,8 @@ paths:
       - annotations
   /api/v1/annotations:
     get:
-      description: List annotations for a session.
+      description: List annotations for a session, each with the optional local owner
+        and author projections kept distinct from the shared annotation summary.
       operationId: listAnnotations
       parameters:
       - description: Session ID to filter annotations
@@ -53,7 +54,7 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/SchemaAnnotationSummary'
+                  $ref: '#/components/schemas/SchemaLocalAnnotationRow'
                 type:
                 - "null"
                 - array
@@ -707,6 +708,157 @@ paths:
             code is one of: kickstart_unavailable.'
       tags:
       - kickstart
+  /api/v1/local-owner:
+    get:
+      description: 'Read this data directory''s one permanent local owner, the most
+        recent claim entries, the full claim total, the claim prompt state, and the
+        ownership counts. Entries are newest first by insertion order (the store''s
+        rowid); claimedAt is display data only and never decides the order. nextBefore
+        names the last returned entry and is present exactly when an older entry exists,
+        found by reading one row past the page; a page shorter than 100 never carries
+        it. Pass before=<nextBefore> to read the next older page. A before that names
+        no entry for this local owner, including a foreign entry, answers 400. This
+        is a local read: it needs no Village login and makes no network call. claims
+        is [] when this directory has no claims.'
+      operationId: getLocalOwnerStatus
+      parameters:
+      - description: 'Older-page cursor: the nextBefore value from the previous status
+          read. Omit for the most recent page. A value that names no claim entry for
+          this local owner answers 400.'
+        in: query
+        name: before
+        schema:
+          description: 'Older-page cursor: the nextBefore value from the previous
+            status read. Omit for the most recent page. A value that names no claim
+            entry for this local owner answers 400.'
+          maxLength: 64
+          minLength: 1
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaLocalOwnerStatus'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Bad Request
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Internal Server Error
+      tags:
+      - local-owner
+  /api/v1/local-owner/claim:
+    post:
+      description: 'Claim local sessions and annotations for the signed-in Village
+        account. all=false claims only unclaimed artifacts; all=true claims every
+        local session and annotation. An explicit claim always appends one entry and
+        never rewrites an earlier one, including when it moves nothing, and returns
+        its claimId. A successful explicit claim (all true or false) also records
+        the completed prompt state for this local owner plus account scope with the
+        same state write as the prompt, replacing an earlier decline, so a later status
+        read reports completed and a later sign-in does not prompt again. An automatic
+        claim reuses this account''s automatic entry only while that entry is the
+        newest in the whole log for this local owner; otherwise it appends one. Pulled
+        transcripts and annotations are never claimed. The answer is the recomputed
+        status plus what this action claimed. Returns 403 with a JSON error, and changes
+        nothing, when the request did not come from this local server: the request''s
+        Host header does not name a loopback address (code request_host_not_local),
+        or a browser sent it from another origin or from a page this server did not
+        serve (code request_origin_not_local).'
+      operationId: claimLocalOwner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaLocalOwnerClaimRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaLocalOwnerClaimResult'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Internal Server Error
+      tags:
+      - local-owner
+  /api/v1/local-owner/decline:
+    post:
+      description: 'Decline the claim prompt for the signed-in Village account. A
+        decline writes no claim entry; it records only that the prompt was dismissed
+        so the product does not ask again for the same local owner plus account scope.
+        The claim control stays available. Returns 403 with a JSON error, and changes
+        nothing, when the request did not come from this local server: the request''s
+        Host header does not name a loopback address (code request_host_not_local),
+        or a browser sent it from another origin or from a page this server did not
+        serve (code request_origin_not_local).'
+      operationId: declineLocalOwnerPrompt
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaLocalOwnerStatus'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Internal Server Error
+      tags:
+      - local-owner
   /api/v1/map/{projectHash}:
     get:
       description: Get the full map graph for a project (optionally at a commit).
@@ -4914,6 +5066,198 @@ components:
       required:
       - partial
       type: object
+    SchemaLocalAnnotationRow:
+      properties:
+        annotatorKind:
+          $ref: '#/components/schemas/SchemaAnnotatorKind'
+        annotatorName:
+          type: string
+        author:
+          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
+        confidence:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        contentHash:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        createdAt:
+          format: int64
+          type: integer
+        id:
+          type: string
+        isPrimary:
+          type: boolean
+        owner:
+          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
+        provenance:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaProvenance'
+          - type: "null"
+        reason:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        supersededBy:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetAnnotationId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetAssociationId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaAssociationID'
+          - type: "null"
+        targetContentHash:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetEntryEndIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        targetEntryIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        targetFilePath:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetKind:
+          $ref: '#/components/schemas/SchemaTargetKind'
+        targetProjectHash:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaProjectHash'
+          - type: "null"
+        targetSessionId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        typeId:
+          type: string
+        typeName:
+          type: string
+        value:
+          type: string
+      required:
+      - id
+      - targetKind
+      - isPrimary
+      - annotatorKind
+      - annotatorName
+      - typeId
+      - typeName
+      - value
+      - createdAt
+      type: object
+    SchemaLocalArtifactIdentity:
+      properties:
+        claimId:
+          maxLength: 64
+          minLength: 1
+          type: string
+        kind:
+          $ref: '#/components/schemas/SchemaLocalArtifactIdentityKind'
+        localOwnerId:
+          maxLength: 64
+          minLength: 1
+          type: string
+        userId:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+        username:
+          minLength: 1
+          type: string
+        villageUrl:
+          maxLength: 1024
+          type: string
+      required:
+      - kind
+      type: object
+    SchemaLocalArtifactIdentityKind:
+      description: 'Whose artifact a local read describes: this data directory''s
+        local owner, the Village account that claimed it, a foreign pull-manifest
+        owner, or an owner that is projected but withheld'
+      enum:
+      - local
+      - village
+      - foreign
+      - unknown
+      examples:
+      - local
+      - village
+      - foreign
+      - unknown
+      title: Local Artifact Identity Kind
+      type: string
+    SchemaLocalClaimEntry:
+      properties:
+        claimedAt:
+          format: date-time
+          type: string
+        id:
+          maxLength: 64
+          minLength: 1
+          type: string
+        localOwnerId:
+          maxLength: 64
+          minLength: 1
+          type: string
+        source:
+          $ref: '#/components/schemas/SchemaLocalClaimSource'
+        userId:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+        username:
+          minLength: 1
+          type: string
+        villageUrl:
+          maxLength: 1024
+          type: string
+      required:
+      - id
+      - localOwnerId
+      - villageUrl
+      - userId
+      - username
+      - source
+      - claimedAt
+      type: object
+    SchemaLocalClaimSource:
+      description: 'Why one claim entry exists: an explicit command, the sign-in prompt,
+        or an automatic claim of sessions first stored by this harvest'
+      enum:
+      - manual
+      - sign_in_prompt
+      - automatic
+      examples:
+      - manual
+      - sign_in_prompt
+      - automatic
+      title: Local Claim Source
+      type: string
     SchemaLocalCollectiveSuggestion:
       properties:
         match:
@@ -6142,6 +6486,129 @@ components:
       - uncertain
       title: Local Operation Diagnostic Outcome
       type: string
+    SchemaLocalOwner:
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          maxLength: 64
+          minLength: 1
+          type: string
+      required:
+      - id
+      - createdAt
+      type: object
+    SchemaLocalOwnerClaimPrompt:
+      properties:
+        account:
+          $ref: '#/components/schemas/SchemaCollectiveObservationScope'
+        decidedAt:
+          format: date-time
+          type: string
+        state:
+          $ref: '#/components/schemas/SchemaLocalOwnerPromptState'
+      required:
+      - state
+      type: object
+    SchemaLocalOwnerClaimRequest:
+      properties:
+        all:
+          type: boolean
+      required:
+      - all
+      type: object
+    SchemaLocalOwnerClaimResult:
+      properties:
+        alreadyClaimed:
+          minimum: 0
+          type: integer
+        claimId:
+          maxLength: 64
+          minLength: 1
+          type: string
+        claimed:
+          minimum: 0
+          type: integer
+        status:
+          $ref: '#/components/schemas/SchemaLocalOwnerStatus'
+      required:
+      - status
+      - claimed
+      - alreadyClaimed
+      - claimId
+      type: object
+    SchemaLocalOwnerOwnership:
+      properties:
+        annotations:
+          $ref: '#/components/schemas/SchemaLocalOwnerOwnershipCounts'
+        sessions:
+          $ref: '#/components/schemas/SchemaLocalOwnerOwnershipCounts'
+      required:
+      - sessions
+      - annotations
+      type: object
+    SchemaLocalOwnerOwnershipCounts:
+      properties:
+        mine:
+          minimum: 0
+          type: integer
+        others:
+          minimum: 0
+          type: integer
+        total:
+          minimum: 0
+          type: integer
+        unclaimed:
+          minimum: 0
+          type: integer
+      required:
+      - total
+      - unclaimed
+      - mine
+      - others
+      type: object
+    SchemaLocalOwnerPromptState:
+      description: 'The server-computed claim prompt state: no account selected, due,
+        declined, or completed for one local owner plus account scope'
+      enum:
+      - not_applicable
+      - due
+      - declined
+      - completed
+      examples:
+      - not_applicable
+      - due
+      - declined
+      - completed
+      title: Local Owner Prompt State
+      type: string
+    SchemaLocalOwnerStatus:
+      properties:
+        claims:
+          items:
+            $ref: '#/components/schemas/SchemaLocalClaimEntry'
+          type: array
+        nextBefore:
+          maxLength: 64
+          minLength: 1
+          type: string
+        owner:
+          $ref: '#/components/schemas/SchemaLocalOwner'
+        ownership:
+          $ref: '#/components/schemas/SchemaLocalOwnerOwnership'
+        prompt:
+          $ref: '#/components/schemas/SchemaLocalOwnerClaimPrompt'
+        totalClaims:
+          minimum: 0
+          type: integer
+      required:
+      - owner
+      - claims
+      - totalClaims
+      - prompt
+      - ownership
+      type: object
     SchemaLocalPublication:
       properties:
         audience:
@@ -6467,6 +6934,12 @@ components:
       type: object
     SchemaLocalSyncSummary:
       properties:
+        adapterVersion:
+          description: Successful Peasant adapter/parser revision for this local artifact,
+            not the native harness release. Omit when unknown; a present revision
+            must be positive.
+          minimum: 1
+          type: integer
         conversationTurnCount:
           maximum: 9.007199254740991e+15
           minimum: 0
@@ -6488,6 +6961,8 @@ components:
           type: integer
         model:
           type: string
+        owner:
+          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
         parentSessionId:
           type: string
         parentUnresolved:
@@ -8001,6 +8476,12 @@ components:
       type: object
     SchemaSessionDetailReadPayload:
       properties:
+        adapterVersion:
+          description: Successful Peasant adapter/parser revision for this local artifact,
+            not the native harness release. Omit when unknown; a present revision
+            must be positive.
+          minimum: 1
+          type: integer
         childSessions:
           items:
             $ref: '#/components/schemas/SchemaChildSessionRef'
@@ -8045,6 +8526,8 @@ components:
           type: array
         outcome:
           $ref: '#/components/schemas/SchemaSessionOutcome'
+        owner:
+          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
         parentSessionId:
           $ref: '#/components/schemas/SchemaSessionID'
         project:
@@ -8384,6 +8867,12 @@ components:
       type: object
     SchemaSessionSummary:
       properties:
+        adapterVersion:
+          description: Successful Peasant adapter/parser revision for this local artifact,
+            not the native harness release. Omit when unknown; a present revision
+            must be positive.
+          minimum: 1
+          type: integer
         conversationTurnCount:
           maximum: 9.007199254740991e+15
           minimum: 0
@@ -8401,6 +8890,8 @@ components:
           type: integer
         outcome:
           type: string
+        owner:
+          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
         parentSessionId:
           anyOf:
           - type:
@@ -10373,6 +10864,12 @@ components:
       type: object
     SessionDetailReadPayload:
       properties:
+        adapterVersion:
+          description: Successful Peasant adapter/parser revision for this local artifact,
+            not the native harness release. Omit when unknown; a present revision
+            must be positive.
+          minimum: 1
+          type: integer
         childSessions:
           items:
             $ref: '#/components/schemas/SchemaChildSessionRef'
@@ -10417,6 +10914,8 @@ components:
           type: array
         outcome:
           $ref: '#/components/schemas/SchemaSessionOutcome'
+        owner:
+          $ref: '#/components/schemas/SchemaLocalArtifactIdentity'
         parentSessionId:
           $ref: '#/components/schemas/SchemaSessionID'
         project:

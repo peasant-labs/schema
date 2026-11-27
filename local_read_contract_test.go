@@ -225,6 +225,8 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 		value = &schema.SessionDetailHeader{}
 	case localReadDetailHeaderPayload:
 		value = &schema.SessionDetailHeaderPayload{}
+	case "annotation-row":
+		value = &schema.LocalAnnotationRow{}
 	default:
 		return nil, fmt.Errorf("unknown local read fixture kind %q", input.Kind)
 	}
@@ -281,6 +283,10 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 			return nil, err
 		}
 	case *schema.SessionDetailHeaderPayload:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.LocalAnnotationRow:
 		if err := typed.Validate(); err != nil {
 			return nil, err
 		}

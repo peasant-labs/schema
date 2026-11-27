@@ -1872,6 +1872,18 @@ func LocalGetKickstartPreviewPath(id, nodeId string) (string, error) {
 // (operationId getKickstartStatus) in the Local API document.
 var LocalGetKickstartStatus = Route{method: MethodGet, pattern: "/api/v1/kickstart/status", operationID: "getKickstartStatus"}
 
+// LocalGetLocalOwnerStatus is GET /api/v1/local-owner
+// (operationId getLocalOwnerStatus) in the Local API document.
+var LocalGetLocalOwnerStatus = Route{method: MethodGet, pattern: "/api/v1/local-owner", operationID: "getLocalOwnerStatus"}
+
+// LocalClaimLocalOwner is POST /api/v1/local-owner/claim
+// (operationId claimLocalOwner) in the Local API document.
+var LocalClaimLocalOwner = Route{method: MethodPost, pattern: "/api/v1/local-owner/claim", operationID: "claimLocalOwner"}
+
+// LocalDeclineLocalOwnerPrompt is POST /api/v1/local-owner/decline
+// (operationId declineLocalOwnerPrompt) in the Local API document.
+var LocalDeclineLocalOwnerPrompt = Route{method: MethodPost, pattern: "/api/v1/local-owner/decline", operationID: "declineLocalOwnerPrompt"}
+
 // LocalGetMapGraph is GET /api/v1/map/{projectHash}
 // (operationId getMapGraph) in the Local API document.
 var LocalGetMapGraph = Route{method: MethodGet, pattern: "/api/v1/map/{projectHash}", operationID: "getMapGraph"}
@@ -2236,6 +2248,9 @@ var AllLocal = []Route{
 	LocalGetKickstartTree,
 	LocalGetKickstartPreview,
 	LocalGetKickstartStatus,
+	LocalGetLocalOwnerStatus,
+	LocalClaimLocalOwner,
+	LocalDeclineLocalOwnerPrompt,
 	LocalGetMapGraph,
 	LocalGetMapNodeDetail,
 	LocalListProjectTasks,

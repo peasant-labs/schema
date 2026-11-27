@@ -5789,6 +5789,322 @@
         "title": "License",
         "type": "string"
       },
+      "LocalAnnotationRow": {
+        "properties": {
+          "annotatorKind": {
+            "$ref": "#/components/schemas/AnnotatorKind"
+          },
+          "annotatorName": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/LocalArtifactIdentity"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "number"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contentHash": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/LocalArtifactIdentity"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Provenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supersededBy": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetAnnotationId": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetAssociationId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssociationID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetContentHash": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetEntryEndIndex": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetEntryIndex": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetFilePath": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetKind": {
+            "$ref": "#/components/schemas/TargetKind"
+          },
+          "targetProjectHash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetSessionId": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "typeId": {
+            "type": "string"
+          },
+          "typeName": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "targetKind",
+          "isPrimary",
+          "annotatorKind",
+          "annotatorName",
+          "typeId",
+          "typeName",
+          "value",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "LocalArtifactIdentity": {
+        "properties": {
+          "claimId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LocalArtifactIdentityKind"
+          },
+          "localOwnerId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "username": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "villageUrl": {
+            "maxLength": 1024,
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "LocalArtifactIdentityKind": {
+        "description": "Whose artifact a local read describes: this data directory's local owner, the Village account that claimed it, a foreign pull-manifest owner, or an owner that is projected but withheld",
+        "enum": [
+          "local",
+          "village",
+          "foreign",
+          "unknown"
+        ],
+        "examples": [
+          "local",
+          "village",
+          "foreign",
+          "unknown"
+        ],
+        "title": "Local Artifact Identity Kind",
+        "type": "string"
+      },
+      "LocalClaimEntry": {
+        "properties": {
+          "claimedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "localOwnerId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/LocalClaimSource"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "username": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "villageUrl": {
+            "maxLength": 1024,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "localOwnerId",
+          "villageUrl",
+          "userId",
+          "username",
+          "source",
+          "claimedAt"
+        ],
+        "type": "object"
+      },
+      "LocalClaimSource": {
+        "description": "Why one claim entry exists: an explicit command, the sign-in prompt, or an automatic claim of sessions first stored by this harvest",
+        "enum": [
+          "manual",
+          "sign_in_prompt",
+          "automatic"
+        ],
+        "examples": [
+          "manual",
+          "sign_in_prompt",
+          "automatic"
+        ],
+        "title": "Local Claim Source",
+        "type": "string"
+      },
       "LocalCollectiveSuggestion": {
         "properties": {
           "match": {
@@ -7559,6 +7875,175 @@
         "title": "Local Operation Diagnostic Outcome",
         "type": "string"
       },
+      "LocalOwner": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "LocalOwnerClaimPrompt": {
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/CollectiveObservationScope"
+          },
+          "decidedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/LocalOwnerPromptState"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "LocalOwnerClaimRequest": {
+        "properties": {
+          "all": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "all"
+        ],
+        "type": "object"
+      },
+      "LocalOwnerClaimResult": {
+        "properties": {
+          "alreadyClaimed": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "claimId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "claimed": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LocalOwnerStatus"
+          }
+        },
+        "required": [
+          "status",
+          "claimed",
+          "alreadyClaimed",
+          "claimId"
+        ],
+        "type": "object"
+      },
+      "LocalOwnerOwnership": {
+        "properties": {
+          "annotations": {
+            "$ref": "#/components/schemas/LocalOwnerOwnershipCounts"
+          },
+          "sessions": {
+            "$ref": "#/components/schemas/LocalOwnerOwnershipCounts"
+          }
+        },
+        "required": [
+          "sessions",
+          "annotations"
+        ],
+        "type": "object"
+      },
+      "LocalOwnerOwnershipCounts": {
+        "properties": {
+          "mine": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "others": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unclaimed": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "unclaimed",
+          "mine",
+          "others"
+        ],
+        "type": "object"
+      },
+      "LocalOwnerPromptState": {
+        "description": "The server-computed claim prompt state: no account selected, due, declined, or completed for one local owner plus account scope",
+        "enum": [
+          "not_applicable",
+          "due",
+          "declined",
+          "completed"
+        ],
+        "examples": [
+          "not_applicable",
+          "due",
+          "declined",
+          "completed"
+        ],
+        "title": "Local Owner Prompt State",
+        "type": "string"
+      },
+      "LocalOwnerStatus": {
+        "properties": {
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/LocalClaimEntry"
+            },
+            "type": "array"
+          },
+          "nextBefore": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/LocalOwner"
+          },
+          "ownership": {
+            "$ref": "#/components/schemas/LocalOwnerOwnership"
+          },
+          "prompt": {
+            "$ref": "#/components/schemas/LocalOwnerClaimPrompt"
+          },
+          "totalClaims": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "owner",
+          "claims",
+          "totalClaims",
+          "prompt",
+          "ownership"
+        ],
+        "type": "object"
+      },
       "LocalPublication": {
         "properties": {
           "audience": {
@@ -8145,6 +8630,11 @@
       },
       "LocalSyncSummary": {
         "properties": {
+          "adapterVersion": {
+            "description": "Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive.",
+            "minimum": 1,
+            "type": "integer"
+          },
           "conversationTurnCount": {
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -8173,6 +8663,9 @@
           },
           "model": {
             "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/LocalArtifactIdentity"
           },
           "parentSessionId": {
             "type": "string"
@@ -12452,6 +12945,11 @@
       },
       "SessionDetailReadPayload": {
         "properties": {
+          "adapterVersion": {
+            "description": "Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive.",
+            "minimum": 1,
+            "type": "integer"
+          },
           "childSessions": {
             "items": {
               "$ref": "#/components/schemas/ChildSessionRef"
@@ -12518,6 +13016,9 @@
           },
           "outcome": {
             "$ref": "#/components/schemas/SessionOutcome"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/LocalArtifactIdentity"
           },
           "parentSessionId": {
             "$ref": "#/components/schemas/SessionID"
@@ -13412,6 +13913,11 @@
       },
       "SessionSummary": {
         "properties": {
+          "adapterVersion": {
+            "description": "Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive.",
+            "minimum": 1,
+            "type": "integer"
+          },
           "conversationTurnCount": {
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -13434,6 +13940,9 @@
           },
           "outcome": {
             "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/LocalArtifactIdentity"
           },
           "parentSessionId": {
             "anyOf": [

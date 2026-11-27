@@ -69,6 +69,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"AnnotationPushRequest", new(schema.AnnotationPushRequest)}, {"AnnotationPushResponse", new(schema.AnnotationPushResponse)},
 		{"AnnotationPushResult", new(schema.AnnotationPushResult)}, {"AnnotationPushStatus", new(schema.AnnotationPushStatus)},
 		{"AnnotationStatus", new(schema.AnnotationStatus)}, {"AnnotationSummary", new(schema.AnnotationSummary)},
+		{"LocalAnnotationRow", new(schema.LocalAnnotationRow)},
 		{"AnnotationTypeSummary", new(schema.AnnotationTypeSummary)}, {"AnnotationsPayload", new(schema.AnnotationsPayload)},
 		{"AnnotatorKind", new(schema.AnnotatorKind)},
 		{"AnnotatorSummary", new(schema.AnnotatorSummary)}, {"AssociationConclusion", new(schema.AssociationConclusion)},
@@ -198,6 +199,13 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"TranscriptRetainedState", new(schema.TranscriptRetainedState)},
 		{"TranscriptViewerProjection", new(schema.TranscriptViewerProjection)},
 		{"SessionTeammate", new(schema.SessionTeammate)}, {"SessionTeammateEvidence", new(schema.SessionTeammateEvidence)},
+		{"LocalOwner", new(schema.LocalOwner)}, {"LocalClaimSource", new(schema.LocalClaimSource)},
+		{"LocalClaimEntry", new(schema.LocalClaimEntry)},
+		{"LocalOwnerClaimRequest", new(schema.LocalOwnerClaimRequest)}, {"LocalOwnerClaimResult", new(schema.LocalOwnerClaimResult)},
+		{"LocalOwnerPromptState", new(schema.LocalOwnerPromptState)}, {"LocalOwnerClaimPrompt", new(schema.LocalOwnerClaimPrompt)},
+		{"LocalOwnerStatus", new(schema.LocalOwnerStatus)},
+		{"LocalOwnerOwnership", new(schema.LocalOwnerOwnership)}, {"LocalOwnerOwnershipCounts", new(schema.LocalOwnerOwnershipCounts)},
+		{"LocalArtifactIdentityKind", new(schema.LocalArtifactIdentityKind)}, {"LocalArtifactIdentity", new(schema.LocalArtifactIdentity)},
 		{"LocalSyncSummary", new(schema.LocalSyncSummary)}, {"LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)},
 		{"LocalSessionRow", new(schema.LocalSessionRow)}, {"LocalSessionListItem", new(schema.LocalSessionListItem)},
 		{"LocalSessionListPayload", new(schema.LocalSessionListPayload)}, {"LocalHelperMembersPayload", new(schema.LocalHelperMembersPayload)},
@@ -465,6 +473,18 @@ var expandedEmbeddedRequired = map[string]struct{}{
 	"SessionDetailHeaderPayload":   {},
 	"TranscriptTurn":               {},
 	"LocalKickstartPreviewSegment": {},
+	"LocalAnnotationRow":           {},
+}
+
+// copiedEmbeddedProperties names catalog components whose embedded struct is a
+// shared wire summary and whose promoted property schemas must be copied
+// exactly as the summary's own component declares them. LocalAnnotationRow adds
+// owner and author to AnnotationSummary without changing it; without this copy
+// the flattening leaves the summary's optional fields in reflection's raw
+// nullable form (type: [null, string] and a $ref with no null arm), which is the
+// same value set but reads as a rewrite of every optional field.
+var copiedEmbeddedProperties = map[string]struct{}{
+	"LocalAnnotationRow": {},
 }
 
 // applyGoRequiredFields preserves Go's JSON presence contract in the canonical
@@ -499,6 +519,7 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 				embedded = embedded.Elem()
 			}
 			_, expandEmbedded := expandedEmbeddedRequired[componentName]
+			_, copyProperties := copiedEmbeddedProperties[componentName]
 			if embedded.Kind() == reflect.Struct && (expandEmbedded || strings.Contains(embedded.Name(), "[")) {
 				for j := 0; j < embedded.NumField(); j++ {
 					inner := embedded.Field(j)
@@ -520,6 +541,15 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 					}
 					if !innerOptional {
 						required = append(required, innerName)
+					}
+					if copyProperties && inner.Type.Kind() == reflect.Pointer {
+						if property, ok := properties[innerName].(map[string]interface{}); ok {
+							if inner.Tag.Get("nullable") == "false" {
+								properties[innerName] = dropNullArm(property)
+							} else {
+								properties[innerName] = nullableSchema(property)
+							}
+						}
 					}
 				}
 				continue
