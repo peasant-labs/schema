@@ -48,10 +48,10 @@ type positionedSingleDefExpected struct {
 }
 
 type localRouteFixtures struct {
-	RequiredNames              []string                                                                 `yaml:"required_names"`
+	RequiredNames              []string                                                               `yaml:"required_names"`
 	PositionedParameters       []localRouteParam                                                      `yaml:"positioned_parameters"`
-	PositionedSingleDefinition testcase.Corpus[positionedSingleDefInput, positionedSingleDefExpected]   `yaml:"positioned_single_definition"`
-	Routes                     testcase.Corpus[localRouteInput, localRouteExpected]                     `yaml:"routes"`
+	PositionedSingleDefinition testcase.Corpus[positionedSingleDefInput, positionedSingleDefExpected] `yaml:"positioned_single_definition"`
+	Routes                     testcase.Corpus[localRouteInput, localRouteExpected]                   `yaml:"routes"`
 }
 
 func TestLocalGroupedRouteContract(t *testing.T) {
