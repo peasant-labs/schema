@@ -35,6 +35,8 @@ for (const c of fixture.cases) {
       if (c.expectUnknown !== undefined) assert.equal(state.segments.flatMap((s) => s.retainedUnknown ?? []).length, c.expectUnknown);
       if (c.expectMetadata !== undefined) assert.equal(state.segments.flatMap((s) => s.nativeMetadata ?? []).length, c.expectMetadata);
       if (c.expectHasNewer !== undefined) assert.equal(state.segments.at(-1).hasNewer, c.expectHasNewer);
+      if (c.expectSourceBytesLoaded !== undefined) assert.equal(state.directory.sourceBytesLoaded, c.expectSourceBytesLoaded);
+      if (c.expectSourceBytesTotal !== undefined) assert.equal(state.directory.sourceBytesTotal, c.expectSourceBytesTotal);
     } else assert.throws(run, (error) => !error.message.includes("ses_test") && !error.message.includes("/private/"));
   });
 }

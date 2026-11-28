@@ -224,6 +224,8 @@ type LocalKickstartPreviewDirectory struct {
 	LoadedSegments          int                    `json:"loadedSegments" minimum:"0" maximum:"9007199254740991"`
 	LoadedTurns             int                    `json:"loadedTurns" minimum:"0" maximum:"9007199254740991"`
 	LoadedConversationTurns *int                   `json:"loadedConversationTurns,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	SourceBytesLoaded       *int                   `json:"sourceBytesLoaded,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false" description:"Source bytes consumed so far for this capture; present together with sourceBytesTotal, non-decreasing across frames, and at most sourceBytesTotal."`
+	SourceBytesTotal        *int                   `json:"sourceBytesTotal,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false" description:"Source byte extent fixed when the capture opens; present together with sourceBytesLoaded and invariant across frames of one capture."`
 	TotalSegments           *int                   `json:"totalSegments,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	TotalTurns              *int                   `json:"totalTurns,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	TotalConversationTurns  *int                   `json:"totalConversationTurns,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
@@ -397,6 +399,14 @@ func MergeLocalKickstartPreview(held LocalKickstartPreviewState, frame LocalKick
 	if d.LoadedSegments != len(d.Segments) || d.LoadedSegments > MaxTranscriptDirectoryRefs || d.LoadedTurns < 0 || !isDecimalRevision(d.Revision) || string(d.SessionID) != frame.Header.ID {
 		return fail()
 	}
+	if (d.SourceBytesLoaded == nil) != (d.SourceBytesTotal == nil) {
+		return fail()
+	}
+	if d.SourceBytesLoaded != nil {
+		if *d.SourceBytesLoaded < 0 || *d.SourceBytesTotal < 0 || *d.SourceBytesLoaded > *d.SourceBytesTotal || int64(*d.SourceBytesTotal) > maxSafeJSONInteger {
+			return fail()
+		}
+	}
 	if d.Complete {
 		if d.TotalSegments == nil || d.TotalTurns == nil || *d.TotalSegments != d.LoadedSegments || *d.TotalTurns != d.LoadedTurns || (d.LoadedConversationTurns == nil) != (d.TotalConversationTurns == nil) || (d.TotalConversationTurns != nil && *d.TotalConversationTurns != *d.LoadedConversationTurns) {
 			return fail()
@@ -425,6 +435,12 @@ func MergeLocalKickstartPreview(held LocalKickstartPreviewState, frame LocalKick
 		}
 	} else {
 		if frame.Kind != LocalKickstartPreviewSegmentEvent || held.Directory.Complete || held.Seq == ^uint32(0) || frame.Seq != held.Seq+1 || frame.SessionID != held.SessionID || frame.CaptureID != held.CaptureID || d.Revision != held.Directory.Revision || d.SessionID != held.Directory.SessionID || frame.Header.ID != held.Header.ID {
+			return fail()
+		}
+		if (d.SourceBytesTotal != nil) != (held.Directory.SourceBytesTotal != nil) {
+			return fail()
+		}
+		if d.SourceBytesTotal != nil && (*d.SourceBytesTotal != *held.Directory.SourceBytesTotal || *d.SourceBytesLoaded < *held.Directory.SourceBytesLoaded) {
 			return fail()
 		}
 		if len(d.Segments) < len(held.Directory.Segments) || len(d.Segments) > len(held.Directory.Segments)+1 || !reflect.DeepEqual(d.Segments[:len(held.Directory.Segments)], held.Directory.Segments) {

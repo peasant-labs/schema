@@ -4596,6 +4596,18 @@ components:
           type: array
         sessionId:
           $ref: '#/components/schemas/SessionID'
+        sourceBytesLoaded:
+          description: Source bytes consumed so far for this capture; present together
+            with sourceBytesTotal, non-decreasing across frames, and at most sourceBytesTotal.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        sourceBytesTotal:
+          description: Source byte extent fixed when the capture opens; present together
+            with sourceBytesLoaded and invariant across frames of one capture.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         totalConversationTurns:
           maximum: 9.007199254740991e+15
           minimum: 0
@@ -10174,6 +10186,14 @@ components:
           - string
         depth:
           type: integer
+        displayNumber:
+          description: Optional producer-assigned display label computed with CookTranscriptRows
+            over the whole stored partition, never over one segment's turns; when
+            any turn in a segment carries one, every served turn in that segment carries
+            one, and a consumer shows it as given.
+          minLength: 1
+          pattern: ^[1-9][0-9]*[a-z]*$
+          type: string
         entryType:
           $ref: '#/components/schemas/EntryType'
         hasThinking:

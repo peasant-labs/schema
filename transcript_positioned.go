@@ -233,6 +233,13 @@ func (r PositionedSegmentRef) Validate() error {
 
 var transcriptDisplayNumberPattern = regexp.MustCompile(`^[1-9][0-9]*[a-z]*$`)
 
+func validateTranscriptDisplayNumber(where, displayNumber string) error {
+	if displayNumber != "" && !transcriptDisplayNumberPattern.MatchString(displayNumber) {
+		return fmt.Errorf("%sdisplayNumber is malformed; it cannot label a served row; emit a positive task number with an optional lowercase suffix", where)
+	}
+	return nil
+}
+
 // TranscriptSegmentRow holds one served row. Turn is the source JSON object;
 // recordedIndexState and recordedIndex are its only recorded-index statement.
 type TranscriptSegmentRow struct {
@@ -252,8 +259,8 @@ func (r TranscriptSegmentRow) Validate() error {
 	if r.RecordedIndex != nil && (*r.RecordedIndex < 0 || int64(*r.RecordedIndex) > maxSafeJSONInteger) {
 		return fmt.Errorf("%srecordedIndex is outside the safe nonnegative range; it cannot be used as an address; emit a valid index or its invalid state", where)
 	}
-	if r.DisplayNumber != "" && !transcriptDisplayNumberPattern.MatchString(r.DisplayNumber) {
-		return fmt.Errorf("%sdisplayNumber is malformed; it cannot label a served row; emit a positive task number with an optional lowercase suffix", where)
+	if err := validateTranscriptDisplayNumber(where, r.DisplayNumber); err != nil {
+		return err
 	}
 	if len(r.Turn.raw) == 0 {
 		return fmt.Errorf("%sturn is empty; the row cannot be served; construct a turn from the served JSON object", where)

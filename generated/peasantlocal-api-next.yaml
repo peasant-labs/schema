@@ -1427,7 +1427,7 @@ paths:
   /api/v1/sessions/{id}/transcript/segments/{index}:
     get:
       description: |-
-        Read one transcript segment by its directory ordinal. The segment is cut on complete entries and whole turns, so every turn it serves is whole and its firstTurn and lastTurn are exactly the range the directory declared. Each turn row embeds the shared turn detail beside truncated and the pre-bound byteLength. hasOlder and hasNewer say whether the transcript continues on that side. revision is optional and the current revision is served when it is omitted. A non-numeric or negative index is a 400, an index at or past totalSegments is a 404 naming the directory's segment count, and a stale revision is a 409 naming both revisions. When the store returns fewer turns than the directory declared, the read answers 409 with the declared and returned ranges and the re-index command rather than serving a short segment. The saved ingestion selection never narrows this stored read. With v=2 the positioned segment uses partition and section and carries server-numbered rows. Invalid selectors are 400, a missing segment is 404, a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.
+        Read one transcript segment by its directory ordinal. The segment is cut on complete entries and whole turns, so every turn it serves is whole and its firstTurn and lastTurn are exactly the range the directory declared. Each turn row embeds the shared turn detail beside truncated, the pre-bound byteLength, and an optional displayNumber computed by the producer with CookTranscriptRows over the whole stored partition (never over one segment's turns); when any turn in a segment carries displayNumber every turn in that segment carries one, and a consumer shows it as given. hasOlder and hasNewer say whether the transcript continues on that side. revision is optional and the current revision is served when it is omitted. A non-numeric or negative index is a 400, an index at or past totalSegments is a 404 naming the directory's segment count, and a stale revision is a 409 naming both revisions. When the store returns fewer turns than the directory declared, the read answers 409 with the declared and returned ranges and the re-index command rather than serving a short segment. The saved ingestion selection never narrows this stored read. With v=2 the positioned segment uses partition and section and carries server-numbered rows. Invalid selectors are 400, a missing segment is 404, a stale revision or representation is 409, and temporary load refusal is 503 with Retry-After.
 
         Protocol generation selectors (omission is v=0):
         - v=0 -> 0.1.0
@@ -2754,6 +2754,18 @@ components:
           type: array
         sessionId:
           $ref: '#/components/schemas/SchemaSessionID'
+        sourceBytesLoaded:
+          description: Source bytes consumed so far for this capture; present together
+            with sourceBytesTotal, non-decreasing across frames, and at most sourceBytesTotal.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        sourceBytesTotal:
+          description: Source byte extent fixed when the capture opens; present together
+            with sourceBytesLoaded and invariant across frames of one capture.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         totalConversationTurns:
           maximum: 9.007199254740991e+15
           minimum: 0
@@ -5768,6 +5780,18 @@ components:
           type: array
         sessionId:
           $ref: '#/components/schemas/SchemaSessionID'
+        sourceBytesLoaded:
+          description: Source bytes consumed so far for this capture; present together
+            with sourceBytesTotal, non-decreasing across frames, and at most sourceBytesTotal.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        sourceBytesTotal:
+          description: Source byte extent fixed when the capture opens; present together
+            with sourceBytesLoaded and invariant across frames of one capture.
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         totalConversationTurns:
           maximum: 9.007199254740991e+15
           minimum: 0
@@ -9421,6 +9445,14 @@ components:
           - string
         depth:
           type: integer
+        displayNumber:
+          description: Optional producer-assigned display label computed with CookTranscriptRows
+            over the whole stored partition, never over one segment's turns; when
+            any turn in a segment carries one, every served turn in that segment carries
+            one, and a consumer shows it as given.
+          minLength: 1
+          pattern: ^[1-9][0-9]*[a-z]*$
+          type: string
         entryType:
           $ref: '#/components/schemas/SchemaEntryType'
         hasThinking:
@@ -10625,6 +10657,14 @@ components:
           - string
         depth:
           type: integer
+        displayNumber:
+          description: Optional producer-assigned display label computed with CookTranscriptRows
+            over the whole stored partition, never over one segment's turns; when
+            any turn in a segment carries one, every served turn in that segment carries
+            one, and a consumer shows it as given.
+          minLength: 1
+          pattern: ^[1-9][0-9]*[a-z]*$
+          type: string
         entryType:
           $ref: '#/components/schemas/SchemaEntryType'
         hasThinking:

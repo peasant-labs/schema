@@ -37,8 +37,9 @@ const directoryPageIsOptional: Same<TranscriptSegmentDirectory["directoryPage"],
 // One turn row: the single TurnDetail definition plus the read's own facts,
 // never a flat copy and never a second projection.
 type TranscriptTurnKeys = keyof TranscriptTurn;
-type ExpectedTurnKeys = keyof TurnDetail | "truncated" | "byteLength";
+type ExpectedTurnKeys = keyof TurnDetail | "truncated" | "byteLength" | "displayNumber";
 const turnRowIsTurnDetailPlusFacts: Same<TranscriptTurnKeys, ExpectedTurnKeys> = true;
+const turnDisplayNumberIsOptionalString: Same<TranscriptTurn["displayNumber"], string | undefined> = true;
 const turnIndexHasOneDefinition: Same<TranscriptTurn["index"], TurnDetail["index"]> = true;
 const turnContentHasOneDefinition: Same<TranscriptTurn["content"], TurnDetail["content"]> = true;
 const segmentTurnsAreRows: Same<TranscriptSegment["turns"][number], TranscriptTurn> = true;
@@ -96,6 +97,7 @@ void [
   directoryRefHasNoPosition,
   directoryPageIsOptional,
   turnRowIsTurnDetailPlusFacts,
+  turnDisplayNumberIsOptionalString,
   turnIndexHasOneDefinition,
   turnContentHasOneDefinition,
   segmentTurnsAreRows,

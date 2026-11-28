@@ -38,3 +38,15 @@ requiredNames:
   - conversation-turns-refuses-inconsistent-span
   - producer-rejects-mismeasured-untruncated-turn
   - producer-rejects-truncated-turn-exceeding-declared
+  - source-bytes-partial-and-complete
+  - source-bytes-partial-while-open
+  - source-bytes-cut-preserves-partial
+  - source-bytes-rejects-decreasing-loaded
+  - source-bytes-rejects-loaded-exceeds-total
+  - source-bytes-rejects-opened-loaded-exceeds-total
+  - source-bytes-rejects-changing-total
+  - source-bytes-rejects-half-present
+  - source-bytes-rejects-presence-change
+  - source-bytes-rejects-disappearance
+  - source-bytes-rejects-null-loaded
+  - source-bytes-rejects-negative-loaded

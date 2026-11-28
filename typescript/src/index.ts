@@ -812,6 +812,10 @@ export function mergeLocalKickstartPreview(held: LocalKickstartPreviewState | un
   const header = frame.header;
   if (!d || !header || !frame.captureId || !frame.continuation || !d.segments || (header.turns?.length ?? 0) !== 0 || (header.retainedUnknown?.length ?? 0) !== 0) return previewFailure();
   if (d.sessionId !== header.id || !/^[0-9]+$/.test(d.revision) || d.loadedSegments !== d.segments.length || d.loadedSegments > MaxTranscriptDirectoryRefs || !Number.isSafeInteger(d.loadedTurns) || d.loadedTurns < 0) return previewFailure();
+  if ((d.sourceBytesLoaded === undefined) !== (d.sourceBytesTotal === undefined)) return previewFailure();
+  if (d.sourceBytesLoaded !== undefined && d.sourceBytesTotal !== undefined) {
+    if (!Number.isSafeInteger(d.sourceBytesLoaded) || !Number.isSafeInteger(d.sourceBytesTotal) || d.sourceBytesLoaded < 0 || d.sourceBytesTotal < 0 || d.sourceBytesLoaded > d.sourceBytesTotal) return previewFailure();
+  }
   if (d.complete !== (frame.continuation !== LocalKickstartPreviewContinuation.More)) return previewFailure();
   if (d.complete) {
     if (d.totalSegments !== d.loadedSegments || d.totalTurns !== d.loadedTurns || (d.totalConversationTurns ?? undefined) !== (d.loadedConversationTurns ?? undefined)) return previewFailure();
@@ -830,6 +834,10 @@ export function mergeLocalKickstartPreview(held: LocalKickstartPreviewState | un
     if (frame.kind !== LocalKickstartPreviewEventKind.Opened || d.segments.length !== 0 || d.complete) return previewFailure();
   } else {
     if (frame.kind !== LocalKickstartPreviewEventKind.Segment || held.directory.complete || frame.seq !== held.seq + 1 || frame.sessionId !== held.sessionId || frame.captureId !== held.captureId || d.revision !== held.directory.revision || d.sessionId !== held.directory.sessionId || header.id !== held.header.id) return previewFailure();
+    if ((d.sourceBytesTotal !== undefined) !== (held.directory.sourceBytesTotal !== undefined)) return previewFailure();
+    if (d.sourceBytesTotal !== undefined && held.directory.sourceBytesTotal !== undefined) {
+      if (d.sourceBytesTotal !== held.directory.sourceBytesTotal || d.sourceBytesLoaded! < held.directory.sourceBytesLoaded!) return previewFailure();
+    }
     const oldRefs = held.directory.segments;
     if (!oldRefs || d.segments.length < oldRefs.length || d.segments.length > oldRefs.length + 1 || oldRefs.some((ref, i) => JSON.stringify(ref) !== JSON.stringify(d.segments![i]))) return previewFailure();
     if (held.header.diagnostics?.partial && !header.diagnostics?.partial) return previewFailure();
@@ -844,12 +852,14 @@ export function mergeLocalKickstartPreview(held: LocalKickstartPreviewState | un
   if (segment) {
     const ref = d.segments[segments.length];
     if (!ref || d.segments.length !== segments.length + 1 || segment.index !== segments.length || segment.revision !== d.revision || segment.hasOlder !== (segment.index > 0) || (!d.complete && !segment.hasNewer) || segment.turns.length === 0 || segment.firstTurn !== segment.turns[0]!.index || segment.lastTurn !== segment.turns.at(-1)!.index || ref.firstTurn !== segment.firstTurn || ref.lastTurn !== segment.lastTurn || ref.byteLength !== segment.byteLength) return previewFailure();
-    let bytes = 0, previous = -1;
+    let bytes = 0, previous = -1, numbered = 0;
     for (const turn of segment.turns) {
       if (turn.index <= previous || !Number.isSafeInteger(turn.byteLength)) return previewFailure();
+      if (turn.displayNumber !== undefined) numbered++;
       previous = turn.index;
       bytes += turn.byteLength;
     }
+    if (numbered > 0 && numbered !== segment.turns.length) return previewFailure();
     if (bytes !== segment.byteLength) return previewFailure();
     if (ref.conversationTurns && ref.conversationTurns.count !== segment.turns.filter(isConversationTurn).length) return previewFailure();
     try {
