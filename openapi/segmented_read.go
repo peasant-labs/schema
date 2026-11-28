@@ -89,7 +89,7 @@ func BuildSegmentedReadSpec(protocolVersion, documentVersion string) (*openapi31
 }
 
 func omitSchemaProperty(schemaMap map[string]interface{}, property string) map[string]interface{} {
-	props, ok := schemaMap["properties"].(map[string]interface{})
+	props, ok := schemaMap["properties"].(map[string]interface{}) // unstring-allow: go-json-key-assert — this edits a generic OpenAPI schema node, not a contract payload
 	if !ok {
 		return schemaMap
 	}
