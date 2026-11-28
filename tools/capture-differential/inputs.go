@@ -151,10 +151,15 @@ func loadMutations(path string) ([]input, error) {
 	if len(f.Seeds) == 0 || len(f.Seeds) > maxSeeds || f.Inputs <= 0 || f.Inputs > maxMutatedInputs {
 		return nil, fmt.Errorf("%s must hold 1..%d seeds and 1..%d inputs, has %d seeds and %d inputs", path, maxSeeds, maxMutatedInputs, len(f.Seeds), f.Inputs)
 	}
+	seen := make(map[string]bool, len(f.Mutators))
 	for _, m := range f.Mutators {
 		if mutators[m] == nil {
 			return nil, fmt.Errorf("%s names mutator %q outside the closed list", path, m)
 		}
+		if seen[m] {
+			return nil, fmt.Errorf("%s repeats mutator %q; each mutator of the closed list must appear exactly once", path, m)
+		}
+		seen[m] = true
 	}
 	if len(f.Mutators) != len(mutators) {
 		return nil, fmt.Errorf("%s must name every mutator of the closed list exactly once", path)

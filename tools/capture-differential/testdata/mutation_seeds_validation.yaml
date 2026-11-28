@@ -1,0 +1,15 @@
+cases:
+  - name: duplicate-mutator
+    input:
+      inputs: 7
+      mutators: [byte-flip, byte-flip, truncate, duplicate-member, unicode-escape, insert-multibyte, nest-in-array]
+      seeds:
+        - name: plain-turns
+          detail: '{"turns":[{"index":0,"role":"user","content":"hello"}]}'
+    expected:
+      errorContains:
+        - 'repeats mutator "byte-flip"'
+        - "each mutator of the closed list must appear exactly once"
+    classification: must-fail
+    provenance: {source: requirement, ref: "loadMutations must reject duplicate mutator names"}
+    mutation: {description: "repeats byte-flip in place of byte-delete while keeping the mutator count equal to 7"}
