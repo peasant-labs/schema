@@ -1,0 +1,75 @@
+cases:
+  - name: segment-leading-reply-keeps-whole-partition-9a
+    classification: must-pass
+    provenance: {source: requirement, ref: "a segment starting with a reply carries its whole-partition CookTranscriptRows displayNumber"}
+    mutation: {description: "cut a nine-prompt session so segment one begins on prompt nine's reply and verify 9a instead of 1"}
+    input:
+      harness: claude-code
+      budgetBytes: 70
+      segmentIndex: 1
+      turnsJSON: >-
+        [
+          {"index":0,"role":"user","content":"p1","depth":0},
+          {"index":1,"role":"assistant","content":"r1","depth":0},
+          {"index":2,"role":"user","content":"p2","depth":0},
+          {"index":3,"role":"assistant","content":"r2","depth":0},
+          {"index":4,"role":"user","content":"p3","depth":0},
+          {"index":5,"role":"assistant","content":"r3","depth":0},
+          {"index":6,"role":"user","content":"p4","depth":0},
+          {"index":7,"role":"assistant","content":"r4","depth":0},
+          {"index":8,"role":"user","content":"p5","depth":0},
+          {"index":9,"role":"assistant","content":"r5","depth":0},
+          {"index":10,"role":"user","content":"p6","depth":0},
+          {"index":11,"role":"assistant","content":"r6","depth":0},
+          {"index":12,"role":"user","content":"p7","depth":0},
+          {"index":13,"role":"assistant","content":"r7","depth":0},
+          {"index":14,"role":"user","content":"p8","depth":0},
+          {"index":15,"role":"assistant","content":"r8","depth":0},
+          {"index":16,"role":"user","content":"p9","depth":0},
+          {"index":17,"role":"assistant","content":"reply-to-nine","depth":0},
+          {"index":18,"role":"user","content":"p10","depth":0},
+          {"index":19,"role":"assistant","content":"r10","depth":0}
+        ]
+    expected:
+      totalSegments: 2
+      firstTurn: 17
+      lastTurn: 19
+      displayNumbers: ["9a", "10", "10a"]
+      segmentOnlyFirstDisplayNumber: "1"
+  - name: segment-leading-multi-reply-keeps-9b
+    classification: must-pass
+    provenance: {source: requirement, ref: "successive replies crossing a segment boundary keep their whole-partition task suffix"}
+    mutation: {description: "cut a session mid-reply so segment one begins on the second reply to prompt nine"}
+    input:
+      harness: claude-code
+      budgetBytes: 74
+      segmentIndex: 1
+      turnsJSON: >-
+        [
+          {"index":0,"role":"user","content":"p1","depth":0},
+          {"index":1,"role":"assistant","content":"r1","depth":0},
+          {"index":2,"role":"user","content":"p2","depth":0},
+          {"index":3,"role":"assistant","content":"r2","depth":0},
+          {"index":4,"role":"user","content":"p3","depth":0},
+          {"index":5,"role":"assistant","content":"r3","depth":0},
+          {"index":6,"role":"user","content":"p4","depth":0},
+          {"index":7,"role":"assistant","content":"r4","depth":0},
+          {"index":8,"role":"user","content":"p5","depth":0},
+          {"index":9,"role":"assistant","content":"r5","depth":0},
+          {"index":10,"role":"user","content":"p6","depth":0},
+          {"index":11,"role":"assistant","content":"r6","depth":0},
+          {"index":12,"role":"user","content":"p7","depth":0},
+          {"index":13,"role":"assistant","content":"r7","depth":0},
+          {"index":14,"role":"user","content":"p8","depth":0},
+          {"index":15,"role":"assistant","content":"r8","depth":0},
+          {"index":16,"role":"user","content":"p9","depth":0},
+          {"index":17,"role":"assistant","content":"r9","depth":0},
+          {"index":18,"role":"assistant","content":"reply-to-nine-b","depth":0},
+          {"index":19,"role":"user","content":"p10","depth":0}
+        ]
+    expected:
+      totalSegments: 2
+      firstTurn: 18
+      lastTurn: 19
+      displayNumbers: ["9b", "10"]
+      segmentOnlyFirstDisplayNumber: "1"

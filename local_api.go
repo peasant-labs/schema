@@ -932,6 +932,7 @@ func (s TranscriptSegment) Validate() error {
 	}
 	previous := s.FirstTurn - 1
 	var turnBytes int64
+	numbered := 0
 	for i := range s.Turns {
 		turn := s.Turns[i].Index
 		if turn < s.FirstTurn || turn > s.LastTurn {
@@ -943,8 +944,17 @@ func (s TranscriptSegment) Validate() error {
 		if s.Turns[i].ByteLength < 0 {
 			return fmt.Errorf("%sturn %d declares a negative byteLength; a turn's pre-bound size cannot be negative; emit a non-negative count", where, turn)
 		}
+		if err := validateTranscriptDisplayNumber(where, s.Turns[i].DisplayNumber); err != nil {
+			return err
+		}
+		if s.Turns[i].DisplayNumber != "" {
+			numbered++
+		}
 		turnBytes += int64(s.Turns[i].ByteLength)
 		previous = turn
+	}
+	if numbered > 0 && numbered != len(s.Turns) {
+		return fmt.Errorf("%sonly %d of %d turns carry displayNumber; a partial set cannot label every turn in the segment consistently; compute displayNumber with CookTranscriptRows over the whole stored partition for every turn in the segment or omit it from all turns", where, numbered, len(s.Turns))
 	}
 	if s.Turns[0].Index != s.FirstTurn || s.Turns[len(s.Turns)-1].Index != s.LastTurn {
 		return fmt.Errorf("%sdeclares range [%d, %d] but its turns span [%d, %d]; the declared range must be exactly the turns served; correct firstTurn/lastTurn", where, s.FirstTurn, s.LastTurn, s.Turns[0].Index, s.Turns[len(s.Turns)-1].Index)
@@ -989,6 +999,11 @@ type TranscriptTurn struct {
 	// bytes of a truncated turn are at most its ByteLength.
 	Truncated  bool `json:"truncated"`
 	ByteLength int  `json:"byteLength" minimum:"0" maximum:"9007199254740991"`
+	// DisplayNumber is the optional display label computed by CookTranscriptRows
+	// over the whole stored partition, never over one segment's turns. When any
+	// turn in a segment carries one, every served turn in that segment carries
+	// one, and a consumer shows it as given.
+	DisplayNumber string `json:"displayNumber,omitempty" minLength:"1" pattern:"^[1-9][0-9]*[a-z]*$" description:"Optional producer-assigned display label computed with CookTranscriptRows over the whole stored partition, never over one segment's turns; when any turn in a segment carries one, every served turn in that segment carries one, and a consumer shows it as given."`
 }
 
 // TranscriptWindow is the descriptor of an anchor window: where the window is,

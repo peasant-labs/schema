@@ -187,6 +187,31 @@ frames:
       loadedConversationTurns: 1
       segments:
         - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 2, conversationTurns: {before: 0, count: 1}}
+  openedBytes: &openedBytes
+    <<: *opened
+    directory: {sessionId: ses_test, revision: "1", complete: false, loadedSegments: 0, loadedTurns: 0, sourceBytesLoaded: 0, sourceBytesTotal: 1024, segments: []}
+  openedHalfBytes:
+    <<: *opened
+    directory: {sessionId: ses_test, revision: "1", complete: false, loadedSegments: 0, loadedTurns: 0, sourceBytesLoaded: 0, segments: []}
+  firstBytes: &firstBytes
+    <<: *first
+    directory:
+      sessionId: ses_test
+      revision: "1"
+      complete: false
+      loadedSegments: 1
+      loadedTurns: 1
+      sourceBytesLoaded: 512
+      sourceBytesTotal: 1024
+      segments: *refs
+  finalBytes: &finalBytes
+    <<: *final
+    directory: {sessionId: ses_test, revision: "1", complete: true, loadedSegments: 1, loadedTurns: 1, sourceBytesLoaded: 1024, sourceBytesTotal: 1024, totalSegments: 1, totalTurns: 1, segments: *refs}
+  cutBytes:
+    <<: *finalBytes
+    directory: {sessionId: ses_test, revision: "1", complete: true, loadedSegments: 1, loadedTurns: 1, sourceBytesLoaded: 512, sourceBytesTotal: 1024, totalSegments: 1, totalTurns: 1, segments: *refs}
+    continuation: cut
+    cutReason: source_budget
 cases:
   - {name: merge-applies-in-seq, frames: [opened, first, final], valid: true}
   - {name: final-frame-without-segment-preserves-snapshot, frames: [opened, first, final], valid: true, expectSegments: 1, expectHasNewer: true}
@@ -236,6 +261,18 @@ cases:
     valid: false
     tsValid: true
     producerOnly: "Go checks the served measure is no greater than the pre-bound length; TypeScript does not remeasure."
+  - {name: source-bytes-partial-and-complete, frames: [openedBytes, firstBytes, finalBytes], valid: true, expectSourceBytesLoaded: 1024, expectSourceBytesTotal: 1024}
+  - {name: source-bytes-partial-while-open, frames: [openedBytes, firstBytes], valid: true, expectSourceBytesLoaded: 512, expectSourceBytesTotal: 1024}
+  - {name: source-bytes-cut-preserves-partial, frames: [openedBytes, firstBytes, cutBytes], valid: true, expectSourceBytesLoaded: 512, expectSourceBytesTotal: 1024}
+  - {name: source-bytes-rejects-decreasing-loaded, frames: [openedBytes, firstBytes, finalBytes], mutate: {frame: 2, path: directory.sourceBytesLoaded, value: 256}, valid: false}
+  - {name: source-bytes-rejects-loaded-exceeds-total, frames: [openedBytes, firstBytes], mutate: {frame: 1, path: directory.sourceBytesLoaded, value: 1025}, valid: false}
+  - {name: source-bytes-rejects-opened-loaded-exceeds-total, frames: [openedBytes], mutate: {frame: 0, path: directory.sourceBytesLoaded, value: 1025}, valid: false}
+  - {name: source-bytes-rejects-changing-total, frames: [openedBytes, firstBytes], mutate: {frame: 1, path: directory.sourceBytesTotal, value: 2048}, valid: false}
+  - {name: source-bytes-rejects-half-present, frames: [openedHalfBytes], valid: false}
+  - {name: source-bytes-rejects-presence-change, frames: [opened, firstBytes], valid: false}
+  - {name: source-bytes-rejects-disappearance, frames: [openedBytes, first], valid: false}
+  - {name: source-bytes-rejects-null-loaded, frames: [openedBytes], mutate: {frame: 0, path: directory.sourceBytesLoaded, value: null}, valid: false}
+  - {name: source-bytes-rejects-negative-loaded, frames: [openedBytes], mutate: {frame: 0, path: directory.sourceBytesLoaded, value: -1}, valid: false}
 requestCases:
   - name: request-open-valid
     request: {op: open, requestId: r, sessionId: setup, nodeId: node}

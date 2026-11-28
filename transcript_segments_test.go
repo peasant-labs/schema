@@ -27,6 +27,12 @@ var transcriptDirectoryV1ExactDiagnosticsManifestYAML []byte
 //go:embed testdata/transcript_sparse_session.yaml
 var transcriptSparseSessionYAML []byte
 
+//go:embed testdata/transcript_segment_display_numbers.yaml
+var transcriptSegmentDisplayNumbersYAML []byte
+
+//go:embed testdata/transcript_segment_display_numbers_manifest.yaml
+var transcriptSegmentDisplayNumbersManifestYAML []byte
+
 type transcriptEntryFixture struct {
 	Name  string `yaml:"name"`
 	Bytes int    `yaml:"bytes"`
@@ -778,5 +784,130 @@ func TestTranscriptSparseSessionKeepsIdentity(t *testing.T) {
 		if _, present := keys[forbidden]; present {
 			t.Fatalf("window descriptor carries %q; the window path must carry no content and no page coordinate", forbidden)
 		}
+	}
+}
+
+type segmentDisplayNumberInput struct {
+	Harness      string `yaml:"harness"`
+	BudgetBytes  int    `yaml:"budgetBytes"`
+	SegmentIndex int    `yaml:"segmentIndex"`
+	TurnsJSON    string `yaml:"turnsJSON"`
+}
+
+type segmentDisplayNumberExpected struct {
+	TotalSegments                 int      `yaml:"totalSegments"`
+	FirstTurn                     int      `yaml:"firstTurn"`
+	LastTurn                      int      `yaml:"lastTurn"`
+	DisplayNumbers                []string `yaml:"displayNumbers"`
+	SegmentOnlyFirstDisplayNumber string   `yaml:"segmentOnlyFirstDisplayNumber"`
+}
+
+// TestTranscriptSegmentDisplayNumbersFromWholePartition verifies that a segment
+// starting with a reply receives the CookTranscriptRows display numbers from
+// the whole stored partition rather than renumbering from the segment start.
+func TestTranscriptSegmentDisplayNumbersFromWholePartition(t *testing.T) {
+	corpus, err := testcase.LoadCorpus[segmentDisplayNumberInput, segmentDisplayNumberExpected](transcriptSegmentDisplayNumbersYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertcase.RequireMin(t, corpus, 2)
+	assertcase.RequireValid(t, corpus)
+	names := make([]string, len(corpus.Cases))
+	for i, c := range corpus.Cases {
+		names[i] = c.Name
+	}
+	assertcase.RequireManifestNames(t, "transcript segment display numbers", transcriptSegmentDisplayNumbersManifestYAML, names)
+
+	timestamp := time.Date(2026, 11, 9, 0, 0, 0, 0, time.UTC)
+	for _, c := range corpus.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			detail := []byte(`{"turns":` + c.Input.TurnsJSON + `}`)
+			cookTurns, err := schema.NewTranscriptCookTurns(detail)
+			if err != nil {
+				t.Fatal(err)
+			}
+			verdicts, err := schema.CookTranscriptRows(cookTurns, schema.Harness(c.Input.Harness))
+			if err != nil {
+				t.Fatal(err)
+			}
+			refs, err := schema.CutTranscriptCookTurns(cookTurns, verdicts, c.Input.BudgetBytes)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(refs) != c.Expected.TotalSegments {
+				t.Fatalf("cut produced %d segments, want %d", len(refs), c.Expected.TotalSegments)
+			}
+			ref := refs[c.Input.SegmentIndex]
+			if ref.FirstTurn != c.Expected.FirstTurn || ref.LastTurn != c.Expected.LastTurn {
+				t.Fatalf("segment %d covers [%d, %d], want [%d, %d]", c.Input.SegmentIndex, ref.FirstTurn, ref.LastTurn, c.Expected.FirstTurn, c.Expected.LastTurn)
+			}
+
+			var rawTurns []json.RawMessage
+			if err := json.Unmarshal([]byte(c.Input.TurnsJSON), &rawTurns); err != nil {
+				t.Fatal(err)
+			}
+			var segmentRawTurns []json.RawMessage
+			var segmentTurns []schema.TranscriptTurn
+			var gotNumbers []string
+			for i, ct := range cookTurns {
+				if !verdicts[i].Keep {
+					continue
+				}
+				d := ct.Detail()
+				if d.Index < ref.FirstTurn || d.Index > ref.LastTurn {
+					continue
+				}
+				if d.Timestamp.IsZero() {
+					d.Timestamp = timestamp
+				}
+				segmentRawTurns = append(segmentRawTurns, rawTurns[i])
+				segmentTurns = append(segmentTurns, schema.TranscriptTurn{
+					TurnDetail:    d,
+					ByteLength:    schema.TranscriptTurnByteLength(d),
+					DisplayNumber: verdicts[i].DisplayNumber,
+				})
+				gotNumbers = append(gotNumbers, verdicts[i].DisplayNumber)
+			}
+			if fmt.Sprint(gotNumbers) != fmt.Sprint(c.Expected.DisplayNumbers) {
+				t.Fatalf("segment %d displayNumbers = %v, want %v", c.Input.SegmentIndex, gotNumbers, c.Expected.DisplayNumbers)
+			}
+
+			segment := schema.TranscriptSegment{
+				Index:      ref.Index,
+				Revision:   "1",
+				FirstTurn:  ref.FirstTurn,
+				LastTurn:   ref.LastTurn,
+				ByteLength: ref.ByteLength,
+				HasOlder:   ref.Index > 0,
+				HasNewer:   ref.Index < len(refs)-1,
+				Turns:      segmentTurns,
+			}
+			if err := segment.Validate(); err != nil {
+				t.Fatalf("segment.Validate() failed: %v", err)
+			}
+			if err := schema.ValidateTranscriptSegmentBoundaries(segment, len(refs)); err != nil {
+				t.Fatalf("ValidateTranscriptSegmentBoundaries() failed: %v", err)
+			}
+
+			// Cooking only the segment's turns in isolation would reset numbering
+			// to "1", proving whole-partition CookTranscriptRows is required.
+			segmentOnlyDetail, err := json.Marshal(struct {
+				Turns []json.RawMessage `json:"turns"`
+			}{Turns: segmentRawTurns})
+			if err != nil {
+				t.Fatal(err)
+			}
+			segmentOnlyCook, err := schema.NewTranscriptCookTurns(segmentOnlyDetail)
+			if err != nil {
+				t.Fatal(err)
+			}
+			segmentOnlyVerdicts, err := schema.CookTranscriptRows(segmentOnlyCook, schema.Harness(c.Input.Harness))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if segmentOnlyVerdicts[0].DisplayNumber != c.Expected.SegmentOnlyFirstDisplayNumber {
+				t.Fatalf("segment-only first displayNumber = %q, want %q", segmentOnlyVerdicts[0].DisplayNumber, c.Expected.SegmentOnlyFirstDisplayNumber)
+			}
+		})
 	}
 }

@@ -7930,7 +7930,7 @@ paths:
   /api/v1/transcripts/{id}/segments/{index}:
     get:
       description: |-
-        Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag and pre-bound byteLength. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
+        Read one whole-turn segment by directory ordinal. V1 is unchanged; its firstTurn and lastTurn match the directory and each turn carries its truncated flag, pre-bound byteLength, and optional displayNumber computed by the producer with CookTranscriptRows over the whole stored partition (never over one segment's turns); when any turn in a segment carries displayNumber every turn in that segment carries one, and a consumer shows it as given. A v1 segment that cannot be served whole is refused with 409, never served short. v=2 opts into the additive positioned protocol. The positioned protocol carries the served rows, including each producer-assigned display number, with native records attached to rows in this segment. Legacy turns retain their served shape. Select main or a history section with partition and section. A non-numeric or negative index is 400, an index beyond the directory is 404, and a stale revision or representation is 409. Access and repository withholding follow getTranscriptContent; a denied viewer receives 404. A temporary load refusal is 503 with Retry-After. A transcript whose stored content an operator recorded as lost answers 410 after access is decided.
 
         Protocol generation selectors (omission is v=0):
         - v=0 -> 0.1.0
@@ -13404,6 +13404,14 @@ components:
           - string
         depth:
           type: integer
+        displayNumber:
+          description: Optional producer-assigned display label computed with CookTranscriptRows
+            over the whole stored partition, never over one segment's turns; when
+            any turn in a segment carries one, every served turn in that segment carries
+            one, and a consumer shows it as given.
+          minLength: 1
+          pattern: ^[1-9][0-9]*[a-z]*$
+          type: string
         entryType:
           $ref: '#/components/schemas/SchemaEntryType'
         hasThinking:

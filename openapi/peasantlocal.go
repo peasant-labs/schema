@@ -121,7 +121,11 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 			"segment is cut on complete entries and whole turns, so every turn it " +
 			"serves is whole and its firstTurn and lastTurn are exactly the range " +
 			"the directory declared. Each turn row embeds the shared turn detail " +
-			"beside truncated and the pre-bound byteLength. hasOlder and hasNewer " +
+			"beside truncated, the pre-bound byteLength, and an optional displayNumber " +
+			"computed by the producer with CookTranscriptRows over the whole stored " +
+			"partition (never over one segment's turns); when any turn in a segment " +
+			"carries displayNumber every turn in that segment carries one, and a " +
+			"consumer shows it as given. hasOlder and hasNewer " +
 			"say whether the transcript continues on that side. revision is " +
 			"optional and the current revision is served when it is omitted. A " +
 			"non-numeric or negative index is a 400, an index at or past " +

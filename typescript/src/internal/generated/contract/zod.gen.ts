@@ -4318,6 +4318,8 @@ export const zLocalKickstartPreviewDirectory = z.object({
     revision: z.string().min(1),
     segments: z.array(zTranscriptSegmentRef),
     sessionId: zSessionID,
+    sourceBytesLoaded: z.int().gte(0).lte(9007199254740991).optional(),
+    sourceBytesTotal: z.int().gte(0).lte(9007199254740991).optional(),
     totalConversationTurns: z.int().gte(0).lte(9007199254740991).optional(),
     totalSegments: z.int().gte(0).lte(9007199254740991).optional(),
     totalTurns: z.int().gte(0).lte(9007199254740991).optional()
@@ -4757,6 +4759,7 @@ export const zTranscriptTurn = z.object({
     contentParts: z.array(zTurnContentPart).optional(),
     controlKind: z.string().nullish(),
     depth: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),
+    displayNumber: z.string().min(1).regex(/^[1-9][0-9]*[a-z]*$/).optional(),
     entryType: zEntryType.optional(),
     hasThinking: z.boolean().optional(),
     index: z.number().refine(Number.isInteger).gte(-9223372036854775808).lte(9223372036854775808),

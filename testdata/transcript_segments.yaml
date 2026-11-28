@@ -3,6 +3,11 @@ required_names:
   - cut-user-turn-whole
   - cut-oversized-turn-alone
   - segment-minimal
+  - segment-all-turns-numbered
+  - segment-no-turns-numbered
+  - segment-some-turns-numbered
+  - segment-malformed-display-number
+  - segment-malformed-display-number-uppercase
   - segment-inverted-range
   - segment-turn-outside-range
   - segment-range-wider-than-turns
@@ -60,6 +65,100 @@ shape_cases:
             - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5}
             - {index: 21, role: assistant, content: ok, timestamp: '2026-11-09T00:01:00Z', depth: 0, truncated: false, byteLength: 2}
       expected: true
+    - name: segment-all-turns-numbered
+      classification: must-pass
+      provenance: {source: requirement, ref: "when every served turn in a segment carries a valid displayNumber the segment is accepted"}
+      mutation: {description: "serves two turns in segment one starting with reply 9a and prompt 10"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 1
+          revision: "4213"
+          firstTurn: 17
+          lastTurn: 18
+          byteLength: 7
+          hasOlder: true
+          hasNewer: true
+          turns:
+            - {index: 17, role: assistant, content: reply, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 4, displayNumber: "9a"}
+            - {index: 18, role: user, content: next, timestamp: '2026-11-09T00:01:00Z', depth: 0, truncated: false, byteLength: 3, displayNumber: "10"}
+      expected: true
+    - name: segment-no-turns-numbered
+      classification: must-pass
+      provenance: {source: requirement, ref: "older producers and stored responses without displayNumber remain valid"}
+      mutation: {description: "serves two turns in segment one with displayNumber omitted from every turn"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 1
+          revision: "4213"
+          firstTurn: 17
+          lastTurn: 18
+          byteLength: 7
+          hasOlder: true
+          hasNewer: true
+          turns:
+            - {index: 17, role: assistant, content: reply, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 4}
+            - {index: 18, role: user, content: next, timestamp: '2026-11-09T00:01:00Z', depth: 0, truncated: false, byteLength: 3}
+      expected: true
+    - name: segment-some-turns-numbered
+      classification: must-fail
+      provenance: {source: boundary, ref: "when any turn in a segment carries displayNumber every served turn in that segment carries one"}
+      mutation: {description: "omits displayNumber from the second turn while numbering the first"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 1
+          revision: "4213"
+          firstTurn: 17
+          lastTurn: 18
+          byteLength: 7
+          hasOlder: true
+          hasNewer: true
+          turns:
+            - {index: 17, role: assistant, content: reply, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 4, displayNumber: "9a"}
+            - {index: 18, role: user, content: next, timestamp: '2026-11-09T00:01:00Z', depth: 0, truncated: false, byteLength: 3}
+      expected:
+        valid: false
+        errorContains: "only 1 of 2 turns carry displayNumber"
+    - name: segment-malformed-display-number
+      classification: must-fail
+      provenance: {source: boundary, ref: "displayNumber must match the shared positive-task pattern"}
+      mutation: {description: "sets displayNumber to zero on a segment turn"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 0
+          revision: "4213"
+          firstTurn: 4
+          lastTurn: 4
+          byteLength: 5
+          hasOlder: false
+          hasNewer: false
+          turns:
+            - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5, displayNumber: "0"}
+      expected:
+        valid: false
+        errorContains: "displayNumber is malformed"
+    - name: segment-malformed-display-number-uppercase
+      classification: must-fail
+      provenance: {source: boundary, ref: "displayNumber suffix must use lowercase ASCII letters"}
+      mutation: {description: "uses an uppercase suffix on displayNumber"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 0
+          revision: "4213"
+          firstTurn: 4
+          lastTurn: 4
+          byteLength: 5
+          hasOlder: false
+          hasNewer: false
+          turns:
+            - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5, displayNumber: "1A"}
+      expected:
+        valid: false
+        errorContains: "displayNumber is malformed"
     - name: segment-inverted-range
       classification: must-fail
       provenance: {source: boundary, ref: "a segment covers a closed ascending range"}

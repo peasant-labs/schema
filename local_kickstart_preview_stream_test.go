@@ -27,16 +27,18 @@ var previewHTTPManifest []byte
 type previewFixture struct {
 	Frames map[string]map[string]any `yaml:"frames"`
 	Cases  []struct {
-		Name           string   `yaml:"name"`
-		Frames         []string `yaml:"frames"`
-		Valid          bool     `yaml:"valid"`
-		ExpectSegments *int     `yaml:"expectSegments"`
-		ExpectUnknown  *int     `yaml:"expectUnknown"`
-		ExpectMetadata *int     `yaml:"expectMetadata"`
-		ExpectHasNewer *bool    `yaml:"expectHasNewer"`
-		TSValid        *bool    `yaml:"tsValid"`
-		ProducerOnly   string   `yaml:"producerOnly"`
-		Mutate         *struct {
+		Name                    string   `yaml:"name"`
+		Frames                  []string `yaml:"frames"`
+		Valid                   bool     `yaml:"valid"`
+		ExpectSegments          *int     `yaml:"expectSegments"`
+		ExpectUnknown           *int     `yaml:"expectUnknown"`
+		ExpectMetadata          *int     `yaml:"expectMetadata"`
+		ExpectHasNewer          *bool    `yaml:"expectHasNewer"`
+		ExpectSourceBytesLoaded *int     `yaml:"expectSourceBytesLoaded"`
+		ExpectSourceBytesTotal  *int     `yaml:"expectSourceBytesTotal"`
+		TSValid                 *bool    `yaml:"tsValid"`
+		ProducerOnly            string   `yaml:"producerOnly"`
+		Mutate                  *struct {
 			Frame int    `yaml:"frame"`
 			Path  string `yaml:"path"`
 			Value any    `yaml:"value"`
@@ -217,6 +219,12 @@ func TestLocalKickstartPreviewStream(t *testing.T) {
 			}
 			if c.ExpectHasNewer != nil && (len(state.Segments) == 0 || state.Segments[len(state.Segments)-1].HasNewer != *c.ExpectHasNewer) {
 				t.Fatal("segment snapshot changed")
+			}
+			if c.ExpectSourceBytesLoaded != nil && (state.Directory == nil || state.Directory.SourceBytesLoaded == nil || *state.Directory.SourceBytesLoaded != *c.ExpectSourceBytesLoaded) {
+				t.Fatalf("sourceBytesLoaded = %v, want %d", state.Directory, *c.ExpectSourceBytesLoaded)
+			}
+			if c.ExpectSourceBytesTotal != nil && (state.Directory == nil || state.Directory.SourceBytesTotal == nil || *state.Directory.SourceBytesTotal != *c.ExpectSourceBytesTotal) {
+				t.Fatalf("sourceBytesTotal = %v, want %d", state.Directory, *c.ExpectSourceBytesTotal)
 			}
 			if result != nil && (strings.Contains(result.Error(), "ses_test") || strings.Contains(result.Error(), "/private/")) {
 				t.Fatal("error disclosed source data")

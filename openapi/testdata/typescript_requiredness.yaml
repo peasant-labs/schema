@@ -465,9 +465,9 @@ cases:
     input:
       component: TranscriptTurn
       required: [index, role, content, timestamp, depth, truncated, byteLength]
-      optional: [toolCalls, command, provenance, usage, agentName, controlKind, parentIndex, tokensIn, tokensOut, stopReason]
+      optional: [displayNumber, toolCalls, command, provenance, usage, agentName, controlKind, parentIndex, tokensIn, tokensOut, stopReason]
       nullable: [controlKind, parentIndex, tokensIn, tokensOut]
-      nonnullable: [index, role, content, timestamp, depth, truncated, byteLength, toolCalls, command, provenance, usage, agentName, stopReason]
+      nonnullable: [index, role, content, timestamp, depth, truncated, byteLength, displayNumber, toolCalls, command, provenance, usage, agentName, stopReason]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: "one turn row embeds the single TurnDetail definition plus its read facts"}

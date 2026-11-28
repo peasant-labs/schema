@@ -74,11 +74,40 @@ func BuildSegmentedReadSpec(protocolVersion, documentVersion string) (*openapi31
 			return nil, err
 		}
 	}
+	if protocolVersion == schema.SegmentedReadMinVersion {
+		// Preserve the already-frozen 0.1.0 protocol document when later
+		// additive fields land on TranscriptTurn for the live segment reads.
+		if turnSchema, ok := selected["TranscriptTurn"]; ok {
+			selected["TranscriptTurn"] = omitSchemaProperty(turnSchema, "displayNumber")
+		}
+	}
 	spec.Components.Schemas = selected
 	spec.Info.WithTitle("Peasant Segmented Read Protocol v" + documentVersion).
 		WithVersion(documentVersion).
 		WithDescription(segmentedReadDescription(description))
 	return spec, nil
+}
+
+func omitSchemaProperty(schemaMap map[string]interface{}, property string) map[string]interface{} {
+	props, ok := schemaMap["properties"].(map[string]interface{})
+	if !ok {
+		return schemaMap
+	}
+	if _, exists := props[property]; !exists {
+		return schemaMap
+	}
+	clonedProps := make(map[string]interface{}, len(props))
+	for k, v := range props {
+		if k != property {
+			clonedProps[k] = v
+		}
+	}
+	clonedSchema := make(map[string]interface{}, len(schemaMap))
+	for k, v := range schemaMap {
+		clonedSchema[k] = v
+	}
+	clonedSchema["properties"] = clonedProps
+	return clonedSchema
 }
 
 // The minimum document is an already-shipped artifact; later selector changes
