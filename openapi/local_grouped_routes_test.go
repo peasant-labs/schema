@@ -12,6 +12,7 @@ import (
 	specpkg "github.com/peasant-labs/schema/openapi"
 	"github.com/peasant-labs/schema/testcase"
 	testassert "github.com/peasant-labs/schema/testcase/assert"
+	"github.com/swaggest/openapi-go/openapi3"
 	"gopkg.in/yaml.v3"
 )
 
@@ -220,7 +221,7 @@ func TestLocalGroupedRouteContract(t *testing.T) {
 				if err := json.Unmarshal([]byte(c.Expected.LegacyBody), &legacy); err != nil {
 					t.Fatal(err)
 				}
-				if legacy.Sessions == nil || len(legacy.Sessions) != 1 || legacy.Sessions[0].SyncStatus != "new" {
+				if legacy.Sessions == nil || len(legacy.Sessions) != 1 || legacy.Sessions[0].SyncStatus != schema.SyncStatusNew {
 					t.Fatalf("legacy sync body lost concrete row: %+v", legacy)
 				}
 			}
@@ -260,7 +261,7 @@ func localRouteJSONValue(t *testing.T, name string, value any) string {
 func mergePositionedParameters(routeParams, positioned []localRouteParam) []localRouteParam {
 	insertAt := len(routeParams)
 	for i, p := range routeParams {
-		if p.In == "path" {
+		if p.In == string(openapi3.ParameterInPath) {
 			insertAt = i
 			break
 		}

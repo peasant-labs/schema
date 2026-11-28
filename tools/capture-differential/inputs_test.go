@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"os"
 	"path/filepath"
 	"slices"
@@ -10,6 +11,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed testdata/mutation_seeds_validation.yaml
+var mutationSeedsValidationCases []byte
+
+//go:embed testdata/mutation_seeds_validation_manifest.yaml
+var mutationSeedsValidationManifest []byte
 
 type mutationSeedsValidationCase struct {
 	Name     string        `yaml:"name"`
@@ -27,39 +34,37 @@ type mutationSeedsValidationCase struct {
 	} `yaml:"mutation"`
 }
 
-func TestLoadMutationsRejectsDuplicates(t *testing.T) {
-	raw, err := os.ReadFile("testdata/mutation_seeds_validation.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
+func loadMutationSeedsValidationFixtures(t *testing.T) ([]mutationSeedsValidationCase, []string) {
+	t.Helper()
 	var corpus struct {
 		Cases []mutationSeedsValidationCase `yaml:"cases"`
 	}
-	dec := yaml.NewDecoder(bytes.NewReader(raw))
+	dec := yaml.NewDecoder(bytes.NewReader(mutationSeedsValidationCases))
 	dec.KnownFields(true)
 	if err := dec.Decode(&corpus); err != nil {
 		t.Fatalf("decode validation fixture: %v", err)
 	}
-	manifestRaw, err := os.ReadFile("testdata/mutation_seeds_validation_manifest.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
 	var manifest struct {
 		RequiredNames []string `yaml:"requiredNames"`
 	}
-	manifestDec := yaml.NewDecoder(bytes.NewReader(manifestRaw))
+	manifestDec := yaml.NewDecoder(bytes.NewReader(mutationSeedsValidationManifest))
 	manifestDec.KnownFields(true)
 	if err := manifestDec.Decode(&manifest); err != nil {
 		t.Fatalf("decode validation manifest: %v", err)
 	}
-	names := make([]string, len(corpus.Cases))
-	for i, c := range corpus.Cases {
+	return corpus.Cases, manifest.RequiredNames
+}
+
+func TestLoadMutationsRejectsDuplicates(t *testing.T) {
+	cases, requiredNames := loadMutationSeedsValidationFixtures(t)
+	names := make([]string, len(cases))
+	for i, c := range cases {
 		names[i] = c.Name
 	}
-	if !slices.Equal(names, manifest.RequiredNames) {
-		t.Fatalf("validation cases %v do not match manifest %v", names, manifest.RequiredNames)
+	if !slices.Equal(names, requiredNames) {
+		t.Fatalf("validation cases %v do not match manifest %v", names, requiredNames)
 	}
-	for _, c := range corpus.Cases {
+	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			if len(c.Expected.ErrorContains) == 0 {
 				t.Fatal("validation case must name at least one expected error substring")
