@@ -10,13 +10,13 @@ aliases:
     surfaces: [local, village]
 constants:
   - name: VillageAPIVersion
-    value: 0.44.0
+    value: 0.45.0
     surfaces: [root, village]
   - name: PeasantLocalAPIVersion
-    value: 0.40.0
+    value: 0.41.0
     surfaces: [root, local]
   - name: TypesVersion
-    value: 0.54.0
+    value: 0.55.0
     surfaces: [root]
   - name: SegmentedReadAPIVersion
     value: 0.2.0

@@ -3,6 +3,10 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.63.0
+
+- carry turn display numbers on segments and preview source bytes on the directory (#296)
+
 ## 0.62.0
 
 - capture served turns in one pass with the recorded index (#288)
