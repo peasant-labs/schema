@@ -15,3 +15,8 @@ requiredNames:
   - publish-request-0.44.0.schema
   - annotation-push-request-0.44.0.schema
   - peasantlocal-api-0.40.0
+  - types-0.55.0
+  - village-api-0.45.0
+  - publish-request-0.45.0.schema
+  - annotation-push-request-0.45.0.schema
+  - peasantlocal-api-0.41.0
