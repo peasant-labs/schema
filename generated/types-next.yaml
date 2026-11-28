@@ -3128,6 +3128,7 @@ components:
       title: Evidence Kind
       type: string
     ExchangeCodeRequest:
+      additionalProperties: false
       properties:
         code:
           type: string
@@ -9732,6 +9733,7 @@ components:
       - omittedImages
       type: object
     TranscriptEntryLocateRequest:
+      additionalProperties: false
       properties:
         contentHash:
           type: string
@@ -10823,6 +10825,7 @@ components:
       - publisher_count
       type: object
     VillageBatchReviewRequest:
+      additionalProperties: false
       properties:
         status:
           $ref: '#/components/schemas/VillageReviewDecision'
@@ -10859,6 +10862,7 @@ components:
       - status
       type: object
     VillageBatchShareRequest:
+      additionalProperties: false
       properties:
         project_hash:
           $ref: '#/components/schemas/ProjectHash'
@@ -10890,6 +10894,7 @@ components:
       - already_shared
       type: object
     VillageBatchShareSelectionRequest:
+      additionalProperties: false
       properties:
         private_approvals:
           description: The private transcripts among transcript_ids whose owner approved
@@ -11123,6 +11128,7 @@ components:
       - expires_at
       type: object
     VillageCollectiveInvitationRequest:
+      additionalProperties: false
       properties:
         username:
           minLength: 1
@@ -11181,6 +11187,7 @@ components:
       - github_orgs
       type: object
     VillageCollectiveMemberRoleRequest:
+      additionalProperties: false
       properties:
         role:
           $ref: '#/components/schemas/VillageAssignableCollectiveRole'
@@ -12237,11 +12244,13 @@ components:
       title: Village Contribution Status
       type: string
     VillageCreateAPIKeyRequest:
+      additionalProperties: false
       properties:
         label:
           type: string
       type: object
     VillageCreateAttestationRequest:
+      additionalProperties: false
       properties:
         attestation_type:
           $ref: '#/components/schemas/VillageAttestationType'
@@ -12256,6 +12265,7 @@ components:
       - attestation_type
       type: object
     VillageCreateCollectiveRequest:
+      additionalProperties: false
       properties:
         acceptance_mode:
           $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
@@ -12313,6 +12323,7 @@ components:
       - transcriptList
       type: object
     VillageDiscoverabilityRequest:
+      additionalProperties: false
       properties:
         is_discoverable:
           type: boolean
@@ -12485,6 +12496,7 @@ components:
       - acceptance_mode
       type: object
     VillageLinkRepositoryRequest:
+      additionalProperties: false
       properties:
         installation_id:
           anyOf:
@@ -12583,6 +12595,7 @@ components:
       - avatar_url
       type: object
     VillageManualAnnotationRequest:
+      additionalProperties: false
       properties:
         endIndex:
           description: Exclusive end; defaults to entryIndex+1; must be greater than
@@ -12724,6 +12737,7 @@ components:
       - transcript_count
       type: object
     VillageOrganizationVisibilityRequest:
+      additionalProperties: false
       properties:
         visible:
           description: Omitted means false.
@@ -12839,6 +12853,7 @@ components:
       - transcript_count
       type: object
     VillageProjectDisplayNameRequest:
+      additionalProperties: false
       properties:
         display_name:
           description: Trimmed; must be non-empty and at most 255 bytes.
@@ -13301,6 +13316,7 @@ components:
       title: Village Review Decision
       type: string
     VillageReviewShareRequest:
+      additionalProperties: false
       properties:
         status:
           $ref: '#/components/schemas/VillageReviewDecision'
@@ -13394,6 +13410,7 @@ components:
       - owner
       type: object
     VillageSetNotificationEmailRequest:
+      additionalProperties: false
       properties:
         address:
           maxLength: 254
@@ -13467,6 +13484,7 @@ components:
       title: Village Share Status
       type: string
     VillageShareTranscriptRequest:
+      additionalProperties: false
       properties:
         group_ids:
           items:
@@ -14323,6 +14341,7 @@ components:
       title: Village UUID
       type: string
     VillageUpdateCollectiveRequest:
+      additionalProperties: false
       properties:
         acceptance_mode:
           $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
@@ -14356,6 +14375,7 @@ components:
           $ref: '#/components/schemas/VillageTranscriptDeletionPolicy'
       type: object
     VillageUpdateUserSettingsRequest:
+      additionalProperties: false
       properties:
         auto_attach_pull_requests:
           anyOf:
@@ -14369,6 +14389,8 @@ components:
             - "null"
             - boolean
           - type: "null"
+        is_discoverable:
+          type: boolean
         preview_before_attach:
           anyOf:
           - type:
@@ -14636,6 +14658,8 @@ components:
           type: boolean
         email_invitations:
           type: boolean
+        is_discoverable:
+          type: boolean
         notification_email:
           anyOf:
           - $ref: '#/components/schemas/VillageNotificationEmail'
@@ -14647,6 +14671,7 @@ components:
       - auto_attach_pull_requests
       - notification_email
       - email_invitations
+      - is_discoverable
       type: object
     VillageUserStats:
       properties:
@@ -14678,6 +14703,7 @@ components:
       - pull_request_count
       type: object
     VillageUsernameRequest:
+      additionalProperties: false
       properties:
         username:
           description: Trimmed and lowercased, then matched against ^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$
@@ -14686,6 +14712,7 @@ components:
       - username
       type: object
     VillageVerifyNotificationEmailRequest:
+      additionalProperties: false
       properties:
         token:
           minLength: 1

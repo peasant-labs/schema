@@ -6759,6 +6759,7 @@ export type VillageUpdateCollectiveRequest = z.infer<typeof zVillageUpdateCollec
 export const zVillageUpdateUserSettingsRequest = z.object({
     auto_attach_pull_requests: z.boolean().nullish(),
     email_invitations: z.boolean().nullish(),
+    is_discoverable: z.boolean().optional(),
     preview_before_attach: z.boolean().nullish()
 });
 
@@ -6982,6 +6983,7 @@ export type VillageUserProjectResponse = z.infer<typeof zVillageUserProjectRespo
 export const zVillageUserSettings = z.object({
     auto_attach_pull_requests: z.boolean(),
     email_invitations: z.boolean(),
+    is_discoverable: z.boolean(),
     notification_email: zVillageNotificationEmail.nullable(),
     preview_before_attach: z.boolean()
 });

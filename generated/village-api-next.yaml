@@ -57,9 +57,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageAPIKey'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -1627,7 +1625,10 @@ paths:
       - auth
   /api/v1/auth/me/settings:
     patch:
-      description: Update discoverability; is_discoverable must be present and non-null.
+      deprecated: true
+      description: 'Deprecated: use PATCH /api/v1/users/me/settings instead; this
+        route is expected to stop answering after its Sunset date. Update discoverability;
+        is_discoverable must be present and non-null.'
       operationId: setMyDiscoverability
       requestBody:
         content:
@@ -1642,24 +1643,84 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaVillageUser'
           description: OK
+          headers:
+            Deprecation:
+              description: RFC 9745 deprecation date as an RFC 9651 structured Date
+                (for example @1796083200), indicating when this route was deprecated.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Sunset:
+              description: RFC 8594 HTTP-date after which this route is expected to
+                stop answering.
+              required: true
+              schema:
+                type: string
+              style: simple
         "400":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Bad Request
+          headers:
+            Deprecation:
+              description: RFC 9745 deprecation date as an RFC 9651 structured Date
+                (for example @1796083200), indicating when this route was deprecated.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Sunset:
+              description: RFC 8594 HTTP-date after which this route is expected to
+                stop answering.
+              required: true
+              schema:
+                type: string
+              style: simple
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Unauthorized. The request carries no valid session or API key.
+          headers:
+            Deprecation:
+              description: RFC 9745 deprecation date as an RFC 9651 structured Date
+                (for example @1796083200), indicating when this route was deprecated.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Sunset:
+              description: RFC 8594 HTTP-date after which this route is expected to
+                stop answering.
+              required: true
+              schema:
+                type: string
+              style: simple
         "500":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Internal Server Error
+          headers:
+            Deprecation:
+              description: RFC 9745 deprecation date as an RFC 9651 structured Date
+                (for example @1796083200), indicating when this route was deprecated.
+              required: true
+              schema:
+                type: string
+              style: simple
+            Sunset:
+              description: RFC 8594 HTTP-date after which this route is expected to
+                stop answering.
+              required: true
+              schema:
+                type: string
+              style: simple
         "503":
           content:
             application/json:
@@ -1668,12 +1729,26 @@ paths:
           description: Service Unavailable. The account behind the session could not
             be read; retry after the Retry-After delay.
           headers:
+            Deprecation:
+              description: RFC 9745 deprecation date as an RFC 9651 structured Date
+                (for example @1796083200), indicating when this route was deprecated.
+              required: true
+              schema:
+                type: string
+              style: simple
             Retry-After:
               description: Seconds to wait before retrying the account lookup behind
                 the session.
               required: true
               schema:
                 type: integer
+              style: simple
+            Sunset:
+              description: RFC 8594 HTTP-date after which this route is expected to
+                stop answering.
+              required: true
+              schema:
+                type: string
               style: simple
       tags:
       - auth
@@ -1750,9 +1825,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageMetadataUserOrganization'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -2103,9 +2176,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageUserCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -3686,9 +3757,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillagePublicCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "500":
           content:
@@ -3740,9 +3809,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageVisibleCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -3906,9 +3973,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageUserCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -5514,9 +5579,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillagePublicCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "500":
           content:
@@ -5570,9 +5633,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageVisibleCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -6187,14 +6248,10 @@ paths:
                 anyOf:
                 - items:
                     $ref: '#/components/schemas/SchemaPullAnnotation'
-                  type:
-                  - "null"
-                  - array
+                  type: array
                 - items:
                     $ref: '#/components/schemas/SchemaLegacyPullAnnotation'
-                  type:
-                  - "null"
-                  - array
+                  type: array
           description: OK
           headers:
             Peasant-Pull-Contract:
@@ -6622,9 +6679,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageTagUsage'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "500":
           content:
@@ -6653,9 +6708,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageTagUsage'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "500":
           content:
@@ -7161,9 +7214,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageTranscriptAttestation'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "400":
           content:
@@ -8321,9 +8372,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageTranscriptShare'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "400":
           content:
@@ -8888,9 +8937,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageListUserOrganization'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "404":
           content:
@@ -8970,9 +9017,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageCollectiveSubmission'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "400":
           content:
@@ -9033,9 +9078,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageShareEvent'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "400":
           content:
@@ -9491,15 +9534,16 @@ paths:
       - users
   /api/v1/users/me/settings:
     get:
-      description: Read the caller's settings, including preview_before_attach and
-        auto_attach_pull_requests. auto_attach_pull_requests is off by default; when
-        on, Village links the caller's transcripts that trace a pull request's commits
-        when the pull request opens in a repository one of the caller's collectives
-        links, and never changes who can read them. notification_email is the caller's
-        own notification address with whether it is verified, or null; this is the
-        only response that carries an email address, and only its owner receives it.
-        email_invitations is on by default and decides whether Village emails the
-        caller when a collective invites them, once the address is verified.
+      description: Read the caller's settings, including preview_before_attach, auto_attach_pull_requests,
+        and profile discoverability (is_discoverable). auto_attach_pull_requests is
+        off by default; when on, Village links the caller's transcripts that trace
+        a pull request's commits when the pull request opens in a repository one of
+        the caller's collectives links, and never changes who can read them. notification_email
+        is the caller's own notification address with whether it is verified, or null;
+        this is the only response that carries an email address, and only its owner
+        receives it. email_invitations is on by default and decides whether Village
+        emails the caller when a collective invites them, once the address is verified.
+        is_discoverable controls whether the caller's profile is publicly discoverable.
       operationId: getMySettings
       responses:
         "200":
@@ -9523,9 +9567,11 @@ paths:
       tags:
       - users
     patch:
-      description: Patch the caller's settings. A field that is omitted is left unchanged.
-        The notification address is set, verified, and removed through its own operations
-        under /api/v1/users/me/email, because setting it sends mail.
+      description: 'Patch the caller''s settings, including profile discoverability
+        (is_discoverable). Partial update: an absent field keeps the stored value,
+        and is_discoverable must be non-null when present. The notification address
+        is set, verified, and removed through its own operations under /api/v1/users/me/email,
+        because setting it sends mail.'
       operationId: updateMySettings
       requestBody:
         content:
@@ -11124,6 +11170,7 @@ components:
       title: Evidence Kind
       type: string
     SchemaExchangeCodeRequest:
+      additionalProperties: false
       properties:
         code:
           type: string
@@ -12950,6 +12997,7 @@ components:
       - omittedImages
       type: object
     SchemaTranscriptEntryLocateRequest:
+      additionalProperties: false
       properties:
         contentHash:
           type: string
@@ -13820,6 +13868,7 @@ components:
       - publisher_count
       type: object
     SchemaVillageBatchReviewRequest:
+      additionalProperties: false
       properties:
         status:
           $ref: '#/components/schemas/SchemaVillageReviewDecision'
@@ -13856,6 +13905,7 @@ components:
       - status
       type: object
     SchemaVillageBatchShareRequest:
+      additionalProperties: false
       properties:
         project_hash:
           $ref: '#/components/schemas/SchemaProjectHash'
@@ -13887,6 +13937,7 @@ components:
       - already_shared
       type: object
     SchemaVillageBatchShareSelectionRequest:
+      additionalProperties: false
       properties:
         private_approvals:
           description: The private transcripts among transcript_ids whose owner approved
@@ -14120,6 +14171,7 @@ components:
       - expires_at
       type: object
     SchemaVillageCollectiveInvitationRequest:
+      additionalProperties: false
       properties:
         username:
           minLength: 1
@@ -14178,6 +14230,7 @@ components:
       - github_orgs
       type: object
     SchemaVillageCollectiveMemberRoleRequest:
+      additionalProperties: false
       properties:
         role:
           $ref: '#/components/schemas/SchemaVillageAssignableCollectiveRole'
@@ -15227,11 +15280,13 @@ components:
       title: Village Contribution Status
       type: string
     SchemaVillageCreateAPIKeyRequest:
+      additionalProperties: false
       properties:
         label:
           type: string
       type: object
     SchemaVillageCreateAttestationRequest:
+      additionalProperties: false
       properties:
         attestation_type:
           $ref: '#/components/schemas/SchemaVillageAttestationType'
@@ -15246,6 +15301,7 @@ components:
       - attestation_type
       type: object
     SchemaVillageCreateCollectiveRequest:
+      additionalProperties: false
       properties:
         acceptance_mode:
           $ref: '#/components/schemas/SchemaVillageCollectiveAcceptanceMode'
@@ -15303,6 +15359,7 @@ components:
       - transcriptList
       type: object
     SchemaVillageDiscoverabilityRequest:
+      additionalProperties: false
       properties:
         is_discoverable:
           type: boolean
@@ -15475,6 +15532,7 @@ components:
       - acceptance_mode
       type: object
     SchemaVillageLinkRepositoryRequest:
+      additionalProperties: false
       properties:
         installation_id:
           anyOf:
@@ -15573,6 +15631,7 @@ components:
       - avatar_url
       type: object
     SchemaVillageManualAnnotationRequest:
+      additionalProperties: false
       properties:
         endIndex:
           description: Exclusive end; defaults to entryIndex+1; must be greater than
@@ -15714,6 +15773,7 @@ components:
       - transcript_count
       type: object
     SchemaVillageOrganizationVisibilityRequest:
+      additionalProperties: false
       properties:
         visible:
           description: Omitted means false.
@@ -15829,6 +15889,7 @@ components:
       - transcript_count
       type: object
     SchemaVillageProjectDisplayNameRequest:
+      additionalProperties: false
       properties:
         display_name:
           description: Trimmed; must be non-empty and at most 255 bytes.
@@ -16280,6 +16341,7 @@ components:
       title: Village Review Decision
       type: string
     SchemaVillageReviewShareRequest:
+      additionalProperties: false
       properties:
         status:
           $ref: '#/components/schemas/SchemaVillageReviewDecision'
@@ -16373,6 +16435,7 @@ components:
       - owner
       type: object
     SchemaVillageSetNotificationEmailRequest:
+      additionalProperties: false
       properties:
         address:
           maxLength: 254
@@ -16446,6 +16509,7 @@ components:
       title: Village Share Status
       type: string
     SchemaVillageShareTranscriptRequest:
+      additionalProperties: false
       properties:
         group_ids:
           items:
@@ -17302,6 +17366,7 @@ components:
       title: Village UUID
       type: string
     SchemaVillageUpdateCollectiveRequest:
+      additionalProperties: false
       properties:
         acceptance_mode:
           $ref: '#/components/schemas/SchemaVillageCollectiveAcceptanceMode'
@@ -17335,6 +17400,7 @@ components:
           $ref: '#/components/schemas/SchemaVillageTranscriptDeletionPolicy'
       type: object
     SchemaVillageUpdateUserSettingsRequest:
+      additionalProperties: false
       properties:
         auto_attach_pull_requests:
           anyOf:
@@ -17348,6 +17414,8 @@ components:
             - "null"
             - boolean
           - type: "null"
+        is_discoverable:
+          type: boolean
         preview_before_attach:
           anyOf:
           - type:
@@ -17615,6 +17683,8 @@ components:
           type: boolean
         email_invitations:
           type: boolean
+        is_discoverable:
+          type: boolean
         notification_email:
           anyOf:
           - $ref: '#/components/schemas/SchemaVillageNotificationEmail'
@@ -17626,6 +17696,7 @@ components:
       - auto_attach_pull_requests
       - notification_email
       - email_invitations
+      - is_discoverable
       type: object
     SchemaVillageUserStats:
       properties:
@@ -17657,6 +17728,7 @@ components:
       - pull_request_count
       type: object
     SchemaVillageUsernameRequest:
+      additionalProperties: false
       properties:
         username:
           description: Trimmed and lowercased, then matched against ^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$
@@ -17665,6 +17737,7 @@ components:
       - username
       type: object
     SchemaVillageVerifyNotificationEmailRequest:
+      additionalProperties: false
       properties:
         token:
           minLength: 1

@@ -208,37 +208,37 @@ cases:
     provenance: {source: requirement, ref: "each invitation is listed once"}
     mutation: {description: "repeats one invitation"}
   - name: settings-no-email-valid
-    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: null, email_invitations: true}}
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: null, email_invitations: true, is_discoverable: false}}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "no address is stored until the person gives one"}
     mutation: {description: "the default: no address, invitation emails on"}
   - name: settings-unverified-email-valid
-    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: {address: someone@example.org, verified: false}, email_invitations: true}}
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: {address: someone@example.org, verified: false}, email_invitations: true, is_discoverable: false}}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "an address is unverified until its token is confirmed"}
     mutation: {description: "an address waiting for verification"}
   - name: settings-verified-email-valid
-    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: {address: someone@example.org, verified: true}, email_invitations: false}}
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: {address: someone@example.org, verified: true}, email_invitations: false, is_discoverable: true}}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "a person can keep an address and turn invitation emails off"}
     mutation: {description: "a verified address with invitation emails off"}
   - name: settings-missing-notification-email-rejected
-    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, email_invitations: true}}
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, email_invitations: true, is_discoverable: false}}
     expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "the server states the address or null, never omits it"}
     mutation: {description: "omits notification_email"}
   - name: settings-missing-email-invitations-rejected
-    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: null}}
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: null, is_discoverable: false}}
     expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "the server holds the preference, so it always states it"}
     mutation: {description: "omits email_invitations"}
   - name: settings-address-without-at-rejected
-    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: {address: someone.example.org, verified: false}, email_invitations: true}}
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: {address: someone.example.org, verified: false}, email_invitations: true, is_discoverable: false}}
     expected: {valid: false, rejected_by: semantics, error_contains: "exactly one @"}
     classification: must-fail
     provenance: {source: boundary, ref: "an address has one @ with text on both sides"}

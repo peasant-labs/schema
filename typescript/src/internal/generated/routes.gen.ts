@@ -92,6 +92,7 @@ export const VillageRoute = Object.freeze({
   DeleteMyAccount: routeMember(HttpMethod.Delete, "/api/v1/auth/me", "deleteMyAccount"),
   /**
    * `PATCH /api/v1/auth/me/settings` (operationId `setMyDiscoverability`).
+   * @deprecated The Village API document marks this operation deprecated.
    */
   SetMyDiscoverability: routeMember(HttpMethod.Patch, "/api/v1/auth/me/settings", "setMyDiscoverability"),
   /**

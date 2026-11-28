@@ -1,0 +1,48 @@
+cases:
+  - name: top-level-slice-non-null
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: Top-level bare-list success responses must emit non-null type array
+    mutation:
+      description: Removing nonNullTopLevelArrayResponses leaves top-level slice responses as ["null","array"]
+    input:
+      kind: top-level-slice
+      path: /api/v1/probe/list
+    expected:
+      response_type: array
+      frozen_type: ""
+
+  - name: nested-nullable-array-preserved
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: Nullable array properties nested inside response objects must not be altered by the top-level rule
+    mutation:
+      description: Recursing into object properties would strip null from nested nullable arrays
+    input:
+      kind: nested-slice
+      path: /api/v1/probe/object
+    expected:
+      response_type: object
+      nested_property: items
+      nested_types:
+        - array
+        - "null"
+
+  - name: frozen-village-spec-untouched
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: Frozen numbered Village specs remain byte-frozen when the working generator rule changes
+    mutation:
+      description: Mutating or regenerating frozen specs would change 0.44.0 list responses
+    input:
+      kind: frozen-check
+      path: /api/v1/tags
+      frozen_file: ../generated/village-api-0.44.0.json
+    expected:
+      response_type: array
+      frozen_types:
+        - "null"
+        - array

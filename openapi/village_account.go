@@ -13,8 +13,24 @@ func addVillageAccountOperations(r *openapi31.Reflector) error {
 		{method: http.MethodPost, path: "/api/v1/auth/logout", id: "logOut", tag: "auth", description: "Clear the session cookie; bearer tokens are not revoked.", responses: []villageResponse{{status: 200, description: "Logged out.", headers: []villageHeader{cookie}, media: []villageMedia{{mediaType: villageMediaJSON, body: new(schema.VillageStatusResponse)}}}}},
 		// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 		{method: http.MethodDelete, path: "/api/v1/auth/me", id: "deleteMyAccount", tag: "auth", description: "Permanently delete the authenticated account and clear the session cookie.", session: villageSessionRequired, responses: []villageResponse{{status: 200, description: "Deleted.", headers: []villageHeader{cookie}, media: []villageMedia{{mediaType: villageMediaJSON, body: new(schema.VillageStatusResponse)}}}}, errorStatuses: []int{500}},
-		// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
-		{method: http.MethodPatch, path: "/api/v1/auth/me/settings", id: "setMyDiscoverability", requiredBody: true, tag: "auth", description: "Update discoverability; is_discoverable must be present and non-null.", session: villageSessionRequired, requests: []interface{}{new(schema.VillageDiscoverabilityRequest)}, response: new(schema.VillageUser), errorStatuses: []int{400, 500}},
+		{
+			method: http.MethodPatch,
+			// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
+			path:          "/api/v1/auth/me/settings",
+			id:            "setMyDiscoverability",
+			requiredBody:  true,
+			deprecated:    true,
+			tag:           "auth",
+			description:   "Deprecated: use PATCH /api/v1/users/me/settings instead; this route is expected to stop answering after its Sunset date. Update discoverability; is_discoverable must be present and non-null.",
+			session:       villageSessionRequired,
+			requests:      []interface{}{new(schema.VillageDiscoverabilityRequest)},
+			response:      new(schema.VillageUser),
+			errorStatuses: []int{400, 500},
+			responseHeaders: []villageHeader{
+				{name: "Deprecation", required: true, description: "RFC 9745 deprecation date as an RFC 9651 structured Date (for example @1796083200), indicating when this route was deprecated."},
+				{name: "Sunset", required: true, description: "RFC 8594 HTTP-date after which this route is expected to stop answering."},
+			},
+		},
 		// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it
 		{method: http.MethodPatch, path: "/api/v1/auth/me/username", id: "setMyUsername", requiredBody: true, tag: "auth", description: "Set a username after trimming and lowercasing; invalid or reserved names are refused and taken names conflict.", session: villageSessionRequired, requests: []interface{}{new(schema.VillageUsernameRequest)}, response: new(schema.VillageUser), errorStatuses: []int{400, 409, 500}},
 		// unstring-allow: go-endpoint-literal — this declaration defines the route, and the route members are generated from it

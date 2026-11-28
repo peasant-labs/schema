@@ -158,11 +158,14 @@ type VillagePromptRequestsResponse struct {
 // caller's choice to be emailed when a collective invites them; it is on by
 // default and takes effect only once the address is verified. The one-click
 // unsubscribe link in an invitation email turns it off.
+//
+// IsDiscoverable controls whether the caller's profile is publicly discoverable.
 type VillageUserSettings struct {
 	PreviewBeforeAttach    bool                      `json:"preview_before_attach"`
 	AutoAttachPullRequests bool                      `json:"auto_attach_pull_requests"`
 	NotificationEmail      *VillageNotificationEmail `json:"notification_email"`
 	EmailInvitations       bool                      `json:"email_invitations"`
+	IsDiscoverable         bool                      `json:"is_discoverable"`
 }
 
 // Validate refuses settings a producer must not emit.
@@ -173,13 +176,15 @@ func (s VillageUserSettings) Validate() error {
 	return nil
 }
 
-// VillageUpdateUserSettingsRequest patches the caller's settings. An omitted
-// field is left unchanged. The notification address itself is set, verified,
-// and removed through its own operations, because setting it sends mail.
+// VillageUpdateUserSettingsRequest patches the caller's settings. An absent
+// field keeps the stored value. The notification address itself is set,
+// verified, and removed through its own operations, because setting it sends
+// mail.
 type VillageUpdateUserSettingsRequest struct {
 	PreviewBeforeAttach    *bool `json:"preview_before_attach,omitempty"`
 	AutoAttachPullRequests *bool `json:"auto_attach_pull_requests,omitempty"`
 	EmailInvitations       *bool `json:"email_invitations,omitempty"`
+	IsDiscoverable         *bool `json:"is_discoverable,omitempty" nullable:"false"`
 }
 
 // VillageTranscriptPullRequest is one pull request that includes a transcript,

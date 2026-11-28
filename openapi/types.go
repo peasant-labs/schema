@@ -405,6 +405,9 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	if err := closeStrictComponents(r.SpecEns().ComponentsEns().Schemas); err != nil {
 		return nil, err
 	}
+	if err := closeRequestComponents(r.SpecEns().ComponentsEns().Schemas); err != nil {
+		return nil, err
+	}
 	delete(r.SpecEns().ComponentsEns().Schemas, "BestiaryHarness")
 	delete(r.SpecEns().ComponentsEns().Schemas, "Provider")
 
@@ -730,6 +733,107 @@ func closeStrictComponents(components map[string]map[string]interface{}) error {
 		}
 	}
 	return nil
+}
+
+// closedRequestComponents names the Village plain JSON request-body components
+// that must reject unknown fields (additionalProperties: false) without
+// altering property nullability.
+var closedRequestComponents = []string{
+	"ExchangeCodeRequest",
+	"TranscriptEntryLocateRequest",
+	"VillageBatchReviewRequest",
+	"VillageBatchShareRequest",
+	"VillageBatchShareSelectionRequest",
+	"VillageCollectiveInvitationRequest",
+	"VillageCollectiveMemberRoleRequest",
+	"VillageCreateAPIKeyRequest",
+	"VillageCreateAttestationRequest",
+	"VillageCreateCollectiveRequest",
+	"VillageDiscoverabilityRequest",
+	"VillageLinkRepositoryRequest",
+	"VillageManualAnnotationRequest",
+	"VillageOrganizationVisibilityRequest",
+	"VillageProjectDisplayNameRequest",
+	"VillageReviewShareRequest",
+	"VillageSetNotificationEmailRequest",
+	"VillageShareTranscriptRequest",
+	"VillageUpdateCollectiveRequest",
+	"VillageUpdateUserSettingsRequest",
+	"VillageUsernameRequest",
+	"VillageVerifyNotificationEmailRequest",
+}
+
+func closeRequestComponents(components map[string]map[string]interface{}) error {
+	for _, name := range closedRequestComponents {
+		component, ok := components[name]
+		if !ok {
+			return fmt.Errorf("close request component %s: absent from Types catalog", name)
+		}
+		visited := map[string]bool{name: true}
+		closeObjectSchemaTree(component, components, visited)
+	}
+	return nil
+}
+
+func closeObjectSchemaTree(node map[string]interface{}, components map[string]map[string]interface{}, visited map[string]bool) {
+	if node == nil {
+		return
+	}
+	if isObjectSchema(node) {
+		node["additionalProperties"] = false
+	}
+	switch ref := node["$ref"].(type) {
+	case string:
+		const prefix = "#/components/schemas/"
+		if strings.HasPrefix(ref, prefix) {
+			target := strings.TrimPrefix(ref, prefix)
+			if !visited[target] {
+				visited[target] = true
+				if targetSchema, ok := components[target]; ok {
+					closeObjectSchemaTree(targetSchema, components, visited)
+				}
+			}
+		}
+	}
+	switch props := node["properties"].(type) {
+	case map[string]interface{}:
+		for _, raw := range props {
+			if propMap, ok := raw.(map[string]interface{}); ok {
+				closeObjectSchemaTree(propMap, components, visited)
+			}
+		}
+	}
+	switch items := node["items"].(type) {
+	case map[string]interface{}:
+		closeObjectSchemaTree(items, components, visited)
+	}
+	for _, key := range []string{"anyOf", "oneOf", "allOf"} {
+		switch arms := node[key].(type) {
+		case []interface{}:
+			for _, rawArm := range arms {
+				if arm, ok := rawArm.(map[string]interface{}); ok {
+					closeObjectSchemaTree(arm, components, visited)
+				}
+			}
+		}
+	}
+}
+
+func isObjectSchema(node map[string]interface{}) bool {
+	switch t := node["type"].(type) {
+	case string:
+		if t == "object" {
+			return true
+		}
+	case []interface{}:
+		for _, item := range t {
+			if item == "object" {
+				return true
+			}
+		}
+	}
+	_, hasProps := node["properties"]
+	return hasProps
 }
 
 // dropNullArm removes the null alternative reflection adds for a Go pointer,

@@ -140,6 +140,17 @@ func checkVillageOperation(op villageOperationSpec) error {
 	if len(op.servers) > 0 && strings.HasPrefix(op.path, villageAPIPrefix) {
 		return fmt.Errorf("%s: servers overrides the document's servers on a path under %s; routes under the API prefix resolve against the document's servers; drop servers, or mount the route outside the API prefix", where, villageAPIPrefix)
 	}
+	commonHeaders := map[string]bool{}
+	for _, header := range op.responseHeaders {
+		key := strings.ToLower(header.name)
+		if key == "" {
+			return fmt.Errorf("%s: responseHeaders declares a header with no name; name the header", where)
+		}
+		if commonHeaders[key] {
+			return fmt.Errorf("%s: responseHeaders declares header %s twice; declare each header once", where, header.name)
+		}
+		commonHeaders[key] = true
+	}
 	return nil
 }
 
@@ -410,6 +421,24 @@ func declareVillageResponses(spec *openapi31.Spec, op villageOperationSpec) erro
 		}
 	}
 
+	if len(op.responseHeaders) > 0 {
+		for key, response := range responses {
+			if response.Response == nil {
+				return fmt.Errorf("%s: response %s is a reference, so responseHeaders cannot be attached; declare it inline", where, key)
+			}
+			for _, header := range op.responseHeaders {
+				if err := setVillageHeader(response.Response, header); err != nil {
+					return fmt.Errorf("%s: %w", where, err)
+				}
+			}
+			responses[key] = response
+		}
+	}
+
+	if op.deprecated {
+		operation.WithDeprecated(true)
+	}
+
 	if len(op.servers) > 0 {
 		servers := make([]openapi31.Server, len(op.servers))
 		for i, url := range op.servers {
@@ -417,9 +446,101 @@ func declareVillageResponses(spec *openapi31.Spec, op villageOperationSpec) erro
 		}
 		item.Servers = servers
 	}
+	nonNullOperationArrayResponses(operation)
 	spec.Paths.MapOfPathItemValues[op.path] = item
 
 	return verifyVillageStatuses(spec, op)
+}
+
+// nonNullTopLevelArrayResponses enforces the contract rule that every Village
+// operation whose success response is a top-level array (including an array
+// arm inside a top-level anyOf/oneOf) declares type "array" rather than
+// ["null","array"]. Nested array properties inside objects are untouched.
+func nonNullTopLevelArrayResponses(spec *openapi31.Spec) {
+	if spec == nil || spec.Paths == nil {
+		return
+	}
+	for _, item := range spec.Paths.MapOfPathItemValues {
+		for _, op := range []*openapi31.Operation{
+			item.Get, item.Put, item.Post, item.Delete,
+			item.Options, item.Head, item.Patch, item.Trace,
+		} {
+			nonNullOperationArrayResponses(op)
+		}
+	}
+}
+
+func nonNullOperationArrayResponses(operation *openapi31.Operation) {
+	if operation == nil || operation.Responses == nil {
+		return
+	}
+	for status, respOrRef := range operation.Responses.MapOfResponseOrReferenceValues {
+		if !strings.HasPrefix(status, "2") || respOrRef.Response == nil || respOrRef.Response.Content == nil {
+			continue
+		}
+		media, ok := respOrRef.Response.Content[villageMediaJSON]
+		if !ok {
+			continue
+		}
+		if media.Schema == nil {
+			continue
+		}
+		media.Schema = stripNullFromTopLevelArraySchema(media.Schema)
+		respOrRef.Response.Content[villageMediaJSON] = media
+		operation.Responses.MapOfResponseOrReferenceValues[status] = respOrRef
+	}
+}
+
+func stripNullFromTopLevelArraySchema(schemaMap map[string]interface{}) map[string]interface{} {
+	if isTopLevelArraySchema(schemaMap) {
+		return dropNullArm(schemaMap)
+	}
+	for _, key := range []string{"anyOf", "oneOf"} {
+		arms, ok := schemaMap[key].([]interface{})
+		if !ok {
+			continue
+		}
+		for i, rawArm := range arms {
+			if arm, ok := rawArm.(map[string]interface{}); ok && isTopLevelArraySchema(arm) {
+				arms[i] = dropNullArm(arm)
+			}
+		}
+		schemaMap[key] = arms
+	}
+	return schemaMap
+}
+
+func isTopLevelArraySchema(m map[string]interface{}) bool {
+	switch t := m["type"].(type) {
+	case string:
+		return t == "array"
+	case []interface{}:
+		for _, item := range t {
+			if item == "array" {
+				return true
+			}
+		}
+	}
+	switch arms := m["anyOf"].(type) {
+	case []interface{}:
+		if len(arms) == 2 {
+			hasNull := false
+			hasArray := false
+			for _, rawArm := range arms {
+				arm, ok := rawArm.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if isNullOnly(arm) {
+					hasNull = true
+				} else if isTopLevelArraySchema(arm) {
+					hasArray = true
+				}
+			}
+			return hasNull && hasArray
+		}
+	}
+	return false
 }
 
 // verifyVillageStatuses requires an operation's document entry to carry

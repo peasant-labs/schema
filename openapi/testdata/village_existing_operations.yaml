@@ -13,6 +13,90 @@ allowed_changes:
   operations:
     # Documents optional displayNumber on TranscriptSegment turns.
     - getTranscriptSegment
+    # Top-level array success responses are typed as non-null arrays.
+    - getPullTranscriptAnnotations
+    - listAuthenticatedVillageOrganizations
+    - listGroups
+    - listGroupsDeprecated
+    - listMyAPIKeys
+    - listMyCollectiveSubmissions
+    - listPopularTags
+    - listPublicGroups
+    - listPublicGroupsDeprecated
+    - listShareEventHistory
+    - listTags
+    - listTranscriptAttestations
+    - listUserOrganizations
+    - listVisibleGroups
+    - listVisibleGroupsDeprecated
+    # The success response is a top-level array (non-null), and the request
+    # body is closed.
+    - shareTranscriptWithGroups
+    # Plain JSON request bodies are closed: an undeclared field is refused.
+    - batchReviewShares
+    - batchReviewSharesDeprecated
+    - batchShareProject
+    - batchShareProjectDeprecated
+    - batchShareSelection
+    - batchShareSelectionDeprecated
+    - cliExchangeCode
+    - createGroup
+    - createGroupDeprecated
+    - createGroupInvitation
+    - createGroupInvitationDeprecated
+    - createMyAPIKey
+    - createTranscriptAnnotation
+    - createTranscriptAttestation
+    - linkGroupRepository
+    - linkGroupRepositoryDeprecated
+    - locateTranscriptEntry
+    - reviewShare
+    - reviewShareDeprecated
+    - setMyNotificationEmail
+    - setMyOrganizationVisibility
+    - setMyProjectDisplayName
+    - setMyUsername
+    - updateGroup
+    - updateGroupDeprecated
+    - updateGroupMemberRole
+    - updateGroupMemberRoleDeprecated
+    - verifyMyNotificationEmail
+    # Settings carry is_discoverable: the settings response gains it, and the
+    # settings update accepts it (closed request body).
+    - getMySettings
+    - updateMySettings
+    # Removing the notification address answers the settings record, which
+    # gains is_discoverable.
+    - removeMyNotificationEmail
+    # Deprecated in favour of updateMySettings: closed request body, and every
+    # response declares the Deprecation and Sunset headers.
+    - setMyDiscoverability
   components:
     # Gains optional displayNumber on TranscriptTurn.
     - SchemaTranscriptTurn
+    # Request-only components, closed: an undeclared field is refused.
+    - SchemaExchangeCodeRequest
+    - SchemaTranscriptEntryLocateRequest
+    - SchemaVillageBatchReviewRequest
+    - SchemaVillageBatchShareRequest
+    - SchemaVillageBatchShareSelectionRequest
+    - SchemaVillageCollectiveInvitationRequest
+    - SchemaVillageCollectiveMemberRoleRequest
+    - SchemaVillageCreateAPIKeyRequest
+    - SchemaVillageCreateAttestationRequest
+    - SchemaVillageCreateCollectiveRequest
+    - SchemaVillageDiscoverabilityRequest
+    - SchemaVillageLinkRepositoryRequest
+    - SchemaVillageManualAnnotationRequest
+    - SchemaVillageOrganizationVisibilityRequest
+    - SchemaVillageProjectDisplayNameRequest
+    - SchemaVillageReviewShareRequest
+    - SchemaVillageSetNotificationEmailRequest
+    - SchemaVillageShareTranscriptRequest
+    - SchemaVillageUpdateCollectiveRequest
+    - SchemaVillageUsernameRequest
+    - SchemaVillageVerifyNotificationEmailRequest
+    # Closed, and gains optional is_discoverable.
+    - SchemaVillageUpdateUserSettingsRequest
+    # Gains required is_discoverable.
+    - SchemaVillageUserSettings
