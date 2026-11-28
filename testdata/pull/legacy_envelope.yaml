@@ -143,10 +143,10 @@ served_bodies:
       mutation: {description: serves no annotations as an empty array}
     - name: null-annotations
       input: {path: '/api/v1/pull/transcripts/{id}/annotations', body: 'null'}
-      expected: {valid: true}
-      classification: must-pass
-      provenance: {source: bug, ref: 'a null annotation list matched both envelopes and failed oneOf'}
-      mutation: {description: serves no annotations as null}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: 'top-level bare-list responses are non-null arrays'}
+      mutation: {description: rejects null now that top-level annotation lists are non-null}
     - name: public-owner-list-row
       input: {path: /api/v1/pull/transcripts, body: '{"transcripts":[{"transcriptId":"123e4567-e89b-12d3-a456-426614174003","owner":{"kind":"anonymous"},"visibility":"group","publishedAt":1,"updatedAt":1,"annotationCount":0}],"page":1,"limit":50,"total":1}'}
       expected: {valid: true}

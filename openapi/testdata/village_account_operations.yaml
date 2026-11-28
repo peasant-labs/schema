@@ -77,25 +77,37 @@ cases:
       '200':
         media:
           application/json: SchemaVillageUser
-        headers: {}
+        headers:
+          Deprecation: true
+          Sunset: true
       '400':
         media:
           application/json: SchemaVillageErrorResponse
-        headers: {}
+        headers:
+          Deprecation: true
+          Sunset: true
       '500':
         media:
           application/json: SchemaVillageErrorResponse
-        headers: {}
+        headers:
+          Deprecation: true
+          Sunset: true
       '401':
         media:
           application/json: SchemaVillageErrorResponse
-        headers: {}
+        headers:
+          Deprecation: true
+          Sunset: true
       '503':
         media:
           application/json: SchemaVillageErrorResponse
         headers:
+          Deprecation: true
           Retry-After: true
+          Sunset: true
     description_anchors:
+    - PATCH /api/v1/users/me/settings
+    - Sunset
     - non-null
     request_body:
       required: true
@@ -205,7 +217,7 @@ cases:
     responses:
       '200':
         media:
-          application/json: '[]SchemaVillageAPIKey|null'
+          application/json: '[]SchemaVillageAPIKey'
         headers: {}
       '500':
         media:

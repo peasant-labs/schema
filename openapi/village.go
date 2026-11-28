@@ -510,6 +510,11 @@ type villageOperationSpec struct {
 	// requiredBody marks the request body required: the handler decodes it
 	// unconditionally and refuses a request without one.
 	requiredBody bool
+	// deprecated marks the operation deprecated in the OpenAPI document.
+	deprecated bool
+	// responseHeaders are attached to every response (success and error)
+	// declared on this operation.
+	responseHeaders []villageHeader
 	// servers overrides the document's servers on this path item. It is
 	// allowed only outside the API prefix, for a route the server mounts at
 	// its root.

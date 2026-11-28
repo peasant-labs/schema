@@ -26,7 +26,7 @@ cases:
       tag: tags
       responses:
         "200":
-          media: {application/json: "[]SchemaVillageTagUsage|null"}
+          media: {application/json: "[]SchemaVillageTagUsage"}
         "500":
           media: {application/json: SchemaVillageErrorResponse}
       description_anchors: ["ordered by name"]
@@ -42,7 +42,7 @@ cases:
         - {name: limit, in: query, required: false, schema: string}
       responses:
         "200":
-          media: {application/json: "[]SchemaVillageTagUsage|null"}
+          media: {application/json: "[]SchemaVillageTagUsage"}
         "500":
           media: {application/json: SchemaVillageErrorResponse}
       description_anchors: ["descending usage"]
@@ -74,7 +74,7 @@ cases:
         - {name: username, in: path, required: true, schema: string}
       responses:
         "200":
-          media: {application/json: "[]SchemaVillageListUserOrganization|null"}
+          media: {application/json: "[]SchemaVillageListUserOrganization"}
         "404":
           media: {application/json: SchemaVillageErrorResponse}
         "500":

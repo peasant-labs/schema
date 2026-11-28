@@ -288,7 +288,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Update discoverability; is_discoverable must be present and non-null. */
+        /**
+         * @deprecated
+         * @description Deprecated: use PATCH /api/v1/users/me/settings instead; this route is expected to stop answering after its Sunset date. Update discoverability; is_discoverable must be present and non-null.
+         */
         patch: operations["setMyDiscoverability"];
         trace?: never;
     };
@@ -2071,14 +2074,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the caller's settings, including preview_before_attach and auto_attach_pull_requests. auto_attach_pull_requests is off by default; when on, Village links the caller's transcripts that trace a pull request's commits when the pull request opens in a repository one of the caller's collectives links, and never changes who can read them. notification_email is the caller's own notification address with whether it is verified, or null; this is the only response that carries an email address, and only its owner receives it. email_invitations is on by default and decides whether Village emails the caller when a collective invites them, once the address is verified. */
+        /** @description Read the caller's settings, including preview_before_attach, auto_attach_pull_requests, and profile discoverability (is_discoverable). auto_attach_pull_requests is off by default; when on, Village links the caller's transcripts that trace a pull request's commits when the pull request opens in a repository one of the caller's collectives links, and never changes who can read them. notification_email is the caller's own notification address with whether it is verified, or null; this is the only response that carries an email address, and only its owner receives it. email_invitations is on by default and decides whether Village emails the caller when a collective invites them, once the address is verified. is_discoverable controls whether the caller's profile is publicly discoverable. */
         get: operations["getMySettings"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Patch the caller's settings. A field that is omitted is left unchanged. The notification address is set, verified, and removed through its own operations under /api/v1/users/me/email, because setting it sends mail. */
+        /** @description Patch the caller's settings, including profile discoverability (is_discoverable). Partial update: an absent field keeps the stored value, and is_discoverable must be non-null when present. The notification address is set, verified, and removed through its own operations under /api/v1/users/me/email, because setting it sends mail. */
         patch: operations["updateMySettings"];
         trace?: never;
     };
@@ -4224,6 +4227,10 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description RFC 9745 deprecation date as an RFC 9651 structured Date (for example @1796083200), indicating when this route was deprecated. */
+                    Deprecation: string;
+                    /** @description RFC 8594 HTTP-date after which this route is expected to stop answering. */
+                    Sunset: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4233,6 +4240,10 @@ export interface operations {
             /** @description Bad Request */
             400: {
                 headers: {
+                    /** @description RFC 9745 deprecation date as an RFC 9651 structured Date (for example @1796083200), indicating when this route was deprecated. */
+                    Deprecation: string;
+                    /** @description RFC 8594 HTTP-date after which this route is expected to stop answering. */
+                    Sunset: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4242,6 +4253,10 @@ export interface operations {
             /** @description Unauthorized. The request carries no valid session or API key. */
             401: {
                 headers: {
+                    /** @description RFC 9745 deprecation date as an RFC 9651 structured Date (for example @1796083200), indicating when this route was deprecated. */
+                    Deprecation: string;
+                    /** @description RFC 8594 HTTP-date after which this route is expected to stop answering. */
+                    Sunset: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4251,6 +4266,10 @@ export interface operations {
             /** @description Internal Server Error */
             500: {
                 headers: {
+                    /** @description RFC 9745 deprecation date as an RFC 9651 structured Date (for example @1796083200), indicating when this route was deprecated. */
+                    Deprecation: string;
+                    /** @description RFC 8594 HTTP-date after which this route is expected to stop answering. */
+                    Sunset: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4260,8 +4279,12 @@ export interface operations {
             /** @description Service Unavailable. The account behind the session could not be read; retry after the Retry-After delay. */
             503: {
                 headers: {
+                    /** @description RFC 9745 deprecation date as an RFC 9651 structured Date (for example @1796083200), indicating when this route was deprecated. */
+                    Deprecation: string;
                     /** @description Seconds to wait before retrying the account lookup behind the session. */
                     "Retry-After": number;
+                    /** @description RFC 8594 HTTP-date after which this route is expected to stop answering. */
+                    Sunset: string;
                     [name: string]: unknown;
                 };
                 content: {

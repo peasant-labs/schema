@@ -92,7 +92,7 @@ func TestVillageNonNullTopLevelLists(t *testing.T) {
 				}
 				schemaMap := responseJSONSchema(t, r.Spec, c.Input.Path, http.MethodGet, "200")
 				resolved := resolveSchemaRef(t, r.Spec, schemaMap)
-				props, _ := resolved["properties"].(map[string]interface{})
+				props, _ := resolved["properties"].(map[string]interface{}) // unstring-allow: go-json-key-assert — inspects reflected schema properties
 				prop, _ := props[c.Expected.NestedProperty].(map[string]interface{})
 				gotTypes := stringSlice(prop["type"])
 				if !reflect.DeepEqual(gotTypes, c.Expected.NestedTypes) {
@@ -112,11 +112,15 @@ func TestVillageNonNullTopLevelLists(t *testing.T) {
 				if err != nil {
 					t.Fatalf("read frozen spec %s: %v", c.Input.FrozenFile, err)
 				}
-				var frozenDoc map[string]interface{}
+				var frozenDoc rawOpenAPIDoc
 				if err := json.Unmarshal(raw, &frozenDoc); err != nil {
 					t.Fatalf("unmarshal frozen spec: %v", err)
 				}
-				frozenSchema := rawDocResponseSchema(t, frozenDoc, c.Input.Path, "get", "200")
+				var frozenOp rawOpenAPIOperation
+				if err := json.Unmarshal(frozenDoc.Paths[c.Input.Path]["get"], &frozenOp); err != nil {
+					t.Fatalf("unmarshal frozen operation: %v", err)
+				}
+				frozenSchema := frozenOp.Responses["200"].Content[villageMediaJSON].Schema
 				gotTypes := stringSlice(frozenSchema["type"])
 				if !reflect.DeepEqual(gotTypes, c.Expected.FrozenTypes) {
 					t.Fatalf("frozen %s type = %#v, want %#v", c.Input.Path, frozenSchema["type"], c.Expected.FrozenTypes)
@@ -149,10 +153,7 @@ func TestBuildVillageAPISpec_NoNullableTopLevelArraySuccessResponses(t *testing.
 					continue
 				}
 				media, ok := respOrRef.Response.Content[villageMediaJSON]
-				if !ok {
-					continue
-				}
-				if media.Schema == nil {
+				if !ok || media.Schema == nil {
 					continue
 				}
 				assertNoNullableArray(t, method+" "+path+" "+status, media.Schema)
@@ -163,7 +164,8 @@ func TestBuildVillageAPISpec_NoNullableTopLevelArraySuccessResponses(t *testing.
 
 func assertNoNullableArray(t *testing.T, where string, schemaMap map[string]interface{}) {
 	t.Helper()
-	if types, ok := schemaMap["type"].([]interface{}); ok {
+	switch types := schemaMap["type"].(type) {
+	case []interface{}:
 		for _, typ := range types {
 			if typ == "array" {
 				t.Fatalf("%s has nullable top-level array type %#v", where, types)
@@ -209,29 +211,44 @@ func responseJSONSchema(t *testing.T, spec *openapi31.Spec, path, method, status
 
 func resolveSchemaRef(t *testing.T, spec *openapi31.Spec, schemaMap map[string]interface{}) map[string]interface{} {
 	t.Helper()
-	ref, ok := schemaMap["$ref"].(string)
-	if !ok {
+	switch ref := schemaMap["$ref"].(type) {
+	case string:
+		name := strings.TrimPrefix(ref, "#/components/schemas/")
+		resolved, ok := spec.Components.Schemas[name]
+		if !ok {
+			t.Fatalf("missing component schema %s", name)
+		}
+		return resolved
+	default:
 		return schemaMap
 	}
-	name := strings.TrimPrefix(ref, "#/components/schemas/")
-	resolved, ok := spec.Components.Schemas[name]
-	if !ok {
-		t.Fatalf("missing component schema %s", name)
-	}
-	return resolved
 }
 
-func rawDocResponseSchema(t *testing.T, doc map[string]interface{}, path, method, status string) map[string]interface{} {
-	t.Helper()
-	paths, _ := doc["paths"].(map[string]interface{})
-	item, _ := paths[path].(map[string]interface{})
-	op, _ := item[method].(map[string]interface{})
-	responses, _ := op["responses"].(map[string]interface{})
-	resp, _ := responses[status].(map[string]interface{})
-	content, _ := resp["content"].(map[string]interface{})
-	media, _ := content[villageMediaJSON].(map[string]interface{})
-	schemaMap, _ := media["schema"].(map[string]interface{})
-	return schemaMap
+type rawOpenAPIDoc struct {
+	Paths      map[string]map[string]json.RawMessage `json:"paths"`
+	Components rawOpenAPIComponents                  `json:"components"`
+}
+
+type rawOpenAPIComponents struct {
+	Schemas map[string]map[string]interface{} `json:"schemas"`
+}
+
+type rawOpenAPIOperation struct {
+	OperationID string                        `json:"operationId"`
+	RequestBody *rawOpenAPIRequestBody        `json:"requestBody"`
+	Responses   map[string]rawOpenAPIResponse `json:"responses"`
+}
+
+type rawOpenAPIRequestBody struct {
+	Content map[string]rawOpenAPIMediaType `json:"content"`
+}
+
+type rawOpenAPIResponse struct {
+	Content map[string]rawOpenAPIMediaType `json:"content"`
+}
+
+type rawOpenAPIMediaType struct {
+	Schema map[string]interface{} `json:"schema"`
 }
 
 func stringSlice(raw interface{}) []string {

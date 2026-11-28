@@ -140,6 +140,17 @@ func checkVillageOperation(op villageOperationSpec) error {
 	if len(op.servers) > 0 && strings.HasPrefix(op.path, villageAPIPrefix) {
 		return fmt.Errorf("%s: servers overrides the document's servers on a path under %s; routes under the API prefix resolve against the document's servers; drop servers, or mount the route outside the API prefix", where, villageAPIPrefix)
 	}
+	commonHeaders := map[string]bool{}
+	for _, header := range op.responseHeaders {
+		key := strings.ToLower(header.name)
+		if key == "" {
+			return fmt.Errorf("%s: responseHeaders declares a header with no name; name the header", where)
+		}
+		if commonHeaders[key] {
+			return fmt.Errorf("%s: responseHeaders declares header %s twice; declare each header once", where, header.name)
+		}
+		commonHeaders[key] = true
+	}
 	return nil
 }
 
@@ -410,6 +421,24 @@ func declareVillageResponses(spec *openapi31.Spec, op villageOperationSpec) erro
 		}
 	}
 
+	if len(op.responseHeaders) > 0 {
+		for key, response := range responses {
+			if response.Response == nil {
+				return fmt.Errorf("%s: response %s is a reference, so responseHeaders cannot be attached; declare it inline", where, key)
+			}
+			for _, header := range op.responseHeaders {
+				if err := setVillageHeader(response.Response, header); err != nil {
+					return fmt.Errorf("%s: %w", where, err)
+				}
+			}
+			responses[key] = response
+		}
+	}
+
+	if op.deprecated {
+		operation.WithDeprecated(true)
+	}
+
 	if len(op.servers) > 0 {
 		servers := make([]openapi31.Server, len(op.servers))
 		for i, url := range op.servers {
@@ -482,31 +511,34 @@ func stripNullFromTopLevelArraySchema(schemaMap map[string]interface{}) map[stri
 }
 
 func isTopLevelArraySchema(m map[string]interface{}) bool {
-	if t, ok := m["type"].(string); ok {
+	switch t := m["type"].(type) {
+	case string:
 		return t == "array"
-	}
-	if types, ok := m["type"].([]interface{}); ok {
-		for _, t := range types {
-			if t == "array" {
+	case []interface{}:
+		for _, item := range t {
+			if item == "array" {
 				return true
 			}
 		}
 	}
-	if arms, ok := m["anyOf"].([]interface{}); ok && len(arms) == 2 {
-		hasNull := false
-		hasArray := false
-		for _, rawArm := range arms {
-			arm, ok := rawArm.(map[string]interface{})
-			if !ok {
-				continue
+	switch arms := m["anyOf"].(type) {
+	case []interface{}:
+		if len(arms) == 2 {
+			hasNull := false
+			hasArray := false
+			for _, rawArm := range arms {
+				arm, ok := rawArm.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if isNullOnly(arm) {
+					hasNull = true
+				} else if isTopLevelArraySchema(arm) {
+					hasArray = true
+				}
 			}
-			if isNullOnly(arm) {
-				hasNull = true
-			} else if isTopLevelArraySchema(arm) {
-				hasArray = true
-			}
+			return hasNull && hasArray
 		}
-		return hasNull && hasArray
 	}
 	return false
 }

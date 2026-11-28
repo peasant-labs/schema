@@ -21935,6 +21935,9 @@
               }
             ]
           },
+          "is_discoverable": {
+            "type": "boolean"
+          },
           "preview_before_attach": {
             "anyOf": [
               {
@@ -22366,6 +22369,9 @@
           "email_invitations": {
             "type": "boolean"
           },
+          "is_discoverable": {
+            "type": "boolean"
+          },
           "notification_email": {
             "anyOf": [
               {
@@ -22384,7 +22390,8 @@
           "preview_before_attach",
           "auto_attach_pull_requests",
           "notification_email",
-          "email_invitations"
+          "email_invitations",
+          "is_discoverable"
         ],
         "type": "object"
       },

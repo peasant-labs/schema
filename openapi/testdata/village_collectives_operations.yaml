@@ -327,7 +327,7 @@ operations:
     request_components: [VillageUpdateUserSettingsRequest]
     response_components: [VillageUserSettings]
     statuses: ["200", "400", "401", "500"]
-    description_anchors: [left unchanged]
+    description_anchors: [keeps the stored value]
   - path: /api/v1/transcripts/{id}/pulls
     method: get
     operation_id: listTranscriptPullRequests

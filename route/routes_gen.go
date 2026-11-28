@@ -86,6 +86,8 @@ var VillageDeleteMyAccount = Route{method: MethodDelete, pattern: "/api/v1/auth/
 
 // VillageSetMyDiscoverability is PATCH /api/v1/auth/me/settings
 // (operationId setMyDiscoverability) in the Village API document.
+//
+// Deprecated: the Village API document marks setMyDiscoverability deprecated.
 var VillageSetMyDiscoverability = Route{method: MethodPatch, pattern: "/api/v1/auth/me/settings", operationID: "setMyDiscoverability"}
 
 // VillageSetMyUsername is PATCH /api/v1/auth/me/username

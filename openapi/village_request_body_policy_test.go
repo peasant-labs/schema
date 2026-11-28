@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -22,9 +23,16 @@ type requestBodyPolicyInput struct {
 	Path        string `yaml:"path"`
 }
 
+type requestBodyPolicyClass string
+
+const (
+	requestBodyPolicyClosed           requestBodyPolicyClass = "closed"
+	requestBodyPolicyVersionedPayload requestBodyPolicyClass = "versioned-payload"
+)
+
 type requestBodyPolicyExpected struct {
-	Class  string `yaml:"class"`
-	Reason string `yaml:"reason"`
+	Class  requestBodyPolicyClass `yaml:"class"`
+	Reason string                 `yaml:"reason"`
 }
 
 func TestVillageRequestBodyPolicy(t *testing.T) {
@@ -39,21 +47,13 @@ func TestVillageRequestBodyPolicy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildVillageAPISpec: %v", err)
 	}
-	rawWorking, err := json.Marshal(spec)
-	if err != nil {
-		t.Fatalf("marshal working spec: %v", err)
-	}
-	var workingDoc map[string]interface{}
-	if err := json.Unmarshal(rawWorking, &workingDoc); err != nil {
-		t.Fatalf("unmarshal working spec: %v", err)
-	}
 
-	rawFrozen, err := os.ReadFile("../generated/village-api-0.44.0.json")
+	rawFrozen, err := os.ReadFile(filepath.Join("..", "generated", "village-api-0.44.0.json"))
 	if err != nil {
 		t.Fatalf("read frozen spec: %v", err)
 	}
-	var frozenDoc map[string]interface{}
-	if err := json.Unmarshal(rawFrozen, &frozenDoc); err != nil {
+	var frozenSpec rawOpenAPIDoc
+	if err := json.Unmarshal(rawFrozen, &frozenSpec); err != nil {
 		t.Fatalf("unmarshal frozen spec: %v", err)
 	}
 
@@ -64,39 +64,50 @@ func TestVillageRequestBodyPolicy(t *testing.T) {
 	}
 	assertSameNames(t, "Village JSON request body operations", fixtureOps, actualOps)
 
-	respRefs := collectResponseSchemaRefs(workingDoc)
-	workingSchemas, _ := workingDoc["components"].(map[string]interface{})["schemas"].(map[string]interface{})
-	frozenSchemas, _ := frozenDoc["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+	respRefs := collectResponseSchemaRefs(spec)
+	workingSchemas := spec.Components.Schemas
+	frozenSchemas := frozenSpec.Components.Schemas
 
 	for _, c := range corpus.Cases {
 		t.Run(c.Name, func(t *testing.T) {
-			reqSchema := findOperationJSONRequestSchema(t, workingDoc, c.Input.Path, strings.ToLower(c.Input.Method), c.Input.OperationID)
-			switch c.Expected.Class {
-			case "closed":
+			reqSchema := findOperationJSONRequestSchema(t, spec, c.Input.Path, c.Input.Method, c.Input.OperationID)
+			if strings.TrimSpace(c.Expected.Reason) == "" {
+				// Plain closed request body.
+				if c.Expected.Class != requestBodyPolicyClosed {
+					t.Fatalf("unexpected policy class %q without reason for %s", c.Expected.Class, c.Input.OperationID)
+				}
 				visited := map[string]bool{}
 				assertAllObjectsClosed(t, c.Input.OperationID, reqSchema, workingSchemas, visited)
-				if ref, ok := reqSchema["$ref"].(string); ok {
+				switch ref := reqSchema["$ref"].(type) {
+				case string:
 					compName := strings.TrimPrefix(ref, "#/components/schemas/")
 					if respRefs[compName] {
 						t.Fatalf("%s request component %s is also used in a response; split it so responses stay open", c.Input.OperationID, compName)
 					}
 				}
-			case "versioned-payload":
-				if strings.TrimSpace(c.Expected.Reason) == "" {
-					t.Fatalf("%s versioned-payload entry must provide a one-line reason", c.Input.OperationID)
+				return
+			}
+
+			if c.Expected.Class != requestBodyPolicyVersionedPayload {
+				t.Fatalf("unexpected policy class %q with reason for %s", c.Expected.Class, c.Input.OperationID)
+			}
+			var frozenOp rawOpenAPIOperation
+			if err := json.Unmarshal(frozenSpec.Paths[c.Input.Path][strings.ToLower(c.Input.Method)], &frozenOp); err != nil {
+				t.Fatalf("unmarshal frozen operation %s: %v", c.Input.OperationID, err)
+			}
+			if frozenOp.OperationID != c.Input.OperationID || frozenOp.RequestBody == nil {
+				t.Fatalf("frozen operation %s (%s %s) missing", c.Input.OperationID, c.Input.Method, c.Input.Path)
+			}
+			frozenReq := frozenOp.RequestBody.Content[villageMediaJSON].Schema
+			if !reflect.DeepEqual(reqSchema, frozenReq) {
+				t.Fatalf("%s request schema changed from frozen baseline: got %#v, want %#v", c.Input.OperationID, reqSchema, frozenReq)
+			}
+			switch ref := reqSchema["$ref"].(type) {
+			case string:
+				compName := strings.TrimPrefix(ref, "#/components/schemas/")
+				if !reflect.DeepEqual(workingSchemas[compName], frozenSchemas[compName]) {
+					t.Fatalf("%s versioned component %s changed from frozen baseline", c.Input.OperationID, compName)
 				}
-				frozenReq := findOperationJSONRequestSchema(t, frozenDoc, c.Input.Path, strings.ToLower(c.Input.Method), c.Input.OperationID)
-				if !reflect.DeepEqual(reqSchema, frozenReq) {
-					t.Fatalf("%s request schema changed from frozen baseline: got %#v, want %#v", c.Input.OperationID, reqSchema, frozenReq)
-				}
-				if ref, ok := reqSchema["$ref"].(string); ok {
-					compName := strings.TrimPrefix(ref, "#/components/schemas/")
-					if !reflect.DeepEqual(workingSchemas[compName], frozenSchemas[compName]) {
-						t.Fatalf("%s versioned component %s changed from frozen baseline", c.Input.OperationID, compName)
-					}
-				}
-			default:
-				t.Fatalf("unknown policy class %q for %s", c.Expected.Class, c.Input.OperationID)
 			}
 		})
 	}
@@ -125,34 +136,37 @@ func collectJSONRequestOperations(spec *openapi31.Spec) []string {
 	return out
 }
 
-func findOperationJSONRequestSchema(t *testing.T, doc map[string]interface{}, path, method, opID string) map[string]interface{} {
+func findOperationJSONRequestSchema(t *testing.T, spec *openapi31.Spec, path, method, opID string) map[string]interface{} {
 	t.Helper()
-	paths, _ := doc["paths"].(map[string]interface{})
-	item, _ := paths[path].(map[string]interface{})
-	op, _ := item[method].(map[string]interface{})
-	if op == nil || op["operationId"] != opID {
+	item, ok := declaredPathItem(spec, path)
+	if !ok {
+		t.Fatalf("operation %s (%s %s) path not found", opID, method, path)
+	}
+	op := pathOperation(item, method)
+	if op == nil || op.ID == nil || *op.ID != opID {
 		t.Fatalf("operation %s (%s %s) not found", opID, method, path)
 	}
-	rb, _ := op["requestBody"].(map[string]interface{})
-	content, _ := rb["content"].(map[string]interface{})
-	media, _ := content[villageMediaJSON].(map[string]interface{})
-	schemaMap, _ := media["schema"].(map[string]interface{})
-	if schemaMap == nil {
+	if op.RequestBody == nil || op.RequestBody.RequestBody == nil {
+		t.Fatalf("operation %s has no requestBody", opID)
+	}
+	media, ok := op.RequestBody.RequestBody.Content[villageMediaJSON]
+	if !ok || media.Schema == nil {
 		t.Fatalf("operation %s has no application/json request schema", opID)
 	}
-	return schemaMap
+	return media.Schema
 }
 
-func assertAllObjectsClosed(t *testing.T, where string, node map[string]interface{}, schemas map[string]interface{}, visited map[string]bool) {
+func assertAllObjectsClosed(t *testing.T, where string, node map[string]interface{}, schemas map[string]map[string]interface{}, visited map[string]bool) {
 	t.Helper()
 	if node == nil {
 		return
 	}
-	if ref, ok := node["$ref"].(string); ok {
+	switch ref := node["$ref"].(type) {
+	case string:
 		name := strings.TrimPrefix(ref, "#/components/schemas/")
 		if !visited[name] {
 			visited[name] = true
-			target, ok := schemas[name].(map[string]interface{})
+			target, ok := schemas[name]
 			if !ok {
 				t.Fatalf("%s references missing schema %s", where, name)
 			}
@@ -160,23 +174,30 @@ func assertAllObjectsClosed(t *testing.T, where string, node map[string]interfac
 		}
 	}
 	if isObjectSchema(node) {
-		ap, ok := node["additionalProperties"].(bool)
-		if !ok || ap {
+		switch ap := node["additionalProperties"].(type) {
+		case bool:
+			if ap {
+				t.Fatalf("%s object schema must have additionalProperties: false, got true", where)
+			}
+		default:
 			t.Fatalf("%s object schema must have additionalProperties: false, got %#v", where, node["additionalProperties"])
 		}
 	}
-	if props, ok := node["properties"].(map[string]interface{}); ok {
+	switch props := node["properties"].(type) {
+	case map[string]interface{}:
 		for k, raw := range props {
 			if propMap, ok := raw.(map[string]interface{}); ok {
 				assertAllObjectsClosed(t, where+"."+k, propMap, schemas, visited)
 			}
 		}
 	}
-	if items, ok := node["items"].(map[string]interface{}); ok {
+	switch items := node["items"].(type) {
+	case map[string]interface{}:
 		assertAllObjectsClosed(t, where+"[]", items, schemas, visited)
 	}
 	for _, key := range []string{"anyOf", "oneOf", "allOf"} {
-		if arms, ok := node[key].([]interface{}); ok {
+		switch arms := node[key].(type) {
+		case []interface{}:
 			for _, rawArm := range arms {
 				if arm, ok := rawArm.(map[string]interface{}); ok {
 					assertAllObjectsClosed(t, where+"."+key, arm, schemas, visited)
@@ -186,17 +207,26 @@ func assertAllObjectsClosed(t *testing.T, where string, node map[string]interfac
 	}
 }
 
-func collectResponseSchemaRefs(doc map[string]interface{}) map[string]bool {
+func collectResponseSchemaRefs(spec *openapi31.Spec) map[string]bool {
 	out := map[string]bool{}
-	paths, _ := doc["paths"].(map[string]interface{})
-	for _, rawItem := range paths {
-		item, _ := rawItem.(map[string]interface{})
-		for _, method := range []string{"get", "post", "put", "patch", "delete"} {
-			op, _ := item[method].(map[string]interface{})
-			if op == nil {
+	if spec == nil || spec.Paths == nil {
+		return out
+	}
+	for _, item := range spec.Paths.MapOfPathItemValues {
+		for _, op := range []*openapi31.Operation{
+			item.Get, item.Post, item.Put, item.Patch, item.Delete,
+		} {
+			if op == nil || op.Responses == nil {
 				continue
 			}
-			collectRefsRecursive(op["responses"], out)
+			for _, resp := range op.Responses.MapOfResponseOrReferenceValues {
+				if resp.Response == nil {
+					continue
+				}
+				for _, media := range resp.Response.Content {
+					collectRefsRecursive(media.Schema, out)
+				}
+			}
 		}
 	}
 	return out
@@ -205,7 +235,8 @@ func collectResponseSchemaRefs(doc map[string]interface{}) map[string]bool {
 func collectRefsRecursive(v interface{}, out map[string]bool) {
 	switch val := v.(type) {
 	case map[string]interface{}:
-		if ref, ok := val["$ref"].(string); ok {
+		switch ref := val["$ref"].(type) {
+		case string:
 			out[strings.TrimPrefix(ref, "#/components/schemas/")] = true
 		}
 		for _, child := range val {

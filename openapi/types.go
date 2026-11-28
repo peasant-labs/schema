@@ -782,7 +782,8 @@ func closeObjectSchemaTree(node map[string]interface{}, components map[string]ma
 	if isObjectSchema(node) {
 		node["additionalProperties"] = false
 	}
-	if ref, ok := node["$ref"].(string); ok {
+	switch ref := node["$ref"].(type) {
+	case string:
 		const prefix = "#/components/schemas/"
 		if strings.HasPrefix(ref, prefix) {
 			target := strings.TrimPrefix(ref, prefix)
@@ -794,18 +795,21 @@ func closeObjectSchemaTree(node map[string]interface{}, components map[string]ma
 			}
 		}
 	}
-	if props, ok := node["properties"].(map[string]interface{}); ok {
+	switch props := node["properties"].(type) {
+	case map[string]interface{}:
 		for _, raw := range props {
 			if propMap, ok := raw.(map[string]interface{}); ok {
 				closeObjectSchemaTree(propMap, components, visited)
 			}
 		}
 	}
-	if items, ok := node["items"].(map[string]interface{}); ok {
+	switch items := node["items"].(type) {
+	case map[string]interface{}:
 		closeObjectSchemaTree(items, components, visited)
 	}
 	for _, key := range []string{"anyOf", "oneOf", "allOf"} {
-		if arms, ok := node[key].([]interface{}); ok {
+		switch arms := node[key].(type) {
+		case []interface{}:
 			for _, rawArm := range arms {
 				if arm, ok := rawArm.(map[string]interface{}); ok {
 					closeObjectSchemaTree(arm, components, visited)
@@ -816,12 +820,14 @@ func closeObjectSchemaTree(node map[string]interface{}, components map[string]ma
 }
 
 func isObjectSchema(node map[string]interface{}) bool {
-	if t, ok := node["type"].(string); ok && t == "object" {
-		return true
-	}
-	if types, ok := node["type"].([]interface{}); ok {
-		for _, t := range types {
-			if t == "object" {
+	switch t := node["type"].(type) {
+	case string:
+		if t == "object" {
+			return true
+		}
+	case []interface{}:
+		for _, item := range t {
+			if item == "object" {
 				return true
 			}
 		}

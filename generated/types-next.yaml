@@ -14389,6 +14389,8 @@ components:
             - "null"
             - boolean
           - type: "null"
+        is_discoverable:
+          type: boolean
         preview_before_attach:
           anyOf:
           - type:
@@ -14656,6 +14658,8 @@ components:
           type: boolean
         email_invitations:
           type: boolean
+        is_discoverable:
+          type: boolean
         notification_email:
           anyOf:
           - $ref: '#/components/schemas/VillageNotificationEmail'
@@ -14667,6 +14671,7 @@ components:
       - auto_attach_pull_requests
       - notification_email
       - email_invitations
+      - is_discoverable
       type: object
     VillageUserStats:
       properties:

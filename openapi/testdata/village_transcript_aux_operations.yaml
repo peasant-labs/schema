@@ -28,7 +28,7 @@ cases:
       parameters: [{name: id, in: path, required: true, schema: SchemaTranscriptID}]
       description_anchors: ["visible transcript"]
       responses:
-        "200": {media: {application/json: "[]SchemaVillageTranscriptAttestation|null"}}
+        "200": {media: {application/json: "[]SchemaVillageTranscriptAttestation"}}
         "400": {media: {application/json: SchemaVillageErrorResponse}}
         "404": {media: {application/json: SchemaVillageErrorResponse}}
         "500": {media: {application/json: SchemaVillageErrorResponse}}
