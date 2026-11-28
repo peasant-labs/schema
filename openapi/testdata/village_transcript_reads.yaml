@@ -19,9 +19,11 @@ routes:
       nonnullArrays: [segments]
       forbiddenRoot: [turns]
       reachableComponents: [TranscriptSegmentRef, ConversationTurnSpan, SessionID]
+      positionedReachableComponents: [TranscriptReadContext, TranscriptSegmentPartition, PositionedSegmentRef, TranscriptUsagePresence]
       statuses: [200, 400, 404, 409, 410, 500, 503]
       localStatuses: [200, 400, 404, 409, 500, 503]
       errorRef: "#/components/schemas/SchemaVillageErrorResponse"
+      localErrorRef: "#/components/schemas/OpenapiLocalErrorResponse"
     classification: must-pass
     provenance: {source: requirement, ref: "village declares the directory read with the type the local read serves"}
     mutation: {description: "declares the paged directory with no turn content"}
@@ -36,9 +38,11 @@ routes:
       requiredRoot: [index, revision, firstTurn, lastTurn, byteLength, hasOlder, hasNewer, turns]
       nonnullArrays: [turns]
       reachableComponents: [TranscriptTurn, TurnContentPart, ImagePart, ToolCallDetail, UsageDetail, Role, EntryType]
+      positionedReachableComponents: [TranscriptReadContext, TranscriptSegmentPartition, TranscriptSegmentRow, TranscriptServedTurn, NativeMetadataRecord]
       statuses: [200, 400, 404, 409, 410, 500, 503]
       localStatuses: [200, 400, 404, 409, 500, 503]
       errorRef: "#/components/schemas/SchemaVillageErrorResponse"
+      localErrorRef: "#/components/schemas/OpenapiLocalErrorResponse"
     classification: must-pass
     provenance: {source: requirement, ref: "village declares the segment read with the type the local read serves"}
     mutation: {description: "declares the transport unit that carries one segment's turns"}
@@ -54,9 +58,11 @@ routes:
       nonnullArrays: [segments]
       forbiddenRoot: [turns, content, toolCalls]
       reachableComponents: [SessionID]
+      positionedReachableComponents: [TranscriptReadContext, TranscriptSegmentPartition]
       statuses: [200, 400, 404, 409, 410, 500, 503]
       localStatuses: [200, 400, 404, 409, 500, 503]
       errorRef: "#/components/schemas/SchemaVillageErrorResponse"
+      localErrorRef: "#/components/schemas/OpenapiLocalErrorResponse"
     classification: must-pass
     provenance: {source: requirement, ref: "village declares the window read as a descriptor and never turn content"}
     mutation: {description: "declares the descriptor-only window read"}

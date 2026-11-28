@@ -19,24 +19,39 @@ type localRouteInput struct {
 	Path        string `yaml:"path"`
 	OperationID string `yaml:"operationId"`
 }
-type localRouteExpected struct {
-	Parameters []struct {
-		Name, In, Type string
-		Required       bool
-		Enum           []any
-		Minimum        *int
-	} `yaml:"parameters"`
-	ResponseRefs  []string `yaml:"responseRefs"`
-	PrimaryRef    string   `yaml:"primaryRef"`
-	LegacyBody    string   `yaml:"legacyBody"`
-	GroupedBody   string   `yaml:"groupedBody"`
-	RequiredRoot  []string `yaml:"requiredRoot"`
-	ForbiddenRoot []string `yaml:"forbiddenRoot"`
-	NonnullArrays []string `yaml:"nonnullArrays"`
+type localRouteParam struct {
+	Name, In, Type string
+	Required       bool
+	Enum           []any
+	Minimum        *int
 }
+
+type localRouteExpected struct {
+	Parameters    []localRouteParam `yaml:"parameters"`
+	Positioned    bool              `yaml:"positioned"`
+	ResponseRefs  []string          `yaml:"responseRefs"`
+	PrimaryRef    string            `yaml:"primaryRef"`
+	LegacyBody    string            `yaml:"legacyBody"`
+	GroupedBody   string            `yaml:"groupedBody"`
+	RequiredRoot  []string          `yaml:"requiredRoot"`
+	ForbiddenRoot []string          `yaml:"forbiddenRoot"`
+	NonnullArrays []string          `yaml:"nonnullArrays"`
+}
+
+type positionedSingleDefInput struct {
+	PositionedParameterNames []string `yaml:"positionedParameterNames"`
+	PositionedRouteNames     []string `yaml:"positionedRouteNames"`
+}
+
+type positionedSingleDefExpected struct {
+	PositionedResponseRefs []string `yaml:"positionedResponseRefs"`
+}
+
 type localRouteFixtures struct {
-	RequiredNames []string                                             `yaml:"required_names"`
-	Routes        testcase.Corpus[localRouteInput, localRouteExpected] `yaml:"routes"`
+	RequiredNames              []string                                                                 `yaml:"required_names"`
+	PositionedParameters       []localRouteParam                                                      `yaml:"positioned_parameters"`
+	PositionedSingleDefinition testcase.Corpus[positionedSingleDefInput, positionedSingleDefExpected]   `yaml:"positioned_single_definition"`
+	Routes                     testcase.Corpus[localRouteInput, localRouteExpected]                     `yaml:"routes"`
 }
 
 func TestLocalGroupedRouteContract(t *testing.T) {
@@ -53,6 +68,8 @@ func TestLocalGroupedRouteContract(t *testing.T) {
 	corpus := fixtures.Routes
 	testassert.RequireMin(t, corpus, 5)
 	testassert.RequireValid(t, corpus)
+	testassert.RequireMin(t, fixtures.PositionedSingleDefinition, 1)
+	testassert.RequireValid(t, fixtures.PositionedSingleDefinition)
 	if len(fixtures.RequiredNames) != len(corpus.Cases) {
 		t.Fatalf("route required-name manifest has %d names for %d cases", len(fixtures.RequiredNames), len(corpus.Cases))
 	}
@@ -60,6 +77,42 @@ func TestLocalGroupedRouteContract(t *testing.T) {
 		if corpus.Cases[i].Name != name {
 			t.Fatalf("route case[%d]=%q, want required name %q", i, corpus.Cases[i].Name, name)
 		}
+	}
+	for _, singleDef := range fixtures.PositionedSingleDefinition.Cases {
+		t.Run(singleDef.Name, func(t *testing.T) {
+			paramNames := make([]string, len(fixtures.PositionedParameters))
+			for i, p := range fixtures.PositionedParameters {
+				paramNames[i] = p.Name
+			}
+			if !slices.Equal(paramNames, singleDef.Input.PositionedParameterNames) {
+				t.Fatalf("positioned_parameters=%v, want %v", paramNames, singleDef.Input.PositionedParameterNames)
+			}
+			var positionedRoutes []string
+			seenRefs := map[string]int{}
+			for _, route := range corpus.Cases {
+				for _, p := range route.Expected.Parameters {
+					if slices.Contains(singleDef.Input.PositionedParameterNames, p.Name) {
+						t.Fatalf("route %s duplicates positioned parameter %q inline; define it only in positioned_parameters", route.Name, p.Name)
+					}
+				}
+				if route.Expected.Positioned {
+					positionedRoutes = append(positionedRoutes, route.Name)
+				}
+				for _, ref := range route.Expected.ResponseRefs {
+					if slices.Contains(singleDef.Expected.PositionedResponseRefs, ref) {
+						seenRefs[ref]++
+					}
+				}
+			}
+			if !slices.Equal(positionedRoutes, singleDef.Input.PositionedRouteNames) {
+				t.Fatalf("positioned routes=%v, want %v", positionedRoutes, singleDef.Input.PositionedRouteNames)
+			}
+			for _, ref := range singleDef.Expected.PositionedResponseRefs {
+				if seenRefs[ref] != 1 {
+					t.Fatalf("positioned responseRef %s appeared %d times across routes, want 1", ref, seenRefs[ref])
+				}
+			}
+		})
 	}
 	spec, err := specpkg.BuildPeasantLocalAPISpec()
 	if err != nil {
@@ -79,10 +132,14 @@ func TestLocalGroupedRouteContract(t *testing.T) {
 				t.Fatalf("operationId=%v", op["operationId"])
 			}
 			params := op["parameters"].([]any)
-			if len(params) != len(c.Expected.Parameters) {
-				t.Fatalf("parameters=%d, want %d", len(params), len(c.Expected.Parameters))
+			expectedParams := c.Expected.Parameters
+			if c.Expected.Positioned {
+				expectedParams = mergePositionedParameters(c.Expected.Parameters, fixtures.PositionedParameters)
 			}
-			for index, expected := range c.Expected.Parameters {
+			if len(params) != len(expectedParams) {
+				t.Fatalf("parameters=%d, want %d", len(params), len(expectedParams))
+			}
+			for index, expected := range expectedParams {
 				p := params[index].(map[string]any)
 				if p["name"] != expected.Name || p["in"] != expected.In {
 					t.Fatalf("parameters[%d]=%v/%v, want %q/%q", index, p["name"], p["in"], expected.Name, expected.In)
@@ -198,4 +255,19 @@ func localRouteJSONValue(t *testing.T, name string, value any) string {
 		t.Fatalf("parameter %q enum value %v cannot be encoded: %v", name, value, err)
 	}
 	return string(encoded)
+}
+
+func mergePositionedParameters(routeParams, positioned []localRouteParam) []localRouteParam {
+	insertAt := len(routeParams)
+	for i, p := range routeParams {
+		if p.In == "path" {
+			insertAt = i
+			break
+		}
+	}
+	merged := make([]localRouteParam, 0, len(routeParams)+len(positioned))
+	merged = append(merged, routeParams[:insertAt]...)
+	merged = append(merged, positioned...)
+	merged = append(merged, routeParams[insertAt:]...)
+	return merged
 }
