@@ -39,10 +39,12 @@ type villageTranscriptReadExpected struct {
 	// ReachableComponents are nested components, named without the Schema
 	// prefix, that the Village-to-Local comparison must reach from the
 	// response component. It is a required subset, not the whole closure.
-	ReachableComponents []string `yaml:"reachableComponents"`
-	Statuses            []int    `yaml:"statuses"`
-	LocalStatuses       []int    `yaml:"localStatuses"`
-	ErrorRef            string   `yaml:"errorRef"`
+	ReachableComponents           []string `yaml:"reachableComponents"`
+	PositionedReachableComponents []string `yaml:"positionedReachableComponents"`
+	Statuses                      []int    `yaml:"statuses"`
+	LocalStatuses                 []int    `yaml:"localStatuses"`
+	ErrorRef                      string   `yaml:"errorRef"`
+	LocalErrorRef                 string   `yaml:"localErrorRef"`
 }
 
 type villageTranscriptReadFixtures struct {
@@ -219,6 +221,15 @@ func TestVillageTranscriptReadsAreDeclared(t *testing.T) {
 			}
 			if len(c.Expected.ReachableComponents) == 0 {
 				t.Fatal("the case names no reachableComponents; name the nested components the comparison must reach")
+			}
+			positionedReached := requireSameComponentClosure(t, positionedName, components, localComponents)
+			for _, required := range c.Expected.PositionedReachableComponents {
+				if !slices.Contains(positionedReached, required) {
+					t.Fatalf("the comparison from %s reached %v and not %s; it did not follow the reference chain", positionedName, positionedReached, required)
+				}
+			}
+			if len(c.Expected.PositionedReachableComponents) == 0 {
+				t.Fatal("the case names no positionedReachableComponents; name the nested components the comparison must reach")
 			}
 		})
 	}

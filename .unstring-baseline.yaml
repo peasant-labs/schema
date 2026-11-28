@@ -30,7 +30,6 @@ rules:
     openapi/collective_aliases.go: 1
     openapi/collective_history.go: 1
     openapi/examples.go: 1
-    openapi/local_grouped_routes_test.go: 1
     openapi/types_catalog_test.go: 2
     openapi/ui_capabilities_test.go: 1
     openapi/village_owner_update_test.go: 3

@@ -87,6 +87,13 @@ func TestLocalTranscriptPositionedReads(t *testing.T) {
 					t.Fatalf("response component %s is missing", name)
 				}
 			}
+			if c.Expected.LocalErrorRef == "" {
+				t.Fatal("the case names no localErrorRef")
+			}
+			errorName := strings.TrimPrefix(c.Expected.LocalErrorRef, "#/components/schemas/")
+			if components[errorName] == nil {
+				t.Fatalf("local error component %s is missing", errorName)
+			}
 			if len(responses) != len(c.Expected.LocalStatuses) {
 				t.Fatalf("unexpected statuses: %v", responses)
 			}
@@ -94,6 +101,11 @@ func TestLocalTranscriptPositionedReads(t *testing.T) {
 				status := strconv.Itoa(code)
 				if responses[status] == nil {
 					t.Fatalf("missing status %s", status)
+				}
+				if code != 200 {
+					if ref := declaredResponseRef(t, responses, code); ref != c.Expected.LocalErrorRef {
+						t.Fatalf("status %d body=%s, want %s", code, ref, c.Expected.LocalErrorRef)
+					}
 				}
 			}
 			// unstring-allow: go-json-key-assert — inspect generated OpenAPI document
