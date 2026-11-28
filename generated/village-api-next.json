@@ -16021,6 +16021,7 @@
         "type": "string"
       },
       "SchemaExchangeCodeRequest": {
+        "additionalProperties": false,
         "properties": {
           "code": {
             "type": "string"
@@ -18697,6 +18698,7 @@
         "type": "object"
       },
       "SchemaTranscriptEntryLocateRequest": {
+        "additionalProperties": false,
         "properties": {
           "contentHash": {
             "type": "string"
@@ -19970,6 +19972,7 @@
         "type": "object"
       },
       "SchemaVillageBatchReviewRequest": {
+        "additionalProperties": false,
         "properties": {
           "status": {
             "$ref": "#/components/schemas/SchemaVillageReviewDecision"
@@ -20024,6 +20027,7 @@
         "type": "object"
       },
       "SchemaVillageBatchShareRequest": {
+        "additionalProperties": false,
         "properties": {
           "project_hash": {
             "$ref": "#/components/schemas/SchemaProjectHash"
@@ -20070,6 +20074,7 @@
         "type": "object"
       },
       "SchemaVillageBatchShareSelectionRequest": {
+        "additionalProperties": false,
         "properties": {
           "private_approvals": {
             "description": "The private transcripts among transcript_ids whose owner approved their visibility, at most 1000 in one request.",
@@ -20410,6 +20415,7 @@
         "type": "object"
       },
       "SchemaVillageCollectiveInvitationRequest": {
+        "additionalProperties": false,
         "properties": {
           "username": {
             "minLength": 1,
@@ -20493,6 +20499,7 @@
         "type": "object"
       },
       "SchemaVillageCollectiveMemberRoleRequest": {
+        "additionalProperties": false,
         "properties": {
           "role": {
             "$ref": "#/components/schemas/SchemaVillageAssignableCollectiveRole"
@@ -22171,6 +22178,7 @@
         "type": "string"
       },
       "SchemaVillageCreateAPIKeyRequest": {
+        "additionalProperties": false,
         "properties": {
           "label": {
             "type": "string"
@@ -22179,6 +22187,7 @@
         "type": "object"
       },
       "SchemaVillageCreateAttestationRequest": {
+        "additionalProperties": false,
         "properties": {
           "attestation_type": {
             "$ref": "#/components/schemas/SchemaVillageAttestationType"
@@ -22199,6 +22208,7 @@
         "type": "object"
       },
       "SchemaVillageCreateCollectiveRequest": {
+        "additionalProperties": false,
         "properties": {
           "acceptance_mode": {
             "$ref": "#/components/schemas/SchemaVillageCollectiveAcceptanceMode"
@@ -22280,6 +22290,7 @@
         "type": "object"
       },
       "SchemaVillageDiscoverabilityRequest": {
+        "additionalProperties": false,
         "properties": {
           "is_discoverable": {
             "type": "boolean"
@@ -22527,6 +22538,7 @@
         "type": "object"
       },
       "SchemaVillageLinkRepositoryRequest": {
+        "additionalProperties": false,
         "properties": {
           "installation_id": {
             "anyOf": [
@@ -22684,6 +22696,7 @@
         "type": "object"
       },
       "SchemaVillageManualAnnotationRequest": {
+        "additionalProperties": false,
         "properties": {
           "endIndex": {
             "description": "Exclusive end; defaults to entryIndex+1; must be greater than entryIndex.",
@@ -22900,6 +22913,7 @@
         "type": "object"
       },
       "SchemaVillageOrganizationVisibilityRequest": {
+        "additionalProperties": false,
         "properties": {
           "visible": {
             "description": "Omitted means false.",
@@ -23100,6 +23114,7 @@
         "type": "object"
       },
       "SchemaVillageProjectDisplayNameRequest": {
+        "additionalProperties": false,
         "properties": {
           "display_name": {
             "description": "Trimmed; must be non-empty and at most 255 bytes.",
@@ -23794,6 +23809,7 @@
         "type": "string"
       },
       "SchemaVillageReviewShareRequest": {
+        "additionalProperties": false,
         "properties": {
           "status": {
             "$ref": "#/components/schemas/SchemaVillageReviewDecision"
@@ -23952,6 +23968,7 @@
         "type": "object"
       },
       "SchemaVillageSetNotificationEmailRequest": {
+        "additionalProperties": false,
         "properties": {
           "address": {
             "maxLength": 254,
@@ -24049,6 +24066,7 @@
         "type": "string"
       },
       "SchemaVillageShareTranscriptRequest": {
+        "additionalProperties": false,
         "properties": {
           "group_ids": {
             "items": {
@@ -25523,6 +25541,7 @@
         "type": "string"
       },
       "SchemaVillageUpdateCollectiveRequest": {
+        "additionalProperties": false,
         "properties": {
           "acceptance_mode": {
             "$ref": "#/components/schemas/SchemaVillageCollectiveAcceptanceMode"
@@ -25585,6 +25604,7 @@
         "type": "object"
       },
       "SchemaVillageUpdateUserSettingsRequest": {
+        "additionalProperties": false,
         "properties": {
           "auto_attach_pull_requests": {
             "anyOf": [
@@ -26103,6 +26123,7 @@
         "type": "object"
       },
       "SchemaVillageUsernameRequest": {
+        "additionalProperties": false,
         "properties": {
           "username": {
             "description": "Trimmed and lowercased, then matched against ^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$",
@@ -26115,6 +26136,7 @@
         "type": "object"
       },
       "SchemaVillageVerifyNotificationEmailRequest": {
+        "additionalProperties": false,
         "properties": {
           "token": {
             "minLength": 1,

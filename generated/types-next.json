@@ -4991,6 +4991,7 @@
         "type": "string"
       },
       "ExchangeCodeRequest": {
+        "additionalProperties": false,
         "properties": {
           "code": {
             "type": "string"
@@ -14669,6 +14670,7 @@
         "type": "object"
       },
       "TranscriptEntryLocateRequest": {
+        "additionalProperties": false,
         "properties": {
           "contentHash": {
             "type": "string"
@@ -16249,6 +16251,7 @@
         "type": "object"
       },
       "VillageBatchReviewRequest": {
+        "additionalProperties": false,
         "properties": {
           "status": {
             "$ref": "#/components/schemas/VillageReviewDecision"
@@ -16303,6 +16306,7 @@
         "type": "object"
       },
       "VillageBatchShareRequest": {
+        "additionalProperties": false,
         "properties": {
           "project_hash": {
             "$ref": "#/components/schemas/ProjectHash"
@@ -16349,6 +16353,7 @@
         "type": "object"
       },
       "VillageBatchShareSelectionRequest": {
+        "additionalProperties": false,
         "properties": {
           "private_approvals": {
             "description": "The private transcripts among transcript_ids whose owner approved their visibility, at most 1000 in one request.",
@@ -16689,6 +16694,7 @@
         "type": "object"
       },
       "VillageCollectiveInvitationRequest": {
+        "additionalProperties": false,
         "properties": {
           "username": {
             "minLength": 1,
@@ -16772,6 +16778,7 @@
         "type": "object"
       },
       "VillageCollectiveMemberRoleRequest": {
+        "additionalProperties": false,
         "properties": {
           "role": {
             "$ref": "#/components/schemas/VillageAssignableCollectiveRole"
@@ -18461,6 +18468,7 @@
         "type": "string"
       },
       "VillageCreateAPIKeyRequest": {
+        "additionalProperties": false,
         "properties": {
           "label": {
             "type": "string"
@@ -18469,6 +18477,7 @@
         "type": "object"
       },
       "VillageCreateAttestationRequest": {
+        "additionalProperties": false,
         "properties": {
           "attestation_type": {
             "$ref": "#/components/schemas/VillageAttestationType"
@@ -18489,6 +18498,7 @@
         "type": "object"
       },
       "VillageCreateCollectiveRequest": {
+        "additionalProperties": false,
         "properties": {
           "acceptance_mode": {
             "$ref": "#/components/schemas/VillageCollectiveAcceptanceMode"
@@ -18570,6 +18580,7 @@
         "type": "object"
       },
       "VillageDiscoverabilityRequest": {
+        "additionalProperties": false,
         "properties": {
           "is_discoverable": {
             "type": "boolean"
@@ -18817,6 +18828,7 @@
         "type": "object"
       },
       "VillageLinkRepositoryRequest": {
+        "additionalProperties": false,
         "properties": {
           "installation_id": {
             "anyOf": [
@@ -18974,6 +18986,7 @@
         "type": "object"
       },
       "VillageManualAnnotationRequest": {
+        "additionalProperties": false,
         "properties": {
           "endIndex": {
             "description": "Exclusive end; defaults to entryIndex+1; must be greater than entryIndex.",
@@ -19190,6 +19203,7 @@
         "type": "object"
       },
       "VillageOrganizationVisibilityRequest": {
+        "additionalProperties": false,
         "properties": {
           "visible": {
             "description": "Omitted means false.",
@@ -19390,6 +19404,7 @@
         "type": "object"
       },
       "VillageProjectDisplayNameRequest": {
+        "additionalProperties": false,
         "properties": {
           "display_name": {
             "description": "Trimmed; must be non-empty and at most 255 bytes.",
@@ -20097,6 +20112,7 @@
         "type": "string"
       },
       "VillageReviewShareRequest": {
+        "additionalProperties": false,
         "properties": {
           "status": {
             "$ref": "#/components/schemas/VillageReviewDecision"
@@ -20255,6 +20271,7 @@
         "type": "object"
       },
       "VillageSetNotificationEmailRequest": {
+        "additionalProperties": false,
         "properties": {
           "address": {
             "maxLength": 254,
@@ -20352,6 +20369,7 @@
         "type": "string"
       },
       "VillageShareTranscriptRequest": {
+        "additionalProperties": false,
         "properties": {
           "group_ids": {
             "items": {
@@ -21826,6 +21844,7 @@
         "type": "string"
       },
       "VillageUpdateCollectiveRequest": {
+        "additionalProperties": false,
         "properties": {
           "acceptance_mode": {
             "$ref": "#/components/schemas/VillageCollectiveAcceptanceMode"
@@ -21888,6 +21907,7 @@
         "type": "object"
       },
       "VillageUpdateUserSettingsRequest": {
+        "additionalProperties": false,
         "properties": {
           "auto_attach_pull_requests": {
             "anyOf": [
@@ -22406,6 +22426,7 @@
         "type": "object"
       },
       "VillageUsernameRequest": {
+        "additionalProperties": false,
         "properties": {
           "username": {
             "description": "Trimmed and lowercased, then matched against ^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$",
@@ -22418,6 +22439,7 @@
         "type": "object"
       },
       "VillageVerifyNotificationEmailRequest": {
+        "additionalProperties": false,
         "properties": {
           "token": {
             "minLength": 1,

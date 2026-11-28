@@ -1,0 +1,219 @@
+cases:
+  - name: createMyAPIKey
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: createMyAPIKey, method: POST, path: /api/v1/auth/api-keys}
+    expected: {class: closed}
+  - name: cliExchangeCode
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: cliExchangeCode, method: POST, path: /api/v1/auth/cli/exchange}
+    expected: {class: closed}
+  - name: setMyDiscoverability
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: setMyDiscoverability, method: PATCH, path: /api/v1/auth/me/settings}
+    expected: {class: closed}
+  - name: setMyUsername
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: setMyUsername, method: PATCH, path: /api/v1/auth/me/username}
+    expected: {class: closed}
+  - name: setMyOrganizationVisibility
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: setMyOrganizationVisibility, method: PATCH, path: "/api/v1/auth/orgs/{orgLogin}/visibility"}
+    expected: {class: closed}
+  - name: createGroup
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: createGroup, method: POST, path: /api/v1/collectives}
+    expected: {class: closed}
+  - name: updateGroup
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: updateGroup, method: PATCH, path: "/api/v1/collectives/{id}"}
+    expected: {class: closed}
+  - name: createGroupInvitation
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: createGroupInvitation, method: POST, path: "/api/v1/collectives/{id}/invitations"}
+    expected: {class: closed}
+  - name: updateGroupMemberRole
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: updateGroupMemberRole, method: PATCH, path: "/api/v1/collectives/{id}/members/{userID}/role"}
+    expected: {class: closed}
+  - name: linkGroupRepository
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: linkGroupRepository, method: POST, path: "/api/v1/collectives/{id}/repositories"}
+    expected: {class: closed}
+  - name: batchReviewShares
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: batchReviewShares, method: PATCH, path: "/api/v1/collectives/{id}/shares"}
+    expected: {class: closed}
+  - name: batchShareProject
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: batchShareProject, method: POST, path: "/api/v1/collectives/{id}/shares"}
+    expected: {class: closed}
+  - name: batchShareSelection
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: batchShareSelection, method: POST, path: "/api/v1/collectives/{id}/shares/selection"}
+    expected: {class: closed}
+  - name: reviewShare
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: reviewShare, method: PATCH, path: "/api/v1/collectives/{id}/shares/{transcriptID}"}
+    expected: {class: closed}
+  - name: createGroupDeprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: createGroupDeprecated, method: POST, path: /api/v1/groups}
+    expected: {class: closed}
+  - name: updateGroupDeprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: updateGroupDeprecated, method: PATCH, path: "/api/v1/groups/{id}"}
+    expected: {class: closed}
+  - name: createGroupInvitationDeprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: createGroupInvitationDeprecated, method: POST, path: "/api/v1/groups/{id}/invitations"}
+    expected: {class: closed}
+  - name: updateGroupMemberRoleDeprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: updateGroupMemberRoleDeprecated, method: PATCH, path: "/api/v1/groups/{id}/members/{userID}/role"}
+    expected: {class: closed}
+  - name: linkGroupRepositoryDeprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: linkGroupRepositoryDeprecated, method: POST, path: "/api/v1/groups/{id}/repositories"}
+    expected: {class: closed}
+  - name: batchReviewSharesDeprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: batchReviewSharesDeprecated, method: PATCH, path: "/api/v1/groups/{id}/shares"}
+    expected: {class: closed}
+  - name: batchShareProjectDeprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: batchShareProjectDeprecated, method: POST, path: "/api/v1/groups/{id}/shares"}
+    expected: {class: closed}
+  - name: batchShareSelectionDeprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: batchShareSelectionDeprecated, method: POST, path: "/api/v1/groups/{id}/shares/selection"}
+    expected: {class: closed}
+  - name: reviewShareDeprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: reviewShareDeprecated, method: PATCH, path: "/api/v1/groups/{id}/shares/{transcriptID}"}
+    expected: {class: closed}
+  - name: createTranscriptAnnotation
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: createTranscriptAnnotation, method: POST, path: "/api/v1/transcripts/{id}/annotations"}
+    expected: {class: closed}
+  - name: createTranscriptAttestation
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: createTranscriptAttestation, method: POST, path: "/api/v1/transcripts/{id}/attestations"}
+    expected: {class: closed}
+  - name: locateTranscriptEntry
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: locateTranscriptEntry, method: POST, path: "/api/v1/transcripts/{id}/segments/locate"}
+    expected: {class: closed}
+  - name: shareTranscriptWithGroups
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: shareTranscriptWithGroups, method: POST, path: "/api/v1/transcripts/{id}/share"}
+    expected: {class: closed}
+  - name: setMyNotificationEmail
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: setMyNotificationEmail, method: PUT, path: /api/v1/users/me/email}
+    expected: {class: closed}
+  - name: verifyMyNotificationEmail
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: verifyMyNotificationEmail, method: POST, path: /api/v1/users/me/email/verify}
+    expected: {class: closed}
+  - name: setMyProjectDisplayName
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: setMyProjectDisplayName, method: PATCH, path: "/api/v1/users/me/projects/{projectHash}"}
+    expected: {class: closed}
+  - name: updateMySettings
+    classification: must-pass
+    provenance: {source: requirement, ref: Plain JSON request bodies refuse unknown fields}
+    mutation: {description: Leaving request body open allows unknown fields silently}
+    input: {operation_id: updateMySettings, method: PATCH, path: /api/v1/users/me/settings}
+    expected: {class: closed}
+  - name: pushAnnotations
+    classification: must-pass
+    provenance: {source: requirement, ref: Versioned payload governed by annotation-push-request schema and ValidateAnnotationPushRequest}
+    mutation: {description: Closing versioned payload would break cross-version compatibility}
+    input: {operation_id: pushAnnotations, method: POST, path: /api/v1/annotations}
+    expected:
+      class: versioned-payload
+      reason: "Governed by versioned annotation-push-request-*.schema.json and ValidateAnnotationPushRequest cross-version contract."
+  - name: pullSkipGate
+    classification: must-pass
+    provenance: {source: requirement, ref: Versioned pull contract currency check tolerates cross-version fields}
+    mutation: {description: Closing versioned payload would break pull contract compatibility}
+    input: {operation_id: pullSkipGate, method: POST, path: /api/v1/pull/transcripts/skip-gate}
+    expected:
+      class: versioned-payload
+      reason: "Versioned pull contract batch currency check; must remain unchanged for cross-version pull compatibility."
+  - name: updateTranscript
+    classification: must-pass
+    provenance: {source: requirement, ref: Versioned owner transcript update contract stays unchanged}
+    mutation: {description: Altering OwnerTranscriptUpdateRequest would change versioned owner update contract}
+    input: {operation_id: updateTranscript, method: PATCH, path: "/api/v1/transcripts/{id}"}
+    expected:
+      class: versioned-payload
+      reason: "Versioned owner transcript update contract; schema remains unchanged from frozen baseline."
+  - name: receiveGitHubWebhook
+    classification: must-pass
+    provenance: {source: requirement, ref: External GitHub webhook payload is forwarded verbatim}
+    mutation: {description: Closing webhook payload would reject GitHub event fields}
+    input: {operation_id: receiveGitHubWebhook, method: POST, path: /api/v1/integrations/github/webhook}
+    expected:
+      class: versioned-payload
+      reason: "External GitHub webhook event payload forwarded verbatim; schema is GitHub-owned and open."
