@@ -3224,7 +3224,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageAPIKey"][];
+                    "application/json": components["schemas"]["SchemaVillageAPIKey"][];
                 };
             };
             /** @description Unauthorized. The request carries no valid session or API key. */
@@ -4356,7 +4356,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageMetadataUserOrganization"][];
+                    "application/json": components["schemas"]["SchemaVillageMetadataUserOrganization"][];
                 };
             };
             /** @description Unauthorized */
@@ -4601,7 +4601,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageUserCollective"][];
+                    "application/json": components["schemas"]["SchemaVillageUserCollective"][];
                 };
             };
             /** @description Unauthorized */
@@ -4690,7 +4690,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillagePublicCollective"][];
+                    "application/json": components["schemas"]["SchemaVillagePublicCollective"][];
                 };
             };
             /** @description Internal Server Error */
@@ -4751,7 +4751,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageVisibleCollective"][];
+                    "application/json": components["schemas"]["SchemaVillageVisibleCollective"][];
                 };
             };
             /** @description Unauthorized */
@@ -6473,7 +6473,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageUserCollective"][];
+                    "application/json": components["schemas"]["SchemaVillageUserCollective"][];
                 };
             };
             /** @description Unauthorized */
@@ -6562,7 +6562,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillagePublicCollective"][];
+                    "application/json": components["schemas"]["SchemaVillagePublicCollective"][];
                 };
             };
             /** @description Internal Server Error */
@@ -6623,7 +6623,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageVisibleCollective"][];
+                    "application/json": components["schemas"]["SchemaVillageVisibleCollective"][];
                 };
             };
             /** @description Unauthorized */
@@ -8719,7 +8719,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": (null | components["schemas"]["SchemaPullAnnotation"][]) | (null | components["schemas"]["SchemaLegacyPullAnnotation"][]);
+                    "application/json": components["schemas"]["SchemaPullAnnotation"][] | components["schemas"]["SchemaLegacyPullAnnotation"][];
                 };
             };
             /** @description Not Acceptable */
@@ -9108,7 +9108,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageTagUsage"][];
+                    "application/json": components["schemas"]["SchemaVillageTagUsage"][];
                 };
             };
             /** @description Internal Server Error */
@@ -9140,7 +9140,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageTagUsage"][];
+                    "application/json": components["schemas"]["SchemaVillageTagUsage"][];
                 };
             };
             /** @description Internal Server Error */
@@ -9694,7 +9694,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageTranscriptAttestation"][];
+                    "application/json": components["schemas"]["SchemaVillageTranscriptAttestation"][];
                 };
             };
             /** @description Bad Request */
@@ -10596,7 +10596,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageTranscriptShare"][];
+                    "application/json": components["schemas"]["SchemaVillageTranscriptShare"][];
                 };
             };
             /** @description Bad Request */
@@ -10899,7 +10899,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageCollectiveSubmission"][];
+                    "application/json": components["schemas"]["SchemaVillageCollectiveSubmission"][];
                 };
             };
             /** @description Bad Request */
@@ -10960,7 +10960,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageShareEvent"][];
+                    "application/json": components["schemas"]["SchemaVillageShareEvent"][];
                 };
             };
             /** @description Bad Request */
@@ -11670,7 +11670,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageListUserOrganization"][];
+                    "application/json": components["schemas"]["SchemaVillageListUserOrganization"][];
                 };
             };
             /** @description Not Found */

@@ -57,9 +57,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageAPIKey'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -1750,9 +1748,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageMetadataUserOrganization'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -2103,9 +2099,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageUserCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -3686,9 +3680,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillagePublicCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "500":
           content:
@@ -3740,9 +3732,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageVisibleCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -3906,9 +3896,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageUserCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -5514,9 +5502,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillagePublicCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "500":
           content:
@@ -5570,9 +5556,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageVisibleCollective'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "401":
           content:
@@ -6187,14 +6171,10 @@ paths:
                 anyOf:
                 - items:
                     $ref: '#/components/schemas/SchemaPullAnnotation'
-                  type:
-                  - "null"
-                  - array
+                  type: array
                 - items:
                     $ref: '#/components/schemas/SchemaLegacyPullAnnotation'
-                  type:
-                  - "null"
-                  - array
+                  type: array
           description: OK
           headers:
             Peasant-Pull-Contract:
@@ -6622,9 +6602,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageTagUsage'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "500":
           content:
@@ -6653,9 +6631,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageTagUsage'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "500":
           content:
@@ -7161,9 +7137,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageTranscriptAttestation'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "400":
           content:
@@ -8321,9 +8295,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageTranscriptShare'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "400":
           content:
@@ -8888,9 +8860,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageListUserOrganization'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "404":
           content:
@@ -8970,9 +8940,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageCollectiveSubmission'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "400":
           content:
@@ -9033,9 +9001,7 @@ paths:
               schema:
                 items:
                   $ref: '#/components/schemas/SchemaVillageShareEvent'
-                type:
-                - "null"
-                - array
+                type: array
           description: OK
         "400":
           content:

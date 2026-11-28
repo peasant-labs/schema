@@ -459,6 +459,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := setTranscriptContentHashHeader(r.Spec); err != nil {
 		return nil, err
 	}
+	nonNullTopLevelArrayResponses(r.Spec)
 
 	return r.Spec, nil
 }
@@ -1610,7 +1611,7 @@ var pullContractResponses = []struct {
 }{
 	{"/api/v1/pull/transcripts", schemaRef("SchemaPullListResponse"), schemaRef("SchemaLegacyPullListResponse")},
 	{"/api/v1/pull/transcripts/{id}", schemaRef("SchemaPullTranscriptInfo"), schemaRef("SchemaLegacyPullTranscriptInfo")},
-	{"/api/v1/pull/transcripts/{id}/annotations", map[string]interface{}{"type": []interface{}{"null", "array"}, "items": schemaRef("SchemaPullAnnotation")}, map[string]interface{}{"type": []interface{}{"null", "array"}, "items": schemaRef("SchemaLegacyPullAnnotation")}},
+	{"/api/v1/pull/transcripts/{id}/annotations", map[string]interface{}{"type": "array", "items": schemaRef("SchemaPullAnnotation")}, map[string]interface{}{"type": "array", "items": schemaRef("SchemaLegacyPullAnnotation")}},
 	{"/api/v1/pull/transcripts/{id}/content", nil, nil},
 	{"/api/v1/pull/transcripts/{id}/publish-metadata", nil, nil},
 }
